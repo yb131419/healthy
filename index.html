@@ -1083,7 +1083,7 @@
       document.getElementById('form').scrollIntoView({ behavior: 'smooth' });
     });
     
-    // 下載圖片功能（修改後）
+        // 下載圖片功能（修改為上傳至imgbb）
     downloadReportBtn.addEventListener('click', async () => {
       try {
         // 顯示加載狀態
@@ -1112,6 +1112,67 @@
           scale: 2, // 提高分辨率
           logging: false
         });
+        
+        // 恢復原始樣式
+        reportElement.style.padding = originalPadding;
+        
+        // 將canvas轉換為base64
+        canvas.toBlob(async (blob) => {
+          try {
+            // 創建FormData
+            const formData = new FormData();
+            formData.append('image', blob, 'health-report.png');
+            
+            // 上傳到imgbb
+            const response = await fetch(`https://api.imgbb.com/1/upload?key=60691c91e77a7ad5a7eabaf332fbdffe`, {
+              method: 'POST',
+              body: formData
+            });
+            
+            const result = await response.json();
+            
+            if (!result.success) {
+              throw new Error(result.error?.message || '上傳圖片失敗，請重試');
+            }
+            
+            // 上傳成功，提供下載和查看選項
+            const link = document.createElement('a');
+            link.download = `健康評估報告_${new Date().toLocaleDateString().replace(/\//g, '-')}.png`;
+            link.href = result.data.url;
+            document.body.appendChild(link);
+            link.click();
+            
+            // 顯示成功信息
+            setTimeout(() => {
+              document.body.removeChild(link);
+              downloadReportBtn.disabled = false;
+              downloadReportBtn.innerHTML = '<i class="fa fa-download mr-2"></i> 下載圖片';
+              alert(`圖片已成功上傳！\n您可以直接下載圖片或訪問鏈接查看：\n${result.data.url}`);
+            }, 100);
+            
+          } catch (error) {
+            console.error('上傳到imgbb失敗:', error);
+            downloadReportBtn.disabled = false;
+            downloadReportBtn.innerHTML = '<i class="fa fa-download mr-2"></i> 下載圖片';
+            alert('上傳圖片失敗: ' + error.message + '\n將嘗試直接下載圖片...');
+            
+            // 失敗時 fallback 到直接下載
+            const link = document.createElement('a');
+            link.download = `健康評估報告_${new Date().toLocaleDateString().replace(/\//g, '-')}.png`;
+            link.href = canvas.toDataURL('image/png');
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+          }
+        });
+        
+      } catch (error) {
+        console.error('處理圖片時出錯:', error);
+        downloadReportBtn.disabled = false;
+        downloadReportBtn.innerHTML = '<i class="fa fa-download mr-2"></i> 下載圖片';
+        alert('處理圖片失敗: ' + error.message);
+      }
+    });
         
         // 恢復原始樣式
         reportElement.style.padding = originalPadding;
