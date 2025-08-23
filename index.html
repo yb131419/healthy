@@ -1074,106 +1074,68 @@
     });
     
     // 下載圖片
-// 下载报告功能优化
+// 下载图片功能优化
 downloadReportBtn.addEventListener('click', async () => {
   try {
     // 显示加载状态
     downloadReportBtn.disabled = true;
-    downloadReportBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> 正在生成报告...';
+    downloadReportBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> 正在生成图片...';
     
-    // 生成评估报告
-    const reportData = await generateAssessmentReport();
+    // 获取评估结果区域的DOM元素
+    const reportElement = document.getElementById('result');
+    if (!reportElement) {
+      throw new Error('无法找到评估结果区域');
+    }
     
-    // 创建PDF文档
-    const pdfDoc = await createPdfFromReport(reportData);
+    // 获取用户选择的图片格式
+    const imageFormat = document.getElementById('imageFormat').value;
     
-    // 下载PDF文件
-    const blob = await pdfDoc.output("blob");
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `健康评估报告_${reportData.date}.pdf`;
-    document.body.appendChild(a);
-    a.click();
+    // 根据格式生成对应图片
+    let imageDataUrl;
+    if (imageFormat === 'png') {
+      imageDataUrl = await domtoimage.toPng(reportElement);
+    } else if (imageFormat === 'jpeg') {
+      imageDataUrl = await domtoimage.toJpeg(reportElement);
+    } else {
+      // 默认使用PNG格式
+      imageDataUrl = await domtoimage.toPng(reportElement);
+    }
+    
+    // 触发下载
+    const link = document.createElement('a');
+    link.href = imageDataUrl;
+    link.download = `健康评估报告_${new Date().toISOString().slice(0, 10)}.${imageFormat}`;
+    document.body.appendChild(link);
+    link.click();
     
     // 清理资源
     setTimeout(() => {
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      document.body.removeChild(link);
+      URL.revokeObjectURL(imageDataUrl);
       downloadReportBtn.disabled = false;
-      downloadReportReportBtn.innerHTML = '<i class="fa fa-download mr-2"></i> 下載報告';
+      downloadReportBtn.innerHTML = '<i class="fa fa-download mr-2"></i> 下載圖片';
     }, 100);
     
   } catch (error) {
-    console.error('下载报告时出错:', error);
-    alert('下载报告失败，请检查网络连接或尝试刷新页面后重试。\n\n错误详情：' + error.message);
+    console.error('下载图片时出错:', error);
+    alert('下载图片失败，请检查网络连接或尝试刷新页面后重试。\n\n错误详情：' + error.message);
     downloadReportBtn.disabled = false;
-    downloadReportBtn.innerHTML = '<i class="fa fa-download mr-2"></i> 下載報告';
+    downloadReportBtn.innerHTML = '<i class="fa fa-download mr-2"></i> 下載圖片';
   }
 });
 
-// 生成评估报告数据
-async function generateAssessmentReport() {
-  try {
-    // 获取完整的评估结果页面内容
-    const reportContent = await capturePageContent();
-    
-    // 返回包含内容的数据对象
-    return {
-      svg: reportContent.svg,
-      title: '健康评估报告',
-      date: new Date().toLocaleDateString('zh-TW'),
-      symptoms: Array.from(document.querySelectorAll('input[name="symptoms"]:checked')).map(checkbox => checkbox.value),
-      habits: Array.from(document.querySelectorAll('input[name="habits"]:checked')).map(checkbox => checkbox.value),
-      mainConcern: document.getElementById('mainConcern').value.trim() || '未明確說明',
-      symptomDuration: document.getElementById('symptomDuration').value || '未說明'
-    };
-  } catch (error) {
-    throw new Error('生成报告数据失败: ' + error.message);
-  }
-}
+    <!-- 在下载按钮附近添加格式选择器 -->
+<div class="flex items-center space-x-2 mb-4">
+  <select id="imageFormat" class="px-3 py-1 border border-gray-300 rounded text-sm">
+    <option value="png">PNG 格式</option>
+    <option value="jpeg">JPEG 格式</option>
+  </select>
+  <button id="downloadReportBtn" class="px-6 py-3 bg-gray-200 text-neutral-dark rounded-lg hover:bg-gray-300 transition-colors">
+    <i class="fa fa-download mr-2"></i> 下載圖片
+  </button>
+</div>
 
-// 创建PDF文档
-async function createPdfFromReport(data) {
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF();
-  
-  // 设置字体和颜色
-  doc.setFont('inter');
-  doc.setTextColor('#333f51');
-  
-  // 添加标题
-  doc.setFontSize(18);
-  doc.text(data.title, 105, 20, null, null, 'center');
-  
-  // 添加日期
-  doc.setFontSize(12);
-  doc.text(`生成日期：${data.date}`, 105, 30, null, null, 'center');
-  
-  // 添加分隔线
-  doc.setDrawColor('#e5e7eb');
-  doc.line(20, 35, 190, 35);
-  
-  // 将SVG添加到PDF
-  const imgProps = await domtoimage.getImageProperties(data.svg);
-  const width = imgProps.width;
-  const height = imgProps.height;
-  
-  // 计算缩放比例以适应PDF页面
-  const pageWidth = doc.internal.pageSize.getWidth();
-  const scale = pageWidth / width * 0.9;
-  
-  doc.addImage(
-    data.svg,
-    'svg',
-    (pageWidth - width * scale) / 2,
-    40,
-    width * scale,
-    height * scale
-  );
-  
-  return doc;
-}
+    
     
     // 更新表單步驟顯示
     function updateFormSteps() {
