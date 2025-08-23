@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>健康自檢表 - 您的個人健康評估工具</title>
+  <title>彥彬 健康自檢表 - 您的個人健康評估工具</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
@@ -70,7 +70,7 @@
     <div class="container mx-auto px-4 py-3 flex justify-between items-center">
       <div class="flex items-center space-x-2">
         <i class="fa fa-heartbeat text-primary text-2xl"></i>
-        <h1 class="text-xl md:text-2xl font-bold text-primary">健康自檢表</h1>
+        <h1 class="text-xl md:text-2xl font-bold text-primary">彥彬 健康自檢表</h1>
       </div>
       <nav class="hidden md:flex items-center space-x-6">
         <a href="#intro" class="text-neutral-dark/80 hover:text-primary transition-colors">簡介</a>
@@ -1074,38 +1074,45 @@
     });
     
     // 下載報告
-// 在 downloadReportBtn 的 click 事件處理函數中替換原有邏輯
+// 在 downloadReportBtn 的 click 事件处理函数中替换原有逻辑
 downloadReportBtn.addEventListener('click', () => {
-  // 收集表單數據
-  const formData = {
-    姓名: document.getElementById('name').value,
-    年齡: document.getElementById('age').value,
-    性別: document.querySelector('input[name="gender"]:checked')?.value || '',
-    主要關注問題: document.getElementById('mainConcern').value,
-    症狀持續時間: document.getElementById('symptomDuration').value,
-    選擇的症狀: Array.from(document.querySelectorAll('input[name="symptoms"]:checked')).map(cb => cb.value),
-    不良習慣: Array.from(document.querySelectorAll('input[name="habits"]:checked')).map(cb => cb.value)
-  };
+  try {
+    // 收集表单数据
+    const formData = {
+      姓名: document.getElementById('name').value.trim(),
+      年齡: document.getElementById('age').value.trim(),
+      性別: document.querySelector('input[name="gender"]:checked')?.value || '未选择',
+      主要關注問題: document.getElementById('mainConcern').value.trim() || '未填写',
+      症狀持續時間: document.getElementById('symptomDuration').value || '未选择',
+      選擇的症狀: Array.from(document.querySelectorAll('input[name="symptoms"]:checked')).map(cb => cb.value),
+      不良習慣: Array.from(document.querySelectorAll('input[name="habits"]:checked')).map(cb => cb.value)
+    };
 
-  // 創建文件內容
-  const fileContent = JSON.stringify(formData, null, 2);
-  
-  // 創建Blob對象
-  const blob = new Blob([fileContent], { type: 'application/json' });
-  
-  // 創建下載鏈接
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = '健康評估報告.json';
-  document.body.appendChild(a);
-  a.click();
-  
-  // 清理資源
-  setTimeout(() => {
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  }, 100);
+    console.log('收集到的数据:', formData);
+
+    // 创建文件内容
+    const fileContent = JSON.stringify(formData, null, 2);
+    
+    // 创建Blob对象
+    const blob = new Blob([fileContent], { type: 'application/json;charset=utf-8' });
+    
+    // 创建下载链接
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'health_assessment_report.json'; // 使用英文文件名以确保兼容性
+    document.body.appendChild(a);
+    a.click();
+    
+    // 清理资源
+    setTimeout(() => {
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }, 100);
+  } catch (error) {
+    console.error('下载报告时出错:', error);
+    alert('下载报告失败，请稍后重试。');
+  }
 });
     
     // 更新表單步驟顯示
