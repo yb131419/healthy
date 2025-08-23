@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>彥彬 健康自檢表 - 您的個人健康評估工具</title>
+  <title>健康自檢表 - 您的個人健康評估工具</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
@@ -1074,10 +1074,10 @@
     });
     
     // 下載報告
-// 在 downloadReportBtn 的 click 事件处理函数中替换原有逻辑
+// 下載報告
 downloadReportBtn.addEventListener('click', () => {
   try {
-    // 收集表单数据
+    // 收集表單數據
     const formData = {
       姓名: document.getElementById('name').value.trim(),
       年齡: document.getElementById('age').value.trim(),
@@ -1087,9 +1087,9 @@ downloadReportBtn.addEventListener('click', () => {
       選擇的症狀: Array.from(document.querySelectorAll('input[name="symptoms"]:checked')).map(cb => cb.value),
       不良習慣: Array.from(document.querySelectorAll('input[name="habits"]:checked')).map(cb => cb.value)
     };
-
+    
     console.log('收集到的数据:', formData);
-
+    
     // 创建文件内容
     const fileContent = JSON.stringify(formData, null, 2);
     
