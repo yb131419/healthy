@@ -1076,13 +1076,19 @@
     // 下載圖片
 // 在文件開頭添加 imgbb API 金鑰（請替換為您的實際金鑰）
 const IMGBB_API_KEY = '60691c91e77a7ad5a7eabaf332fbdffe';
-
-// 下載圖片功能優化
+    
+ // 下載圖片功能優化
 downloadReportBtn.addEventListener('click', async () => {
   try {
-    // 檢查 domtoimage 是否可用
-    if (typeof domtoimage === 'undefined') {
-      throw new Error('domtoimage 庫未加載，請刷新頁面重試');
+    // 檢查 domtoimage 或 html2canvas 是否可用
+    let captureLibrary;
+    
+    if (typeof domtoimage !== 'undefined') {
+      captureLibrary = domtoimage;
+    } else if (typeof html2canvas !== 'undefined') {
+      captureLibrary = html2canvas;
+    } else {
+      throw new Error('圖片捕獲庫未加載，請刷新頁面重試');
     }
 
     // 獲取評估結果區域的 DOM 元素
@@ -1091,8 +1097,19 @@ downloadReportBtn.addEventListener('click', async () => {
       throw new Error('無法找到評估結果區域');
     }
 
-    // 使用 dom-to-image 捕獲屏幕截圖
-    const canvas = await domtoimage.toCanvas(reportElement);
+    // 使用圖片捕獲庫捕獲屏幕截圖
+    let canvas;
+    if (captureLibrary === domtoimage) {
+      canvas = await domtoimage.toCanvas(reportElement);
+    } else {
+      // 使用 html2canvas 作為備選方案
+      canvas = await html2canvas(reportElement, {
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: null
+      });
+    }
+    
     const blob = await new Promise(resolve => canvas.toBlob(resolve));
     
     // 將 blob 轉換為 base64 字符串
