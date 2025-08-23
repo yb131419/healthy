@@ -763,6 +763,14 @@
         <h2 class="text-2xl md:text-3xl font-bold mb-8 text-center">健康評估結果</h2>
         
         <div class="bg-white rounded-2xl shadow-md p-6 md:p-8 mb-8">
+          <!-- 新增基本資料部分 -->
+          <div class="mb-8">
+            <h3 class="text-xl font-semibold mb-4 pb-2 border-b">基本資料</h3>
+            <div id="basicInfo" class="grid md:grid-cols-2 gap-4">
+              <!-- 基本資料將在這裡動態顯示 -->
+            </div>
+          </div>
+          
           <div class="mb-8">
             <h3 class="text-xl font-semibold mb-4 pb-2 border-b">健康狀況概覽</h3>
             
@@ -1047,7 +1055,8 @@
     });
     
     // 重新評估
-    restartBtn.addEventListener('click', () => {
+
+        restartBtn.addEventListener('click', () => {
       // 重置表單
       document.querySelectorAll('input, textarea, select').forEach(element => {
         if (element.type === 'checkbox' || element.type === 'radio') {
@@ -1074,99 +1083,61 @@
       document.getElementById('form').scrollIntoView({ behavior: 'smooth' });
     });
     
-    // 下載圖片
-// 在文件開頭添加 imgbb API 金鑰（請替換為您的實際金鑰）
-const IMGBB_API_KEY = '60691c91e77a7ad5a7eabaf332fbdffe';
-    
- // 下載圖片功能優化
-downloadReportBtn.addEventListener('click', async () => {
-  try {
-    // 檢查 domtoimage 或 html2canvas 是否可用
-    let captureLibrary;
-    
-    if (typeof domtoimage !== 'undefined') {
-      captureLibrary = domtoimage;
-    } else if (typeof html2canvas !== 'undefined') {
-      captureLibrary = html2canvas;
-    } else {
-      throw new Error('圖片捕獲庫未加載，請刷新頁面重試');
-    }
-
-    // 獲取評估結果區域的 DOM 元素
-    const reportElement = document.getElementById('result');
-    if (!reportElement) {
-      throw new Error('無法找到評估結果區域');
-    }
-
-    // 使用圖片捕獲庫捕獲屏幕截圖
-    let canvas;
-    if (captureLibrary === domtoimage) {
-      canvas = await domtoimage.toCanvas(reportElement);
-    } else {
-      // 使用 html2canvas 作為備選方案
-      canvas = await html2canvas(reportElement, {
-        useCORS: true,
-        allowTaint: true,
-        backgroundColor: null
-      });
-    }
-    
-    const blob = await new Promise(resolve => canvas.toBlob(resolve));
-    
-    // 將 blob 轉換為 base64 字符串
-    const reader = new FileReader();
-    reader.onloadend = function() {
-      const base64String = reader.result.split(',')[1]; // 獲取 base64 部分
-      
-      // 創建 FormData 對象
-      const formData = new FormData();
-      formData.append('image', base64String);
-
-      // 發送到 imgbb API
-      fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
-        method: 'POST',
-        body: formData
-      })
-      .then(response => response.json())
-      .then(data => {
-        if (data.success) {
-          const imageUrl = data.data.url;
-          
-          // 觸發下載
-          const link = document.createElement('a');
-          link.href = imageUrl;
-          link.download = `健康評估報告_${new Date().toISOString().slice(0, 10)}.png`;
-          document.body.appendChild(link);
-          link.click();
-          
-          // 顯示成功消息
-          alert(`圖片已成功上傳到 imgbb！\n直接訪問鏈接：${imageUrl}`);
-          
-          // 清理資源
-          setTimeout(() => {
-            document.body.removeChild(link);
-            downloadReportBtn.disabled = false;
-            downloadReportBtn.innerHTML = '<i class="fa fa-download mr-2"></i> 下載圖片';
-          }, 100);
-        } else {
-          throw new Error(data.error.message || '上傳失敗');
+    // 下載圖片功能（修改後）
+    downloadReportBtn.addEventListener('click', async () => {
+      try {
+        // 顯示加載狀態
+        downloadReportBtn.disabled = true;
+        downloadReportBtn.innerHTML = '<i class="fa fa-spinner fa-spin mr-2"></i> 正在處理...';
+        
+        // 確認 html2canvas 已加載
+        if (typeof html2canvas === 'undefined') {
+          throw new Error('圖片處理庫未加載，請刷新頁面重試');
         }
-      })
-      .catch(error => {
-        console.error('上傳圖片時出錯:', error);
-        alert('上傳圖片失敗，請檢查網絡連接或嘗試刷新頁面後重試。\n\n錯誤詳情：' + error.message);
+
+        // 獲取健康評估結果整個區域的 DOM 元素
+        const reportElement = document.querySelector('#result .bg-white.rounded-2xl.shadow-md.p-6');
+        if (!reportElement) {
+          throw new Error('無法找到評估結果區域');
+        }
+
+        // 臨時調整樣式以確保截圖效果
+        const originalPadding = reportElement.style.padding;
+        reportElement.style.padding = '20px'; // 增加內邊距確保內容完整
+        
+        // 使用 html2canvas 捕獲整個結果區域
+        const canvas = await html2canvas(reportElement, {
+          useCORS: true,
+          allowTaint: false,
+          scale: 2, // 提高分辨率
+          logging: false
+        });
+        
+        // 恢復原始樣式
+        reportElement.style.padding = originalPadding;
+        
+        // 轉換為圖片鏈接並下載
+        const link = document.createElement('a');
+        link.download = `健康評估報告_${new Date().toLocaleDateString().replace(/\//g, '-')}.png`;
+        link.href = canvas.toDataURL('image/png');
+        document.body.appendChild(link);
+        link.click();
+        
+        // 清理
+        setTimeout(() => {
+          document.body.removeChild(link);
+          downloadReportBtn.disabled = false;
+          downloadReportBtn.innerHTML = '<i class="fa fa-download mr-2"></i> 下載圖片';
+          alert('健康評估報告已成功下載！');
+        }, 100);
+        
+      } catch (error) {
+        console.error('下載圖片時出錯:', error);
         downloadReportBtn.disabled = false;
         downloadReportBtn.innerHTML = '<i class="fa fa-download mr-2"></i> 下載圖片';
-      });
-    };
-    reader.readAsDataURL(blob);
-  } catch (error) {
-    console.error('上傳圖片時出錯:', error);
-    alert('上傳圖片失敗，請檢查網絡連接或嘗試刷新頁面後重試。\n\n錯誤詳情：' + error.message);
-    downloadReportBtn.disabled = false;
-    downloadReportBtn.innerHTML = '<i class="fa fa-download mr-2"></i> 下載圖片';
-  }
-});
+        alert('下載失敗: ' + error.message);
+      }
+    });
     
     // 更新表單步驟顯示
     function updateFormSteps() {
@@ -1279,8 +1250,76 @@ downloadReportBtn.addEventListener('click', async () => {
       });
     });
     
-    // 生成評估結果
+    // 生成評估結果（新增基本資料展示）
     function generateResult() {
+      // 獲取基本資料
+      const name = document.getElementById('name').value || '未填寫';
+      const age = document.getElementById('age').value || '未填寫';
+      const gender = document.querySelector('input[name="gender"]:checked') 
+        ? document.querySelector('input[name="gender"]:checked').value === 'male' ? '男' : '女' 
+        : '未填寫';
+      const phone = document.getElementById('phone').value || '未填寫';
+      const height = document.getElementById('height').value ? `${document.getElementById('height').value} cm` : '未填寫';
+      const weight = document.getElementById('weight').value ? `${document.getElementById('weight').value} kg` : '未填寫';
+      const waist = document.getElementById('waist').value ? `${document.getElementById('waist').value} cm` : '未填寫';
+      const bloodPressure = document.getElementById('bloodPressure').value || '未填寫';
+      const bloodSugar = document.getElementById('bloodSugar').value ? `${document.getElementById('bloodSugar').value} mmol/l` : '未填寫';
+      const occupation = document.getElementById('occupation').value || '未填寫';
+      
+      // 計算BMI（如果有身高體重數據）
+      let bmi = '未計算';
+      if (document.getElementById('height').value && document.getElementById('weight').value) {
+        const h = parseFloat(document.getElementById('height').value) / 100; // 轉為米
+        const w = parseFloat(document.getElementById('weight').value);
+        if (h > 0) {
+          const bmiValue = (w / (h * h)).toFixed(1);
+          let bmiStatus = '';
+          if (bmiValue < 18.5) bmiStatus = '（偏瘦）';
+          else if (bmiValue < 24) bmiStatus = '（正常）';
+          else if (bmiValue < 28) bmiStatus = '（超重）';
+          else bmiStatus = '（肥胖）';
+          bmi = `${bmiValue} ${bmiStatus}`;
+        }
+      }
+      
+      // 顯示基本資料
+      const basicInfoContainer = document.getElementById('basicInfo');
+      basicInfoContainer.innerHTML = `
+        <div class="p-3 border border-gray-100 rounded-lg">
+          <p class="text-sm"><strong>姓名：</strong> ${name}</p>
+        </div>
+        <div class="p-3 border border-gray-100 rounded-lg">
+          <p class="text-sm"><strong>年齡：</strong> ${age} 歲</p>
+        </div>
+        <div class="p-3 border border-gray-100 rounded-lg">
+          <p class="text-sm"><strong>性別：</strong> ${gender}</p>
+        </div>
+        <div class="p-3 border border-gray-100 rounded-lg">
+          <p class="text-sm"><strong>聯繫電話：</strong> ${phone}</p>
+        </div>
+        <div class="p-3 border border-gray-100 rounded-lg">
+          <p class="text-sm"><strong>身高：</strong> ${height}</p>
+        </div>
+        <div class="p-3 border border-gray-100 rounded-lg">
+          <p class="text-sm"><strong>體重：</strong> ${weight}</p>
+        </div>
+        <div class="p-3 border border-gray-100 rounded-lg">
+          <p class="text-sm"><strong>BMI：</strong> ${bmi}</p>
+        </div>
+        <div class="p-3 border border-gray-100 rounded-lg">
+          <p class="text-sm"><strong>腰圍：</strong> ${waist}</p>
+        </div>
+        <div class="p-3 border border-gray-100 rounded-lg">
+          <p class="text-sm"><strong>血壓：</strong> ${bloodPressure}</p>
+        </div>
+        <div class="p-3 border border-gray-100 rounded-lg">
+          <p class="text-sm"><strong>血糖：</strong> ${bloodSugar}</p>
+        </div>
+        <div class="p-3 border border-gray-100 rounded-lg md:col-span-2">
+          <p class="text-sm"><strong>職業：</strong> ${occupation}</p>
+        </div>
+      `;
+      
       // 獲取選中的症狀
       const selectedSymptoms = Array.from(document.querySelectorAll('input[name="symptoms"]:checked')).map(checkbox => checkbox.value);
       const symptomCount = selectedSymptoms.length;
@@ -1292,6 +1331,7 @@ downloadReportBtn.addEventListener('click', async () => {
       // 獲取主要健康問題
       const mainConcern = document.getElementById('mainConcern').value || '未明確說明';
       const symptomDuration = document.getElementById('symptomDuration').value || '未說明';
+      const possibleCauses = document.getElementById('possibleCauses').value || '未說明';
       
       // 更新結果數據
       document.getElementById('symptomCount').textContent = `${symptomCount} 項症狀`;
@@ -1309,6 +1349,7 @@ downloadReportBtn.addEventListener('click', async () => {
       mainIssuesContainer.innerHTML = `
         <p class="mb-3"><strong>主要關注問題：</strong> ${mainConcern}</p>
         <p class="mb-3"><strong>症狀持續時間：</strong> ${symptomDuration}</p>
+        <p class="mb-3"><strong>可能原因：</strong> ${possibleCauses}</p>
         ${symptomCount > 0 ? `<p><strong>主要症狀：</strong> ${selectedSymptoms.slice(0, 3).join('、')} ${symptomCount > 3 ? `等${symptomCount}項症狀` : ''}</p>` : ''}
       `;
       
