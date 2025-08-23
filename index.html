@@ -1075,9 +1075,9 @@
     
     // 下載報告
 // 下載報告
-downloadReportBtn.addEventListener('click', () => {
+downloadReportBtn.addEventListener('click', async () => {
   try {
-    // 收集表單數據
+    // 收集表单数据
     const formData = {
       姓名: document.getElementById('name').value.trim(),
       年齡: document.getElementById('age').value.trim(),
@@ -1087,28 +1087,62 @@ downloadReportBtn.addEventListener('click', () => {
       選擇的症狀: Array.from(document.querySelectorAll('input[name="symptoms"]:checked')).map(cb => cb.value),
       不良習慣: Array.from(document.querySelectorAll('input[name="habits"]:checked')).map(cb => cb.value)
     };
-    
+
     console.log('收集到的数据:', formData);
-    
-    // 创建文件内容
-    const fileContent = JSON.stringify(formData, null, 2);
-    
-    // 创建Blob对象
-    const blob = new Blob([fileContent], { type: 'application/json;charset=utf-8' });
-    
-    // 创建下载链接
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'health_assessment_report.json'; // 使用英文文件名以确保兼容性
-    document.body.appendChild(a);
-    a.click();
-    
-    // 清理资源
-    setTimeout(() => {
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    }, 100);
+
+    // 创建画布元素
+    const canvas = document.createElement('canvas');
+    canvas.width = 800;
+    canvas.height = 600;
+    document.body.appendChild(canvas);
+
+    // 渲染图表
+    const ctx = canvas.getContext('2d');
+    const chart = new Chart(ctx, {
+      type: 'radar',
+      data: {
+        labels: ['头部', '眼耳鼻喉', '消化系统', '肌肉骨骼', '皮肤'],
+        datasets: [{
+          label: '症状风险',
+          data: [60, 45, 30, 35, 25],
+          backgroundColor: 'rgba(22, 93, 255, 0.2)',
+          borderColor: 'rgba(22, 93, 255, 1)',
+          pointBackgroundColor: 'rgba(22, 93, 255, 1)',
+          pointBorderColor: '#fff',
+          pointHoverBackgroundColor: '#fff',
+          pointHoverBorderColor: 'rgba(22, 93, 255, 1)'
+        }],
+        options: {
+          scales: {
+            r: {
+              angleLines: {
+                display: true
+              },
+              suggestedMin: 0,
+              suggestedMax: 100
+            }
+          }
+        }
+      });
+
+    // 绘制图表
+    chart.render();
+
+    // 转换为图像
+    canvas.toBlob().then(blob => {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'health_assessment_result.png';
+      document.body.appendChild(a);
+      a.click();
+      
+      // 清理资源
+      setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }, 100);
+    });
   } catch (error) {
     console.error('下载报告时出错:', error);
     alert('下载报告失败，请稍后重试。');
