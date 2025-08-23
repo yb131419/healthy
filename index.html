@@ -1080,8 +1080,11 @@ const IMGBB_API_KEY = '60691c91e77a7ad5a7eabaf332fbdffe';
 // 下載圖片功能優化
 downloadReportBtn.addEventListener('click', async () => {
   try {
-    // ... [原有代碼] ...
-    
+    // 檢查 domtoimage 是否可用
+    if (typeof domtoimage === 'undefined') {
+      throw new Error('domtoimage 庫未加載，請刷新頁面重試');
+    }
+
     // 獲取評估結果區域的 DOM 元素
     const reportElement = document.getElementById('result');
     if (!reportElement) {
