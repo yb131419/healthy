@@ -1122,20 +1122,7 @@ downloadReportBtn.addEventListener('click', async () => {
     downloadReportBtn.disabled = false;
     downloadReportBtn.innerHTML = '<i class="fa fa-download mr-2"></i> 下載圖片';
   }
-});
-
-    <!-- 在下载按钮附近添加格式选择器 -->
-<div class="flex items-center space-x-2 mb-4">
-  <select id="imageFormat" class="px-3 py-1 border border-gray-300 rounded text-sm">
-    <option value="png">PNG 格式</option>
-    <option value="jpeg">JPEG 格式</option>
-  </select>
-  <button id="downloadReportBtn" class="px-6 py-3 bg-gray-200 text-neutral-dark rounded-lg hover:bg-gray-300 transition-colors">
-    <i class="fa fa-download mr-2"></i> 下載圖片
-  </button>
-</div>
-
-    
+});    
     
     // 更新表單步驟顯示
     function updateFormSteps() {
