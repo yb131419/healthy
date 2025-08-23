@@ -1074,10 +1074,39 @@
     });
     
     // 下載報告
-    downloadReportBtn.addEventListener('click', () => {
-      alert('報告生成中，即將開始下載...');
-      // 實際項目中這裡會調用PDF生成和下載功能
-    });
+// 在 downloadReportBtn 的 click 事件處理函數中替換原有邏輯
+downloadReportBtn.addEventListener('click', () => {
+  // 收集表單數據
+  const formData = {
+    姓名: document.getElementById('name').value,
+    年齡: document.getElementById('age').value,
+    性別: document.querySelector('input[name="gender"]:checked')?.value || '',
+    主要關注問題: document.getElementById('mainConcern').value,
+    症狀持續時間: document.getElementById('symptomDuration').value,
+    選擇的症狀: Array.from(document.querySelectorAll('input[name="symptoms"]:checked')).map(cb => cb.value),
+    不良習慣: Array.from(document.querySelectorAll('input[name="habits"]:checked')).map(cb => cb.value)
+  };
+
+  // 創建文件內容
+  const fileContent = JSON.stringify(formData, null, 2);
+  
+  // 創建Blob對象
+  const blob = new Blob([fileContent], { type: 'application/json' });
+  
+  // 創建下載鏈接
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = '健康評估報告.json';
+  document.body.appendChild(a);
+  a.click();
+  
+  // 清理資源
+  setTimeout(() => {
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, 100);
+});
     
     // 更新表單步驟顯示
     function updateFormSteps() {
