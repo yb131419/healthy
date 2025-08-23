@@ -1136,7 +1136,7 @@ document.addEventListener('DOMContentLoaded', function() {
           canvas.toBlob(blob => {
             if (blob) resolve(blob);
             else reject(new Error('無法生成圖片數據'));
-          }, 'image/png');
+          }, 'image/jpg');
         });
         
         // 上傳至imgbb
@@ -1192,7 +1192,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         const downloadLink = document.createElement('a');
         downloadLink.download = shareFileName;
-        downloadLink.href = canvas.toDataURL('image/png');
+        downloadLink.href = canvas.toDataURL('image/jpg');
         document.body.appendChild(downloadLink);
         downloadLink.click();
         
@@ -1222,7 +1222,7 @@ document.addEventListener('DOMContentLoaded', function() {
   function shareImage(imageUrl, title, date) {
     // 構建完整分享標題和內容
     const fullTitle = title;
-    const shareText = `${title} (${date}) - 歡迎查看我的健康評估結果`;
+    const shareText = `${title} \n(${date}) \n⬇️ 查看我的健康評估結果`;
     
     // 檢查瀏覽器是否支持Web Share API
     if (navigator.share) {
