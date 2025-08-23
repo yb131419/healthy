@@ -268,37 +268,37 @@
             </div>
           </div>
           
-          <!-- 步骤2: 身体症状 -->
+          <!-- 步驟2: 身體症狀 -->
           <div class="form-step hidden" id="step2">
-            <h3 class="text-xl font-semibold mb-6 pb-2 border-b">身体症状自检</h3>
-            <p class="text-neutral-dark/70 mb-6 text-sm">请勾选您目前存在的症状（可多选）</p>
+            <h3 class="text-xl font-semibold mb-6 pb-2 border-b">身體症狀自檢</h3>
+            <p class="text-neutral-dark/70 mb-6 text-sm">請勾選您目前存在的症狀（可多選）</p>
             
-            <!-- 症状分类标签 -->
+            <!-- 症狀分類標籤 -->
             <div class="flex flex-wrap gap-2 mb-6 overflow-x-auto scrollbar-hide pb-2">
-              <button class="symptom-tab active px-4 py-2 bg-primary text-white rounded-full text-sm whitespace-nowrap" data-category="all">全部症状</button>
-              <button class="symptom-tab px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-full text-sm whitespace-nowrap" data-category="head">头部症状</button>
+              <button class="symptom-tab active px-4 py-2 bg-primary text-white rounded-full text-sm whitespace-nowrap" data-category="all">全部症狀</button>
+              <button class="symptom-tab px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-full text-sm whitespace-nowrap" data-category="head">頭部症狀</button>
               <button class="symptom-tab px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-full text-sm whitespace-nowrap" data-category="eye-ear-nose-throat">眼耳鼻喉</button>
-              <button class="symptom-tab px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-full text-sm whitespace-nowrap" data-category="digestive">消化系统</button>
-              <button class="symptom-tab px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-full text-sm whitespace-nowrap" data-category="muscle-joint">肌肉关节</button>
-              <button class="symptom-tab px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-full text-sm whitespace-nowrap" data-category="skin">皮肤问题</button>
+              <button class="symptom-tab px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-full text-sm whitespace-nowrap" data-category="digestive">消化系統</button>
+              <button class="symptom-tab px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-full text-sm whitespace-nowrap" data-category="muscle-joint">肌肉關節</button>
+              <button class="symptom-tab px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-full text-sm whitespace-nowrap" data-category="skin">皮膚問題</button>
               <button class="symptom-tab px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-full text-sm whitespace-nowrap" data-category="female">女性健康</button>
               <button class="symptom-tab px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-full text-sm whitespace-nowrap" data-category="urinary">泌尿生殖</button>
             </div>
             
-            <!-- 症状列表 -->
+            <!-- 症狀列表 -->
             <div class="grid md:grid-cols-2 gap-4 mb-6">
-              <!-- 头部症状 -->
+              <!-- 頭部症狀 -->
               <div class="symptom-item" data-category="head">
                 <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
-                  <input type="checkbox" name="symptoms" value="头疼/头晕" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
-                  <span class="ml-2">头疼/头晕</span>
+                  <input type="checkbox" name="symptoms" value="頭疼/頭暈" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+                  <span class="ml-2">頭疼/頭暈</span>
                 </label>
               </div>
               
               <div class="symptom-item" data-category="head">
                 <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
-                  <input type="checkbox" name="symptoms" value="头麻/脑鸣" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
-                  <span class="ml-2">头麻/脑鸣</span>
+                  <input type="checkbox" name="symptoms" value="頭麻/腦鳴" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+                  <span class="ml-2">頭麻/腦鳴</span>
                 </label>
               </div>
               
@@ -311,43 +311,376 @@
               
               <div class="symptom-item" data-category="head">
                 <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
-                  <input type="checkbox" name="symptoms" value="失眠/多梦" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
-                  <span class="ml-2">失眠/多梦</span>
+                  <input type="checkbox" name="symptoms" value="失眠/多夢" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+                  <span class="ml-2">失眠/多夢</span>
                 </label>
               </div>
               
-              <!-- 更多症状省略 -->
+              <div class="symptom-item" data-category="head">
+                <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                  <input type="checkbox" name="symptoms" value="偏頭痛/健忘" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+                  <span class="ml-2">偏頭痛/健忘</span>
+                </label>
+              </div>
+              
+              <div class="symptom-item" data-category="head">
+                <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                  <input type="checkbox" name="symptoms" value="懶語/結巴" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+                  <span class="ml-2">懶語/結巴</span>
+                </label>
+              </div>
+              
+              <!-- 眼耳鼻喉 -->
+              <div class="symptom-item" data-category="eye-ear-nose-throat">
+                <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                  <input type="checkbox" name="symptoms" value="花眼" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+                  <span class="ml-2">花眼</span>
+                </label>
+              </div>
+              
+              <div class="symptom-item" data-category="eye-ear-nose-throat">
+                <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                  <input type="checkbox" name="symptoms" value="嗓子異物感" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+                  <span class="ml-2">嗓子異物感</span>
+                </label>
+              </div>
+              
+              <div class="symptom-item" data-category="eye-ear-nose-throat">
+                <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                  <input type="checkbox" name="symptoms" value="過敏" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+                  <span class="ml-2">過敏</span>
+                </label>
+              </div>
+              
+              <div class="symptom-item" data-category="eye-ear-nose-throat">
+                <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                  <input type="checkbox" name="symptoms" value="聲音嘶啞" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+                  <span class="ml-2">聲音嘶啞</span>
+                </label>
+              </div>
+              
+              <!-- 消化系統 -->
+              <div class="symptom-item" data-category="digestive">
+                <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                  <input type="checkbox" name="symptoms" value="大便不成形" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+                  <span class="ml-2">大便不成形</span>
+                </label>
+              </div>
+              
+              <div class="symptom-item" data-category="digestive">
+                <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                  <input type="checkbox" name="symptoms" value="便溏不淨/便秘" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+                  <span class="ml-2">便溏不淨/便秘</span>
+                </label>
+              </div>
+              
+              <!-- 肌肉關節 -->
+              <div class="symptom-item" data-category="muscle-joint">
+                <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                  <input type="checkbox" name="symptoms" value="腳後跟疼" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+                  <span class="ml-2">腳後跟疼</span>
+                </label>
+              </div>
+              
+              <div class="symptom-item" data-category="muscle-joint">
+                <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                  <input type="checkbox" name="symptoms" value="容易扭傷" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+                  <span class="ml-2">容易扭傷</span>
+                </label>
+              </div>
+              
+              <!-- 皮膚問題 -->
+              <div class="symptom-item" data-category="skin">
+                <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                  <input type="checkbox" name="symptoms" value="身體異味" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+                  <span class="ml-2">身體異味</span>
+                </label>
+              </div>
+              
+              <div class="symptom-item" data-category="skin">
+                <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                  <input type="checkbox" name="symptoms" value="皮膚易青/紅點" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+                  <span class="ml-2">皮膚易青/紅點</span>
+                </label>
+              </div>
+              
+              <!-- 女性健康 -->
+              <div class="symptom-item" data-category="female">
+                <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                  <input type="checkbox" name="symptoms" value="乳頭凹陷/流膿" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+                  <span class="ml-2">乳頭凹陷/流膿</span>
+                </label>
+              </div>
+              
+              <div class="symptom-item" data-category="female">
+                <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                  <input type="checkbox" name="symptoms" value="乳房腫塊/增生" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+                  <span class="ml-2">乳房腫塊/增生</span>
+                </label>
+              </div>
+              
+              <!-- 更多症狀 -->
+              <div class="symptom-item" data-category="female">
+                <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                  <input type="checkbox" name="symptoms" value="月經少/有塊" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+                  <span class="ml-2">月經少/有塊</span>
+                </label>
+              </div>
+              
+              <div class="symptom-item" data-category="female">
+                <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                  <input type="checkbox" name="symptoms" value="經期提前/推後" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+                  <span class="ml-2">經期提前/推後</span>
+                </label>
+              </div>
             </div>
             
             <div class="mt-6">
-              <label for="otherSymptoms" class="block text-sm font-medium text-neutral-dark/80 mb-1">其他症状或病史</label>
-              <textarea id="otherSymptoms" rows="3" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors" placeholder="请描述其他症状或病史"></textarea>
+              <label for="otherSymptoms" class="block text-sm font-medium text-neutral-dark/80 mb-1">其他症狀或病史</label>
+              <textarea id="otherSymptoms" rows="3" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors" placeholder="請描述其他症狀或病史"></textarea>
             </div>
           </div>
           
           <!-- 步骤3: 生活习惯 -->
+
+          <!-- 步驟3: 生活習慣 -->
           <div class="form-step hidden" id="step3">
-            <h3 class="text-xl font-semibold mb-6 pb-2 border-b">生活习惯评估</h3>
-            <p class="text-neutral-dark/70 mb-6 text-sm">请勾选您存在的不良生活习惯（可多选）</p>
+            <h3 class="text-xl font-semibold mb-6 pb-2 border-b">生活習慣評估</h3>
+            <p class="text-neutral-dark/70 mb-6 text-sm">請勾選您存在的不良生活習慣（可多選）</p>
             
-            <!-- 生活习惯内容省略 -->
+            <!-- 生活習慣分類標籤 -->
+            <div class="flex flex-wrap gap-2 mb-6 overflow-x-auto scrollbar-hide pb-2">
+              <button class="habit-tab active px-4 py-2 bg-primary text-white rounded-full text-sm whitespace-nowrap" data-category="all">全部習慣</button>
+              <button class="habit-tab px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-full text-sm whitespace-nowrap" data-category="diet">飲食習慣</button>
+              <button class="habit-tab px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-full text-sm whitespace-nowrap" data-category="sleep">睡眠習慣</button>
+              <button class="habit-tab px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-full text-sm whitespace-nowrap" data-category="exercise">運動習慣</button>
+              <button class="habit-tab px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-full text-sm whitespace-nowrap" data-category="cold">寒濕因素</button>
+              <button class="habit-tab px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-full text-sm whitespace-nowrap" data-category="emotion">情緒因素</button>
+            </div>
+            
+            <!-- 飲食習慣 -->
+            <div class="mb-8">
+              <h4 class="font-medium text-lg mb-4 text-neutral-dark/90 habit-category-title" data-category="diet">飲食習慣</h4>
+              <div class="grid md:grid-cols-2 gap-4">
+                <div class="habit-item" data-category="diet">
+                  <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                    <input type="checkbox" name="habits" value="經常不吃早餐" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+                    <span class="ml-2">經常不吃早餐</span>
+                  </label>
+                </div>
+                
+                <div class="habit-item" data-category="diet">
+                  <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                    <input type="checkbox" name="habits" value="8點後吃晚飯/吃夜宵" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+                    <span class="ml-2">8點後吃晚飯/吃夜宵</span>
+                  </label>
+                </div>
+                
+                <div class="habit-item" data-category="diet">
+                  <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                    <input type="checkbox" name="habits" value="吃飯過飽/過急/過快/過少" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+                    <span class="ml-2">吃飯過飽/過急/過快/過少</span>
+                  </label>
+                </div>
+                
+                <div class="habit-item" data-category="diet">
+                  <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                    <input type="checkbox" name="habits" value="常外面吃飯/點外賣" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+                    <span class="ml-2">常外面吃飯/點外賣</span>
+                  </label>
+                </div>
+                
+                <div class="habit-item" data-category="diet">
+                  <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                    <input type="checkbox" name="habits" value="偏辣/偏咸(口味重)" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+                    <span class="ml-2">偏辣/偏咸(口味重)</span>
+                  </label>
+                </div>
+                
+                <div class="habit-item" data-category="diet">
+                  <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                    <input type="checkbox" name="habits" value="很少吃蔬菜/素食者" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+                    <span class="ml-2">很少吃蔬菜/素食者</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+            
+            <!-- 睡眠習慣 -->
+            <div class="mb-8">
+              <h4 class="font-medium text-lg mb-4 text-neutral-dark/90 habit-category-title" data-category="sleep">睡眠習慣</h4>
+              <div class="grid md:grid-cols-2 gap-4">
+                <div class="habit-item" data-category="sleep">
+                  <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                    <input type="checkbox" name="habits" value="晚過11點睡早9點後起" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+                    <span class="ml-2">晚過11點睡早9點後起</span>
+                  </label>
+                </div>
+                
+                <div class="habit-item" data-category="sleep">
+                  <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                    <input type="checkbox" name="habits" value="經常上夜班(到天亮)" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+                    <span class="ml-2">經常上夜班(到天亮)</span>
+                  </label>
+                </div>
+                
+                <div class="habit-item" data-category="sleep">
+                  <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                    <input type="checkbox" name="habits" value="睡眠不足7-8小時" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+                    <span class="ml-2">睡眠不足7-8小時</span>
+                  </label>
+                </div>
+                
+                <div class="habit-item" data-category="sleep">
+                  <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                    <input type="checkbox" name="habits" value="開空調/開窗睡覺" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+                    <span class="ml-2">開空調/開窗睡覺</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+            
+            <!-- 其他習慣簡要展示 -->
+            <div class="grid md:grid-cols-2 gap-6">
+              <!-- 運動習慣 -->
+              <div>
+                <h4 class="font-medium text-lg mb-4 text-neutral-dark/90 habit-category-title" data-category="exercise">運動習慣</h4>
+                <div class="space-y-4">
+                  <div class="habit-item" data-category="exercise">
+                    <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                      <input type="checkbox" name="habits" value="不運動/少運動/超運動" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+                      <span class="ml-2">不運動/少運動/超運動</span>
+                    </label>
+                  </div>
+                  
+                  <div class="habit-item" data-category="exercise">
+                    <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                      <input type="checkbox" name="habits" value="久站/久坐/久伏案工作" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+                      <span class="ml-2">久站/久坐/久伏案工作</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- 情緒因素 -->
+              <div>
+                <h4 class="font-medium text-lg mb-4 text-neutral-dark/90 habit-category-title" data-category="emotion">情緒因素</h4>
+                <div class="space-y-4">
+                  <div class="habit-item" data-category="emotion">
+                    <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                      <input type="checkbox" name="habits" value="經常生氣/愛發脾氣" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+                      <span class="ml-2">經常生氣/愛發脾氣</span>
+                    </label>
+                  </div>
+                  
+                  <div class="habit-item" data-category="emotion">
+                    <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                      <input type="checkbox" name="habits" value="壓力大/精神緊張" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+                      <span class="ml-2">壓力大/精神緊張</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
           
+          
           <!-- 步骤4: 健康评估 -->
+         <!-- 步驟4: 健康評估 -->
           <div class="form-step hidden" id="step4">
-            <h3 class="text-xl font-semibold mb-6 pb-2 border-b">健康问题评估</h3>
+            <h3 class="text-xl font-semibold mb-6 pb-2 border-b">健康問題評估</h3>
             
-            <!-- 健康评估内容省略 -->
+            <div class="space-y-6 mb-8">
+              <div>
+                <label class="block text-sm font-medium text-neutral-dark/80 mb-2">您目前最想解決的健康問題是？</label>
+                <input type="text" id="mainConcern" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors" placeholder="請描述您最關注的健康問題">
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium text-neutral-dark/80 mb-2">這個症狀已經持續多久了？</label>
+                <select id="symptomDuration" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors">
+                  <option value="">請選擇</option>
+                  <option value="少於1周">少於1周</option>
+                  <option value="1-4周">1-4周</option>
+                  <option value="1-3個月">1-3個月</option>
+                  <option value="3-6個月">3-6個月</option>
+                  <option value="6個月-1年">6個月-1年</option>
+                  <option value="1-3年">1-3年</option>
+                  <option value="3年以上">3年以上</option>
+                </select>
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium text-neutral-dark/80 mb-2">您認為是什麼原因引起的？</label>
+                <textarea id="possibleCauses" rows="2" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors" placeholder="請描述您認為的可能原因"></textarea>
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium text-neutral-dark/80 mb-2">在什麼情況下症狀會加重？</label>
+                <textarea id="aggravatingFactors" rows="2" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors" placeholder="請描述加重症狀的因素"></textarea>
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium text-neutral-dark/80 mb-2">您之前嘗試過哪些治療或調理方法？</label>
+                <textarea id="previousTreatments" rows="2" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors" placeholder="請描述您之前的治療或調理經歷"></textarea>
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium text-neutral-dark/80 mb-2">您是否有藥物或食物過敏史？</label>
+                <div class="flex space-x-4 mb-2">
+                  <label class="inline-flex items-center">
+                    <input type="radio" name="allergyHistory" value="none" class="w-4 h-4 text-primary focus:ring-primary">
+                    <span class="ml-2">無</span>
+                  </label>
+                  <label class="inline-flex items-center">
+                    <input type="radio" name="allergyHistory" value="drug" class="w-4 h-4 text-primary focus:ring-primary">
+                    <span class="ml-2">藥物過敏</span>
+                  </label>
+                  <label class="inline-flex items-center">
+                    <input type="radio" name="allergyHistory" value="food" class="w-4 h-4 text-primary focus:ring-primary">
+                    <span class="ml-2">食物過敏</span>
+                  </label>
+                  <label class="inline-flex items-center">
+                    <input type="radio" name="allergyHistory" value="both" class="w-4 h-4 text-primary focus:ring-primary">
+                    <span class="ml-2">兩者都有</span>
+                  </label>
+                </div>
+                <textarea id="allergyDetails" rows="2" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors" placeholder="如有，請詳細描述"></textarea>
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium text-neutral-dark/80 mb-2">您是否做過手術或有既往病史？</label>
+                <div class="flex space-x-4 mb-2">
+                  <label class="inline-flex items-center">
+                    <input type="radio" name="medicalHistory" value="none" class="w-4 h-4 text-primary focus:ring-primary">
+                    <span class="ml-2">無</span>
+                  </label>
+                  <label class="inline-flex items-center">
+                    <input type="radio" name="medicalHistory" value="surgery" class="w-4 h-4 text-primary focus:ring-primary">
+                    <span class="ml-2">做過手術</span>
+                  </label>
+                  <label class="inline-flex items-center">
+                    <input type="radio" name="medicalHistory" value="disease" class="w-4 h-4 text-primary focus:ring-primary">
+                    <span class="ml-2">有既往病史</span>
+                  </label>
+                  <label class="inline-flex items-center">
+                    <input type="radio" name="medicalHistory" value="both" class="w-4 h-4 text-primary focus:ring-primary">
+                    <span class="ml-2">兩者都有</span>
+                  </label>
+                </div>
+                <textarea id="medicalDetails" rows="2" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors" placeholder="如有，請詳細描述"></textarea>
+              </div>
+            </div>
             
             <div class="bg-primary/5 p-5 rounded-lg">
               <h4 class="font-medium text-primary mb-2">健康宣言</h4>
               <p class="text-sm text-neutral-dark/80 mb-3">
-                我已如实填写以上信息，了解本表仅作为健康参考，不能替代专业医疗诊断。
-                如有严重不适，我会及时咨询医生。
+                我已如實填寫以上信息，瞭解本表僅作為健康參考，不能替代專業醫療診斷。
+                如有嚴重不適，我會及時咨詢醫生。
               </p>
               <label class="inline-flex items-start mt-2">
                 <input type="checkbox" id="healthDeclaration" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
-                <span class="ml-2 text-sm">我已阅读并同意以上内容</span>
+                <span class="ml-2 text-sm">我已閱讀並同意以上內容</span>
               </label>
             </div>
           </div>
