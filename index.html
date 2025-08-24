@@ -1749,12 +1749,10 @@
   </div>
 
  <script>
- document.addEventListener('DOMContentLoaded', function() {
+  document.addEventListener('DOMContentLoaded', function() {
   // 當前步驟
   let currentStep = 1;
   const totalSteps = 4;
-  // 替換為你的Google Apps Script Web應用URL
-  const GOOGLE_SHEET_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwQH5XE3u9vgedphUCOnXpYl9WG4-3ScF29SYoSb3MGLMQX28qBeY3tqt56PiIFsAtw4w/exec"; // 例如：https://script.google.com/macros/s/xxx/exec
 
   // DOM 元素
   const menuToggle = document.getElementById('menuToggle');
@@ -1892,79 +1890,11 @@
     }
   }
 
-  // 收集表單數據並上傳到Google工作表
-  async function uploadToGoogleSheet() {
-    try {
-      // 收集基本信息
-      const name = document.getElementById('name').value || '';
-      const age = document.getElementById('age').value || '';
-      const genderElem = document.querySelector('input[name="gender"]:checked');
-      const gender = genderElem ? (genderElem.value === 'male' ? '男' : '女') : '';
-      const phone = document.getElementById('phone').value || '';
-      const height = document.getElementById('height').value ? `${document.getElementById('height').value} cm` : '';
-      const weight = document.getElementById('weight').value ? `${document.getElementById('weight').value} kg` : '';
-      let bmi = '未計算';
-      if (document.getElementById('height').value && document.getElementById('weight').value) {
-        const h = parseFloat(document.getElementById('height').value) / 100;
-        const w = parseFloat(document.getElementById('weight').value);
-        if (h > 0) {
-          const bmiValue = (w / (h * h)).toFixed(1);
-          bmi = `${bmiValue} (${bmiValue < 18.5 ? '偏瘦' : bmiValue < 24 ? '正常' : bmiValue < 28 ? '超重' : '肥胖'})`;
-        }
-      }
-      const waist = document.getElementById('waist').value ? `${document.getElementById('waist').value} cm` : '';
-      const bloodPressure = document.getElementById('bloodPressure').value || '';
-      const bloodSugar = document.getElementById('bloodSugar').value ? `${document.getElementById('bloodSugar').value} mmol/l` : '';
-      const occupation = document.getElementById('occupation').value || '';
-      
-      // 收集健康評估信息
-      const mainConcern = document.getElementById('mainConcern').value || '';
-      const symptomDuration = document.getElementById('symptomDuration').value || '';
-      const possibleCauses = document.getElementById('possibleCauses').value || '';
-      
-      // 收集選中的症狀和習慣
-      const selectedSymptoms = Array.from(document.querySelectorAll('input[name="symptoms"]:checked')).map(cb => cb.value);
-      const selectedHabits = Array.from(document.querySelectorAll('input[name="habits"]:checked')).map(cb => cb.value);
-      
-      // 收集病史信息
-      const allergyHistory = document.querySelector('input[name="allergyHistory"]:checked')?.value || '';
-      const medicalHistory = document.querySelector('input[name="medicalHistory"]:checked')?.value || '';
-      
-      // 構造數據對象
-      const formData = {
-        name, age, gender, phone, height, weight, bmi, waist,
-        bloodPressure, bloodSugar, occupation, mainConcern,
-        symptomDuration, possibleCauses, selectedSymptoms,
-        selectedHabits, allergyHistory, medicalHistory
-      };
-      
-      // 發送數據到Google Sheets
-      const response = await fetch(GOOGLE_SHEET_WEB_APP_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
-        mode: 'cors'
-      });
-      
-      const result = await response.json();
-      if (!result.success) throw new Error(result.error || '數據上傳失敗');
-      
-      console.log('數據已成功上傳到Google工作表');
-      return true;
-    } catch (error) {
-      console.error('數據上傳失敗:', error);
-      alert('數據保存失敗: ' + error.message + '\n評估結果仍可查看，但數據未同步。');
-      return false;
-    }
-  }
-
   // 提交表單
-  submitBtn.addEventListener('click', async () => {
+  submitBtn.addEventListener('click', () => {
     if (validateStep(4)) {
       // 顯示成功模態框
       successModal.classList.remove('hidden');
-      // 先上傳數據，再生成結果
-      await uploadToGoogleSheet();
       // 模擬加載過程
       setTimeout(() => {
         generateResult();
@@ -2403,9 +2333,10 @@
       '泌尿生殖系統': ['起夜/尿頻/尿急', '尿不淨/尿床', '尿痛/尿血', '尿分叉/尿等待', '濃尿/怪味尿', '尿渾濁/多沫', '尿道口灼燒/發炎', '外陰瘙癢/異味', '小腹悶痛', '睪丸腫塊/疝氣', '肛門瘙癢', '便血/痔瘡', '脫肛/肛裂/肛瘻', '性慾低', '自汗/多汗/盜汗', '冒冷汗/後背涼']
     };
     
-    // 按類別統計選中的症狀數量
+    // 按類別統計選中的症狀數量（核心修改：按分類統計）
     const categoryCountMap = {};
     Object.keys(symptomCategories).forEach(category => {
+      // 統計當前分類下選中的症狀數
       const categorySymptoms = symptomCategories[category];
       const selectedInCategory = selectedSymptoms.filter(symptom => 
         categorySymptoms.includes(symptom)
@@ -2416,13 +2347,13 @@
       }
     });
 
-    // 轉換為數組並按數量排序
+    // 轉換為數組並按數量排序（取前10個分類）
     let categoryList = Object.entries(categoryCountMap)
       .map(([category, count]) => ({ category, count }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 10);
+      .sort((a, b) => b.count - a.count) // 按數量降序
+      .slice(0, 10); // 取前10大分類
 
-    // 根據性別過濾
+    // 根據性別過濾（男性不顯示女性特有分類）
     const isFemale = gender === '女';
     if (!isFemale) {
       categoryList = categoryList.filter(item => item.category !== '女性症狀');
@@ -2431,9 +2362,12 @@
     // 計算每個分類的百分比
     const categoryData = categoryList.map(item => {
       const percentage = totalSymptomCount > 0 
-        ? Math.round((item.count / totalSymptomCount) * 100)
+        ? Math.round((item.count / totalSymptomCount) * 100) // 四捨五入百分比
         : 0;
-      return { ...item, percentage };
+      return {
+        ...item,
+        percentage
+      };
     });
     
     // 獲取選中的習慣
@@ -2529,7 +2463,7 @@
     `;
 
     
-    // 生成健康症狀分類佔比圖
+    // 生成健康症狀分類佔比圖（按分類統計，顯示百分比）
     const ctx = document.getElementById('healthBarChart').getContext('2d');
 
     // 銷毀已存在的圖表
@@ -2548,10 +2482,10 @@
     window.healthChart = new Chart(ctx, {
       type: 'bar',
       data: {
-        labels: categoryData.map(item => item.category),
+        labels: categoryData.map(item => item.category), // x軸：分類名稱
         datasets: [{
           label: '症狀佔比',
-          data: categoryData.map(item => item.percentage),
+          data: categoryData.map(item => item.percentage), // y軸：百分比
           backgroundColor: categoryData.map(item => 
             item.category === '女性症狀' ? 'rgba(233, 30, 99, 0.7)' : 'rgba(22, 93, 255, 0.7)'
           ),
@@ -2562,18 +2496,18 @@
         }]
       },
       options: {
-        indexAxis: 'y',
+        indexAxis: 'y', // 水平條形圖（分類名稱在y軸更易讀）
         scales: {
           x: {
             beginAtZero: true,
-            max: 100,
+            max: 100, // 百分比最大值100
             title: {
               display: true,
               text: '佔比百分比 (%)'
             },
             ticks: {
               callback: function(value) {
-                return value + '%';
+                return value + '%'; // x軸刻度顯示百分比符號
               }
             }
           },
@@ -2612,6 +2546,7 @@
           },
           tooltip: {
             callbacks: {
+              // Tooltip顯示具體數量和百分比
               label: function(context) {
                 const item = categoryData[context.dataIndex];
                 return `數量: ${item.count} 個 (${item.percentage}%)`;
