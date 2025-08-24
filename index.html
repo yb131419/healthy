@@ -285,7 +285,7 @@
     <button class="symptom-tab px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-full text-sm whitespace-nowrap" data-category="endocrine">內分泌與代謝</button>
     <button class="symptom-tab px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-full text-sm whitespace-nowrap" data-category="muscle-joint">肌肉骨骼與關節</button>
     <button class="symptom-tab px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-full text-sm whitespace-nowrap" data-category="skin">皮膚與毛髮</button>
-    <button class="symptom-tab px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-full text-sm whitespace-nowrap" data-category="female">女性健康</button>
+    <button class="symptom-tab px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-full text-sm whitespace-nowrap" data-category="female">女性症狀</button>
     <button class="symptom-tab px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-full text-sm whitespace-nowrap" data-category="urinary">泌尿生殖系統</button>
   </div>
     <!-- 症狀列表 -->
@@ -1655,15 +1655,15 @@
               </div>
             </div>
             
-            <div class="mb-6">
-              <h4 class="font-medium text-lg mb-3 flex items-center">
-                <i class="fa fa-pie-chart text-primary mr-2"></i> 健康風險分布
-              </h4>
-              <div class="h-64">
-                <canvas id="healthRadarChart"></canvas>
-              </div>
-            </div>
-          </div>
+  <div class="mb-6">
+    <h4 class="font-medium text-lg mb-3 flex items-center">
+      <i class="fa fa-bar-chart text-primary mr-2"></i> 健康風險分布
+    </h4>
+    <div class="h-80"> <!-- 增加高度确保图表完整显示 -->
+      <canvas id="healthBarChart"></canvas> <!-- ID修正为healthBarChart -->
+    </div>
+  </div>
+</div>
           
           <div class="mb-8">
             <h3 class="text-xl font-semibold mb-4 pb-2 border-b">主要健康問題</h3>
@@ -1749,7 +1749,6 @@
   </div>
 
  <script>
- // 當頁面加載完成後初始化
 document.addEventListener('DOMContentLoaded', function() {
   // 當前步驟
   let currentStep = 1;
@@ -1767,17 +1766,61 @@ document.addEventListener('DOMContentLoaded', function() {
   const successModal = document.getElementById('successModal');
   const resultSection = document.getElementById('result');
   const healthDeclaration = document.getElementById('healthDeclaration');
+  // 性別相關元素
+  const genderRadios = document.querySelectorAll('input[name="gender"]');
+  const femaleSymptomTab = document.querySelector('.symptom-tab[data-category="female"]');
+  const femaleSymptomItems = document.querySelectorAll('.symptom-item[data-category="female"]');
 
   // 導航菜單切換
   menuToggle.addEventListener('click', () => {
     mobileMenu.classList.toggle('hidden');
   });
 
+  // 監聽性別選擇變化，控制女性症狀標籤顯示
+  genderRadios.forEach(radio => {
+    radio.addEventListener('change', updateGenderBasedUI);
+  });
+
+  // 根據性別更新UI（隱藏/顯示女性相關內容）
+  function updateGenderBasedUI() {
+    const selectedGender = document.querySelector('input[name="gender"]:checked')?.value;
+    
+    // 控制女性症狀分類標籤顯示
+    if (selectedGender === 'male') {
+      // 男性：隱藏女性症狀標籤和內容
+      if (femaleSymptomTab) femaleSymptomTab.style.display = 'none';
+      femaleSymptomItems.forEach(item => {
+        item.style.display = 'none';
+      });
+      
+      // 如果當前選中的是女性症狀標籤，自動切換到全部
+      const activeTab = document.querySelector('.symptom-tab.active');
+      if (activeTab && activeTab.getAttribute('data-category') === 'female') {
+        document.querySelector('.symptom-tab[data-category="all"]').click();
+      }
+    } else {
+      // 女性或未選擇：顯示女性症狀標籤和內容
+      if (femaleSymptomTab) femaleSymptomTab.style.display = 'inline-flex';
+      
+      // 如果當前是全部標籤，顯示女性症狀內容
+      const activeTab = document.querySelector('.symptom-tab.active');
+      if (activeTab && activeTab.getAttribute('data-category') === 'all') {
+        femaleSymptomItems.forEach(item => {
+          item.style.display = 'block';
+        });
+      }
+    }
+  }
+
   // 步驟導航
   prevBtn.addEventListener('click', () => {
     if (currentStep > 1) {
       currentStep--;
       updateFormSteps();
+      // 如果回到第一步，重新檢查性別設置
+      if (currentStep === 1) {
+        updateGenderBasedUI();
+      }
     }
   });
 
@@ -1787,6 +1830,10 @@ document.addEventListener('DOMContentLoaded', function() {
       if (currentStep < totalSteps) {
         currentStep++;
         updateFormSteps();
+        // 如果進入第二步（症狀頁），檢查性別設置
+        if (currentStep === 2) {
+          updateGenderBasedUI();
+        }
       }
     }
   });
@@ -1931,6 +1978,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // 重置步驟
     currentStep = 1;
     updateFormSteps();
+    
+    // 重置性別相關UI
+    updateGenderBasedUI();
     
     // 隱藏結果區域
     resultSection.classList.add('hidden');
@@ -2201,9 +2251,17 @@ document.addEventListener('DOMContentLoaded', function() {
       tab.classList.remove('bg-gray-200', 'hover:bg-gray-300');
       
       const category = tab.getAttribute('data-category');
+      const selectedGender = document.querySelector('input[name="gender"]:checked')?.value;
       
       // 篩選症狀
       document.querySelectorAll('.symptom-item').forEach(item => {
+        // 男性用戶不顯示女性症狀
+        if (selectedGender === 'male' && item.getAttribute('data-category') === 'female') {
+          item.style.display = 'none';
+          return;
+        }
+        
+        // 正常篩選邏輯
         if (category === 'all' || item.getAttribute('data-category') === category) {
           item.style.display = 'block';
         } else {
@@ -2318,7 +2376,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // 獲取選中的症狀並按類別分組
     const symptomElements = document.querySelectorAll('input[name="symptoms"]:checked');
     const selectedSymptoms = Array.from(symptomElements).map(checkbox => checkbox.value);
-    const symptomCount = selectedSymptoms.length;
+    const totalSymptomCount = selectedSymptoms.length; // 總選中症狀數
     
     // 創建症狀分類映射
     const symptomCategories = {
@@ -2334,12 +2392,41 @@ document.addEventListener('DOMContentLoaded', function() {
       '泌尿生殖系統': ['起夜/尿頻/尿急', '尿不淨/尿床', '尿痛/尿血', '尿分叉/尿等待', '濃尿/怪味尿', '尿渾濁/多沫', '尿道口灼燒/發炎', '外陰瘙癢/異味', '小腹悶痛', '睪丸腫塊/疝氣', '肛門瘙癢', '便血/痔瘡', '脫肛/肛裂/肛瘻', '性慾低', '自汗/多汗/盜汗', '冒冷汗/後背涼']
     };
     
-    // 按類別組織選中的症狀
-    const categorizedSymptoms = {};
+    // 按類別統計選中的症狀數量
+    const categoryCountMap = {};
     Object.keys(symptomCategories).forEach(category => {
-      categorizedSymptoms[category] = selectedSymptoms.filter(symptom => 
-        symptomCategories[category].includes(symptom)
-      );
+      // 統計當前分類下選中的症狀數
+      const categorySymptoms = symptomCategories[category];
+      const selectedInCategory = selectedSymptoms.filter(symptom => 
+        categorySymptoms.includes(symptom)
+      ).length;
+      
+      if (selectedInCategory > 0) {
+        categoryCountMap[category] = selectedInCategory;
+      }
+    });
+
+    // 轉換為數組並按數量排序（取前10個分類）
+    let categoryList = Object.entries(categoryCountMap)
+      .map(([category, count]) => ({ category, count }))
+      .sort((a, b) => b.count - a.count) // 按數量降序
+      .slice(0, 10); // 取前10大分類
+
+    // 根據性別過濾（男性不顯示女性特有分類）
+    const isFemale = gender === '女';
+    if (!isFemale) {
+      categoryList = categoryList.filter(item => item.category !== '女性症狀');
+    }
+
+    // 計算每個分類的百分比
+    const categoryData = categoryList.map(item => {
+      const percentage = totalSymptomCount > 0 
+        ? Math.round((item.count / totalSymptomCount) * 100) // 四捨五入百分比
+        : 0;
+      return {
+        ...item,
+        percentage
+      };
     });
     
     // 獲取選中的習慣
@@ -2352,11 +2439,11 @@ document.addEventListener('DOMContentLoaded', function() {
     const possibleCauses = document.getElementById('possibleCauses').value || '未說明';
     
     // 更新結果數據
-    document.getElementById('symptomCount').textContent = `${symptomCount} 項症狀`;
+    document.getElementById('symptomCount').textContent = `${totalSymptomCount} 項症狀`;
     document.getElementById('habitCount').textContent = `${habitCount} 項不良習慣`;
     
     // 設置進度條
-    const symptomPercentage = Math.min(100, (symptomCount / 20) * 100);
+    const symptomPercentage = Math.min(100, (totalSymptomCount / 20) * 100);
     const habitPercentage = Math.min(100, (habitCount / 15) * 100);
     
     document.getElementById('symptomScoreBar').style.width = `${symptomPercentage}%`;
@@ -2367,11 +2454,17 @@ document.addEventListener('DOMContentLoaded', function() {
     let symptomsHtml = '';
     
     // 構建分類症狀HTML
-    Object.keys(categorizedSymptoms).forEach(category => {
-      if (categorizedSymptoms[category].length > 0) {
+    Object.keys(symptomCategories).forEach(category => {
+      // 男性不顯示女性症狀分類
+      if (!isFemale && category === '女性症狀') return;
+      
+      const categorySymptoms = selectedSymptoms.filter(symptom => 
+        symptomCategories[category].includes(symptom)
+      );
+      if (categorySymptoms.length > 0) {
         symptomsHtml += `<div class="mt-2">
           <p class="text-sm font-medium">${category}：</p>
-          <p class="text-sm ml-4">${categorizedSymptoms[category].join('、')}</p>
+          <p class="text-sm ml-4">${categorySymptoms.join('、')}</p>
         </div>`;
       }
     });
@@ -2380,7 +2473,7 @@ document.addEventListener('DOMContentLoaded', function() {
       <p class="mb-3"><strong>主要關注問題：</strong> ${mainConcern}</p>
       <p class="mb-3"><strong>症狀持續時間：</strong> ${symptomDuration}</p>
       <p class="mb-3"><strong>可能原因：</strong> ${possibleCauses}</p>
-      ${symptomCount > 0 ? `<div class="mt-3"><strong>詳細症狀：</strong>${symptomsHtml}</div>` : ''}
+      ${totalSymptomCount > 0 ? `<div class="mt-3"><strong>詳細症狀：</strong>${symptomsHtml}</div>` : ''}
     `;
     
     // 生成改善建議
@@ -2432,74 +2525,58 @@ document.addEventListener('DOMContentLoaded', function() {
     `;
 
     
-    // 生成健康症状長條圖（修正後代碼）
+    // 生成健康症狀分類佔比圖
     const ctx = document.getElementById('healthBarChart').getContext('2d');
-
-    // 從用戶選擇的性別獲取（關鍵修正點1）
-    const isFemale = gender === '女'; 
-
-    // 整理所有症狀並添加性別標識（關鍵修正點2：正確處理字符串症狀）
-    const allSymptoms = [];
-    Object.keys(categorizedSymptoms).forEach(category => {
-      categorizedSymptoms[category].forEach(symptom => {
-        // 判斷是否為女性特有症狀（屬於"女性症狀"分類）
-        const isFemaleOnly = category === '女性症狀';
-        
-        allSymptoms.push({
-          name: symptom, // 直接使用症狀字符串作為名稱
-          count: 1, // 每個症狀選中一次，計數為1
-          category: category,
-          isFemaleOnly: isFemaleOnly
-        });
-      });
-    });
-
-    // 根據性別過濾症狀：男生不顯示女性特有症狀
-    const filteredSymptoms = isFemale 
-      ? allSymptoms 
-      : allSymptoms.filter(symptom => !symptom.isFemaleOnly);
-
-    // 按症狀出現次數排序，取前十名（如果不足10個則顯示全部）
-    const topSymptoms = filteredSymptoms
-      .sort((a, b) => b.count - a.count) // 排序
-      .slice(0, 10); // 取前10名
 
     // 銷毀已存在的圖表
     if (window.healthChart) {
       window.healthChart.destroy();
     }
 
-    // 創建新的長條圖
+    // 處理無數據情況
+    if (categoryData.length === 0) {
+      const chartContainer = document.getElementById('healthBarChart').parentNode;
+      chartContainer.innerHTML = '<p class="text-center text-gray-500 py-10">未選擇任何症狀，無法生成圖表</p>';
+      return;
+    }
+
+    // 創建新的分類佔比圖
     window.healthChart = new Chart(ctx, {
       type: 'bar',
       data: {
-        labels: topSymptoms.map(s => s.name),
+        labels: categoryData.map(item => item.category), // x軸：分類名稱
         datasets: [{
-          label: '症狀出現次數',
-          data: topSymptoms.map(s => s.count),
-          backgroundColor: topSymptoms.map(s => 
-            s.isFemaleOnly ? 'rgba(233, 30, 99, 0.7)' : 'rgba(22, 93, 255, 0.7)'
+          label: '症狀佔比',
+          data: categoryData.map(item => item.percentage), // y軸：百分比
+          backgroundColor: categoryData.map(item => 
+            item.category === '女性症狀' ? 'rgba(233, 30, 99, 0.7)' : 'rgba(22, 93, 255, 0.7)'
           ),
-          borderColor: topSymptoms.map(s => 
-            s.isFemaleOnly ? 'rgba(233, 30, 99, 1)' : 'rgba(22, 93, 255, 1)'
+          borderColor: categoryData.map(item => 
+            item.category === '女性症狀' ? 'rgba(233, 30, 99, 1)' : 'rgba(22, 93, 255, 1)'
           ),
           borderWidth: 1
         }]
       },
       options: {
-        indexAxis: 'y', // 水平長條圖，症狀名稱在y軸
+        indexAxis: 'y', // 水平條形圖
         scales: {
           x: {
             beginAtZero: true,
+            max: 100, // 百分比最大值100
             title: {
               display: true,
-              text: '出現次數'
+              text: '佔比百分比 (%)'
+            },
+            ticks: {
+              callback: function(value) {
+                return value + '%'; // x軸刻度顯示百分比符號
+              }
             }
           },
           y: {
             title: {
               display: true,
-              text: '症狀名稱'
+              text: '症狀分類'
             }
           }
         },
@@ -2508,10 +2585,9 @@ document.addEventListener('DOMContentLoaded', function() {
             display: true,
             labels: {
               generateLabels: function(chart) {
-                // 自定義圖例，顯示女性特有症狀的標識
                 return [
                   {
-                    text: '一般症狀',
+                    text: '一般症狀分類',
                     fillStyle: 'rgba(22, 93, 255, 0.7)',
                     strokeStyle: 'rgba(22, 93, 255, 1)',
                     lineWidth: 1,
@@ -2519,7 +2595,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     index: 0
                   },
                   ...(isFemale ? [{
-                    text: '女性特有症狀',
+                    text: '女性特有症狀分類',
                     fillStyle: 'rgba(233, 30, 99, 0.7)',
                     strokeStyle: 'rgba(233, 30, 99, 1)',
                     lineWidth: 1,
@@ -2530,9 +2606,17 @@ document.addEventListener('DOMContentLoaded', function() {
               }
             }
           },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                const item = categoryData[context.dataIndex];
+                return `數量: ${item.count} 個 (${item.percentage}%)`;
+              }
+            }
+          },
           title: {
             display: true,
-            text: `十大健康症狀${isFemale ? '（含女性特有症狀）' : ''}`,
+            text: `十大症狀分類佔比${isFemale ? '（含女性特有分類）' : ''}`,
             font: {
               size: 16
             }
@@ -2544,7 +2628,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // 初始化頁面
   updateFormSteps();
+  // 初始檢查性別UI
+  updateGenderBasedUI();
 });
+
 </script>
     
 </body>
