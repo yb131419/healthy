@@ -2449,41 +2449,81 @@ const symptomCategories = {
       window.healthChart.destroy();
     }
     
-    // 創建新圖表
-    window.healthChart = new Chart(ctx, {
-      type: 'radar',
-      data: {
-        labels: ['頭部', '眼耳鼻喉', '消化系統', '肌肉骨骼', '皮膚'],
-        datasets: [{
-          label: '症狀風險',
-          data: [
-            (headSymptoms / 6) * 100,
-            (entSymptoms / 4) * 100,
-            (digestiveSymptoms / 2) * 100,
-            (musculoskeletalSymptoms / 2) * 100,
-            (skinSymptoms / 2) * 100
-          ],
-          backgroundColor: 'rgba(22, 93, 255, 0.2)',
-          borderColor: 'rgba(22, 93, 255, 1)',
-          pointBackgroundColor: 'rgba(22, 93, 255, 1)',
-          pointBorderColor: '#fff',
-          pointHoverBackgroundColor: '#fff',
-          pointHoverBorderColor: 'rgba(22, 93, 255, 1)'
-        }]
+// 創建新圖表 - 改為長條形圖展示所有十大症狀
+window.healthChart = new Chart(ctx, {
+  type: 'bar',
+  data: {
+    labels: [
+      '頭部症狀', 
+      '眼耳鼻喉', 
+      '呼吸系統', 
+      '循環系統', 
+      '消化系統', 
+      '內分泌與代謝', 
+      '肌肉骨骼與關節', 
+      '皮膚與毛髮', 
+      '女性健康', 
+      '泌尿生殖系統'
+    ],
+    datasets: [{
+      label: '症狀風險指標',
+      data: [
+        (headSymptoms / 12) * 100,          // 頭部症狀共12項
+        (entSymptoms / 20) * 100,           // 眼耳鼻喉共20項
+        (respiratorySymptoms / 8) * 100,    // 呼吸系統共8項
+        (circulatorySymptoms / 11) * 100,   // 循環系統共11項
+        (digestiveSymptoms / 19) * 100,     // 消化系統共19項
+        (endocrineSymptoms / 19) * 100,     // 內分泌與代謝共19項
+        (musculoskeletalSymptoms / 15) * 100,// 肌肉骨骼與關節共15項
+        (skinSymptoms / 18) * 100,          // 皮膚與毛髮共18項
+        (femaleHealthSymptoms / 25) * 100,  // 女性健康共25項
+        (urogenitalSymptoms / 16) * 100     // 泌尿生殖系統共16項
+      ],
+      backgroundColor: 'rgba(22, 93, 255, 0.7)',
+      borderColor: 'rgba(22, 93, 255, 1)',
+      borderWidth: 1,
+      borderRadius: 6
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    scales: {
+      y: {
+        beginAtZero: true,
+        max: 100,
+        title: {
+          display: true,
+          text: '風險百分比 (%)'
+        },
+        ticks: {
+          callback: function(value) {
+            return value + '%';
+          }
+        }
       },
-      options: {
-        scales: {
-          r: {
-            angleLines: {
-              display: true
-            },
-            suggestedMin: 0,
-            suggestedMax: 100
+      x: {
+        title: {
+          display: true,
+          text: '症狀分類'
+        }
+      }
+    },
+    plugins: {
+      legend: {
+        position: 'top',
+      },
+      tooltip: {
+        callbacks: {
+          label: function(context) {
+            return `風險: ${context.raw.toFixed(1)}%`;
           }
         }
       }
-    });
+    }
   }
+});
+
 
   // 初始化頁面
   updateFormSteps();
