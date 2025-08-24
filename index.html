@@ -285,7 +285,7 @@
     <button class="symptom-tab px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-full text-sm whitespace-nowrap" data-category="endocrine">內分泌與代謝</button>
     <button class="symptom-tab px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-full text-sm whitespace-nowrap" data-category="muscle-joint">肌肉骨骼與關節</button>
     <button class="symptom-tab px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-full text-sm whitespace-nowrap" data-category="skin">皮膚與毛髮</button>
-    <button class="symptom-tab px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-full text-sm whitespace-nowrap" data-category="female">女性健康</button>
+    <button class="symptom-tab px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-full text-sm whitespace-nowrap" data-category="female">女性症狀</button>
     <button class="symptom-tab px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-full text-sm whitespace-nowrap" data-category="urinary">泌尿生殖系統</button>
   </div>
     <!-- 症狀列表 -->
@@ -927,52 +927,366 @@
         <span class="ml-2">腳後跟疼</span>
       </label>
     </div>
+    <!-- 皮膚與毛髮 -->
+    <div class="symptom-item" data-category="skin">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="頭髮稀少" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">頭髮稀少</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="skin">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="頭髮乾/脫發" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">頭髮乾/脫發</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="skin">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="白髮/斑禿" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">白髮/斑禿</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="skin">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="頭/面油膩" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">頭/面油膩</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="skin">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="面頰泛紅" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">面頰泛紅</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="skin">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="面黃/白/黑" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">面黃/白/黑</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="skin">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="痤瘡/痘/斑" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">痤瘡/痘/斑</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="skin">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="皮膚易青/紅點" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">皮膚易青/紅點</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="skin">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="皮膚癢/後背痘" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">皮膚癢/後背痘</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="skin">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="皮膚乾燥/皮炎" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">皮膚乾燥/皮炎</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="skin">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="牛皮癬/白癜風" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">牛皮癬/白癜風</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="skin">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="黑痣變大/多" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">黑痣變大/多</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="skin">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="蜘蛛痣/魚鱗病" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">蜘蛛痣/魚鱗病</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="skin">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="各種過敏/濕疹" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">各種過敏/濕疹</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="skin">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="產後脫發/抑鬱" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">產後脫發/抑鬱</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="skin">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="產後色斑" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">產後色斑</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="skin">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="脂肪粒" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">脂肪粒</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="skin">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="身體異味" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">身體異味</span>
+      </label>
+    </div>
     
+    <!-- 女性症狀 -->
+    <div class="symptom-item" data-category="female">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="不孕不育" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">不孕不育</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="female">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="流產/死胎" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">流產/死胎</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="female">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="月經少/有塊" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">月經少/有塊</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="female">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="經量多/子宮肌瘤" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">經量多/子宮肌瘤</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="female">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="經期提前/推後" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">經期提前/推後</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="female">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="經期煩躁/胸脹" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">經期煩躁/胸脹</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="female">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="經期厭食/浮腫" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">經期厭食/浮腫</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="female">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="經期腰痛/頭痛" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">經期腰痛/頭痛</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="female">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="經期困倦/失眠" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">經期困倦/失眠</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="female">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="經期腹脹/痛經" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">經期腹脹/痛經</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="female">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="子宮腺肌症" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">子宮腺肌症</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="female">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="經期小腹怕涼" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">經期小腹怕涼</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="female">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="經期小腹下墜" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">經期小腹下墜</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="female">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="月經暗/淡/黑" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">月經暗/淡/黑</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="female">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="經期長痘" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">經期長痘</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="female">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="經期時間長" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">經期時間長</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="female">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="絕經" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">絕經</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="female">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="乳頭凹陷/流膿" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">乳頭凹陷/流膿</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="female">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="乳房腫塊/增生" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">乳房腫塊/增生</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="female">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="卵巢囊腫" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">卵巢囊腫</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="female">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="宮頸息肉" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">宮頸息肉</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="female">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="宮頸肥大/囊腫" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">宮頸肥大/囊腫</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="female">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="白帶多/血絲" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">白帶多/血絲</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="female">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="白帶色黃/粘稠" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">白帶色黃/粘稠</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="female">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="白帶稀水/腥臭" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">白帶稀水/腥臭</span>
+      </label>
+    </div>
     
-              <!-- 皮膚問題 -->
-              <div class="symptom-item" data-category="skin">
-                <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
-                  <input type="checkbox" name="symptoms" value="身體異味" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
-                  <span class="ml-2">身體異味</span>
-                </label>
-              </div>
-              
-              <div class="symptom-item" data-category="skin">
-                <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
-                  <input type="checkbox" name="symptoms" value="皮膚易青/紅點" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
-                  <span class="ml-2">皮膚易青/紅點</span>
-                </label>
-              </div>
-              
-              <!-- 女性健康 -->
-              <div class="symptom-item" data-category="female">
-                <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
-                  <input type="checkbox" name="symptoms" value="乳頭凹陷/流膿" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
-                  <span class="ml-2">乳頭凹陷/流膿</span>
-                </label>
-              </div>
-              
-              <div class="symptom-item" data-category="female">
-                <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
-                  <input type="checkbox" name="symptoms" value="乳房腫塊/增生" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
-                  <span class="ml-2">乳房腫塊/增生</span>
-                </label>
-              </div>
-              
-              <div class="symptom-item" data-category="female">
-                <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
-                  <input type="checkbox" name="symptoms" value="月經少/有塊" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
-                  <span class="ml-2">月經少/有塊</span>
-                </label>
-              </div>
-              
-              <div class="symptom-item" data-category="female">
-                <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
-                  <input type="checkbox" name="symptoms" value="經期提前/推後" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
-                  <span class="ml-2">經期提前/推後</span>
-                </label>
-              </div>
-            </div>
+    <!-- 泌尿生殖系統 -->
+    <div class="symptom-item" data-category="urinary">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="起夜/尿頻/尿急" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">起夜/尿頻/尿急</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="urinary">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="尿不淨/尿床" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">尿不淨/尿床</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="urinary">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="尿痛/尿血" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">尿痛/尿血</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="urinary">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="尿分叉/尿等待" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">尿分叉/尿等待</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="urinary">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="濃尿/怪味尿" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">濃尿/怪味尿</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="urinary">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="尿渾濁/多沫" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">尿渾濁/多沫</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="urinary">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="尿道口灼燒/發炎" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">尿道口灼燒/發炎</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="urinary">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="外陰瘙癢/異味" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">外陰瘙癢/異味</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="urinary">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="小腹悶痛" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">小腹悶痛</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="urinary">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="睪丸腫塊/疝氣" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">睪丸腫塊/疝氣</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="urinary">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="肛門瘙癢" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">肛門瘙癢</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="urinary">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="便血/痔瘡" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">便血/痔瘡</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="urinary">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="脫肛/肛裂/肛瘻" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">脫肛/肛裂/肛瘻</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="urinary">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="性慾低" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">性慾低</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="urinary">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="自汗/多汗/盜汗" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">自汗/多汗/盜汗</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="urinary">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="冒冷汗/後背涼" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">冒冷汗/後背涼</span>
+      </label>
+    </div>
+    
             
             <div class="mt-6">
               <label for="otherSymptoms" class="block text-sm font-medium text-neutral-dark/80 mb-1">其他症狀或病史</label>
