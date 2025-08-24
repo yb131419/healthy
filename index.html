@@ -2433,149 +2433,58 @@ const symptomCategories = {
         </ul>
       </div>
     `;
-    // 确保在DOM完全加载后执行图表初始化
-document.addEventListener('DOMContentLoaded', function() {
-  // 1. 定义用户性别（实际应用中可从表单/用户信息获取）
-  // 可选值: 'female' 或 'male'
-  const userGender = 'female'; // 这里可根据实际情况修改或动态获取
 
-  // 2. 基础配置 - 公共类别（男女都显示）
-  const baseLabels = [
-    '頭部症狀', '眼耳鼻喉', '呼吸系統', '循環系統', 
-    '消化系統', '內分泌與代謝', '肌肉骨骼與關節', 
-    '皮膚與毛髮', '泌尿生殖系統'
-  ];
-  
-  const baseDataCalculators = [
-    () => (window.headSymptoms / 12) * 100 || 0,
-    () => (window.entSymptoms / 20) * 100 || 0,
-    () => (window.respiratorySymptoms / 8) * 100 || 0,
-    () => (window.circulatorySymptoms / 11) * 100 || 0,
-    () => (window.digestiveSymptoms / 19) * 100 || 0,
-    () => (window.endocrineSymptoms / 19) * 100 || 0,
-    () => (window.musculoskeletalSymptoms / 15) * 100 || 0,
-    () => (window.skinSymptoms / 18) * 100 || 0,
-    () => (window.urogenitalSymptoms / 16) * 100 || 0
-  ];
-
-  // 3. 根据性别添加女性专属类别
-  let chartLabels = [...baseLabels];
-  let chartDataCalculators = [...baseDataCalculators];
-  
-  if (userGender === 'female') {
-    // 女性添加"女性健康"类别（插入到泌尿生殖系統前面）
-    chartLabels.splice(8, 0, '女性健康');
-    chartDataCalculators.splice(8, 0, 
-      () => (window.femaleHealthSymptoms / 25) * 100 || 0
-    );
-  }
-
-  // 4. 检查基础元素和依赖
-  const canvas = document.getElementById('healthChartCanvas');
-  if (!canvas) {
-    console.error('❌ 未找到Canvas元素，请检查HTML中是否有id为"healthChartCanvas"的canvas标签');
-    return;
-  }
-
-  if (typeof Chart === 'undefined') {
-    console.error('❌ Chart.js未加载，请确认已引入Chart.js库');
-    return;
-  }
-
-  // 5. 初始化症状变量（避免未定义错误）
-  const symptomVars = {
-    headSymptoms: 0,
-    entSymptoms: 0,
-    respiratorySymptoms: 0,
-    circulatorySymptoms: 0,
-    digestiveSymptoms: 0,
-    endocrineSymptoms: 0,
-    musculoskeletalSymptoms: 0,
-    skinSymptoms: 0,
-    femaleHealthSymptoms: 0,
-    urogenitalSymptoms: 0
-  };
-
-  Object.keys(symptomVars).forEach(key => {
-    if (typeof window[key] !== 'number') {
-      console.warn(`⚠️ 变量${key}未定义，已默认设为0`);
-      window[key] = 0;
+    
+  // 生成健康風險雷達圖
+    const ctx = document.getElementById('healthRadarChart').getContext('2d');
+    
+    // 計算各維度風險值
+    const headSymptoms = categorizedSymptoms['頭部'] ? categorizedSymptoms['頭部'].length : 0;
+    const entSymptoms = categorizedSymptoms['眼耳鼻喉'] ? categorizedSymptoms['眼耳鼻喉'].length : 0;
+    const digestiveSymptoms = categorizedSymptoms['消化系統'] ? categorizedSymptoms['消化系統'].length : 0;
+    const musculoskeletalSymptoms = categorizedSymptoms['肌肉骨骼'] ? categorizedSymptoms['肌肉骨骼'].length : 0;
+    const skinSymptoms = categorizedSymptoms['皮膚'] ? categorizedSymptoms['皮膚'].length : 0;
+    
+    // 銷毀已存在的圖表
+    if (window.healthChart) {
+      window.healthChart.destroy();
     }
-  });
-
-  // 6. 销毁旧图表避免冲突
-  if (window.healthChart) {
-    window.healthChart.destroy();
-  }
-
-  // 7. 生成最终图表数据
-  const chartData = chartDataCalculators.map(calc => calc());
-
-  // 8. 创建条形图
-  const ctx = canvas.getContext('2d');
-  window.healthChart = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: chartLabels,
-      datasets: [{
-        label: '症狀風險指標',
-        data: chartData,
-        backgroundColor: 'rgba(22, 93, 255, 0.7)',
-        borderColor: 'rgba(22, 93, 255, 1)',
-        borderWidth: 1,
-        borderRadius: 6
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: {
-          position: 'top',
-          labels: { font: { family: 'system-ui, sans-serif' } }
-        },
-        tooltip: {
-          callbacks: {
-            label: c => `風險: ${(c.raw || 0).toFixed(1)}%`
-          }
-        },
-        title: {
-          display: true,
-          text: `十大症狀風險分布 (${userGender === 'female' ? '女性' : '男性'})`,
-          font: { size: 16, family: 'system-ui, sans-serif' }
-        }
+    
+    // 創建新圖表
+    window.healthChart = new Chart(ctx, {
+      type: 'radar',
+      data: {
+        labels: ['頭部', '眼耳鼻喉', '消化系統', '肌肉骨骼', '皮膚'],
+        datasets: [{
+          label: '症狀風險',
+          data: [
+            (headSymptoms / 6) * 100,
+            (entSymptoms / 4) * 100,
+            (digestiveSymptoms / 2) * 100,
+            (musculoskeletalSymptoms / 2) * 100,
+            (skinSymptoms / 2) * 100
+          ],
+          backgroundColor: 'rgba(22, 93, 255, 0.2)',
+          borderColor: 'rgba(22, 93, 255, 1)',
+          pointBackgroundColor: 'rgba(22, 93, 255, 1)',
+          pointBorderColor: '#fff',
+          pointHoverBackgroundColor: '#fff',
+          pointHoverBorderColor: 'rgba(22, 93, 255, 1)'
+        }]
       },
-      scales: {
-        y: {
-          beginAtZero: true,
-          max: 100,
-          title: {
-            display: true,
-            text: '風險百分比 (%)',
-            font: { family: 'system-ui, sans-serif' }
-          },
-          ticks: {
-            callback: v => v + '%',
-            font: { family: 'system-ui, sans-serif' }
-          }
-        },
-        x: {
-          title: {
-            display: true,
-            text: '症狀分類',
-            font: { family: 'system-ui, sans-serif' }
-          },
-          ticks: {
-            font: { family: 'system-ui, sans-serif' },
-            maxRotation: 45,
-            minRotation: 45
+      options: {
+        scales: {
+          r: {
+            angleLines: {
+              display: true
+            },
+            suggestedMin: 0,
+            suggestedMax: 100
           }
         }
-      },
-      animation: { duration: 1000 }
-    }
-  });
-});
+      }
+    });
+  }
 
 
   // 初始化頁面
