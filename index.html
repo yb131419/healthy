@@ -1750,8 +1750,7 @@
     </div>
   </div>
 
- <script>
-
+<script>
 document.addEventListener('DOMContentLoaded', function() {
   // 當前步驟
   let currentStep = 1;
@@ -1961,59 +1960,58 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 
   // 提交數據到Google Sheets
-  // 使用JSONP提交數據到Google Sheets
-function submitToGoogleSheets() {
-  return new Promise((resolve, reject) => {
-    try {
-      // 1. 收集表單數據
-      const formData = collectFormData();
-      
-      // 2. 转换数据为URL参数（JSONP仅支持GET，需序列化数据）
-      const params = new URLSearchParams();
-      params.append('data', JSON.stringify(formData));
-      // 生成唯一回调函数名（避免缓存）
-      const callbackName = `jsonpCallback_${Date.now()}`;
-      params.append('callback', callbackName);
-      
-      // 3. 替换为你的Google Apps Script Web應用URL
-      const googleSheetUrl = 'https://script.google.com/macros/s/AKfycbwQH5XE3u9vgedphUCOnXpYl9WG4-3ScF29SYoSb3MGLMQX28qBeY3tqt56PiIFsAtw4w/exec';
-      const fullUrl = `${googleSheetUrl}?${params.toString()}`;
-      
-      // 4. 创建JSONP脚本标签
-      const script = document.createElement('script');
-      script.src = fullUrl;
-      script.type = 'text/javascript';
-      script.async = true;
-      
-      // 5. 定义回调函数
-      window[callbackName] = function(response) {
-        // 清理回调和脚本标签
-        delete window[callbackName];
-        document.body.removeChild(script);
+  function submitToGoogleSheets() {
+    return new Promise((resolve, reject) => {
+      try {
+        // 1. 收集表單數據
+        const formData = collectFormData();
         
-        if (response.status === 'success') {
-          resolve(true);
-        } else {
-          reject(new Error(response.message || '提交失败'));
-        }
-      };
-      
-      // 6. 错误处理
-      script.onerror = function() {
-        delete window[callbackName];
-        document.body.removeChild(script);
-        reject(new Error('网络错误，提交失败'));
-      };
-      
-      // 7. 添加脚本到页面
-      document.body.appendChild(script);
-      
-    } catch (error) {
-      console.error('JSONP提交錯誤:', error);
-      reject(error);
-    }
-  });
-}
+        // 2. 轉換數據為URL參數（JSONP僅支持GET，需序列化數據）
+        const params = new URLSearchParams();
+        params.append('data', JSON.stringify(formData));
+        // 生成唯一回調函數名（避免緩存）
+        const callbackName = `jsonpCallback_${Date.now()}`;
+        params.append('callback', callbackName);
+        
+        // 3. 替換為你的Google Apps Script Web應用URL
+        const googleSheetUrl = 'https://script.google.com/macros/s/AKfycbwQH5XE3u9vgedphUCOnXpYl9WG4-3ScF29SYoSb3MGLMQX28qBeY3tqt56PiIFsAtw4w/exec';
+        const fullUrl = `${googleSheetUrl}?${params.toString()}`;
+        
+        // 4. 創建JSONP腳本標籤
+        const script = document.createElement('script');
+        script.src = fullUrl;
+        script.type = 'text/javascript';
+        script.async = true;
+        
+        // 5. 定義回調函數
+        window[callbackName] = function(response) {
+          // 清理回調和腳本標籤
+          delete window[callbackName];
+          document.body.removeChild(script);
+          
+          if (response.status === 'success') {
+            resolve(true);
+          } else {
+            reject(new Error(response.message || '提交失敗'));
+          }
+        };
+        
+        // 6. 錯誤處理
+        script.onerror = function() {
+          delete window[callbackName];
+          document.body.removeChild(script);
+          reject(new Error('網絡錯誤，提交失敗'));
+        };
+        
+        // 7. 添加腳本到頁面
+        document.body.appendChild(script);
+        
+      } catch (error) {
+        console.error('JSONP提交錯誤:', error);
+        reject(error);
+      }
+    });
+  }
 
   // 收集表單數據
   function collectFormData() {
@@ -2626,125 +2624,120 @@ function submitToGoogleSheets() {
       ${totalSymptomCount > 0 ? `<div class="mt-3"><strong>詳細症狀：</strong>${symptomsHtml}</div>` : ''}
     `;
     
+    // 生成健康建議內容（修復：移除嵌套的DOMContentLoaded監聽，直接執行）
+    const recommendationsContainer = document.getElementById('healthRecommendations');
+    if (recommendationsContainer) {
+      recommendationsContainer.innerHTML = '';
 
+      // 氣血不足調理建議
+      recommendationsContainer.innerHTML += `
+        <div class="bg-neutral p-4 rounded-lg mb-3">
+          <h4 class="font-medium text-primary mb-2">一、氣血不足調理：順時蓄養“生命能量”</h4>
+          <p class="text-sm text-neutral-dark/80">對應症狀：記憶力下降、思維斷電、頭髮稀少等（自檢表中氣血相關症狀）</p>
+          <p class="text-sm text-neutral-dark/80 italic">《黃帝內經》言“人以氣血為本，氣血隨時辰消長”</p>
+          <ul class="mt-2 text-sm text-neutral-dark/80 space-y-2 list-disc pl-5">
+            <li><strong>辰時（7:00-9:00，胃經當令）</strong>：保持環境安靜，避免邊用餐邊處理事務。餐後留5分鐘靜息，不立即投入忙碌，提升氣血轉化效率。</li>
+            <li><strong>巳時（9:00-11:00，脾經當令）</strong>：每小時暫停工作，閉眼靜息30秒。減少過度勞累導致的氣血瘀滯，促進氣血在全身順暢流轉。</li>
+            <li><strong>丑時前（23:00前，肝經當令預備期）</strong>：營造昏暗、安靜的休息環境，減少電子屏幕使用。提前進入休息狀態以減少氣血消耗，避免熬夜致氣血虧虛。</li>
+          </ul>
+        </div>
+      `;
 
-// 確保DOM元素加載完成後執行
-document.addEventListener('DOMContentLoaded', function() {
-  const recommendationsContainer = document.getElementById('healthRecommendations');
-  if (!recommendationsContainer) {
-    console.error('未找到ID為"healthRecommendations"的容器元素');
-    return;
-  }
-  recommendationsContainer.innerHTML = '';
+      // 微循環不通改善建議
+      recommendationsContainer.innerHTML += `
+        <div class="bg-neutral p-4 rounded-lg mb-3">
+          <h4 class="font-medium text-primary mb-2">二、微循環不通改善：按時疏通“氣血通道”</h4>
+          <p class="text-sm text-neutral-dark/80">對應症狀：頭暈、頭麻、手足麻木等（自檢表中循環相關症狀）</p>
+          <p class="text-sm text-neutral-dark/80 italic">《黃帝內經》曰“經脈者，所以行血氣而營陰陽”</p>
+          <ul class="mt-2 text-sm text-neutral-dark/80 space-y-2 list-disc pl-5">
+            <li><strong>午時（11:00-13:00，心經當令）</strong>：找安靜處靜坐，不思考複雜問題、不看電子設備。減少身心負擔，讓血液充分流向頭部緩解不適。</li>
+            <li><strong>戌時（19:00-21:00，心包經當令）</strong>：保持身體自然舒展，避免彎腰駝背或久坐狹小空間。減少氣血阻滯，降低手腳發麻概率。</li>
+            <li><strong>酉時（17:00-19:00，腎經當令）</strong>：到通風處停留10分鐘，避免長期處於密閉空調環境。借新鮮空氣促進經脈通暢，改善末梢循環不暢。</li>
+          </ul>
+        </div>
+      `;
 
-  // 氣血不足調理建議
-  recommendationsContainer.innerHTML += `
-    <div class="bg-neutral p-4 rounded-lg mb-3">
-      <h4 class="font-medium text-primary mb-2">一、氣血不足調理：順時蓄養“生命能量”</h4>
-      <p class="text-sm text-neutral-dark/80">對應症狀：記憶力下降、思維斷電、頭髮稀少等（自檢表中氣血相關症狀）</p>
-      <p class="text-sm text-neutral-dark/80 italic">《黃帝內經》言“人以氣血為本，氣血隨時辰消長”</p>
-      <ul class="mt-2 text-sm text-neutral-dark/80 space-y-2 list-disc pl-5">
-        <li><strong>辰時（7:00-9:00，胃經當令）</strong>：保持環境安靜，避免邊用餐邊處理事務。餐後留5分鐘靜息，不立即投入忙碌，提升氣血轉化效率。</li>
-        <li><strong>巳時（9:00-11:00，脾經當令）</strong>：每小時暫停工作，閉眼靜息30秒。減少過度勞累導致的氣血瘀滯，促進氣血在全身順暢流轉。</li>
-        <li><strong>丑時前（23:00前，肝經當令預備期）</strong>：營造昏暗、安靜的休息環境，減少電子屏幕使用。提前進入休息狀態以減少氣血消耗，避免熬夜致氣血虧虛。</li>
-      </ul>
-    </div>
-  `;
+      // 毒素排毒調理建議
+      recommendationsContainer.innerHTML += `
+        <div class="bg-neutral p-4 rounded-lg mb-3">
+          <h4 class="font-medium text-primary mb-2">三、毒素排毒調理：順時暢通“排濁通道”</h4>
+          <p class="text-sm text-neutral-dark/80">對應症狀：頭面油膩、眼屎多、耳屎多等（自檢表中毒素相關症狀）</p>
+          <p class="text-sm text-neutral-dark/80 italic">《黃帝內經》強調“濁邪出下竅，清陽實四肢”</p>
+          <ul class="mt-2 text-sm text-neutral-dark/80 space-y-2 list-disc pl-5">
+            <li><strong>卯時（5:00-7:00，大腸經當令）</strong>：營造輕鬆排便環境，不匆忙、不憋便。借大腸經排毒時段促進毒素隨糞便排出，減少堆積。</li>
+            <li><strong>申時（15:00-17:00，膀胱經當令）</strong>：保持環境通透，避免憋尿。助力膀胱經水液代謝功能，減少毒素在體內停留時間。</li>
+            <li><strong>戌時（19:00-21:00，三焦經當令）</strong>：減少接觸油煙、粉塵環境，保持呼吸順暢。減少外源性毒素侵入，助力內毒素代謝。</li>
+          </ul>
+        </div>
+      `;
 
-  // 微循環不通改善建議
-  recommendationsContainer.innerHTML += `
-    <div class="bg-neutral p-4 rounded-lg mb-3">
-      <h4 class="font-medium text-primary mb-2">二、微循環不通改善：按時疏通“氣血通道”</h4>
-      <p class="text-sm text-neutral-dark/80">對應症狀：頭暈、頭麻、手足麻木等（自檢表中循環相關症狀）</p>
-      <p class="text-sm text-neutral-dark/80 italic">《黃帝內經》曰“經脈者，所以行血氣而營陰陽”</p>
-      <ul class="mt-2 text-sm text-neutral-dark/80 space-y-2 list-disc pl-5">
-        <li><strong>午時（11:00-13:00，心經當令）</strong>：找安靜處靜坐，不思考複雜問題、不看電子設備。減少身心負擔，讓血液充分流向頭部緩解不適。</li>
-        <li><strong>戌時（19:00-21:00，心包經當令）</strong>：保持身體自然舒展，避免彎腰駝背或久坐狹小空間。減少氣血阻滯，降低手腳發麻概率。</li>
-        <li><strong>酉時（17:00-19:00，腎經當令）</strong>：到通風處停留10分鐘，避免長期處於密閉空調環境。借新鮮空氣促進經脈通暢，改善末梢循環不暢。</li>
-      </ul>
-    </div>
-  `;
+      // 血脂黏稠調理建議
+      recommendationsContainer.innerHTML += `
+        <div class="bg-neutral p-4 rounded-lg mb-3">
+          <h4 class="font-medium text-primary mb-2">四、血脂黏稠調理：順時清通“經脈瘀濁”</h4>
+          <p class="text-sm text-neutral-dark/80">對應症狀：頭面油膩、痤瘡、脂肪瘤等（自檢表中血脂相關症狀）</p>
+          <p class="text-sm text-neutral-dark/80 italic">《黃帝內經》曰“經脈流通，何病之有”</p>
+          <ul class="mt-2 text-sm text-neutral-dark/80 space-y-2 list-disc pl-5">
+            <li><strong>卯時（5:00-7:00，大腸經當令）</strong>：晨起慢飲溫開水，喚醒身體代謝功能。溫和啓動排毒機制，稀釋血液雜質。</li>
+            <li><strong>申時（15:00-17:00，膀胱經當令）</strong>：開窗通風，保持環境空氣清新，遠離油煙、悶熱環境。借膀胱經排濁功能減少油脂沈積。</li>
+            <li><strong>戌時（19:00-21:00，晚餐後1小時）</strong>：保持坐姿放鬆，不立即躺臥或劇烈活動。讓身體專注代謝清理，減少經脈濁物堆積。</li>
+          </ul>
+        </div>
+      `;
 
-  // 毒素排毒調理建議
-  recommendationsContainer.innerHTML += `
-    <div class="bg-neutral p-4 rounded-lg mb-3">
-      <h4 class="font-medium text-primary mb-2">三、毒素排毒調理：順時暢通“排濁通道”</h4>
-      <p class="text-sm text-neutral-dark/80">對應症狀：頭面油膩、眼屎多、耳屎多等（自檢表中毒素相關症狀）</p>
-      <p class="text-sm text-neutral-dark/80 italic">《黃帝內經》強調“濁邪出下竅，清陽實四肢”</p>
-      <ul class="mt-2 text-sm text-neutral-dark/80 space-y-2 list-disc pl-5">
-        <li><strong>卯時（5:00-7:00，大腸經當令）</strong>：營造輕鬆排便環境，不匆忙、不憋便。借大腸經排毒時段促進毒素隨糞便排出，減少堆積。</li>
-        <li><strong>申時（15:00-17:00，膀胱經當令）</strong>：保持環境通透，避免憋尿。助力膀胱經水液代謝功能，減少毒素在體內停留時間。</li>
-        <li><strong>戌時（19:00-21:00，三焦經當令）</strong>：減少接觸油煙、粉塵環境，保持呼吸順暢。減少外源性毒素侵入，助力內毒素代謝。</li>
-      </ul>
-    </div>
-  `;
+      // 寒涼濕症調理建議
+      recommendationsContainer.innerHTML += `
+        <div class="bg-neutral p-4 rounded-lg mb-3">
+          <h4 class="font-medium text-primary mb-2">五、寒涼濕症調理：按時避寒“溫養陽氣”</h4>
+          <p class="text-sm text-neutral-dark/80">對應症狀：鼻塞、關節痛、大便不成形等（自檢表中寒濕相關症狀）</p>
+          <p class="text-sm text-neutral-dark/80 italic">《黃帝內經》指出“寒邪客於經脈之中，則血泣而不通”</p>
+          <ul class="mt-2 text-sm text-neutral-dark/80 space-y-2 list-disc pl-5">
+            <li><strong>卯時（5:00-7:00，大腸經當令）</strong>：穿好長袖衣物和襪子，避免腳部、腹部接觸涼地板或冷風。阻斷寒氣入侵，減少鼻塞流涕。</li>
+            <li><strong>午時（11:00-13:00，陽氣最盛時）</strong>：到戶外曬後背10分鐘（避開強光時段）時段）。借自然陽氣溫通經脈，增強驅寒能力。</li>
+            <li><strong>亥時（21:00-23:00，三焦經當令）</strong>：用溫水洗漱，避免接觸冷水，減少空調直吹。保持身體溫潤，減少濕氣停留堆積。</li>
+          </ul>
+        </div>
+      `;
 
-  // 血脂黏稠調理建議
-  recommendationsContainer.innerHTML += `
-    <div class="bg-neutral p-4 rounded-lg mb-3">
-      <h4 class="font-medium text-primary mb-2">四、血脂黏稠調理：順時清通“經脈瘀濁”</h4>
-      <p class="text-sm text-neutral-dark/80">對應症狀：頭面油膩、痤瘡、脂肪瘤等（自檢表中血脂相關症狀）</p>
-      <p class="text-sm text-neutral-dark/80 italic">《黃帝內經》曰“經脈流通，何病之有”</p>
-      <ul class="mt-2 text-sm text-neutral-dark/80 space-y-2 list-disc pl-5">
-        <li><strong>卯時（5:00-7:00，大腸經當令）</strong>：晨起慢飲溫白開水，喚醒身體代謝功能。溫和啓動排毒機制，稀釋血液雜質。</li>
-        <li><strong>申時（15:00-17:00，膀胱經當令）</strong>：開窗通風，保持環境空氣清新，遠離油煙、悶熱環境。借膀胱經排濁功能減少油脂沈積。</li>
-        <li><strong>戌時（19:00-21:00，晚餐後1小時）</strong>：保持坐姿放鬆，不立即躺臥或劇烈活動。讓身體專注代謝清理，減少經脈濁物堆積。</li>
-      </ul>
-    </div>
-  `;
+      // 免疫系統調理建議
+      recommendationsContainer.innerHTML += `
+        <div class="bg-neutral p-4 rounded-lg mb-3">
+          <h4 class="font-medium text-primary mb-2">六、免疫系統調理：順時培補“正氣屏障”</h4>
+          <p class="text-sm text-neutral-dark/80">對應症狀：感冒時間長、各種過敏等（自檢表中免疫相關症狀）</p>
+          <p class="text-sm text-neutral-dark/80 italic">《黃帝內經》提出“正氣存內，邪不可乾”</p>
+          <ul class="mt-2 text-sm text-neutral-dark/80 space-y-2 list-disc pl-5">
+            <li><strong>寅時（3:00-5:00，肺經當令）</strong>：保持睡眠環境溫暖安靜，不熬夜。借深睡增強肺經衛氣功能，減少外邪入侵。</li>
+            <li><strong>辰時（7:00-9:00，胃經當令）</strong>：用餐時細嚼慢嚥，不急躁。提升脾胃功能以充養正氣，增強免疫基礎。</li>
+            <li><strong>申時（15:00-17:00，膀胱經當令）</strong>：到戶外接觸自然光10分鐘，避免長期待在陰暗環境。激發陽氣升發，降低過敏感冒頻率。</li>
+          </ul>
+        </div>
+      `;
 
-  // 寒涼濕症調理建議
-  recommendationsContainer.innerHTML += `
-    <div class="bg-neutral p-4 rounded-lg mb-3">
-      <h4 class="font-medium text-primary mb-2">五、寒涼濕症調理：按時避寒“溫養陽氣”</h4>
-      <p class="text-sm text-neutral-dark/80">對應症狀：鼻塞、關節痛、大便不成形等（自檢表中寒濕相關症狀）</p>
-      <p class="text-sm text-neutral-dark/80 italic">《黃帝內經》指出“寒邪客於經脈之中，則血泣而不通”</p>
-      <ul class="mt-2 text-sm text-neutral-dark/80 space-y-2 list-disc pl-5">
-        <li><strong>卯時（5:00-7:00，大腸經當令）</strong>：穿好長袖衣物和襪子，避免腳部、腹部接觸涼地板或冷風。阻斷寒氣入侵，減少鼻塞流涕。</li>
-        <li><strong>午時（11:00-13:00，陽氣最盛時）</strong>：到戶外曬後背10分鐘（避開強光時段）。借自然陽氣溫通經脈，增強驅寒能力。</li>
-        <li><strong>亥時（21:00-23:00，三焦經當令）</strong>：用溫水洗漱，避免接觸冷水，減少空調直吹。保持身體溫潤，減少濕氣停留堆積。</li>
-      </ul>
-    </div>
-  `;
+      // 情緒調理建議
+      recommendationsContainer.innerHTML += `
+        <div class="bg-neutral p-4 rounded-lg">
+          <h4 class="font-medium text-primary mb-2">七、情緒調理：順時疏解“情志郁結”</h4>
+          <p class="text-sm text-neutral-dark/80">對應症狀：多夢、常嘆氣、經期頭痛等（自檢表中情緒相關症狀）</p>
+          <p class="text-sm text-neutral-dark/80 italic">《黃帝內經》曰“怒則氣上，喜則氣緩，悲則氣消”</p>
+          <ul class="mt-2 text-sm text-neutral-dark/80 space-y-2 list-disc pl-5">
+            <li><strong>未時（13:00-15:00，小腸經當令）</strong>：暫停工作，到窗邊望向開闊處，不鑽牛角尖。借開闊視野疏解情緒郁結，減少煩躁嘆氣。</li>
+            <li><strong>戌時（19:00-21:00，心包經當令）</strong>：不討論煩心事，做簡單放鬆活動（如聽舒緩聲音）。保持平和狀態讓氣血平穩，減少情緒性頭痛。</li>
+            <li><strong>亥時（21:00-23:00，三焦經當令）</strong>：整理當日思緒，寫下未完成事項（避免睡前思慮），營造安靜氛圍。助力情緒疏洩，減少多夢失眠。</li>
+          </ul>
+        </div>
+      `;
 
-  // 免疫系統調理建議
-  recommendationsContainer.innerHTML += `
-    <div class="bg-neutral p-4 rounded-lg mb-3">
-      <h4 class="font-medium text-primary mb-2">六、免疫系統調理：順時培補“正氣屏障”</h4>
-      <p class="text-sm text-neutral-dark/80">對應症狀：感冒時間長、各種過敏等（自檢表中免疫相關症狀）</p>
-      <p class="text-sm text-neutral-dark/80 italic">《黃帝內經》提出“正氣存內，邪不可乾”</p>
-      <ul class="mt-2 text-sm text-neutral-dark/80 space-y-2 list-disc pl-5">
-        <li><strong>寅時（3:00-5:00，肺經當令）</strong>：保持睡眠環境溫暖安靜，不熬夜。借深睡增強肺經衛氣功能，減少外邪入侵。</li>
-        <li><strong>辰時（7:00-9:00，胃經當令）</strong>：用餐時細嚼慢嚥，不急躁。提升脾胃功能以充養正氣，增強免疫基礎。</li>
-        <li><strong>申時（15:00-17:00，膀胱經當令）</strong>：到戶外接觸自然光10分鐘，避免長期待在陰暗環境。激發陽氣升發，降低過敏感冒頻率。</li>
-      </ul>
-    </div>
-  `;
-
-  // 情緒調理建議
-  recommendationsContainer.innerHTML += `
-    <div class="bg-neutral p-4 rounded-lg">
-      <h4 class="font-medium text-primary mb-2">七、情緒調理：順時疏解“情志郁結”</h4>
-      <p class="text-sm text-neutral-dark/80">對應症狀：多夢、常嘆氣、經期頭痛等（自檢表中情緒相關症狀）</p>
-      <p class="text-sm text-neutral-dark/80 italic">《黃帝內經》曰“怒則氣上，喜則氣緩，悲則氣消”</p>
-      <ul class="mt-2 text-sm text-neutral-dark/80 space-y-2 list-disc pl-5">
-        <li><strong>未時（13:00-15:00，小腸經當令）</strong>：暫停工作，到窗邊望向開闊處，不鑽牛角尖。借開闊視野疏解情緒郁結，減少煩躁嘆氣。</li>
-        <li><strong>戌時（19:00-21:00，心包經當令）</strong>：不討論煩心事，做簡單放鬆活動（如聽舒緩聲音）。保持平和狀態讓氣血平穩，減少情緒性頭痛。</li>
-        <li><strong>亥時（21:00-23:00，三焦經當令）</strong>：整理當日思緒，寫下未完成事項（避免睡前思慮），營造安靜氛圍。助力情緒疏洩，減少多夢失眠。</li>
-      </ul>
-    </div>
-  `;
-
-  // 補充提示
-  recommendationsContainer.innerHTML += `
-    <div class="mt-4 text-sm text-neutral-dark/70 text-center">
-      按以上時辰規律調理，能順應身體氣血運行節奏，慢慢改善相關症狀～ 若症狀持續不緩解，建議及時咨詢專業醫生。
-    </div>
-  `;
-});
-
+      // 補充提示
+      recommendationsContainer.innerHTML += `
+        <div class="mt-4 text-sm text-neutral-dark/70 text-center">
+          按以上時辰規律調理，能順應身體氣血運行節奏，慢慢改善相關症狀～ 若症狀持續不緩解，建議及時咨詢專業醫生。
+        </div>
+      `;
+    } else {
+      console.error('未找到健康建議容器元素');
+    }
     
-    // 生成健康症狀分類佔比圖（直式顯示）
+    // 生成健康症狀分類佔比圖（修復：移除重復的ctx定義）
     const ctx = document.getElementById('healthBarChart').getContext('2d');
 
     // 銷毀已存在的圖表
@@ -2759,29 +2752,14 @@ document.addEventListener('DOMContentLoaded', function() {
       return;
     }
 
-        // 生成健康症狀分類佔比圖（直式顯示）
-    const ctx = document.getElementById('healthBarChart').getContext('2d');
-
-    // 銷毀已存在的圖表
-    if (window.healthChart) {
-      window.healthChart.destroy();
-    }
-
-    // 處理無數據情況
-    if (categoryData.length === 0) {
-      const chartContainer = document.getElementById('healthBarChart').parentNode;
-      chartContainer.innerHTML = '<p class="text-center text-gray-500 py-10">未選擇任何症狀，無法生成圖表</p>';
-      return;
-    }
-
-    // 創建新的分類佔比圖（直式顯示）
+    // 創建新的分類佔比圖
     window.healthChart = new Chart(ctx, {
       type: 'bar',
       data: {
-        labels: categoryData.map(item => item.category), // X軸：分類名稱（水平顯示）
+        labels: categoryData.map(item => item.category), // X軸：分類名稱
         datasets: [{
           label: '症狀佔比',
-          data: categoryData.map(item => item.percentage), // Y軸：百分比（垂直高度）
+          data: categoryData.map(item => item.percentage), // Y軸：百分比
           backgroundColor: categoryData.map(item => 
             item.category === '女性症狀' ? 'rgba(233, 30, 99, 0.7)' : 'rgba(22, 93, 255, 0.7)'
           ),
@@ -2792,7 +2770,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }]
       },
       options: {
-        indexAxis: 'x', // 直式顯示（取消水平條形圖設置）
+        indexAxis: 'x', // 橫向條形圖
         scales: {
           y: {
             beginAtZero: true,
@@ -2870,8 +2848,6 @@ document.addEventListener('DOMContentLoaded', function() {
   // 初始檢查性別UI
   updateGenderBasedUI();
 });
-
-
 </script>
     
 </body>
