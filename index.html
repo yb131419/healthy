@@ -2449,81 +2449,127 @@ const symptomCategories = {
       window.healthChart.destroy();
     }
     
-// 創建新圖表 - 改為長條形圖展示所有十大症狀
-window.healthChart = new Chart(ctx, {
-  type: 'bar',
-  data: {
-    labels: [
-      '頭部症狀', 
-      '眼耳鼻喉', 
-      '呼吸系統', 
-      '循環系統', 
-      '消化系統', 
-      '內分泌與代謝', 
-      '肌肉骨骼與關節', 
-      '皮膚與毛髮', 
-      '女性健康', 
-      '泌尿生殖系統'
-    ],
-    datasets: [{
-      label: '症狀風險指標',
-      data: [
-        (headSymptoms / 12) * 100,          // 頭部症狀共12項
-        (entSymptoms / 20) * 100,           // 眼耳鼻喉共20項
-        (respiratorySymptoms / 8) * 100,    // 呼吸系統共8項
-        (circulatorySymptoms / 11) * 100,   // 循環系統共11項
-        (digestiveSymptoms / 19) * 100,     // 消化系統共19項
-        (endocrineSymptoms / 19) * 100,     // 內分泌與代謝共19項
-        (musculoskeletalSymptoms / 15) * 100,// 肌肉骨骼與關節共15項
-        (skinSymptoms / 18) * 100,          // 皮膚與毛髮共18項
-        (femaleHealthSymptoms / 25) * 100,  // 女性健康共25項
-        (urogenitalSymptoms / 16) * 100     // 泌尿生殖系統共16項
+// 确保DOM加载完成后执行图表初始化
+document.addEventListener('DOMContentLoaded', function() {
+  // 获取Canvas元素并检查是否存在
+  const canvas = document.getElementById('healthChartCanvas');
+  if (!canvas) {
+    console.error('未找到ID为"healthChartCanvas"的Canvas元素');
+    return;
+  }
+
+  // 获取绘图上下文
+  const ctx = canvas.getContext('2d');
+  if (!ctx) {
+    console.error('无法获取Canvas绘图上下文');
+    return;
+  }
+
+  // 检查必要的变量是否存在，避免NaN导致图表异常
+  const requiredVars = [
+    'headSymptoms', 'entSymptoms', 'respiratorySymptoms',
+    'circulatorySymptoms', 'digestiveSymptoms', 'endocrineSymptoms',
+    'musculoskeletalSymptoms', 'skinSymptoms', 'femaleHealthSymptoms',
+    'urogenitalSymptoms'
+  ];
+  const missingVars = requiredVars.filter(varName => typeof window[varName] === 'undefined');
+  if (missingVars.length > 0) {
+    console.error('缺少必要的症状计数变量:', missingVars.join(', '));
+    return;
+  }
+
+  // 销毁可能存在的旧图表，避免重复渲染
+  if (window.healthChart) {
+    window.healthChart.destroy();
+  }
+
+  // 创建图表
+  window.healthChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: [
+        '頭部症狀', '眼耳鼻喉', '呼吸系統', '循環系統', 
+        '消化系統', '內分泌與代謝', '肌肉骨骼與關節', 
+        '皮膚與毛髮', '女性健康', '泌尿生殖系統'
       ],
-      backgroundColor: 'rgba(22, 93, 255, 0.7)',
-      borderColor: 'rgba(22, 93, 255, 1)',
-      borderWidth: 1,
-      borderRadius: 6
-    }]
-  },
-  options: {
-    responsive: true,
-    maintainAspectRatio: false,
-    scales: {
-      y: {
-        beginAtZero: true,
-        max: 100,
-        title: {
-          display: true,
-          text: '風險百分比 (%)'
-        },
-        ticks: {
-          callback: function(value) {
-            return value + '%';
-          }
-        }
-      },
-      x: {
-        title: {
-          display: true,
-          text: '症狀分類'
-        }
-      }
+      datasets: [{
+        label: '症狀風險指標',
+        data: [
+          (window.headSymptoms / 12) * 100 || 0,          // 增加容错处理
+          (window.entSymptoms / 20) * 100 || 0,
+          (window.respiratorySymptoms / 8) * 100 || 0,
+          (window.circulatorySymptoms / 11) * 100 || 0,
+          (window.digestiveSymptoms / 19) * 100 || 0,
+          (window.endocrineSymptoms / 19) * 100 || 0,
+          (window.musculoskeletalSymptoms / 15) * 100 || 0,
+          (window.skinSymptoms / 18) * 100 || 0,
+          (window.femaleHealthSymptoms / 25) * 100 || 0,
+          (window.urogenitalSymptoms / 16) * 100 || 0
+        ],
+        backgroundColor: 'rgba(22, 93, 255, 0.7)',
+        borderColor: 'rgba(22, 93, 255, 1)',
+        borderWidth: 1,
+        borderRadius: 6
+      }]
     },
-    plugins: {
-      legend: {
-        position: 'top',
-      },
-      tooltip: {
-        callbacks: {
-          label: function(context) {
-            return `風險: ${context.raw.toFixed(1)}%`;
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      // 确保中文正常显示
+      plugins: {
+        legend: {
+          position: 'top',
+          labels: { font: { family: 'Arial, sans-serif' } }
+        },
+        tooltip: {
+          callbacks: {
+            label: c => `風險: ${(c.raw || 0).toFixed(1)}%`
           }
+        },
+        title: {
+          display: true,
+          text: '十大症狀風險分布',
+          font: { size: 16, family: 'Arial, sans-serif' }
         }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          max: 100,
+          title: {
+            display: true,
+            text: '風險百分比 (%)',
+            font: { family: 'Arial, sans-serif' }
+          },
+          ticks: {
+            callback: v => v + '%',
+            font: { family: 'Arial, sans-serif' }
+          },
+          grid: { display: true }
+        },
+        x: {
+          title: {
+            display: true,
+            text: '症狀分類',
+            font: { family: 'Arial, sans-serif' }
+          },
+          ticks: {
+            font: { family: 'Arial, sans-serif' },
+            // 解决标签过长问题
+            maxRotation: 45,
+            minRotation: 45
+          },
+          grid: { display: false }
+        }
+      },
+      // 增加动画效果，确认图表是否渲染
+      animation: {
+        duration: 1000,
+        easing: 'easeOutQuart'
       }
     }
-  }
+  });
 });
-}
 
 
 
