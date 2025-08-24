@@ -2483,6 +2483,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const age = document.getElementById('age').value || '未填寫';
     const genderElem = document.querySelector('input[name="gender"]:checked');
     const gender = genderElem ? (genderElem.value === 'male' ? '男' : '女') : '未填寫';
+    const isFemale = gender === '女'; // 修復isFemale變量未定義問題
     const phone = document.getElementById('phone').value || '未填寫';
     const height = document.getElementById('height').value ? `${document.getElementById('height').value} cm` : '未填寫';
     const weight = document.getElementById('weight').value ? `${document.getElementById('weight').value} kg` : '未填寫';
@@ -2509,41 +2510,45 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // 顯示基本資料
     const basicInfoContainer = document.getElementById('basicInfo');
-    basicInfoContainer.innerHTML = `
-      <div class="p-3 border border-gray-100 rounded-lg">
-        <p class="text-sm"><strong>姓名：</strong> ${name}</p>
-      </div>
-      <div class="p-3 border border-gray-100 rounded-lg">
-        <p class="text-sm"><strong>年齡：</strong> ${age} 歲</p>
-      </div>
-      <div class="p-3 border border-gray-100 rounded-lg">
-        <p class="text-sm"><strong>性別：</strong> ${gender}</p>
-      </div>
-      <div class="p-3 border border-gray-100 rounded-lg">
-        <p class="text-sm"><strong>電話：</strong> ${phone}</p>
-      </div>
-      <div class="p-3 border border-gray-100 rounded-lg">
-        <p class="text-sm"><strong>身高：</strong> ${height}</p>
-      </div>
-      <div class="p-3 border border-gray-100 rounded-lg">
-        <p class="text-sm"><strong>體重：</strong> ${weight}</p>
-      </div>
-      <div class="p-3 border border-gray-100 rounded-lg">
-        <p class="text-sm"><strong>BMI：</strong> ${bmi}</p>
-      </div>
-      <div class="p-3 border border-gray-100 rounded-lg">
-        <p class="text-sm"><strong>腰圍：</strong> ${waist}</p>
-      </div>
-      <div class="p-3 border border-gray-100 rounded-lg">
-        <p class="text-sm"><strong>血壓：</strong> ${bloodPressure}</p>
-      </div>
-      <div class="p-3 border border-gray-100 rounded-lg">
-        <p class="text-sm"><strong>血糖：</strong> ${bloodSugar}</p>
-      </div>
-      <div class="p-3 border border-gray-100 rounded-lg md:col-span-2">
-        <p class="text-sm"><strong>職業：</strong> ${occupation}</p>
-      </div>
-    `;
+    if (basicInfoContainer) { // 檢查元素是否存在
+      basicInfoContainer.innerHTML = `
+        <div class="p-3 border border-gray-100 rounded-lg">
+          <p class="text-sm"><strong>姓名：</strong> ${name}</p>
+        </div>
+        <div class="p-3 border border-gray-100 rounded-lg">
+          <p class="text-sm"><strong>年齡：</strong> ${age} 歲</p>
+        </div>
+        <div class="p-3 border border-gray-100 rounded-lg">
+          <p class="text-sm"><strong>性別：</strong> ${gender}</p>
+        </div>
+        <div class="p-3 border border-gray-100 rounded-lg">
+          <p class="text-sm"><strong>電話：</strong> ${phone}</p>
+        </div>
+        <div class="p-3 border border-gray-100 rounded-lg">
+          <p class="text-sm"><strong>身高：</strong> ${height}</p>
+        </div>
+        <div class="p-3 border border-gray-100 rounded-lg">
+          <p class="text-sm"><strong>體重：</strong> ${weight}</p>
+        </div>
+        <div class="p-3 border border-gray-100 rounded-lg">
+          <p class="text-sm"><strong>BMI：</strong> ${bmi}</p>
+        </div>
+        <div class="p-3 border border-gray-100 rounded-lg">
+          <p class="text-sm"><strong>腰圍：</strong> ${waist}</p>
+        </div>
+        <div class="p-3 border border-gray-100 rounded-lg">
+          <p class="text-sm"><strong>血壓：</strong> ${bloodPressure}</p>
+        </div>
+        <div class="p-3 border border-gray-100 rounded-lg">
+          <p class="text-sm"><strong>血糖：</strong> ${bloodSugar}</p>
+        </div>
+        <div class="p-3 border border-gray-100 rounded-lg md:col-span-2">
+          <p class="text-sm"><strong>職業：</strong> ${occupation}</p>
+        </div>
+      `;
+    } else {
+      console.error('基本資料容器元素未找到');
+    }
     
     // 獲取選中的症狀並按類別分組
     const symptomElements = document.querySelectorAll('input[name="symptoms"]:checked');
@@ -2568,9 +2573,8 @@ document.addEventListener('DOMContentLoaded', function() {
       調理方向映射[調理方向].forEach(原始分類 => {
         總數量 += 原始分類計數[原始分類] || 0;
       });
-      if (總數量 > 0) {
-        調理方向計數[調理方向] = 總數量;
-      }
+      // 即使數量為0也保留，用於顯示無數據提示
+      調理方向計數[調理方向] = 總數量;
     });
 
     // 轉換為數組並按數量排序
@@ -2590,254 +2594,285 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     // 獲取選中的習慣
-    const selectedHabits = Array.from(document.querySelectorAll('input[name="habits"]:checked')).map(checkbox => checkbox.value);
+    const habitElements = document.querySelectorAll('input[name="habits"]:checked');
+    const selectedHabits = Array.from(habitElements).map(checkbox => checkbox.value);
     const habitCount = selectedHabits.length;
     
-    // 獲取主要健康問題
-    const mainConcern = document.getElementById('mainConcern').value || '未明確說明';
-    const symptomDuration = document.getElementById('symptomDuration').value || '未說明';
-    const possibleCauses = document.getElementById('possibleCauses').value || '未說明';
-    
-    // 更新結果數據
-    document.getElementById('symptomCount').textContent = `${totalSymptomCount} 項症狀`;
-    document.getElementById('habitCount').textContent = `${habitCount} 項不良習慣`;
+    // 更新症狀和習慣評估數據（修復無數據問題）
+    const symptomCountElement = document.getElementById('symptomCount');
+    const habitCountElement = document.getElementById('habitCount');
+    if (symptomCountElement) {
+      symptomCountElement.textContent = `${totalSymptomCount} 項症狀`;
+    }
+    if (habitCountElement) {
+      habitCountElement.textContent = `${habitCount} 項不良習慣`;
+    }
     
     // 設置進度條
     const symptomPercentage = Math.min(100, (totalSymptomCount / 20) * 100);
     const habitPercentage = Math.min(100, (habitCount / 15) * 100);
     
-    document.getElementById('symptomScoreBar').style.width = `${symptomPercentage}%`;
-    document.getElementById('habitScoreBar').style.width = `${habitPercentage}%`;
+    const symptomScoreBar = document.getElementById('symptomScoreBar');
+    const habitScoreBar = document.getElementById('habitScoreBar');
+    if (symptomScoreBar) symptomScoreBar.style.width = `${symptomPercentage}%`;
+    if (habitScoreBar) habitScoreBar.style.width = `${habitPercentage}%`;
     
     // 顯示主要健康問題和詳細症狀列表
     const mainIssuesContainer = document.getElementById('mainHealthIssues');
-    let symptomsHtml = '';
-    
-    // 構建分類症狀HTML（按原始分類展示）
-    Object.keys(symptomCategories).forEach(原始分類 => {
-      // 男性不顯示女性健康分類
-      if (!isFemale && 原始分類 === '女性健康') return;
+    if (mainIssuesContainer) {
+      let symptomsHtml = '';
       
-      const 分類症狀 = selectedSymptoms.filter(症狀 => 
-        symptomCategories[原始分類].includes(症狀)
-      );
-      if (分類症狀.length > 0) {
-        symptomsHtml += `<div class="mt-2">
-          <p class="text-sm font-medium">${原始分類}：</p>
-          <p class="text-sm ml-4">${分類症狀.join('、')}</p>
-        </div>`;
-      }
-    });
-    
-    mainIssuesContainer.innerHTML = `
-      <p class="mb-3"><strong>主要關注問題：</strong> ${mainConcern}</p>
-      <p class="mb-3"><strong>症狀持續時間：</strong> ${symptomDuration}</p>
-      <p class="mb-3"><strong>可能原因：</strong> ${possibleCauses}</p>
-      ${totalSymptomCount > 0 ? `<div class="mt-3"><strong>詳細症狀：</strong>${symptomsHtml}</div>` : ''}
-    `;
+      // 構建分類症狀HTML（按原始分類展示）
+      Object.keys(symptomCategories).forEach(原始分類 => {
+        // 男性不顯示女性健康分類
+        if (!isFemale && 原始分類 === '女性健康') return;
+        
+        const 分類症狀 = selectedSymptoms.filter(症狀 => 
+          symptomCategories[原始分類].includes(症狀)
+        );
+        if (分類症狀.length > 0) {
+          symptomsHtml += `<div class="mt-2">
+            <p class="text-sm font-medium">${原始分類}：</p>
+            <p class="text-sm ml-4">${分類症狀.join('、')}</p>
+          </div>`;
+        }
+      });
+      
+      // 獲取主要健康問題數據
+      const mainConcern = document.getElementById('mainConcern').value || '未明確說明';
+      const symptomDuration = document.getElementById('symptomDuration').value || '未說明';
+      const possibleCauses = document.getElementById('possibleCauses').value || '未說明';
+      
+      mainIssuesContainer.innerHTML = `
+        <p class="mb-3"><strong>主要關注問題：</strong> ${mainConcern}</p>
+        <p class="mb-3"><strong>症狀持續時間：</strong> ${symptomDuration}</p>
+        <p class="mb-3"><strong>可能原因：</strong> ${possibleCauses}</p>
+        ${totalSymptomCount > 0 ? `<div class="mt-3"><strong>詳細症狀：</strong>${symptomsHtml}</div>` : 
+          '<div class="mt-3 text-gray-500"><strong>詳細症狀：</strong>未選擇任何症狀</div>'}
+      `;
+    } else {
+      console.error('主要健康問題容器元素未找到');
+    }
     
     // 生成健康建議內容
     const recommendationsContainer = document.getElementById('healthRecommendations');
     if (recommendationsContainer) {
       recommendationsContainer.innerHTML = '';
 
-      // 氣血不足調理建議（循環方向）
-      if (調理方向計數['循環'] > 0) {
-        recommendationsContainer.innerHTML += `
-          <div class="bg-neutral p-4 rounded-lg mb-3">
-            <h4 class="font-medium text-primary mb-2">循環系統調理：順時疏通氣血通道</h4>
-            <p class="text-sm text-neutral-dark/80 italic">《黃帝內經》曰“經脈者，所以行血氣而營陰陽”</p>
-            <ul class="mt-2 text-sm text-neutral-dark/80 space-y-2 list-disc pl-5">
-              <li><strong>午時（11:00-13:00，心經當令）</strong>：找安靜處靜坐，不思考複雜問題、不看電子設備。減少身心負擔，讓血液充分流向頭部緩解不適。</li>
-              <li><strong>戌時（19:00-21:00，心包經當令）</strong>：保持身體自然舒展，避免彎腰駝背或久坐狹小空間。減少氣血阻滯，降低手腳發麻概率。</li>
-              <li><strong>酉時（17:00-19:00，腎經當令）</strong>：到通風處停留10分鐘，避免長期處於密閉空調環境。借新鮮空氣促進經脈通暢，改善末梢循環不暢。</li>
-            </ul>
+      // 檢查是否有任何調理方向有數據
+      const hasAnyRecommendations = Object.values(調理方向計數).some(count => count > 0);
+      
+      if (!hasAnyRecommendations) {
+        recommendationsContainer.innerHTML = `
+          <div class="bg-neutral p-4 rounded-lg text-center">
+            <p class="text-sm text-neutral-dark/80">未檢測到明顯健康問題，建議保持良好生活習慣。</p>
           </div>
         `;
-      }
+      } else {
+        // 循環系統調理建議
+        if (調理方向計數['循環'] > 0) {
+          recommendationsContainer.innerHTML += `
+            <div class="bg-neutral p-4 rounded-lg mb-3">
+              <h4 class="font-medium text-primary mb-2">循環系統調理：順時疏通氣血通道</h4>
+              <p class="text-sm text-neutral-dark/80 italic">《黃帝內經》曰“經脈者，所以行血氣而營陰陽”</p>
+              <ul class="mt-2 text-sm text-neutral-dark/80 space-y-2 list-disc pl-5">
+                <li><strong>午時（11:00-13:00，心經當令）</strong>：找安靜處靜坐，不思考複雜問題、不看電子設備。減少身心負擔，讓血液充分流向頭部緩解不適。</li>
+                <li><strong>戌時（19:00-21:00，心包經當令）</strong>：保持身體自然舒展，避免彎腰駝背或久坐狹小空間。減少氣血阻滯，降低手腳發麻概率。</li>
+                <li><strong>酉時（17:00-19:00，腎經當令）</strong>：到通風處停留10分鐘，避免長期處於密閉空調環境。借新鮮空氣促進經脈通暢，改善末梢循環不暢。</li>
+              </ul>
+            </div>
+          `;
+        }
 
-      // 體質調理建議
-      if (調理方向計數['體質'] > 0) {
-        recommendationsContainer.innerHTML += `
-          <div class="bg-neutral p-4 rounded-lg mb-3">
-            <h4 class="font-medium text-primary mb-2">體質調理：溫養陽氣強筋骨</h4>
-            <p class="text-sm text-neutral-dark/80 italic">《黃帝內經》指出“寒邪客於經脈之中，則血泣而不通”</p>
-            <ul class="mt-2 text-sm text-neutral-dark/80 space-y-2 list-disc pl-5">
-              <li><strong>卯時（5:00-7:00，大腸經當令）</strong>：穿好長袖衣物和襪子，避免腳部、腹部接觸涼地板或冷風。阻斷寒氣入侵，減少關節不適。</li>
-              <li><strong>午時（11:00-13:00，陽氣最盛時）</strong>：到戶外曬後背10分鐘（避開強光時段）。借自然陽氣溫通經脈，增強驅寒能力。</li>
-              <li><strong>亥時（21:00-23:00，三焦經當令）</strong>：用溫水洗漱，避免接觸冷水，減少空調直吹。保持身體溫潤，減少濕氣停留堆積。</li>
-            </ul>
-          </div>
-        `;
-      }
+        // 體質調理建議
+        if (調理方向計數['體質'] > 0) {
+          recommendationsContainer.innerHTML += `
+            <div class="bg-neutral p-4 rounded-lg mb-3">
+              <h4 class="font-medium text-primary mb-2">體質調理：溫養陽氣強筋骨</h4>
+              <p class="text-sm text-neutral-dark/80 italic">《黃帝內經》指出“寒邪客於經脈之中，則血泣而不通”</p>
+              <ul class="mt-2 text-sm text-neutral-dark/80 space-y-2 list-disc pl-5">
+                <li><strong>卯時（5:00-7:00，大腸經當令）</strong>：穿好長袖衣物和襪子，避免腳部、腹部接觸涼地板或冷風。阻斷寒氣入侵，減少關節不適。</li>
+                <li><strong>午時（11:00-13:00，陽氣最盛時）</strong>：到戶外曬後背10分鐘（避開強光時段）。借自然陽氣溫通經脈，增強驅寒能力。</li>
+                <li><strong>亥時（21:00-23:00，三焦經當令）</strong>：用溫水洗漱，避免接觸冷水，減少空調直吹。保持身體溫潤，減少濕氣停留堆積。</li>
+              </ul>
+            </div>
+          `;
+        }
 
-      // 免疫調理建議
-      if (調理方向計數['免疫'] > 0) {
-        recommendationsContainer.innerHTML += `
-          <div class="bg-neutral p-4 rounded-lg mb-3">
-            <h4 class="font-medium text-primary mb-2">免疫系統調理：順時培補正氣屏障</h4>
-            <p class="text-sm text-neutral-dark/80 italic">《黃帝內經》提出“正氣存內，邪不可乾”</p>
-            <ul class="mt-2 text-sm text-neutral-dark/80 space-y-2 list-disc pl-5">
-              <li><strong>寅時（3:00-5:00，肺經當令）</strong>：保持睡眠環境溫暖安靜，不熬夜。借深睡增強肺經衛氣功能，減少外邪入侵。</li>
-              <li><strong>辰時（7:00-9:00，胃經當令）</strong>：用餐時細嚼慢嚥，不急躁。提升脾胃功能以充養正氣，增強免疫基礎。</li>
-              <li><strong>申時（15:00-17:00，膀胱經當令）</strong>：到戶外接觸自然光10分鐘，避免長期待在陰暗環境。激發陽氣升發，降低過敏感冒頻率。</li>
-            </ul>
-          </div>
-        `;
-      }
+        // 免疫調理建議
+        if (調理方向計數['免疫'] > 0) {
+          recommendationsContainer.innerHTML += `
+            <div class="bg-neutral p-4 rounded-lg mb-3">
+              <h4 class="font-medium text-primary mb-2">免疫系統調理：順時培補正氣屏障</h4>
+              <p class="text-sm text-neutral-dark/80 italic">《黃帝內經》提出“正氣存內，邪不可乾”</p>
+              <ul class="mt-2 text-sm text-neutral-dark/80 space-y-2 list-disc pl-5">
+                <li><strong>寅時（3:00-5:00，肺經當令）</strong>：保持睡眠環境溫暖安靜，不熬夜。借深睡增強肺經衛氣功能，減少外邪入侵。</li>
+                <li><strong>辰時（7:00-9:00，胃經當令）</strong>：用餐時細嚼慢嚥，不急躁。提升脾胃功能以充養正氣，增強免疫基礎。</li>
+                <li><strong>申時（15:00-17:00，膀胱經當令）</strong>：到戶外接觸自然光10分鐘，避免長期待在陰暗環境。激發陽氣升發，降低過敏感冒頻率。</li>
+              </ul>
+            </div>
+          `;
+        }
 
-      // 毒素調理建議
-      if (調理方向計數['毒素'] > 0) {
-        recommendationsContainer.innerHTML += `
-          <div class="bg-neutral p-4 rounded-lg mb-3">
-            <h4 class="font-medium text-primary mb-2">毒素排毒調理：順時暢通排濁通道</h4>
-            <p class="text-sm text-neutral-dark/80 italic">《黃帝內經》強調“濁邪出下竅，清陽實四肢”</p>
-            <ul class="mt-2 text-sm text-neutral-dark/80 space-y-2 list-disc pl-5">
-              <li><strong>卯時（5:00-7:00，大腸經當令）</strong>：營造輕鬆排便環境，不匆忙、不憋便。借大腸經排毒時段促進毒素隨糞便排出，減少堆積。</li>
-              <li><strong>申時（15:00-17:00，膀胱經當令）</strong>：保持環境通透，避免憋尿。助力膀胱經水液代謝功能，減少毒素在體內停留時間。</li>
-              <li><strong>戌時（19:00-21:00，三焦經當令）</strong>：減少接觸油煙、粉塵環境，保持呼吸順暢。減少外源性毒素侵入，助力內毒素代謝。</li>
-            </ul>
-          </div>
-        `;
-      }
+        // 毒素調理建議
+        if (調理方向計數['毒素'] > 0) {
+          recommendationsContainer.innerHTML += `
+            <div class="bg-neutral p-4 rounded-lg mb-3">
+              <h4 class="font-medium text-primary mb-2">毒素排毒調理：順時暢通排濁通道</h4>
+              <p class="text-sm text-neutral-dark/80 italic">《黃帝內經》強調“濁邪出下竅，清陽實四肢”</p>
+              <ul class="mt-2 text-sm text-neutral-dark/80 space-y-2 list-disc pl-5">
+                <li><strong>卯時（5:00-7:00，大腸經當令）</strong>：營造輕鬆排便環境，不匆忙、不憋便。借大腸經排毒時段促進毒素隨糞便排出，減少堆積。</li>
+                <li><strong>申時（15:00-17:00，膀胱經當令）</strong>：保持環境通透，避免憋尿。助力膀胱經水液代謝功能，減少毒素在體內停留時間。</li>
+                <li><strong>戌時（19:00-21:00，三焦經當令）</strong>：減少接觸油煙、粉塵環境，保持呼吸順暢。減少外源性毒素侵入，助力內毒素代謝。</li>
+              </ul>
+            </div>
+          `;
+        }
 
-      // 營養調理建議
-      if (調理方向計數['營養'] > 0) {
-        recommendationsContainer.innerHTML += `
-          <div class="bg-neutral p-4 rounded-lg mb-3">
-            <h4 class="font-medium text-primary mb-2">營養調理：脾胃調和化精微</h4>
-            <p class="text-sm text-neutral-dark/80 italic">《黃帝內經》言“人以氣血為本，氣血隨時辰消長”</p>
-            <ul class="mt-2 text-sm text-neutral-dark/80 space-y-2 list-disc pl-5">
-              <li><strong>辰時（7:00-9:00，胃經當令）</strong>：保持環境安靜，避免邊用餐邊處理事務。餐後留5分鐘靜息，提升氣血轉化效率。</li>
-              <li><strong>巳時（9:00-11:00，脾經當令）</strong>：每小時暫停工作，閉眼靜息30秒。減少過度勞累導致的氣血瘀滯，促進營養吸收。</li>
-              <li><strong>丑時前（23:00前，肝經當令預備期）</strong>：營造昏暗、安靜的休息環境，減少電子屏幕使用。避免熬夜影響脾胃修復。</li>
-            </ul>
-          </div>
-        `;
-      }
+        // 營養調理建議
+        if (調理方向計數['營養'] > 0) {
+          recommendationsContainer.innerHTML += `
+            <div class="bg-neutral p-4 rounded-lg mb-3">
+              <h4 class="font-medium text-primary mb-2">營養調理：脾胃調和化精微</h4>
+              <p class="text-sm text-neutral-dark/80 italic">《黃帝內經》言“人以氣血為本，氣血隨時辰消長”</p>
+              <ul class="mt-2 text-sm text-neutral-dark/80 space-y-2 list-disc pl-5">
+                <li><strong>辰時（7:00-9:00，胃經當令）</strong>：保持環境安靜，避免邊用餐邊處理事務。餐後留5分鐘靜息，提升氣血轉化效率。</li>
+                <li><strong>巳時（9:00-11:00，脾經當令）</strong>：每小時暫停工作，閉眼靜息30秒。減少過度勞累導致的氣血瘀滯，促進營養吸收。</li>
+                <li><strong>丑時前（23:00前，肝經當令預備期）</strong>：營造昏暗、安靜的休息環境，減少電子屏幕使用。避免熬夜影響脾胃修復。</li>
+              </ul>
+            </div>
+          `;
+        }
 
-      // 內分泌調理建議
-      if (調理方向計數['內分泌'] > 0) {
-        recommendationsContainer.innerHTML += `
-          <div class="bg-neutral p-4 rounded-lg mb-3">
-            <h4 class="font-medium text-primary mb-2">內分泌調理：順時清通經脈瘀濁</h4>
-            <p class="text-sm text-neutral-dark/80 italic">《黃帝內經》曰“經脈流通，何病之有”</p>
-            <ul class="mt-2 text-sm text-neutral-dark/80 space-y-2 list-disc pl-5">
-              <li><strong>卯時（5:00-7:00，大腸經當令）</strong>：晨起慢飲溫開水，喚醒身體代謝功能。溫和啓動排毒機制，調節代謝平衡。</li>
-              <li><strong>申時（15:00-17:00，膀胱經當令）</strong>：開窗通風，保持環境空氣清新，遠離油煙、悶熱環境。借膀胱經排濁功能減少代謝廢物堆積。</li>
-              <li><strong>戌時（19:00-21:00，晚餐後1小時）</strong>：保持坐姿放鬆，不立即躺臥或劇烈活動。讓身體專注代謝清理，維持內分泌穩定。</li>
-            </ul>
-          </div>
-        `;
+        // 內分泌調理建議
+        if (調理方向計數['內分泌'] > 0) {
+          recommendationsContainer.innerHTML += `
+            <div class="bg-neutral p-4 rounded-lg mb-3">
+              <h4 class="font-medium text-primary mb-2">內分泌調理：順時清通經脈瘀濁</h4>
+              <p class="text-sm text-neutral-dark/80 italic">《黃帝內經》曰“經脈流通，何病之有”</p>
+              <ul class="mt-2 text-sm text-neutral-dark/80 space-y-2 list-disc pl-5">
+                <li><strong>卯時（5:00-7:00，大腸經當令）</strong>：晨起慢飲溫開水，喚醒身體代謝功能。溫和啓動排毒機制，調節代謝平衡。</li>
+                <li><strong>申時（15:00-17:00，膀胱經當令）</strong>：開窗通風，保持環境空氣清新，遠離油煙、悶熱環境。借膀胱經排濁功能減少代謝廢物堆積。</li>
+                <li><strong>戌時（19:00-21:00，晚餐後1小時）</strong>：保持坐姿放鬆，不立即躺臥或劇烈活動。讓身體專注代謝清理，維持內分泌穩定。</li>
+              </ul>
+            </div>
+          `;
+        }
       }
 
       // 補充提示
       recommendationsContainer.innerHTML += `
         <div class="mt-4 text-sm text-neutral-dark/70 text-center">
-          按以上時辰規律調理，能順應身體氣血運行節奏，\n慢慢改善相關症狀。 \n若症狀持續不緩解，建議及時咨詢專業醫生。
+          按以上時辰規律調理，能順應身體氣血運行節奏，慢慢改善相關症狀。<br>
+          若症狀持續不緩解，建議及時咨詢專業醫生。
         </div>
       `;
     } else {
-      console.error('未找到健康建議容器元素');
+      console.error('健康建議容器元素未找到');
     }
     
     // 生成調理方向分布圖表
-    const ctx = document.getElementById('healthBarChart').getContext('2d');
+    const chartContainer = document.getElementById('healthBarChart');
+    if (chartContainer) {
+      const ctx = chartContainer.getContext('2d');
 
-    // 銷毀已存在的圖表
-    if (window.healthChart) {
-      window.healthChart.destroy();
-    }
+      // 銷毀已存在的圖表
+      if (window.healthChart) {
+        window.healthChart.destroy();
+      }
 
-    // 處理無數據情況
-    if (調理方向百分比數據.length === 0) {
-      const chartContainer = document.getElementById('healthBarChart').parentNode;
-      chartContainer.innerHTML = '<p class="text-center text-gray-500 py-10">未選擇任何症狀，無法生成圖表</p>';
-      return;
-    }
+      // 處理無數據情況
+      if (調理方向百分比數據.length === 0 || totalSymptomCount === 0) {
+        const parentContainer = chartContainer.parentNode;
+        parentContainer.innerHTML = '<p class="text-center text-gray-500 py-10">未選擇任何症狀，無法生成調理方向分析</p>';
+        return;
+      }
 
-    // 定義調理方向的顏色映射
-    const 調理方向顏色 = {
-      '體質': 'rgba(75, 192, 192, 0.7)',
-      '免疫': 'rgba(54, 162, 235, 0.7)',
-      '毒素': 'rgba(255, 99, 132, 0.7)',
-      '營養': 'rgba(255, 206, 86, 0.7)',
-      '循環': 'rgba(153, 102, 255, 0.7)',
-      '內分泌': 'rgba(255, 159, 64, 0.7)'
-    };
+      // 定義調理方向的顏色映射
+      const 調理方向顏色 = {
+        '體質': 'rgba(75, 192, 192, 0.7)',
+        '免疫': 'rgba(54, 162, 235, 0.7)',
+        '毒素': 'rgba(255, 99, 132, 0.7)',
+        '營養': 'rgba(255, 206, 86, 0.7)',
+        '循環': 'rgba(153, 102, 255, 0.7)',
+        '內分泌': 'rgba(255, 159, 64, 0.7)'
+      };
 
-    const 調理方向邊框顏色 = {
-      '體質': 'rgba(75, 192, 192, 1)',
-      '免疫': 'rgba(54, 162, 235, 1)',
-      '毒素': 'rgba(255, 99, 132, 1)',
-      '營養': 'rgba(255, 206, 86, 1)',
-      '循環': 'rgba(153, 102, 255, 1)',
-      '內分泌': 'rgba(255, 159, 64, 1)'
-    };
+      const 調理方向邊框顏色 = {
+        '體質': 'rgba(75, 192, 192, 1)',
+        '免疫': 'rgba(54, 162, 235, 1)',
+        '毒素': 'rgba(255, 99, 132, 1)',
+        '營養': 'rgba(255, 206, 86, 1)',
+        '循環': 'rgba(153, 102, 255, 1)',
+        '內分泌': 'rgba(255, 159, 64, 1)'
+      };
 
-    // 創建新的調理方向分布圖表
-    window.healthChart = new Chart(ctx, {
-      type: 'bar',
-      data: {
-        labels: 調理方向百分比數據.map(item => item.調理方向), // X軸：調理方向名稱
-        datasets: [{
-          label: '症狀佔比',
-          data: 調理方向百分比數據.map(item => item.percentage), // Y軸：百分比
-          backgroundColor: 調理方向百分比數據.map(item => 調理方向顏色[item.調理方向]),
-          borderColor: 調理方向百分比數據.map(item => 調理方向邊框顏色[item.調理方向]),
-          borderWidth: 1
-        }]
-      },
-      options: {
-        indexAxis: 'x', // 橫向條形圖
-        scales: {
-          y: {
-            beginAtZero: true,
-            max: 100, // 百分比最大值100
-            title: {
-              display: true,
-              text: '症狀佔比百分比 (%)'
-            },
-            ticks: {
-              callback: function(value) {
-                return value + '%'; // Y軸刻度顯示百分比符號
-              }
-            }
-          },
-          x: {
-            title: {
-              display: true,
-              text: '調理方向'
-            },
-            ticks: {
-              autoSkip: false, // 不自動跳過標籤
-              maxRotation: 45, // 標籤最大旋轉角度
-              minRotation: 45  // 標籤最小旋轉角度（避免文字重疊）
-            }
-          }
+      // 創建新的調理方向分布圖表
+      window.healthChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: 調理方向百分比數據.map(item => item.調理方向), // X軸：調理方向名稱
+          datasets: [{
+            label: '症狀佔比',
+            data: 調理方向百分比數據.map(item => item.percentage), // Y軸：百分比
+            backgroundColor: 調理方向百分比數據.map(item => 調理方向顏色[item.調理方向]),
+            borderColor: 調理方向百分比數據.map(item => 調理方向邊框顏色[item.調理方向]),
+            borderWidth: 1
+          }]
         },
-        plugins: {
-          legend: {
-            display: false // 六大類顏色已通過條形圖直觀展示，可隱藏圖例
-          },
-          tooltip: {
-            callbacks: {
-              label: function(context) {
-                const item = 調理方向百分比數據[context.dataIndex];
-                return `症狀數量: ${item.數量} 個 (${item.percentage}%)`;
+        options: {
+          indexAxis: 'x', // 橫向條形圖
+          scales: {
+            y: {
+              beginAtZero: true,
+              max: 100, // 百分比最大值100
+              title: {
+                display: true,
+                text: '症狀佔比百分比 (%)'
+              },
+              ticks: {
+                callback: function(value) {
+                  return value + '%'; // Y軸刻度顯示百分比符號
+                }
+              }
+            },
+            x: {
+              title: {
+                display: true,
+                text: '調理方向'
+              },
+              ticks: {
+                autoSkip: false, // 不自動跳過標籤
+                maxRotation: 45, // 標籤最大旋轉角度
+                minRotation: 45  // 標籤最小旋轉角度（避免文字重疊）
               }
             }
           },
-          title: {
-            display: true,
-            text: `調理方向分布${gender === '女' ? '（含女性健康相關）' : ''}`,
-            font: {
-              size: 16
+          plugins: {
+            legend: {
+              display: false // 六大類顏色已通過條形圖直觀展示，可隱藏圖例
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  const item = 調理方向百分比數據[context.dataIndex];
+                  return `症狀數量: ${item.數量} 個 (${item.percentage}%)`;
+                }
+              }
+            },
+            title: {
+              display: true,
+              text: `調理方向分布${gender === '女' ? '（含女性健康相關）' : ''}`,
+              font: {
+                size: 16
+              }
             }
           }
         }
-      }
-    });
+      });
+    } else {
+      console.error('圖表容器元素未找到');
+    }
   }
 
   // 初始化頁面
