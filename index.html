@@ -2435,56 +2435,112 @@ const symptomCategories = {
     `;
 
     
-  // 生成健康風險雷達圖
-    const ctx = document.getElementById('healthRadarChart').getContext('2d');
-    
-    // 計算各維度風險值
-    const headSymptoms = categorizedSymptoms['頭部'] ? categorizedSymptoms['頭部'].length : 0;
-    const entSymptoms = categorizedSymptoms['眼耳鼻喉'] ? categorizedSymptoms['眼耳鼻喉'].length : 0;
-    const digestiveSymptoms = categorizedSymptoms['消化系統'] ? categorizedSymptoms['消化系統'].length : 0;
-    const musculoskeletalSymptoms = categorizedSymptoms['肌肉骨骼'] ? categorizedSymptoms['肌肉骨骼'].length : 0;
-    const skinSymptoms = categorizedSymptoms['皮膚'] ? categorizedSymptoms['皮膚'].length : 0;
-    
-    // 銷毀已存在的圖表
-    if (window.healthChart) {
-      window.healthChart.destroy();
-    }
-    
-    // 創建新圖表
-    window.healthChart = new Chart(ctx, {
-      type: 'radar',
-      data: {
-        labels: ['頭部', '眼耳鼻喉', '消化系統', '肌肉骨骼', '皮膚'],
-        datasets: [{
-          label: '症狀風險',
-          data: [
-            (headSymptoms / 6) * 100,
-            (entSymptoms / 4) * 100,
-            (digestiveSymptoms / 2) * 100,
-            (musculoskeletalSymptoms / 2) * 100,
-            (skinSymptoms / 2) * 100
-          ],
-          backgroundColor: 'rgba(22, 93, 255, 0.2)',
-          borderColor: 'rgba(22, 93, 255, 1)',
-          pointBackgroundColor: 'rgba(22, 93, 255, 1)',
-          pointBorderColor: '#fff',
-          pointHoverBackgroundColor: '#fff',
-          pointHoverBorderColor: 'rgba(22, 93, 255, 1)'
-        }]
+ // 生成健康症状長條圖
+const ctx = document.getElementById('healthBarChart').getContext('2d');
+
+// 假設有一個性別標識變量（實際項目中可能從用戶信息獲取）
+const isFemale = true; // true表示女生，false表示男生
+
+// 整理所有症狀並添加性別標識
+const allSymptoms = [];
+Object.keys(categorizedSymptoms).forEach(category => {
+  categorizedSymptoms[category].forEach(symptom => {
+    // 假設症狀對象中有isFemaleOnly屬性標識是否為女性特有症狀
+    allSymptoms.push({
+      name: symptom.name,
+      count: symptom.count || 1, // 症狀出現次數
+      category: category,
+      isFemaleOnly: symptom.isFemaleOnly || false // 標識是否為女性特有症狀
+    });
+  });
+});
+
+// 根據性別過濾症狀：男生不顯示女性特有症狀
+const filteredSymptoms = isFemale 
+  ? allSymptoms 
+  : allSymptoms.filter(symptom => !symptom.isFemaleOnly);
+
+// 按症狀出現次數排序，取前十名
+const topSymptoms = filteredSymptoms
+  .sort((a, b) => b.count - a.count)
+  .slice(0, 10);
+
+// 銷毀已存在的圖表
+if (window.healthChart) {
+  window.healthChart.destroy();
+}
+
+// 創建新的長條圖
+window.healthChart = new Chart(ctx, {
+  type: 'bar',
+  data: {
+    labels: topSymptoms.map(s => s.name),
+    datasets: [{
+      label: '症狀出現次數',
+      data: topSymptoms.map(s => s.count),
+      backgroundColor: topSymptoms.map(s => 
+        s.isFemaleOnly ? 'rgba(233, 30, 99, 0.7)' : 'rgba(22, 93, 255, 0.7)'
+      ),
+      borderColor: topSymptoms.map(s => 
+        s.isFemaleOnly ? 'rgba(233, 30, 99, 1)' : 'rgba(22, 93, 255, 1)'
+      ),
+      borderWidth: 1
+    }]
+  },
+  options: {
+    indexAxis: 'y', // 水平長條圖，症狀名稱在y軸
+    scales: {
+      x: {
+        beginAtZero: true,
+        title: {
+          display: true,
+          text: '出現次數'
+        }
       },
-      options: {
-        scales: {
-          r: {
-            angleLines: {
-              display: true
-            },
-            suggestedMin: 0,
-            suggestedMax: 100
-          }
+      y: {
+        title: {
+          display: true,
+          text: '症狀名稱'
         }
       }
-    });
+    },
+    plugins: {
+      legend: {
+        display: true,
+        labels: {
+          generateLabels: function(chart) {
+            // 自定義圖例，顯示女性特有症狀的標識
+            return [
+              {
+                text: '一般症狀',
+                fillStyle: 'rgba(22, 93, 255, 0.7)',
+                strokeStyle: 'rgba(22, 93, 255, 1)',
+                lineWidth: 1,
+                hidden: false,
+                index: 0
+              },
+              ...(isFemale ? [{
+                text: '女性特有症狀',
+                fillStyle: 'rgba(233, 30, 99, 0.7)',
+                strokeStyle: 'rgba(233, 30, 99, 1)',
+                lineWidth: 1,
+                hidden: false,
+                index: 1
+              }] : [])
+            ];
+          }
+        }
+      },
+      title: {
+        display: true,
+        text: `十大健康症狀${isFemale ? '（含女性特有症狀）' : ''}`,
+        font: {
+          size: 16
+        }
+      }
+    }
   }
+});
 
 
   // 初始化頁面
