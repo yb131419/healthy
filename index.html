@@ -2839,7 +2839,85 @@ window.healthChart = new Chart(ctx, {
     }
   }
 });
+
+// 創建新的調理方向分布圖
+window.healthChart = new Chart(ctx, {
+  type: 'bar',
+  data: {
+    labels: 調理方向百分比數據.map(item => item.調理方向), // Y軸：調理方向名稱
+    datasets: [{
+      label: '症狀佔比',
+      data: 調理方向百分比數據.map(item => item.percentage), // X軸：百分比
+      backgroundColor: 調理方向百分比數據.map(item => 調理方向顏色[item.調理方向]),
+      borderColor: 調理方向百分比數據.map(item => 調理方向邊框顏色[item.調理方向]),
+      borderWidth: 1
+    }]
+  },
+  options: {
+    indexAxis: 'y', // 橫向長條圖（條形沿Y軸排列）
+    scales: {
+      x: { // 橫向軸（顯示百分比）
+        beginAtZero: true,
+        max: 100, // 百分比最大值100
+        title: {
+          display: true,
+          text: '佔比百分比 (%)'
+        },
+        ticks: {
+          callback: function(value) {
+            return value + '%'; // X軸刻度顯示百分比符號
+          }
+        }
+      },
+      y: { // 縱向軸（顯示六大調理方向）
+        title: {
+          display: true,
+          text: '調理方向'
+        },
+        ticks: {
+          autoSkip: false // 不跳過標籤，確保所有調理方向可見
+        }
+      }
+    },
+    plugins: {
+      legend: {
+        display: true,
+        labels: {
+          generateLabels: function(chart) {
+            // 生成六大調理方向的圖例
+            return Object.entries(調理方向顏色).map(([方向, 顏色], index) => ({
+              text: 方向,
+              fillStyle: 顏色,
+              strokeStyle: 調理方向邊框顏色[方向],
+              lineWidth: 1,
+              hidden: false,
+              index: index
+            }));
+          }
+        }
+      },
+      tooltip: {
+        callbacks: {
+          label: function(context) {
+            const item = 調理方向百分比數據[context.dataIndex];
+            return `症狀數量: ${item.數量} 個 (${item.percentage}%)`;
+          }
+        }
+      },
+      title: {
+        display: true,
+        text: `調理方向分布${gender === '女' ? '（含女性健康相關）' : ''}`,
+        font: {
+          size: 16
+        }
+      }
+    }
   }
+});
+
+
+}
+
 
   // 初始化頁面
   updateFormSteps();
