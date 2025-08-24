@@ -1961,35 +1961,59 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 
   // 提交數據到Google Sheets
-  async function submitToGoogleSheets() {
+  // 使用JSONP提交數據到Google Sheets
+function submitToGoogleSheets() {
+  return new Promise((resolve, reject) => {
     try {
       // 1. 收集表單數據
       const formData = collectFormData();
       
-      // 2. 替換為你的Google Apps Script Web應用URL
-      // 如何創建: 
-      // - 打開你的Google表格(1v1uJfdFfD6KHHXv-E0duki4KH1a6n-jIyZUx0mZFJ2o)
-      // - 工具 > 腳本編輯器
-      // - 粘貼下方的GAS代碼並部署為Web應用
+      // 2. 转换数据为URL参数（JSONP仅支持GET，需序列化数据）
+      const params = new URLSearchParams();
+      params.append('data', JSON.stringify(formData));
+      // 生成唯一回调函数名（避免缓存）
+      const callbackName = `jsonpCallback_${Date.now()}`;
+      params.append('callback', callbackName);
+      
+      // 3. 替换为你的Google Apps Script Web應用URL
       const googleSheetUrl = 'https://script.google.com/macros/s/AKfycbwQH5XE3u9vgedphUCOnXpYl9WG4-3ScF29SYoSb3MGLMQX28qBeY3tqt56PiIFsAtw4w/exec';
+      const fullUrl = `${googleSheetUrl}?${params.toString()}`;
       
-      // 3. 發送數據
-      const response = await fetch(googleSheetUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData)
-      });
+      // 4. 创建JSONP脚本标签
+      const script = document.createElement('script');
+      script.src = fullUrl;
+      script.type = 'text/javascript';
+      script.async = true;
       
-      const result = await response.json();
-      console.log('Google Sheets提交結果:', result);
-      return result.status === 'success';
+      // 5. 定义回调函数
+      window[callbackName] = function(response) {
+        // 清理回调和脚本标签
+        delete window[callbackName];
+        document.body.removeChild(script);
+        
+        if (response.status === 'success') {
+          resolve(true);
+        } else {
+          reject(new Error(response.message || '提交失败'));
+        }
+      };
+      
+      // 6. 错误处理
+      script.onerror = function() {
+        delete window[callbackName];
+        document.body.removeChild(script);
+        reject(new Error('网络错误，提交失败'));
+      };
+      
+      // 7. 添加脚本到页面
+      document.body.appendChild(script);
+      
     } catch (error) {
-      console.error('Google Sheets提交錯誤:', error);
-      return false;
+      console.error('JSONP提交錯誤:', error);
+      reject(error);
     }
-  }
+  });
+}
 
   // 收集表單數據
   function collectFormData() {
