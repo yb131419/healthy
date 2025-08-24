@@ -2483,7 +2483,50 @@ document.addEventListener('DOMContentLoaded', function() {
     window.healthChart.destroy();
   }
 
-  // 创建图表
+  // 确保在DOM完全加载后执行图表初始化
+document.addEventListener('DOMContentLoaded', function() {
+  // 1. 检查Canvas元素是否存在
+  const canvas = document.getElementById('healthChartCanvas');
+  if (!canvas) {
+    console.error('❌ 未找到Canvas元素，请检查HTML中是否有id为"healthChartCanvas"的canvas标签');
+    return;
+  }
+
+  // 2. 检查Chart.js是否加载成功
+  if (typeof Chart === 'undefined') {
+    console.error('❌ Chart.js未加载，请确认已引入Chart.js库');
+    return;
+  }
+
+  // 3. 检查症状计数变量是否存在（避免数据异常）
+  const symptomVars = {
+    headSymptoms: 0,
+    entSymptoms: 0,
+    respiratorySymptoms: 0,
+    circulatorySymptoms: 0,
+    digestiveSymptoms: 0,
+    endocrineSymptoms: 0,
+    musculoskeletalSymptoms: 0,
+    skinSymptoms: 0,
+    femaleHealthSymptoms: 0,
+    urogenitalSymptoms: 0
+  };
+
+  // 补全未定义的变量（避免NaN）
+  Object.keys(symptomVars).forEach(key => {
+    if (typeof window[key] !== 'number') {
+      console.warn(`⚠️ 变量${key}未定义，已默认设为0`);
+      window[key] = 0;
+    }
+  });
+
+  // 4. 销毁旧图表（避免重复渲染冲突）
+  if (window.healthChart) {
+    window.healthChart.destroy();
+  }
+
+  // 5. 获取绘图上下文并创建图表
+  const ctx = canvas.getContext('2d');
   window.healthChart = new Chart(ctx, {
     type: 'bar',
     data: {
@@ -2495,7 +2538,7 @@ document.addEventListener('DOMContentLoaded', function() {
       datasets: [{
         label: '症狀風險指標',
         data: [
-          (window.headSymptoms / 12) * 100 || 0,          // 增加容错处理
+          (window.headSymptoms / 12) * 100 || 0,
           (window.entSymptoms / 20) * 100 || 0,
           (window.respiratorySymptoms / 8) * 100 || 0,
           (window.circulatorySymptoms / 11) * 100 || 0,
@@ -2515,11 +2558,10 @@ document.addEventListener('DOMContentLoaded', function() {
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      // 确保中文正常显示
       plugins: {
         legend: {
           position: 'top',
-          labels: { font: { family: 'Arial, sans-serif' } }
+          labels: { font: { family: 'system-ui, sans-serif' } }
         },
         tooltip: {
           callbacks: {
@@ -2529,7 +2571,7 @@ document.addEventListener('DOMContentLoaded', function() {
         title: {
           display: true,
           text: '十大症狀風險分布',
-          font: { size: 16, family: 'Arial, sans-serif' }
+          font: { size: 16, family: 'system-ui, sans-serif' }
         }
       },
       scales: {
@@ -2539,39 +2581,27 @@ document.addEventListener('DOMContentLoaded', function() {
           title: {
             display: true,
             text: '風險百分比 (%)',
-            font: { family: 'Arial, sans-serif' }
+            font: { family: 'system-ui, sans-serif' }
           },
           ticks: {
             callback: v => v + '%',
-            font: { family: 'Arial, sans-serif' }
-          },
-          grid: { display: true }
+            font: { family: 'system-ui, sans-serif' }
+          }
         },
         x: {
           title: {
             display: true,
             text: '症狀分類',
-            font: { family: 'Arial, sans-serif' }
+            font: { family: 'system-ui, sans-serif' }
           },
           ticks: {
-            font: { family: 'Arial, sans-serif' },
-            // 解决标签过长问题
-            maxRotation: 45,
+            font: { family: 'system-ui, sans-serif' },
+            maxRotation: 45,  // 标签旋转避免重叠
             minRotation: 45
-          },
-          grid: { display: false }
+          }
         }
       },
-      // 增加动画效果，确认图表是否渲染
-      animation: {
-        duration: 1000,
-        easing: 'easeOutQuart'
-      }
-    }
-  });
-});
-     }
-
+      animation: { duration: 1000 }  // 动画确认渲染
 
 
   // 初始化頁面
