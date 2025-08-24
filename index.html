@@ -2662,125 +2662,124 @@ function submitToGoogleSheets() {
     }
     
     // 通用健康建議
-    recommendationsContainer.innerHTML += `
-      <div class="bg-neutral p-4 rounded-lg">
-        <h4 class="font-medium text-primary mb-2">通用健康建議</h4>
-        <ul class="text-sm text-neutral-dark/80 space-y-1 list-disc pl-5">
-          <li>保持均衡飲食，多吃蔬菜水果，減少高脂高糖食物攝入</li>
-          <li>定期進行健康體檢，及時發現潛在健康風險</li>
-          <li>戒煙限酒，減少對身體的傷害</li>
-          <li>保持良好心態，學會應對壓力和情緒管理</li>
-        </ul>
-      </div>
-    `;
+recommendationsContainer.innerHTML += `
+  <div class="bg-neutral p-4 rounded-lg">
+    <h4 class="font-medium text-primary mb-2">通用健康建議</h4>
+    <ul class="text-sm text-neutral-dark/80 space-y-1 list-disc pl-5">
+      <li>保持均衡飲食，多吃蔬菜水果，減少高脂高糖食物攝入</li>
+      <li>定期進行健康體檢，及時發現潛在健康風險</li>
+      <li>戒煙限酒，減少對身體的傷害</li>
+      <li>保持良好心態，學會應對壓力和情緒管理</li>
+    </ul>
+  </div>
+`;
 
-    
-    // 生成健康症狀分類佔比圖（直式顯示）
-    const ctx = document.getElementById('healthBarChart').getContext('2d');
 
-    // 銷毀已存在的圖表
-    if (window.healthChart) {
-      window.healthChart.destroy();
-    }
+// 生成健康症狀分類佔比圖（橫式顯示）
+const ctx = document.getElementById('healthBarChart').getContext('2d');
 
-    // 處理無數據情況
-    if (categoryData.length === 0) {
-      const chartContainer = document.getElementById('healthBarChart').parentNode;
-      chartContainer.innerHTML = '<p class="text-center text-gray-500 py-10">未選擇任何症狀，無法生成圖表</p>';
-      return;
-    }
+// 銷毀已存在的圖表
+if (window.healthChart) {
+  window.healthChart.destroy();
+}
 
-    // 創建新的分類佔比圖（直式顯示）
-    window.healthChart = new Chart(ctx, {
-      type: 'bar',
-      data: {
-        labels: categoryData.map(item => item.category), // X軸：分類名稱（水平顯示）
-        datasets: [{
-          label: '症狀佔比',
-          data: categoryData.map(item => item.percentage), // Y軸：百分比（垂直高度）
-          backgroundColor: categoryData.map(item => 
-            item.category === '女性症狀' ? 'rgba(233, 30, 99, 0.7)' : 'rgba(22, 93, 255, 0.7)'
-          ),
-          borderColor: categoryData.map(item => 
-            item.category === '女性症狀' ? 'rgba(233, 30, 99, 1)' : 'rgba(22, 93, 255, 1)'
-          ),
-          borderWidth: 1
-        }]
-      },
-      options: {
-        indexAxis: 'x', // 直式顯示（取消水平條形圖設置）
-        scales: {
-          y: {
-            beginAtZero: true,
-            max: 100, // 百分比最大值100
-            title: {
-              display: true,
-              text: '佔比百分比 (%)'
-            },
-            ticks: {
-              callback: function(value) {
-                return value + '%'; // Y軸刻度顯示百分比符號
-              }
-            }
-          },
-          x: {
-            title: {
-              display: true,
-              text: '症狀分類'
-            },
-            ticks: {
-              autoSkip: false, // 不自動跳過標籤
-              maxRotation: 45, // 標籤最大旋轉角度
-              minRotation: 45  // 標籤最小旋轉角度（避免文字重疊）
-            }
-          }
+// 處理無數據情況
+if (categoryData.length === 0) {
+  const chartContainer = document.getElementById('healthBarChart').parentNode;
+  chartContainer.innerHTML = '<p class="text-center text-gray-500 py-10">未選擇任何症狀，無法生成圖表</p>';
+  return;
+}
+
+// 創建新的分類佔比圖（橫式顯示）
+window.healthChart = new Chart(ctx, {
+  type: 'bar',
+  data: {
+    // 橫式圖表中，labels顯示在Y軸
+    labels: categoryData.map(item => item.category), 
+    datasets: [{
+      label: '症狀佔比',
+      data: categoryData.map(item => item.percentage), // 數據決定橫向長度
+      backgroundColor: categoryData.map(item => 
+        item.category === '女性症狀' ? 'rgba(233, 30, 99, 0.7)' : 'rgba(22, 93, 255, 0.7)'
+      ),
+      borderColor: categoryData.map(item => 
+        item.category === '女性症狀' ? 'rgba(233, 30, 99, 1)' : 'rgba(22, 93, 255, 1)'
+      ),
+      borderWidth: 1
+    }]
+  },
+  options: {
+    indexAxis: 'y', // 關鍵設置：將條形圖改為橫向顯示（Y軸為分類，X軸為數值）
+    scales: {
+      x: { // 橫向軸（原Y軸）顯示百分比
+        beginAtZero: true,
+        max: 100, // 百分比最大值100
+        title: {
+          display: true,
+          text: '佔比百分比 (%)'
         },
-        plugins: {
-          legend: {
-            display: true,
-            labels: {
-              generateLabels: function(chart) {
-                return [
-                  {
-                    text: '一般症狀分類',
-                    fillStyle: 'rgba(22, 93, 255, 0.7)',
-                    strokeStyle: 'rgba(22, 93, 255, 1)',
-                    lineWidth: 1,
-                    hidden: false,
-                    index: 0
-                  },
-                  ...(isFemale ? [{
-                    text: '女性特有症狀分類',
-                    fillStyle: 'rgba(233, 30, 99, 0.7)',
-                    strokeStyle: 'rgba(233, 30, 99, 1)',
-                    lineWidth: 1,
-                    hidden: false,
-                    index: 1
-                  }] : [])
-                ];
-              }
-            }
-          },
-          tooltip: {
-            callbacks: {
-              label: function(context) {
-                const item = categoryData[context.dataIndex];
-                return `數量: ${item.count} 個 (${item.percentage}%)`;
-              }
-            }
-          },
-          title: {
-            display: true,
-            text: `健康風險分布${isFemale ? '（含女性特有分類）' : ''}`,
-            font: {
-              size: 16
-            }
+        ticks: {
+          callback: function(value) {
+            return value + '%'; // X軸刻度顯示百分比符號
           }
         }
+      },
+      y: { // 縱向軸（原X軸）顯示分類名稱
+        title: {
+          display: true,
+          text: '症狀分類'
+        },
+        ticks: {
+          autoSkip: false // 不自動跳過標籤，確保所有分類可見
+        }
       }
-    });
+    },
+    plugins: {
+      legend: {
+        display: true,
+        labels: {
+          generateLabels: function(chart) {
+            return [
+              {
+                text: '一般症狀分類',
+                fillStyle: 'rgba(22, 93, 255, 0.7)',
+                strokeStyle: 'rgba(22, 93, 255, 1)',
+                lineWidth: 1,
+                hidden: false,
+                index: 0
+              },
+              ...(isFemale ? [{
+                text: '女性特有症狀分類',
+                fillStyle: 'rgba(233, 30, 99, 0.7)',
+                strokeStyle: 'rgba(233, 30, 99, 1)',
+                lineWidth: 1,
+                hidden: false,
+                index: 1
+              }] : [])
+            ];
+          }
+        }
+      },
+      tooltip: {
+        callbacks: {
+          label: function(context) {
+            const item = categoryData[context.dataIndex];
+            return `數量: ${item.count} 個 (${item.percentage}%)`;
+          }
+        }
+      },
+      title: {
+        display: true,
+        text: `健康風險分布${isFemale ? '（含女性特有分類）' : ''}`,
+        font: {
+          size: 16
+        }
+      }
+    }
   }
-
+});
+}
+  
   // 初始化頁面
   updateFormSteps();
   // 初始檢查性別UI
