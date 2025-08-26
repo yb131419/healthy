@@ -1750,65 +1750,31 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-  // 當前步驟
-  let currentStep = 1;
-  const totalSteps = 4;
-
-  // DOM 元素
-  const menuToggle = document.getElementById('menuToggle');
-  const mobileMenu = document.getElementById('mobileMenu');
-  const prevBtn = document.getElementById('prevBtn');
-  const nextBtn = document.getElementById('nextBtn');
-  const submitBtn = document.getElementById('submitBtn');
-  const viewResultBtn = document.getElementById('viewResultBtn');
-  const restartBtn = document.getElementById('restartBtn');
-  const downloadReportBtn = document.getElementById('downloadReportBtn');
-  const successModal = document.getElementById('successModal');
-  const resultSection = document.getElementById('result');
-  const healthDeclaration = document.getElementById('healthDeclaration');
-  // 性別相關元素
+  let currentStep = 1, totalSteps = 4;
+  const menuToggle = document.getElementById('menuToggle'), mobileMenu = document.getElementById('mobileMenu');
+  const prevBtn = document.getElementById('prevBtn'), nextBtn = document.getElementById('nextBtn'), submitBtn = document.getElementById('submitBtn');
+  const viewResultBtn = document.getElementById('viewResultBtn'), restartBtn = document.getElementById('restartBtn'), downloadReportBtn = document.getElementById('downloadReportBtn');
+  const successModal = document.getElementById('successModal'), resultSection = document.getElementById('result');
   const genderRadios = document.querySelectorAll('input[name="gender"]');
   const femaleSymptomTab = document.querySelector('.symptom-tab[data-category="female"]');
   const femaleSymptomItems = document.querySelectorAll('.symptom-item[data-category="female"]');
 
   // 導航菜單切換
-  menuToggle.addEventListener('click', () => {
-    mobileMenu.classList.toggle('hidden');
-  });
+  menuToggle.addEventListener('click', () => mobileMenu.classList.toggle('hidden'));
 
-  // 監聽性別選擇變化，控制女性症狀標籤顯示
-  genderRadios.forEach(radio => {
-    radio.addEventListener('change', updateGenderBasedUI);
-  });
-
-  // 根據性別更新UI（隱藏/顯示女性相關內容）
+  // 性別控制：隱藏男性不應出現的選項（含產後症狀）
+  genderRadios.forEach(radio => radio.addEventListener('change', updateGenderBasedUI));
   function updateGenderBasedUI() {
     const selectedGender = document.querySelector('input[name="gender"]:checked')?.value;
-    
-    // 控制女性症狀分類標籤顯示
     if (selectedGender === 'male') {
-      // 男性：隱藏女性症狀標籤和內容
       if (femaleSymptomTab) femaleSymptomTab.style.display = 'none';
-      femaleSymptomItems.forEach(item => {
-        item.style.display = 'none';
-      });
-      
-      // 如果當前選中的是女性症狀標籤，自動切換到全部
+      femaleSymptomItems.forEach(item => item.style.display = 'none');
       const activeTab = document.querySelector('.symptom-tab.active');
-      if (activeTab && activeTab.getAttribute('data-category') === 'female') {
-        document.querySelector('.symptom-tab[data-category="all"]').click();
-      }
+      if (activeTab?.getAttribute('data-category') === 'female') document.querySelector('.symptom-tab[data-category="all"]').click();
     } else {
-      // 女性或未選擇：顯示女性症狀標籤和內容
       if (femaleSymptomTab) femaleSymptomTab.style.display = 'inline-flex';
-      
-      // 如果當前是全部標籤，顯示女性症狀內容
-      const activeTab = document.querySelector('.symptom-tab.active');
-      if (activeTab && activeTab.getAttribute('data-category') === 'all') {
-        femaleSymptomItems.forEach(item => {
-          item.style.display = 'block';
-        });
-      }
+      if (document.querySelector('.symptom-tab.active')?.getAttribute('data-category') === 'all')
+        femaleSymptomItems.forEach(item => item.style.display = 'block');
     }
   }
 
@@ -1817,1099 +1783,377 @@ document.addEventListener('DOMContentLoaded', function() {
     if (currentStep > 1) {
       currentStep--;
       updateFormSteps();
-      // 如果回到第一步，重新檢查性別設置
-      if (currentStep === 1) {
-        updateGenderBasedUI();
-      }
+      if (currentStep === 1) updateGenderBasedUI();
     }
   });
-
   nextBtn.addEventListener('click', () => {
-    // 驗證當前步驟
-    if (validateStep(currentStep)) {
-      if (currentStep < totalSteps) {
-        currentStep++;
-        updateFormSteps();
-        // 如果進入第二步（症狀頁），檢查性別設置
-        if (currentStep === 2) {
-          updateGenderBasedUI();
-        }
-      }
+    if (validateStep(currentStep) && currentStep < totalSteps) {
+      currentStep++;
+      updateFormSteps();
+      if (currentStep === 2) updateGenderBasedUI();
     }
   });
 
-  // 表單驗證函數
+  // 表單驗證
   function validateStep(step) {
     let isValid = true;
+    document.querySelectorAll('.error-message').forEach(el => el.classList.add('hidden'));
+    document.querySelectorAll('input, select, textarea').forEach(el => el.classList.remove('error-input'));
     
-    // 清除之前的錯誤提示
-    document.querySelectorAll('.error-message').forEach(el => {
-      el.classList.add('hidden');
-    });
-    document.querySelectorAll('input, select, textarea').forEach(el => {
-      el.classList.remove('error-input');
-    });
-    
-    // 驗證第一步：基本信息
     if (step === 1) {
-      const name = document.getElementById('name').value.trim();
-      const age = document.getElementById('age').value.trim();
+      const name = document.getElementById('name').value.trim(), age = document.getElementById('age').value.trim();
       const genderSelected = document.querySelector('input[name="gender"]:checked');
-      
-      // 驗證姓名
-      if (!name) {
-        showError('name', '請輸入您的姓名');
-        isValid = false;
-      }
-      
-      // 驗證年齡
-      if (!age || isNaN(age) || age < 1 || age > 120) {
-        showError('age', '請輸入有效的年齡（1-120歲）');
-        isValid = false;
-      }
-      
-      // 驗證性別
-      if (!genderSelected) {
-        showError('gender', '請選擇您的性別');
-        isValid = false;
-      }
-    }
-    // 驗證第四步：健康評估
-    else if (step === 4) {
-      const mainConcern = document.getElementById('mainConcern').value.trim();
-      const symptomDuration = document.getElementById('symptomDuration').value;
-      const allergySelected = document.querySelector('input[name="allergyHistory"]:checked');
-      const medicalSelected = document.querySelector('input[name="medicalHistory"]:checked');
+      if (!name) { showError('name', '請輸入姓名'); isValid = false; }
+      if (!age || isNaN(age) || age < 1 || age > 120) { showError('age', '請輸入1-120歲有效年齡'); isValid = false; }
+      if (!genderSelected) { showError('gender', '請選擇性別'); isValid = false; }
+    } else if (step === 4) {
+      const mainConcern = document.getElementById('mainConcern').value.trim(), symptomDuration = document.getElementById('symptomDuration').value;
+      const allergySelected = document.querySelector('input[name="allergyHistory"]:checked'), medicalSelected = document.querySelector('input[name="medicalHistory"]:checked');
       const declarationChecked = document.getElementById('healthDeclaration').checked;
-      
-      // 驗證主要關注問題
-      if (!mainConcern) {
-        showError('mainConcern', '請描述您最關注的健康問題');
-        isValid = false;
-      }
-      
-      // 驗證症狀持續時間
-      if (!symptomDuration) {
-        showError('symptomDuration', '請選擇症狀持續時間');
-        isValid = false;
-      }
-      
-      // 驗證過敏史
-      if (!allergySelected) {
-        showError('allergyHistory', '請選擇是否有過敏史');
-        isValid = false;
-      }
-      
-      // 驗證手術史或既往病史
-      if (!medicalSelected) {
-        showError('medicalHistory', '請選擇是否有手術史或既往病史');
-        isValid = false;
-      }
-      
-      // 驗證健康宣言
-      if (!declarationChecked) {
-        showError('declaration', '請閱讀並同意健康宣言');
-        isValid = false;
-      }
+      if (!mainConcern) { showError('mainConcern', '請描述關注健康問題'); isValid = false; }
+      if (!symptomDuration) { showError('symptomDuration', '請選擇症狀持續時間'); isValid = false; }
+      if (!allergySelected) { showError('allergyHistory', '請選擇是否有過敏史'); isValid = false; }
+      if (!medicalSelected) { showError('medicalHistory', '請選擇是否有病史'); isValid = false; }
+      if (!declarationChecked) { showError('declaration', '請同意健康宣言'); isValid = false; }
     }
-    
     return isValid;
   }
 
-  // 顯示錯誤信息
+  // 錯誤提示
   function showError(fieldId, message) {
-    const errorElement = document.getElementById(`${fieldId}Error`);
-    if (errorElement) {
-      errorElement.textContent = message;
-      errorElement.classList.remove('hidden');
-    }
-    
-    const inputElement = document.getElementById(fieldId);
-    if (inputElement) {
-      inputElement.classList.add('error-input');
-      inputElement.focus();
-    } else {
-      // 處理沒有單個輸入框的情況
-      const fieldElement = document.querySelector(`input[name="${fieldId}"]`) || 
-                          document.querySelector(`input[id="${fieldId}"]`);
-      if (fieldElement) {
-        fieldElement.closest('div').scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
-    }
+    const errorEl = document.getElementById(`${fieldId}Error`);
+    if (errorEl) { errorEl.textContent = message; errorEl.classList.remove('hidden'); }
+    const inputEl = document.getElementById(fieldId) || document.querySelector(`input[name="${fieldId}"]`);
+    if (inputEl) { inputEl.classList.add('error-input'); inputEl.focus(); inputEl.closest('div')?.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
   }
 
-  // 提交表單
+  // 表單提交
   submitBtn.addEventListener('click', () => {
     if (validateStep(4)) {
-      // 顯示成功模態框
       successModal.classList.remove('hidden');
-      // 模擬加載過程
       setTimeout(async () => {
-        // 先提交數據到Google Sheets
         const submitSuccess = await submitToGoogleSheets();
-        if (submitSuccess) {
-          generateResult();
-        } else {
-          alert('數據提交失敗，請重試');
-          successModal.classList.add('hidden');
-        }
+        submitSuccess ? generateResult() : (alert('數據提交失敗，請重試'), successModal.classList.add('hidden'));
       }, 1500);
     }
   });
 
-  // 提交數據到Google Sheets
+  // 提交到Google Sheets
   function submitToGoogleSheets() {
     return new Promise((resolve, reject) => {
       try {
-        // 1. 收集表單數據
-        const formData = collectFormData();
-        
-        // 2. 轉換數據為URL參數（JSONP僅支持GET，需序列化數據）
-        const params = new URLSearchParams();
-        params.append('data', JSON.stringify(formData));
-        // 生成唯一回調函數名（避免緩存）
+        const formData = collectFormData(), params = new URLSearchParams();
         const callbackName = `jsonpCallback_${Date.now()}`;
+        params.append('data', JSON.stringify(formData));
         params.append('callback', callbackName);
-        
-        // 3. 替換為你的Google Apps Script Web應用URL
         const googleSheetUrl = 'https://script.google.com/macros/s/AKfycbwQH5XE3u9vgedphUCOnXpYl9WG4-3ScF29SYoSb3MGLMQX28qBeY3tqt56PiIFsAtw4w/exec';
-        const fullUrl = `${googleSheetUrl}?${params.toString()}`;
-        
-        // 4. 創建JSONP腳本標籤
         const script = document.createElement('script');
-        script.src = fullUrl;
-        script.type = 'text/javascript';
+        script.src = `${googleSheetUrl}?${params.toString()}`;
         script.async = true;
         
-        // 5. 定義回調函數
         window[callbackName] = function(response) {
-          // 清理回調和腳本標籤
           delete window[callbackName];
           document.body.removeChild(script);
-          
-          if (response.status === 'success') {
-            resolve(true);
-          } else {
-            reject(new Error(response.message || '提交失敗'));
-          }
+          response.status === 'success' ? resolve(true) : reject(new Error(response.message || '提交失敗'));
         };
         
-        // 6. 錯誤處理
-        script.onerror = function() {
-          delete window[callbackName];
-          document.body.removeChild(script);
-          reject(new Error('網絡錯誤，提交失敗'));
-        };
-        
-        // 7. 添加腳本到頁面
+        script.onerror = () => { delete window[callbackName]; document.body.removeChild(script); reject(new Error('網絡錯誤')); };
         document.body.appendChild(script);
-        
-      } catch (error) {
-        console.error('JSONP提交錯誤:', error);
-        reject(error);
-      }
+      } catch (e) { console.error('提交錯誤:', e); reject(e); }
     });
   }
 
   // 收集表單數據
   function collectFormData() {
-    // 基本信息
-    const name = document.getElementById('name').value || '未填寫';
-    const age = document.getElementById('age').value || '未填寫';
-    const genderElem = document.querySelector('input[name="gender"]:checked');
-    const gender = genderElem ? (genderElem.value === 'male' ? '男' : '女') : '未填寫';
-    const phone = document.getElementById('phone').value || '未填寫';
-    const height = document.getElementById('height').value ? `${document.getElementById('height').value} cm` : '未填寫';
-    const weight = document.getElementById('weight').value ? `${document.getElementById('weight').value} kg` : '未填寫';
-    const waist = document.getElementById('waist').value ? `${document.getElementById('waist').value} cm` : '未填寫';
-    const bloodPressure = document.getElementById('bloodPressure').value || '未填寫';
-    const bloodSugar = document.getElementById('bloodSugar').value ? `${document.getElementById('bloodSugar').value} mmol/l` : '未填寫';
+    const name = document.getElementById('name').value || '未填寫', age = document.getElementById('age').value || '未填寫';
+    const genderElem = document.querySelector('input[name="gender"]:checked'), gender = genderElem ? (genderElem.value === 'male' ? '男' : '女') : '未填寫';
+    const phone = document.getElementById('phone').value || '未填寫', height = document.getElementById('height').value ? `${document.getElementById('height').value} cm` : '未填寫';
+    const weight = document.getElementById('weight').value ? `${document.getElementById('weight').value} kg` : '未填寫', waist = document.getElementById('waist').value ? `${document.getElementById('waist').value} cm` : '未填寫';
+    const bloodPressure = document.getElementById('bloodPressure').value || '未填寫', bloodSugar = document.getElementById('bloodSugar').value ? `${document.getElementById('bloodSugar').value} mmol/l` : '未填寫';
     const occupation = document.getElementById('occupation').value || '未填寫';
     
     // BMI計算
     let bmi = '未計算';
     if (document.getElementById('height').value && document.getElementById('weight').value) {
-      const h = parseFloat(document.getElementById('height').value) / 100;
-      const w = parseFloat(document.getElementById('weight').value);
+      const h = parseFloat(document.getElementById('height').value) / 100, w = parseFloat(document.getElementById('weight').value);
       if (h > 0) {
         const bmiValue = (w / (h * h)).toFixed(1);
-        let bmiStatus = '';
-        if (bmiValue < 18.5) bmiStatus = '（偏瘦）';
-        else if (bmiValue < 24) bmiStatus = '（正常）';
-        else if (bmiValue < 28) bmiStatus = '（超重）';
-        else bmiStatus = '（肥胖）';
+        let bmiStatus = bmiValue < 18.5 ? '（偏瘦）' : bmiValue < 24 ? '（正常）' : bmiValue < 28 ? '（超重）' : '（肥胖）';
         bmi = `${bmiValue} ${bmiStatus}`;
       }
     }
     
-    // 症狀信息
-    const symptomElements = document.querySelectorAll('input[name="symptoms"]:checked');
-    const selectedSymptoms = Array.from(symptomElements).map(checkbox => checkbox.value);
+    // 症狀/習慣收集
+    const selectedSymptoms = Array.from(document.querySelectorAll('input[name="symptoms"]:checked')).map(cb => cb.value);
+    const selectedHabits = Array.from(document.querySelectorAll('input[name="habits"]:checked')).map(cb => cb.value);
     
-    // 習慣信息
-    const habitElements = document.querySelectorAll('input[name="habits"]:checked');
-    const selectedHabits = Array.from(habitElements).map(checkbox => checkbox.value);
-    
-    // 健康問題信息
-    const mainConcern = document.getElementById('mainConcern').value || '未說明';
-    const symptomDuration = document.getElementById('symptomDuration').value || '未說明';
-    const possibleCauses = document.getElementById('possibleCauses').value || '未說明';
-    const allergyHistory = document.querySelector('input[name="allergyHistory"]:checked')?.value || '未選擇';
+    // 健康問題
+    const mainConcern = document.getElementById('mainConcern').value || '未說明', symptomDuration = document.getElementById('symptomDuration').value || '未說明';
+    const possibleCauses = document.getElementById('possibleCauses').value || '未說明', allergyHistory = document.querySelector('input[name="allergyHistory"]:checked')?.value || '未選擇';
     const medicalHistory = document.querySelector('input[name="medicalHistory"]:checked')?.value || '未選擇';
     
-    // 提交時間
-    const submitTime = new Date().toLocaleString('zh-CN', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit'
-    });
-
     return {
-      submitTime,
-      basicInfo: {
-        name,
-        age,
-        gender,
-        phone,
-        height,
-        weight,
-        bmi,
-        waist,
-        bloodPressure,
-        bloodSugar,
-        occupation
-      },
-      symptoms: selectedSymptoms.join('; '),
-      symptomCount: selectedSymptoms.length,
-      habits: selectedHabits.join('; '),
-      habitCount: selectedHabits.length,
-      healthIssues: {
-        mainConcern,
-        symptomDuration,
-        possibleCauses,
-        allergyHistory,
-        medicalHistory
-      }
+      submitTime: new Date().toLocaleString('zh-CN', {year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'}),
+      basicInfo: {name,age,gender,phone,height,weight,bmi,waist,bloodPressure,bloodSugar,occupation},
+      symptoms: selectedSymptoms.join('; '), symptomCount: selectedSymptoms.length,
+      habits: selectedHabits.join('; '), habitCount: selectedHabits.length,
+      healthIssues: {mainConcern,symptomDuration,possibleCauses,allergyHistory,medicalHistory}
     };
   }
 
-  // 查看結果
-  viewResultBtn.addEventListener('click', () => {
-    successModal.classList.add('hidden');
-    resultSection.classList.remove('hidden');
-    // 滾動到結果區域
-    resultSection.scrollIntoView({ behavior: 'smooth' });
-  });
-
-  // 重新評估
+  // 查看結果/重新評估
+  viewResultBtn.addEventListener('click', () => { successModal.classList.add('hidden'); resultSection.classList.remove('hidden'); resultSection.scrollIntoView({ behavior: 'smooth' }); });
   restartBtn.addEventListener('click', () => {
-    // 重置表單
-    document.querySelectorAll('input, textarea, select').forEach(element => {
-      if (element.type === 'checkbox' || element.type === 'radio') {
-        element.checked = false;
-      } else {
-        element.value = '';
-      }
-      element.classList.remove('error-input');
-    });
-    
-    // 清除錯誤提示
-    document.querySelectorAll('.error-message').forEach(el => {
-      el.classList.add('hidden');
-    });
-    
-    // 重置步驟
-    currentStep = 1;
-    updateFormSteps();
-    
-    // 重置性別相關UI
-    updateGenderBasedUI();
-    
-    // 隱藏結果區域
-    resultSection.classList.add('hidden');
-    
-    // 滾動到表單頂部
+    document.querySelectorAll('input, textarea, select').forEach(el => { if (el.type === 'checkbox' || el.type === 'radio') el.checked = false; else el.value = ''; el.classList.remove('error-input'); });
+    document.querySelectorAll('.error-message').forEach(el => el.classList.add('hidden'));
+    currentStep = 1; updateFormSteps(); updateGenderBasedUI(); resultSection.classList.add('hidden');
     document.getElementById('form').scrollIntoView({ behavior: 'smooth' });
   });
 
-  // 圖片處理函數：嘗試上傳至雲端，失敗則直接下載
-  async function handleImageDownload() {
+  // 圖片下載（原生保存，支持原生存檔）
+  downloadReportBtn.addEventListener('click', async () => {
     try {
-      // 顯示加載狀態
       downloadReportBtn.disabled = true;
       downloadReportBtn.innerHTML = '<i class="fa fa-spinner fa-spin mr-2"></i> 處理中...';
+      if (typeof html2canvas === 'undefined') throw new Error('圖片處理庫未加載，請刷新頁面');
       
-      // 確認 html2canvas 已加載
-      if (typeof html2canvas === 'undefined') {
-        throw new Error('圖片處理庫未加載，請刷新頁面重試');
-      }
-
-      // 獲取健康評估結果區域
       const reportElement = document.querySelector('#result .bg-white.rounded-2xl.shadow-md.p-6');
-      if (!reportElement) {
-        throw new Error('無法找到評估結果區域，請確保已生成報告');
-      }
-
-      // 臨時調整樣式確保截圖完整
+      if (!reportElement) throw new Error('未找到評估結果區域');
+      
       const originalPadding = reportElement.style.padding;
       reportElement.style.padding = '20px';
-      
-      // 捕獲結果區域為圖片
-      downloadReportBtn.innerHTML = '<i class="fa fa-camera mr-2"></i> 生成圖片...';
-      const canvas = await html2canvas(reportElement, {
-        useCORS: true,
-        allowTaint: false,
-        scale: 2, // 高分辨率
-        logging: false,
-        scrollY: -window.scrollY // 避免滾動影響截圖
-      });
-      
-      // 恢復原始樣式
+      const canvas = await html2canvas(reportElement, {useCORS: true, allowTaint: false, scale: 2, logging: false, scrollY: -window.scrollY});
       reportElement.style.padding = originalPadding;
       
-      // 獲取姓名和當前時間用於分享標題
+      // 原生保存（跳過雲端，直接本地存檔）
       const userName = document.getElementById('name').value.trim() || '未知用戶';
-      const currentDate = new Date();
-      const formattedDate = `${currentDate.getFullYear()}年${currentDate.getMonth() + 1}月${currentDate.getDate()}日`;
-      const shareTitle = `${userName} 的健康評估報告`;
-      const shareFileName = `${shareTitle}_${formattedDate}.png`;
+      const formattedDate = `${new Date().getFullYear()}年${new Date().getMonth() + 1}月${new Date().getDate()}日`;
+      const fileName = `${userName}_健康評估報告_${formattedDate}.png`;
       
-      // 嘗試上傳至雲端
-      try {
-        downloadReportBtn.innerHTML = '<i class="fa fa-cloud-upload mr-2"></i> 嘗試上傳...';
-        
-        // 轉換為Blob
-        const blob = await new Promise((resolve, reject) => {
-          canvas.toBlob(blob => {
-            if (blob) resolve(blob);
-            else reject(new Error('無法生成圖片數據'));
-          }, 'image/jpg');
-        });
-        
-        // 上傳至imgbb
-        const formData = new FormData();
-        formData.append('image', blob, shareFileName);
-        
-        // 注意：請替換為您自己的imgbb API密鑰
-        const imgbbApiKey = '60691c91e77a7ad5a7eabaf332fbdffe'; // 示例密鑰
-        const response = await fetch(`https://api.imgbb.com/1/upload?key=${imgbbApiKey}`, {
-          method: 'POST',
-          body: formData,
-          timeout: 10000 // 10秒超時
-        });
-        
-        if (!response.ok) {
-          throw new Error(`上傳請求失敗: HTTP狀態碼 ${response.status}`);
-        }
-        
-        const result = await response.json();
-        
-        if (!result.success) {
-          const errorMsg = result.error?.message || '上傳失敗，原因未知';
-          throw new Error(`雲端上傳失敗: ${errorMsg}`);
-        }
-        
-        // 上傳成功，使用雲端URL下載
-        downloadReportBtn.innerHTML = '<i class="fa fa-download mr-2"></i> 開始下載...';
-        
-        const downloadLink = document.createElement('a');
-        downloadLink.download = shareFileName;
-        downloadLink.href = result.data.url;
-        downloadLink.target = '_blank';
-        document.body.appendChild(downloadLink);
-        downloadLink.click();
-        
-        setTimeout(() => {
-          document.body.removeChild(downloadLink);
-          downloadReportBtn.disabled = false;
-          downloadReportBtn.innerHTML = '<i class="fa fa-download mr-2"></i> 下載圖片';
-          alert('圖片已成功上傳至雲端並開始下載！');
-          
-          // 嘗試分享
-          setTimeout(() => {
-            shareImage(result.data.url, shareTitle, formattedDate);
-          }, 1000);
-        }, 1000);
-        
-      } catch (uploadError) {
-        console.warn('雲端上傳失敗，將嘗試直接下載:', uploadError);
-        
-        // 上傳失敗，直接從canvas下載
-        downloadReportBtn.innerHTML = '<i class="fa fa-download mr-2"></i> 直接下載...';
-        
-        const downloadLink = document.createElement('a');
-        downloadLink.download = shareFileName;
-        downloadLink.href = canvas.toDataURL('image/jpg');
-        document.body.appendChild(downloadLink);
-        downloadLink.click();
-        
-        setTimeout(() => {
-          document.body.removeChild(downloadLink);
-          downloadReportBtn.disabled = false;
-          downloadReportBtn.innerHTML = '<i class="fa fa-download mr-2"></i> 下載圖片';
-          alert('上傳圖片失敗，已直接下載圖片到本地。');
-        }, 1000);
-      }
+      const link = document.createElement('a');
+      link.download = fileName;
+      link.href = canvas.toDataURL('image/png', 1.0); // 1.0品質，原生PNG
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
       
-    } catch (error) {
-      console.error('圖片處理錯誤:', error);
-      // 恢復按鈕狀態
       downloadReportBtn.disabled = false;
       downloadReportBtn.innerHTML = '<i class="fa fa-download mr-2"></i> 下載圖片';
-      
-      // 顯示錯誤信息
-      alert('處理圖片時出錯: ' + error.message + '\n請嘗試再次下載。');
+      alert(`圖片已原生保存至本地，文件名：${fileName}`);
+    } catch (e) {
+      console.error('下載錯誤:', e);
+      downloadReportBtn.disabled = false;
+      downloadReportBtn.innerHTML = '<i class="fa fa-download mr-2"></i> 下載圖片';
+      alert('下載失敗：' + e.message);
     }
-  }
+  });
 
-  // 綁定下載按鈕事件
-  downloadReportBtn.addEventListener('click', handleImageDownload);
-
-  // 原生分享功能
-  function shareImage(imageUrl, title, date) {
-    // 構建完整分享標題和內容
-    const fullTitle = title;
-    const shareText = `${title} \n(${date}) \n⬇️ 查看我的健康評估結果`;
-    
-    // 檢查瀏覽器是否支持Web Share API
-    if (navigator.share) {
-      // 創建臨時分享按鈕
-      const shareButton = document.createElement('button');
-      shareButton.id = 'tempShareButton';
-      shareButton.style.position = 'fixed';
-      shareButton.style.bottom = '20px';
-      shareButton.style.right = '20px';
-      shareButton.style.backgroundColor = '#165DFF';
-      shareButton.style.color = 'white';
-      shareButton.style.border = 'none';
-      shareButton.style.borderRadius = '50%';
-      shareButton.style.width = '60px';
-      shareButton.style.height = '60px';
-      shareButton.style.boxShadow = '0 2px 10px rgba(0,0,0,0.2)';
-      shareButton.style.display = 'flex';
-      shareButton.style.alignItems = 'center';
-      shareButton.style.justifyContent = 'center';
-      shareButton.style.zIndex = '1000';
-      shareButton.innerHTML = '<i class="fa fa-share-alt text-xl"></i>';
-      
-      // 添加到頁面
-      document.body.appendChild(shareButton);
-      
-      // 點擊按鈕觸發分享
-      shareButton.addEventListener('click', async () => {
-        try {
-          await navigator.share({
-            title: fullTitle,
-            text: shareText,
-            url: imageUrl,
-          });
-          alert('分享成功！');
-        } catch (error) {
-          console.error('分享失敗:', error);
-          alert('分享取消或失敗: ' + error.message);
-        } finally {
-          // 移除臨時按鈕
-          document.body.removeChild(shareButton);
-        }
-      });
-      
-      // 顯示提示
-      alert('圖片已上傳至雲端，點擊右下角按鈕分享報告');
-    } else {
-      // 瀏覽器不支持Web Share API
-      alert(`${fullTitle} (${date})\n您可以複製鏈接分享：\n${imageUrl}`);
-      // 複製鏈接到剪貼板
-      navigator.clipboard.writeText(imageUrl).then(() => {
-        alert('鏈接已複製到剪貼板');
-      }).catch(err => {
-        console.error('無法複製鏈接: ', err);
-        alert('鏈接複製失敗，請手動複製上面的鏈接');
-      });
-    }
-  }
-
-  // 更新表單步驟顯示
+  // 更新表單步驟
   function updateFormSteps() {
-    // 隱藏所有步驟
-    document.querySelectorAll('.form-step').forEach(step => {
-      step.classList.add('hidden');
-      step.classList.remove('active');
-    });
-    
-    // 顯示當前步驟
+    document.querySelectorAll('.form-step').forEach(step => { step.classList.add('hidden'); step.classList.remove('active'); });
     document.getElementById(`step${currentStep}`).classList.remove('hidden');
     document.getElementById(`step${currentStep}`).classList.add('active');
     
-    // 更新步驟指示器
-    document.querySelectorAll('.step-indicator').forEach((indicator, index) => {
-      if (index + 1 < currentStep) {
-        indicator.classList.remove('bg-gray-200', 'text-gray-500');
-        indicator.classList.add('bg-primary', 'text-white');
-      } else if (index + 1 === currentStep) {
-        indicator.classList.remove('bg-gray-200', 'text-gray-500');
-        indicator.classList.add('bg-primary', 'text-white');
-      } else {
-        indicator.classList.remove('bg-primary', 'text-white');
-        indicator.classList.add('bg-gray-200', 'text-gray-500');
-      }
+    document.querySelectorAll('.step-indicator').forEach((ind, idx) => {
+      if (idx + 1 < currentStep) ind.classList.replace('bg-gray-200 text-gray-500', 'bg-primary text-white');
+      else if (idx + 1 === currentStep) ind.classList.replace('bg-gray-200 text-gray-500', 'bg-primary text-white');
+      else ind.classList.replace('bg-primary text-white', 'bg-gray-200 text-gray-500');
     });
     
-    // 更新進度條
-    document.querySelectorAll('.step-progress').forEach((progress, index) => {
-      if (index + 1 < currentStep) {
-        progress.style.width = '100%';
-      } else {
-        progress.style.width = '0%';
-      }
-    });
-    
-    // 更新按鈕顯示
-    if (currentStep === 1) {
-      prevBtn.classList.add('hidden');
-    } else {
-      prevBtn.classList.remove('hidden');
-    }
-    
-    if (currentStep === totalSteps) {
-      nextBtn.classList.add('hidden');
-      submitBtn.classList.remove('hidden');
-    } else {
-      nextBtn.classList.remove('hidden');
-      submitBtn.classList.add('hidden');
-    }
-    
-    // 滾動到表單頂部
+    document.querySelectorAll('.step-progress').forEach((prog, idx) => prog.style.width = idx + 1 < currentStep ? '100%' : '0%');
+    currentStep === 1 ? prevBtn.classList.add('hidden') : prevBtn.classList.remove('hidden');
+    currentStep === totalSteps ? (nextBtn.classList.add('hidden'), submitBtn.classList.remove('hidden')) : (nextBtn.classList.remove('hidden'), submitBtn.classList.add('hidden'));
     document.getElementById('form').scrollIntoView({ behavior: 'smooth' });
   }
 
-  // 症狀分類篩選
+  // 症狀/習慣分類篩選
   document.querySelectorAll('.symptom-tab').forEach(tab => {
     tab.addEventListener('click', () => {
-      // 更新標籤樣式
-      document.querySelectorAll('.symptom-tab').forEach(t => {
-        t.classList.remove('active', 'bg-primary', 'text-white');
-        t.classList.add('bg-gray-200', 'hover:bg-gray-300');
-      });
-      tab.classList.add('active', 'bg-primary', 'text-white');
-      tab.classList.remove('bg-gray-200', 'hover:bg-gray-300');
-      
-      const category = tab.getAttribute('data-category');
-      const selectedGender = document.querySelector('input[name="gender"]:checked')?.value;
-      
-      // 篩選症狀
+      document.querySelectorAll('.symptom-tab').forEach(t => t.classList.replace('active bg-primary text-white', 'bg-gray-200 hover:bg-gray-300'));
+      tab.classList.replace('bg-gray-200 hover:bg-gray-300', 'active bg-primary text-white');
+      const category = tab.getAttribute('data-category'), selectedGender = document.querySelector('input[name="gender"]:checked')?.value;
       document.querySelectorAll('.symptom-item').forEach(item => {
-        // 男性用戶不顯示女性症狀
-        if (selectedGender === 'male' && item.getAttribute('data-category') === 'female') {
-          item.style.display = 'none';
-          return;
-        }
-        
-        // 正常篩選邏輯
-        if (category === 'all' || item.getAttribute('data-category') === category) {
-          item.style.display = 'block';
-        } else {
-          item.style.display = 'none';
-        }
+        if (selectedGender === 'male' && item.getAttribute('data-category') === 'female') item.style.display = 'none';
+        else item.style.display = category === 'all' || item.getAttribute('data-category') === category ? 'block' : 'none';
       });
     });
   });
 
-  // 習慣分類篩選
   document.querySelectorAll('.habit-tab').forEach(tab => {
     tab.addEventListener('click', () => {
-      // 更新標籤樣式
-      document.querySelectorAll('.habit-tab').forEach(t => {
-        t.classList.remove('active', 'bg-primary', 'text-white');
-        t.classList.add('bg-gray-200', 'hover:bg-gray-300');
-      });
-      tab.classList.add('active', 'bg-primary', 'text-white');
-      tab.classList.remove('bg-gray-200', 'hover:bg-gray-300');
-      
+      document.querySelectorAll('.habit-tab').forEach(t => t.classList.replace('active bg-primary text-white', 'bg-gray-200 hover:bg-gray-300'));
+      tab.classList.replace('bg-gray-200 hover:bg-gray-300', 'active bg-primary text-white');
       const category = tab.getAttribute('data-category');
-      
-      // 篩選習慣
-      document.querySelectorAll('.habit-item').forEach(item => {
-        if (category === 'all' || item.getAttribute('data-category') === category) {
-          item.style.display = 'block';
-        } else {
-          item.style.display = 'none';
-        }
-      });
-      
-      // 篩選習慣分類標題
-      document.querySelectorAll('.habit-category-title').forEach(title => {
-        if (category === 'all' || title.getAttribute('data-category') === category) {
-          title.parentElement.style.display = 'block';
-        } else {
-          title.parentElement.style.display = 'none';
-        }
-      });
+      document.querySelectorAll('.habit-item').forEach(item => item.style.display = category === 'all' || item.getAttribute('data-category') === category ? 'block' : 'none');
+      document.querySelectorAll('.habit-category-title').forEach(title => title.parentElement.style.display = category === 'all' || title.getAttribute('data-category') === category ? 'block' : 'none');
     });
   });
 
-    // 生成評估結果（含六邊形調理方向圖）
+  // 生成評估結果（核心）
   function generateResult() {
-    // 獲取基本資料
-    const name = document.getElementById('name').value || '未填寫';
-    const age = document.getElementById('age').value || '未填寫';
-    const genderElem = document.querySelector('input[name="gender"]:checked');
-    const gender = genderElem ? (genderElem.value === 'male' ? '男' : '女') : '未填寫';
-    const phone = document.getElementById('phone').value || '未填寫';
-    const height = document.getElementById('height').value ? `${document.getElementById('height').value} cm` : '未填寫';
-    const weight = document.getElementById('weight').value ? `${document.getElementById('weight').value} kg` : '未填寫';
-    const waist = document.getElementById('waist').value ? `${document.getElementById('waist').value} cm` : '未填寫';
-    const bloodPressure = document.getElementById('bloodPressure').value || '未填寫';
-    const bloodSugar = document.getElementById('bloodSugar').value ? `${document.getElementById('bloodSugar').value} mmol/l` : '未填寫';
-    const occupation = document.getElementById('occupation').value || '未填寫';
+    // 基本資料渲染
+    const name = document.getElementById('name').value || '未填寫', age = document.getElementById('age').value || '未填寫';
+    const genderElem = document.querySelector('input[name="gender"]:checked'), gender = genderElem ? (genderElem.value === 'male' ? '男' : '女') : '未填寫';
+    const phone = document.getElementById('phone').value || '未填寫', height = document.getElementById('height').value ? `${document.getElementById('height').value} cm` : '未填寫';
+    const weight = document.getElementById('weight').value ? `${document.getElementById('weight').value} kg` : '未填寫', waist = document.getElementById('waist').value ? `${document.getElementById('waist').value} cm` : '未填寫';
+    const bloodPressure = document.getElementById('bloodPressure').value || '未填寫', bloodSugar = document.getElementById('bloodSugar').value ? `${document.getElementById('bloodSugar').value} mmol/l` : '未填寫';
+    const occupation = document.getElementById('occupation').value || '未填寫', isFemale = gender === '女';
     
-    // 計算BMI（如果有身高體重數據）
+    // BMI計算
     let bmi = '未計算';
     if (document.getElementById('height').value && document.getElementById('weight').value) {
-      const h = parseFloat(document.getElementById('height').value) / 100; // 轉為米
-      const w = parseFloat(document.getElementById('weight').value);
+      const h = parseFloat(document.getElementById('height').value) / 100, w = parseFloat(document.getElementById('weight').value);
       if (h > 0) {
         const bmiValue = (w / (h * h)).toFixed(1);
-        let bmiStatus = '';
-        if (bmiValue < 18.5) bmiStatus = '（偏瘦）';
-        else if (bmiValue < 24) bmiStatus = '（正常）';
-        else if (bmiValue < 28) bmiStatus = '（超重）';
-        else bmiStatus = '（肥胖）';
+        let bmiStatus = bmiValue < 18.5 ? '（偏瘦）' : bmiValue < 24 ? '（正常）' : bmiValue < 28 ? '（超重）' : '（肥胖）';
         bmi = `${bmiValue} ${bmiStatus}`;
       }
     }
     
-    // 顯示基本資料
-    const basicInfoContainer = document.getElementById('basicInfo');
-    basicInfoContainer.innerHTML = `
-      <div class="p-3 border border-gray-100 rounded-lg">
-        <p class="text-sm"><strong>姓名：</strong> ${name}</p>
-      </div>
-      <div class="p-3 border border-gray-100 rounded-lg">
-        <p class="text-sm"><strong>年齡：</strong> ${age} 歲</p>
-      </div>
-      <div class="p-3 border border-gray-100 rounded-lg">
-        <p class="text-sm"><strong>性別：</strong> ${gender}</p>
-      </div>
-      <div class="p-3 border border-gray-100 rounded-lg">
-        <p class="text-sm"><strong>電話：</strong> ${phone}</p>
-      </div>
-      <div class="p-3 border border-gray-100 rounded-lg">
-        <p class="text-sm"><strong>身高：</strong> ${height}</p>
-      </div>
-      <div class="p-3 border border-gray-100 rounded-lg">
-        <p class="text-sm"><strong>體重：</strong> ${weight}</p>
-      </div>
-      <div class="p-3 border border-gray-100 rounded-lg">
-        <p class="text-sm"><strong>BMI：</strong> ${bmi}</p>
-      </div>
-      <div class="p-3 border border-gray-100 rounded-lg">
-        <p class="text-sm"><strong>腰圍：</strong> ${waist}</p>
-      </div>
-      <div class="p-3 border border-gray-100 rounded-lg">
-        <p class="text-sm"><strong>血壓：</strong> ${bloodPressure}</p>
-      </div>
-      <div class="p-3 border border-gray-100 rounded-lg">
-        <p class="text-sm"><strong>血糖：</strong> ${bloodSugar}</p>
-      </div>
-      <div class="p-3 border border-gray-100 rounded-lg md:col-span-2">
-        <p class="text-sm"><strong>職業：</strong> ${occupation}</p>
-      </div>
+    // 渲染基本資料
+    document.getElementById('basicInfo').innerHTML = `
+      <div class="p-3 border border-gray-100 rounded-lg"><p class="text-sm"><strong>姓名：</strong>${name}</p></div>
+      <div class="p-3 border border-gray-100 rounded-lg"><p class="text-sm"><strong>年齡：</strong>${age} 歲</p></div>
+      <div class="p-3 border border-gray-100 rounded-lg"><p class="text-sm"><strong>性別：</strong>${gender}</p></div>
+      <div class="p-3 border border-gray-100 rounded-lg"><p class="text-sm"><strong>電話：</strong>${phone}</p></div>
+      <div class="p-3 border border-gray-100 rounded-lg"><p class="text-sm"><strong>身高：</strong>${height}</p></div>
+      <div class="p-3 border border-gray-100 rounded-lg"><p class="text-sm"><strong>體重：</strong>${weight}</p></div>
+      <div class="p-3 border border-gray-100 rounded-lg"><p class="text-sm"><strong>BMI：</strong>${bmi}</p></div>
+      <div class="p-3 border border-gray-100 rounded-lg"><p class="text-sm"><strong>腰圍：</strong>${waist}</p></div>
+      <div class="p-3 border border-gray-100 rounded-lg"><p class="text-sm"><strong>血壓：</strong>${bloodPressure}</p></div>
+      <div class="p-3 border border-gray-100 rounded-lg"><p class="text-sm"><strong>血糖：</strong>${bloodSugar}</p></div>
+      <div class="p-3 border border-gray-100 rounded-lg md:col-span-2"><p class="text-sm"><strong>職業：</strong>${occupation}</p></div>
     `;
     
-    // 獲取選中的症狀和習慣
-    const symptomElements = document.querySelectorAll('input[name="symptoms"]:checked');
-    const selectedSymptoms = Array.from(symptomElements).map(checkbox => checkbox.value);
-    const totalSymptomCount = selectedSymptoms.length; // 總選中症狀數
+    // 症狀/習慣數據
+    const symptomElements = document.querySelectorAll('input[name="symptoms"]:checked'), selectedSymptoms = Array.from(symptomElements).map(cb => cb.value);
+    const totalSymptomCount = selectedSymptoms.length, habitElements = document.querySelectorAll('input[name="habits"]:checked');
+    const selectedHabits = Array.from(habitElements).map(cb => cb.value), habitCount = selectedHabits.length;
     
-    const habitElements = document.querySelectorAll('input[name="habits"]:checked');
-    const selectedHabits = Array.from(habitElements).map(checkbox => checkbox.value);
-    const habitCount = selectedHabits.length;
+    // -------------------------- 核心：六大調理+無重複症狀映射 --------------------------
+    const adjustmentDirections = {
+      體質: ['頭部怕冷','四肢乏力','平衡差/易摔交','思維斷電','反應遲鈍','易打哈欠','眼疲勞','耳鳴/耳聾','聽力下降','嗅覺不靈','嗓子異物感','聲音嘶啞','嘆氣/氣短/喘','打鼾','手足麻木/發青','手腳熱/涼/脹/出汗','胃痛/酸/脹/涼','惡心/打嗝/噯氣','消化不良','唇白/青/麻','唇裂/咽乾','手腳抽搐/手腳抖','關節痛/腫','腰酸痛/腰涼','易落枕/脖子硬','肩酸/麻/痛','頸疼痛/頸涼','頸部水牛背','游走性疼痛','脊椎僵硬/脊椎疼痛','容易扭傷','腳後跟疼','手/足脫皮/凍瘡','經期小腹怕涼','經期小腹下墜','經期腹脹/痛經','經期腰痛/頭痛','經期困倦/失眠','經期厭食/浮腫','經期煩躁/胸脹','起夜/尿頻/尿急','尿不淨/尿床','外陰瘙癢/異味','低熱37-38℃'],
+      免疫: ['過敏性鼻炎','眼癢/脹/凸/痛','眼怕光/眼流淚','眼乾澀/眼飛影','感冒時間長','易感冒/不感冒','咳嗽/哮喘','支氣管炎','痰多/黃/涼','痰白/黑/血','口腔潰瘍/舌潰瘍','淋巴腫大','各種過敏/濕疹','皮膚癢/後背痘','牛皮癬/白癜風','黑痣變大/多','蜘蛛痣/魚鱗病','扁桃體炎','皮膚易青/紅點'],
+      毒素: ['眼屎多/麥粒腫','耳內潮濕/膿','耳屎多/痛/癢','鼻炎/鼻塞','鼻流涕/鼻流血','打噴嚏','酒糟鼻','口苦/乾/臭/腥','口咸/甜/酸','口氣重/口辣','舌苔厚/黃/膩','地圖舌/舌白點','舌質紫暗/舌邊鋸齒','舌硬/舌額','腹脹/屁多/臭','大便不成形','便溏不淨/便秘','血管瘤/脂肪瘤','纖維瘤/粉瘤','膽結石/腎結石','扁平疣/尋常疣','皮贅/雞眼','頭/面油膩','面頰泛紅','面黃/白/黑','痤瘡/痘/斑','皮膚乾燥/皮炎','脂肪粒','身體異味','白帶多/血絲','白帶色黃/粘稠','白帶稀水/腥臭','經期長痘','月經暗/淡/黑','尿痛/尿血','尿分叉/尿等待','濃尿/怪味尿','尿渾濁/多沫','尿道口灼燒/發炎'],
+      營養: ['花眼','夜盲症','視力模糊','貧血/高血脂','形體消瘦','個頭矮/發育慢','半月痕無/少','指甲易斷/手指倒刺','指甲凹/竪紋','頭髮稀少','頭髮乾/脫發','白髮/斑禿','食慾差/易飽','偏食/厭食','食慾過旺'],
+      循環: ['頭疼/頭暈','頭麻/腦鳴','嗜睡/易醒','失眠/多夢','偏頭痛/健忘','懶語/結巴','暈車/暈機','眉骨痛','低血壓/高血壓','心絞痛','心跳快/慢','心慌/心律失常','胸悶/胸痛','右肝區悶痛','頭暈/頭麻/易打哈欠','面色異常（白/青）','小腿浮腫','靜脈曲張','小腹悶痛','睪丸腫塊/疝氣','肛門瘙癢','便血/痔瘡','脫肛/肛裂/肛瘻'],
+      內分泌: ['甲亢/甲減','甲狀腺結節','肥胖/將軍肚','形體消瘦','體重突增/減10%','低血糖/高血糖','高血脂','低熱37-38℃','產後脫發/抑鬱','產後色斑','不孕不育','流產/死胎','月經少/有塊','經量多/子宮肌瘤','經期提前/推後','子宮腺肌症','絕經','乳頭凹陷/流膿','乳房腫塊/增生','卵巢囊腫','宮頸息肉','宮頸肥大/囊腫','性慾低','自汗/多汗/盜汗','冒冷汗/後背涼']
+    };
     
-// -------------------------- 核心修改：十大症状全纳入六大调理方向（雷达图逻辑） --------------------------
-// 1. 定義六大調理方向及關聯症狀（包含十大症状分类的所有症状，无遗漏）
-const adjustmentDirections = {
-  體質: [
-    // 头部症状-体质相关
-    '頭部怕冷', '四肢乏力', '平衡差/易摔交', '思維斷電', '反應遲鈍', '易打哈欠',
-    // 眼耳鼻喉-体质相关
-    '眼疲勞', '耳鳴/耳聾', '聽力下降', '嗅覺不靈', '嗓子異物感', '聲音嘶啞',
-    // 呼吸系统-体质相关
-    '嘆氣/氣短/喘', '打鼾',
-    // 循环系统-体质相关
-    '手足麻木/發青', '手腳熱/涼/脹/出汗',
-    // 消化系统-体质相关
-    '胃痛/酸/脹/涼', '惡心/打嗝/噯氣', '消化不良', '食慾差/易飽', '偏食/厭食', '食慾過旺', '唇白/青/麻', '唇裂/咽乾',
-    // 内分泌与代谢-体质相关
-    '手腳抽搐/手腳抖',
-    // 肌肉骨骼与关节-体质相关
-    '關節痛/腫', '腰酸痛/腰涼', '易落枕/脖子硬', '肩酸/麻/痛', '頸疼痛/頸涼', '頸部水牛背', '游走性疼痛', '脊椎僵硬/脊椎疼痛', '容易扭傷', '腳後跟疼', '手/足脫皮/凍瘡',
-    // 女性症状-体质相关
-    '經期小腹怕涼', '經期小腹下墜', '經期腹脹/痛經', '經期腰痛/頭痛', '經期困倦/失眠', '經期厭食/浮腫', '經期煩躁/胸脹',
-    // 泌尿生殖系统-体质相关
-    '起夜/尿頻/尿急', '尿不淨/尿床', '外陰瘙癢/異味',
-    // 原有体质症状
-    '大便不成形', '便溏不淨/便秘', '低熱37-38℃', '感冒時間長', '易感冒/不感冒'
-  ],
-  免疫: [
-    // 头部症状-免疫相关（无直接关联，暂不添加）
-    // 眼耳鼻喉-免疫相关
-    '過敏性鼻炎', '眼癢/脹/凸/痛', '眼怕光/眼流淚', '眼乾澀/眼飛影',
-    // 呼吸系统-免疫相关
-    '感冒時間長', '易感冒/不感冒', '咳嗽/哮喘', '支氣管炎', '痰多/黃/涼', '痰白/黑/血',
-    // 循环系统-免疫相关（无直接关联，暂不添加）
-    // 消化系统-免疫相关
-    '口腔潰瘍/舌潰瘍',
-    // 内分泌与代谢-免疫相关
-    '淋巴腫大',
-    // 肌肉骨骼与关节-免疫相关（无直接关联，暂不添加）
-    // 皮肤与毛髮-免疫相关
-    '各種過敏/濕疹', '皮膚癢/後背痘', '牛皮癬/白癜風', '黑痣變大/多', '蜘蛛痣/魚鱗病',
-    // 女性症状-免疫相关（无直接关联，暂不添加）
-    // 泌尿生殖系统-免疫相关（无直接关联，暂不添加）
-    // 原有免疫症状
-    '扁桃體炎', '皮膚易青/紅點'
-  ],
-  毒素: [
-    // 头部症状-毒素相关（无直接关联，暂不添加）
-    // 眼耳鼻喉-毒素相关
-    '眼屎多/麥粒腫', '耳內潮濕/膿', '耳屎多/痛/癢', '鼻炎/鼻塞', '鼻流涕/鼻流血', '打噴嚏', '酒糟鼻',
-    // 呼吸系统-毒素相关（无直接关联，暂不添加）
-    // 循环系统-毒素相关（无直接关联，暂不添加）
-    // 消化系统-毒素相关
-    '口苦/乾/臭/腥', '口咸/甜/酸', '口氣重/口辣', '舌苔厚/黃/膩', '地圖舌/舌白點', '舌質紫暗/舌邊鋸齒', '舌硬/舌額', '腹脹/屁多/臭', '大便不成形', '便溏不淨/便秘',
-    // 内分泌与代谢-毒素相关
-    '血管瘤/脂肪瘤', '纖維瘤/粉瘤', '膽結石/腎結石', '扁平疣/尋常疣', '皮贅/雞眼',
-    // 肌肉骨骼与关节-毒素相关（无直接关联，暂不添加）
-    // 皮肤与毛髮-毒素相关
-    '頭/面油膩', '面頰泛紅', '面黃/白/黑', '痤瘡/痘/斑', '皮膚易青/紅點', '皮膚乾燥/皮炎', '脂肪粒', '身體異味',
-    // 女性症状-毒素相关
-    '白帶多/血絲', '白帶色黃/粘稠', '白帶稀水/腥臭', '經期長痘', '月經暗/淡/黑',
-    // 泌尿生殖系统-毒素相关
-    '尿痛/尿血', '尿分叉/尿等待', '濃尿/怪味尿', '尿渾濁/多沫', '尿道口灼燒/發炎',
-    // 原有毒素症状
-    '皮膚癢/後背痘'
-  ],
-  營養: [
-    // 头部症状-营养相关（无直接关联，暂不添加）
-    // 眼耳鼻喉-营养相关
-    '花眼', '夜盲症', '視力模糊',
-    // 呼吸系统-营养相关（无直接关联，暂不添加）
-    // 循环系统-营养相关
-    '貧血/高血脂',
-    // 消化系统-营养相关（无直接关联，暂不添加）
-    // 内分泌与代谢-营养相关
-    '形體消瘦', '肥胖/將軍肚', '個頭矮/發育慢', '體重突增/減10%', '半月痕無/少', '指甲易斷/手指倒刺', '指甲凹/竪紋',
-    // 肌肉骨骼与关节-营养相关（无直接关联，暂不添加）
-    // 皮肤与毛髮-营养相关
-    '頭髮稀少', '頭髮乾/脫發', '白髮/斑禿', '產後脫發/抑鬱', '產後色斑',
-    // 女性症状-营养相关（无直接关联，暂不添加）
-    // 泌尿生殖系统-营养相关（无直接关联，暂不添加）
-    // 原有营养症状
-    '食慾差/易飽', '偏食/厭食', '食慾過旺', '消化不良'
-  ],
-  循環: [
-    // 头部症状-循环相关
-    '頭疼/頭暈', '頭麻/腦鳴', '嗜睡/易醒', '失眠/多夢', '偏頭痛/健忘', '懶語/結巴', '暈車/暈機', '眉骨痛',
-    // 眼耳鼻喉-循环相关（无直接关联，暂不添加）
-    // 呼吸系统-循环相关（无直接关联，暂不添加）
-    // 循环系统-循环相关（核心）
-    '低血壓/高血壓', '貧血/高血脂', '心絞痛', '心跳快/慢', '心慌/心律失常', '胸悶/胸痛', '右肝區悶痛', '手足麻木/發青', '手腳熱/涼/脹/出汗', '頭暈/頭麻/易打哈欠', '面色異常（白/青）',
-    // 消化系统-循环相关（无直接关联，暂不添加）
-    // 内分泌与代谢-循环相关
-    '低血糖/高血糖', '高血脂',
-    // 肌肉骨骼与关节-循环相关
-    '小腿浮腫', '靜脈曲張',
-    // 皮肤与毛髮-循环相关（无直接关联，暂不添加）
-    // 女性症状-循环相关（无直接关联，暂不添加）
-    // 泌尿生殖系统-循环相关
-    '小腹悶痛', '睪丸腫塊/疝氣', '肛門瘙癢', '便血/痔瘡', '脫肛/肛裂/肛瘻',
-    // 原有循环症状
-    '靜脈曲張'
-  ],
-  內分泌: [
-    // 头部症状-内分泌相关（无直接关联，暂不添加）
-    // 眼耳鼻喉-内分泌相关（无直接关联，暂不添加）
-    // 呼吸系统-内分泌相关（无直接关联，暂不添加）
-    // 循环系统-内分泌相关（无直接关联，暂不添加）
-    // 消化系统-内分泌相关（无直接关联，暂不添加）
-    // 内分泌与代谢-内分泌相关（核心）
-    '甲亢/甲減', '甲狀腺結節', '肥胖/將軍肚', '形體消瘦', '體重突增/減10%', '低血糖/高血糖', '高血脂', '低熱37-38℃',
-    // 肌肉骨骼与关节-内分泌相关（无直接关联，暂不添加）
-    // 皮肤与毛髮-内分泌相关
-    '產後脫發/抑鬱', '產後色斑',
-    // 女性症状-内分泌相关（核心）
-    '不孕不育', '流產/死胎', '月經少/有塊', '經量多/子宮肌瘤', '經期提前/推後', '子宮腺肌症', '絕經', '乳頭凹陷/流膿', '乳房腫塊/增生', '卵巢囊腫', '宮頸息肉', '宮頸肥大/囊腫',
-    // 泌尿生殖系统-内分泌相关
-    '性慾低', '自汗/多汗/盜汗', '冒冷汗/後背涼',
-    // 原有内分泌症状
-    '卵巢囊腫', '不孕不育', '產後脫發/抑鬱'
-  ]
-};
-
-// 2. 計算各調理方向得分（邏輯不變，自動包含所有十大症状的匹配）
-const calculateAdjustmentScores = () => {
-  const scores = {};
-  const allIssues = [...selectedSymptoms, ...selectedHabits]; // 合併所有選中症狀（含十大分类）和不良習慣
-  
-  Object.entries(adjustmentDirections).forEach(([direction, relatedItems]) => {
-    // 統計該方向關聯的選中項數量（自動匹配十大分类的症状）
-    const matchedCount = allIssues.filter(item => relatedItems.includes(item)).length;
-    // 計算得分：(1 - 匹配數量/總關聯項數) * 100（避免除以0，得分越低需調理）
-    const totalRelated = relatedItems.length || 1;
-    const score = Math.max(0, Math.round((1 - matchedCount / totalRelated) * 100));
-    scores[direction] = score;
-  });
-  
-  return scores;
-};
-
-// 3. 生成雷達圖數據（邏輯不變）
-const adjustmentScores = calculateAdjustmentScores();
-const adjustmentLabels = Object.keys(adjustmentScores);
-const adjustmentData = Object.values(adjustmentScores);
-
-// 4. 渲染六邊形（雷達）圖（標題新增说明，明确包含十大症状）
-const ctx = document.getElementById('healthBarChart').getContext('2d');
-if (window.healthChart) window.healthChart.destroy(); // 銷毀舊圖表
-
-// 處理無數據情況
-if (adjustmentData.every(score => score === 100)) {
-  const chartContainer = document.getElementById('healthBarChart').parentNode;
-  chartContainer.innerHTML = '<p class="text-center text-gray-500 py-10">未選擇相關症狀，無法生成調理方向圖</p>';
-} else {
-  window.healthChart = new Chart(ctx, {
-    type: 'radar',
-    data: {
-      labels: adjustmentLabels,
-      datasets: [{
-        label: '調理優先級得分（越低需重點調理）',
-        data: adjustmentData,
-        backgroundColor: 'rgba(22, 93, 255, 0.2)',
-        borderColor: 'rgba(22, 93, 255, 1)',
-        borderWidth: 2,
-        pointBackgroundColor: 'rgba(22, 93, 255, 1)',
-        pointBorderColor: '#fff',
-        pointHoverBackgroundColor: '#fff',
-        pointHoverBorderColor: 'rgba(22, 93, 255, 1)'
-      }]
-    },
-    options: {
-      scales: {
-        r: {
-          angleLines: { display: true, color: 'rgba(0,0,0,0.1)' }, // 六边形框架
-          grid: { color: 'rgba(0,0,0,0.1)' },
-          pointLabels: { font: { size: 12, weight: 'bold' }, color: '#333', padding: 15 },
-          ticks: { backdropColor: 'transparent', color: '#666', stepSize: 20, max: 100, min: 0 }
-        }
-      },
-      plugins: {
-        legend: { position: 'top', labels: { font: { size: 11 } } },
-        tooltip: {
-          callbacks: {
-            // Tooltip提示：自动包含十大症状的调理建议
-            label: function(context) {
-              const dir = adjustmentLabels[context.dataIndex];
-              const score = adjustmentData[context.dataIndex];
-              let suggestion = '';
-              if (score < 30) suggestion = '（急需重點調理）';
-              else if (score < 60) suggestion = '（建議加強調理）';
-              else suggestion = '（狀態良好，維持即可）';
-              return `${dir}: ${score}分 ${suggestion}`;
-            }
-          }
+    // 計算調理得分
+    const calculateAdjustmentScores = () => {
+      const scores = {}, allIssues = [...selectedSymptoms, ...selectedHabits];
+      Object.entries(adjustmentDirections).forEach(([dir, items]) => {
+        const matched = allIssues.filter(item => items.includes(item)).length;
+        scores[dir] = Math.max(0, Math.round((1 - matched / (items.length || 1)) * 100));
+      });
+      return scores;
+    };
+    
+    const adjustmentScores = calculateAdjustmentScores(), adjustmentLabels = Object.keys(adjustmentScores), adjustmentData = Object.values(adjustmentScores);
+    
+    // 渲染雷達圖
+    const ctx = document.getElementById('healthBarChart').getContext('2d');
+    if (window.healthChart) window.healthChart.destroy();
+    if (adjustmentData.every(s => s === 100)) {
+      document.getElementById('healthBarChart').parentNode.innerHTML = '<p class="text-center text-gray-500 py-10">未選擇相關症狀，無法生成調理方向圖</p>';
+    } else {
+      window.healthChart = new Chart(ctx, {
+        type: 'radar',
+        data: {
+          labels: adjustmentLabels,
+          datasets: [{label:'調理優先級得分（越低需重點調理）',data:adjustmentData,backgroundColor:'rgba(22,93,255,0.2)',borderColor:'rgba(22,93,255,1)',borderWidth:2,pointBackgroundColor:'rgba(22,93,255,1)',pointBorderColor:'#fff',pointHoverBackgroundColor:'#fff',pointHoverBorderColor:'rgba(22,93,255,1)'}]
         },
-        title: {
-          display: true,
-          text: '調理方向優先級分布（含十大症状全分类）', // 标题明确包含十大症状
-          font: { size: 16, weight: 'bold' },
-          padding: { bottom: 20 }
+        options: {
+          scales: {r: {angleLines:{display:true,color:'rgba(0,0,0,0.1)'},grid:{color:'rgba(0,0,0,0.1)'},pointLabels:{font:{size:12,weight:'bold'},color:'#333',padding:15},ticks:{backdropColor:'transparent',color:'#666',stepSize:20,max:100,min:0}}},
+          plugins: {
+            legend:{position:'top',labels:{font:{size:11}}},
+            tooltip:{callbacks:{label:ctx=>{const s=adjustmentData[ctx.dataIndex];return `${adjustmentLabels[ctx.dataIndex]}: ${s}分 ${s<30?'（急需重點調理）':s<60?'（建議加強調理）':'（狀態良好，維持即可）'}`}}},
+            title:{display:true,text:'調理方向優先級分布（含十大症状全分类）',font:{size:16,weight:'bold'},padding:{bottom:20}}
+          },
+          elements:{line:{tension:0.2}}
         }
-      },
-      elements: { line: { tension: 0.2 } }
+      });
     }
-  });
-}
-
-    // -------------------------- 六邊形圖表邏輯結束 --------------------------
+    // -------------------------- 圖表邏輯結束 --------------------------
     
-    // 獲取主要健康問題
-    const mainConcern = document.getElementById('mainConcern').value || '未明確說明';
-    const symptomDuration = document.getElementById('symptomDuration').value || '未說明';
-    const possibleCauses = document.getElementById('possibleCauses').value || '未說明';
-    const isFemale = gender === '女';
-    
-    // 更新結果數據
+    // 更新症狀/習慣統計
     document.getElementById('symptomCount').textContent = `${totalSymptomCount} 項症狀`;
     document.getElementById('habitCount').textContent = `${habitCount} 項不良習慣`;
-    
-    // 設置進度條
-    const symptomPercentage = Math.min(100, (totalSymptomCount / 20) * 100);
-    const habitPercentage = Math.min(100, (habitCount / 15) * 100);
-    
+    const symptomPercentage = Math.min(100, (totalSymptomCount / 20) * 100), habitPercentage = Math.min(100, (habitCount / 15) * 100);
     document.getElementById('symptomScoreBar').style.width = `${symptomPercentage}%`;
     document.getElementById('habitScoreBar').style.width = `${habitPercentage}%`;
     
-    // 顯示主要健康問題和詳細症狀列表
-    const mainIssuesContainer = document.getElementById('mainHealthIssues');
-    let symptomsHtml = '';
+    // 健康問題渲染
+    const mainConcern = document.getElementById('mainConcern').value || '未明確說明', symptomDuration = document.getElementById('symptomDuration').value || '未說明';
+    const possibleCauses = document.getElementById('possibleCauses').value || '未說明', mainIssuesContainer = document.getElementById('mainHealthIssues');
     
-    // 創建症狀分類映射（用於展示詳細症狀）
+    // 無重複症狀分類映射（含性別過濾）
     const symptomCategories = {
-      '頭部症狀': ['頭疼/頭暈', '頭麻/腦鳴', '嗜睡/易醒', '失眠/多夢', '偏頭痛/健忘', '懶語/結巴', '暈車/暈機', '頭部怕冷', '思維斷電', '反應遲鈍', '易打哈欠', '眉骨痛'],
-      '眼耳鼻喉': ['花眼', '眼癢/脹/凸/痛', '眼怕光/眼流淚', '眼乾澀/眼飛影', '眼屎多/麥粒腫', '眼疲勞', '夜盲症', '視力模糊', '耳內潮濕/膿', '耳屎多/痛/癢', '耳鳴/耳聾', '聽力下降', '鼻炎/鼻塞', '鼻流涕/鼻流血', '打噴嚏', '過敏性鼻炎', '酒糟鼻', '嗅覺不靈', '嗓子異物感', '聲音嘶啞'],
-      '呼吸系統': ['咳嗽/哮喘', '支氣管炎', '感冒時間長', '易感冒/不感冒', '痰多/黃/涼', '痰白/黑/血', '嘆氣/氣短/喘', '打鼾'],
-      '循環系統': ['低血壓/高血壓', '貧血/高血脂', '心絞痛', '心跳快/慢', '心慌/心律失常', '胸悶/胸痛', '右肝區悶痛', '手足麻木/發青', '手腳熱/涼/脹/出汗', '頭暈/頭麻/易打哈欠', '面色異常（白/青）'],
-      '消化系統': ['胃痛/酸/脹/涼', '惡心/打嗝/噯氣', '消化不良', '食慾差/易飽', '偏食/厭食', '食慾過旺', '腹脹/屁多/臭', '唇白/青/麻', '口苦/乾/臭/腥', '口咸/甜/酸', '口氣重/口辣', '口腔潰瘍/舌潰瘍', '舌苔厚/黃/膩', '地圖舌/舌白點', '舌質紫暗/舌邊鋸齒', '舌硬/舌額', '唇裂/咽乾', '大便不成形', '便溏不淨/便秘'],
-      '內分泌與代謝': ['甲亢/甲減', '甲狀腺結節', '肥胖/將軍肚', '形體消瘦', '個頭矮/發育慢', '體重突增/減10%', '半月痕無/少', '指甲易斷/手指倒刺', '指甲凹/竪紋', '血管瘤/脂肪瘤', '纖維瘤/粉瘤', '膽結石/腎結石', '扁平疣/尋常疣', '皮贅/雞眼', '淋巴腫大', '低熱37-38℃', '手腳抽搐/手腳抖', '低血糖/高血糖', '高血脂'],
-      '肌肉骨骼與關節': ['四肢乏力', '平衡差/易摔交', '手/足脫皮/凍瘡', '小腿浮腫', '關節痛/腫', '易落枕/脖子硬', '肩酸/麻/痛', '頸疼痛/頸涼', '頸部水牛背', '腰酸痛/腰涼', '游走性疼痛', '脊椎僵硬/脊椎疼痛', '靜脈曲張', '容易扭傷', '腳後跟疼'],
-      '皮膚與毛髮': ['頭髮稀少', '頭髮乾/脫發', '白髮/斑禿', '頭/面油膩', '面頰泛紅', '面黃/白/黑', '痤瘡/痘/斑', '皮膚易青/紅點', '皮膚癢/後背痘', '皮膚乾燥/皮炎', '牛皮癬/白癜風', '黑痣變大/多', '蜘蛛痣/魚鱗病', '各種過敏/濕疹', '產後脫發/抑鬱', '產後色斑', '脂肪粒', '身體異味'],
-      '女性症狀': ['不孕不育', '流產/死胎', '月經少/有塊', '經量多/子宮肌瘤', '經期提前/推後', '經期煩躁/胸脹', '經期厭食/浮腫', '經期腰痛/頭痛', '經期困倦/失眠', '經期腹脹/痛經', '子宮腺肌症', '經期小腹怕涼', '經期小腹下墜', '月經暗/淡/黑', '經期長痘', '經期時間長', '絕經', '乳頭凹陷/流膿', '乳房腫塊/增生', '卵巢囊腫', '宮頸息肉', '宮頸肥大/囊腫', '白帶多/血絲', '白帶色黃/粘稠', '白帶稀水/腥臭'],
-      '泌尿生殖系統': ['起夜/尿頻/尿急', '尿不淨/尿床', '尿痛/尿血', '尿分叉/尿等待', '濃尿/怪味尿', '尿渾濁/多沫', '尿道口灼燒/發炎', '外陰瘙癢/異味', '小腹悶痛', '睪丸腫塊/疝氣', '肛門瘙癢', '便血/痔瘡', '脫肛/肛裂/肛瘻', '性慾低', '自汗/多汗/盜汗', '冒冷汗/後背涼']
+      '頭部症狀': [
+        {n:'頭疼/頭暈',d:'循環'},{n:'頭麻/腦鳴',d:'循環'},{n:'嗜睡/易醒',d:'循環'},{n:'失眠/多夢',d:'循環'},{n:'偏頭痛/健忘',d:'循環'},{n:'懶語/結巴',d:'循環'},{n:'暈車/暈機',d:'循環'},{n:'頭部怕冷',d:'體質'},{n:'思維斷電',d:'體質'},{n:'反應遲鈍',d:'體質'},{n:'易打哈欠',d:'體質'},{n:'眉骨痛',d:'循環'}
+      ],
+      '眼耳鼻喉': [
+        {n:'花眼',d:'營養'},{n:'眼癢/脹/凸/痛',d:'免疫'},{n:'眼怕光/眼流淚',d:'免疫'},{n:'眼乾澀/眼飛影',d:'免疫'},{n:'眼屎多/麥粒腫',d:'毒素'},{n:'眼疲勞',d:'體質'},{n:'夜盲症',d:'營養'},{n:'視力模糊',d:'營養'},{n:'耳內潮濕/膿',d:'毒素'},{n:'耳屎多/痛/癢',d:'毒素'},{n:'耳鳴/耳聾',d:'體質'},{n:'聽力下降',d:'體質'},{n:'鼻炎/鼻塞',d:'毒素'},{n:'鼻流涕/鼻流血',d:'毒素'},{n:'打噴嚏',d:'毒素'},{n:'過敏性鼻炎',d:'免疫'},{n:'酒糟鼻',d:'毒素'},{n:'嗅覺不靈',d:'體質'},{n:'嗓子異物感',d:'體質'},{n:'聲音嘶啞',d:'體質'}
+      ],
+      '呼吸系統': [
+        {n:'咳嗽/哮喘',d:'免疫'},{n:'支氣管炎',d:'免疫'},{n:'感冒時間長',d:'免疫'},{n:'易感冒/不感冒',d:'免疫'},{n:'痰多/黃/涼',d:'免疫'},{n:'痰白/黑/血',d:'免疫'},{n:'嘆氣/氣短/喘',d:'體質'},{n:'打鼾',d:'體質'}
+      ],
+      '循環系統': [
+        {n:'低血壓/高血壓',d:'循環'},{n:'貧血/高血脂',d:'循環'},{n:'心絞痛',d:'循環'},{n:'心跳快/慢',d:'循環'},{n:'心慌/心律失常',d:'循環'},{n:'胸悶/胸痛',d:'循環'},{n:'右肝區悶痛',d:'循環'},{n:'手足麻木/發青',d:'循環'},{n:'手腳熱/涼/脹/出汗',d:'循環'},{n:'頭暈/頭麻/易打哈欠',d:'循環'},{n:'面色異常（白/青）',d:'循環'}
+      ],
+      '消化系統': [
+        {n:'胃痛/酸/脹/涼',d:'體質'},{n:'惡心/打嗝/噯氣',d:'體質'},{n:'消化不良',d:'體質'},{n:'食慾差/易飽',d:'營養'},{n:'偏食/厭食',d:'營養'},{n:'食慾過旺',d:'營養'},{n:'腹脹/屁多/臭',d:'毒素'},{n:'唇白/青/麻',d:'體質'},{n:'口苦/乾/臭/腥',d:'毒素'},{n:'口咸/甜/酸',d:'毒素'},{n:'口氣重/口辣',d:'毒素'},{n:'口腔潰瘍/舌潰瘍',d:'免疫'},{n:'舌苔厚/黃/膩',d:'毒素'},{n:'地圖舌/舌白點',d:'毒素'},{n:'舌質紫暗/舌邊鋸齒',d:'毒素'},{n:'舌硬/舌額',d:'毒素'},{n:'唇裂/咽乾',d:'體質'},{n:'大便不成形',d:'毒素'},{n:'便溏不淨/便秘',d:'毒素'}
+      ],
+      '內分泌與代謝': [
+        {n:'甲亢/甲減',d:'內分泌'},{n:'甲狀腺結節',d:'內分泌'},{n:'肥胖/將軍肚',d:'內分泌'},{n:'形體消瘦',d:'內分泌'},{n:'個頭矮/發育慢',d:'營養'},{n:'體重突增/減10%',d:'內分泌'},{n:'半月痕無/少',d:'營養'},{n:'指甲易斷/手指倒刺',d:'營養'},{n:'指甲凹/竪紋',d:'營養'},{n:'血管瘤/脂肪瘤',d:'毒素'},{n:'纖維瘤/粉瘤',d:'毒素'},{n:'膽結石/腎結石',d:'毒素'},{n:'扁平疣/尋常疣',d:'毒素'},{n:'皮贅/雞眼',d:'毒素'},{n:'淋巴腫大',d:'免疫'},{n:'低熱37-38℃',d:'體質'},{n:'手腳抽搐/手腳抖',d:'體質'},{n:'低血糖/高血糖',d:'內分泌'},{n:'高血脂',d:'內分泌'}
+      ],
+      '肌肉骨骼與關節': [
+        {n:'四肢乏力',d:'體質'},{n:'平衡差/易摔交',d:'體質'},{n:'手/足脫皮/凍瘡',d:'體質'},{n:'小腿浮腫',d:'循環'},{n:'關節痛/腫',d:'體質'},{n:'易落枕/脖子硬',d:'體質'},{n:'肩酸/麻/痛',d:'體質'},{n:'頸疼痛/頸涼',d:'體質'},{n:'頸部水牛背',d:'體質'},{n:'腰酸痛/腰涼',d:'體質'},{n:'游走性疼痛',d:'體質'},{n:'脊椎僵硬/脊椎疼痛',d:'體質'},{n:'靜脈曲張',d:'循環'},{n:'容易扭傷',d:'體質'},{n:'腳後跟疼',d:'體質'}
+      ],
+      '皮膚與毛髮': [
+        {n:'頭髮稀少',d:'營養'},{n:'頭髮乾/脫發',d:'營養'},{n:'白髮/斑禿',d:'營養'},{n:'頭/面油膩',d:'毒素'},{n:'面頰泛紅',d:'毒素'},{n:'面黃/白/黑',d:'毒素'},{n:'痤瘡/痘/斑',d:'毒素'},{n:'皮膚易青/紅點',d:'免疫'},{n:'皮膚癢/後背痘',d:'免疫'},{n:'皮膚乾燥/皮炎',d:'毒素'},{n:'牛皮癬/白癜風',d:'免疫'},{n:'黑痣變大/多',d:'免疫'},{n:'蜘蛛痣/魚鱗病',d:'免疫'},{n:'各種過敏/濕疹',d:'免疫'},{n:'產後脫發/抑鬱',d:'內分泌'},{n:'產後色斑',d:'內分泌'},{n:'脂肪粒',d:'毒素'},{n:'身體異味',d:'毒素'}
+      ],
+      '女性症狀': [
+        {n:'不孕不育',d:'內分泌'},{n:'流產/死胎',d:'內分泌'},{n:'月經少/有塊',d:'內分泌'},{n:'經量多/子宮肌瘤',d:'內分泌'},{n:'經期提前/推後',d:'內分泌'},{n:'經期煩躁/胸脹',d:'體質'},{n:'經期厭食/浮腫',d:'體質'},{n:'經期腰痛/頭痛',d:'體質'},{n:'經期困倦/失眠',d:'體質'},{n:'經期腹脹/痛經',d:'體質'},{n:'子宮腺肌症',d:'內分泌'},{n:'經期小腹怕涼',d:'體質'},{n:'經期小腹下墜',d:'體質'},{n:'月經暗/淡/黑',d:'毒素'},{n:'經期長痘',d:'毒素'},{n:'經期時間長',d:'內分泌'},{n:'絕經',d:'內分泌'},{n:'乳頭凹陷/流膿',d:'內分泌'},{n:'乳房腫塊/增生',d:'內分泌'},{n:'卵巢囊腫',d:'內分泌'},{n:'宮頸息肉',d:'內分泌'},{n:'宮頸肥大/囊腫',d:'內分泌'},{n:'白帶多/血絲',d:'毒素'},{n:'白帶色黃/粘稠',d:'毒素'},{n:'白帶稀水/腥臭',d:'毒素'}
+      ],
+      '泌尿生殖系統': [
+        {n:'起夜/尿頻/尿急',d:'體質'},{n:'尿不淨/尿床',d:'體質'},{n:'尿痛/尿血',d:'毒素'},{n:'尿分叉/尿等待',d:'毒素'},{n:'濃尿/怪味尿',d:'毒素'},{n:'尿渾濁/多沫',d:'毒素'},{n:'尿道口灼燒/發炎',d:'毒素'},{n:'外陰瘙癢/異味',d:'體質'},{n:'小腹悶痛',d:'循環'},{n:'睪丸腫塊/疝氣',d:'循環'},{n:'肛門瘙癢',d:'循環'},{n:'便血/痔瘡',d:'循環'},{n:'脫肛/肛裂/肛瘻',d:'循環'},{n:'性慾低',d:'內分泌'},{n:'自汗/多汗/盜汗',d:'內分泌'},{n:'冒冷汗/後背涼',d:'內分泌'}
+      ]
     };
     
-    // 構建分類症狀HTML
+    // 渲染症狀列表（男性隱藏女性分類+產後症狀）
+    let symptomsHtml = '';
     Object.keys(symptomCategories).forEach(category => {
-      // 男性不顯示女性症狀分類
       if (!isFemale && category === '女性症狀') return;
-      
-      const categorySymptoms = selectedSymptoms.filter(symptom => 
-        symptomCategories[category].includes(symptom)
-      );
-      if (categorySymptoms.length > 0) {
-        symptomsHtml += `<div class="mt-2">
-          <p class="text-sm font-medium">${category}：</p>
-          <p class="text-sm ml-4">${categorySymptoms.join('、')}</p>
-        </div>`;
-      }
+      const categorySymptoms = selectedSymptoms.filter(s => symptomCategories[category].some(item => item.n === s));
+      if (categorySymptoms.length > 0) symptomsHtml += `<div class="mt-2"><p class="text-sm font-medium">${category}：</p><p class="text-sm ml-4">${categorySymptoms.join('、')}</p></div>`;
     });
     
     mainIssuesContainer.innerHTML = `
-      <p class="mb-3"><strong>主要關注問題：</strong> ${mainConcern}</p>
-      <p class="mb-3"><strong>症狀持續時間：</strong> ${symptomDuration}</p>
-      <p class="mb-3"><strong>可能原因：</strong> ${possibleCauses}</p>
+      <p class="mb-3"><strong>主要關注問題：</strong>${mainConcern}</p>
+      <p class="mb-3"><strong>症狀持續時間：</strong>${symptomDuration}</p>
+      <p class="mb-3"><strong>可能原因：</strong>${possibleCauses}</p>
       ${totalSymptomCount > 0 ? `<div class="mt-3"><strong>詳細症狀：</strong>${symptomsHtml}</div>` : ''}
     `;
     
-    // 生成健康建議內容
+    // 健康建議渲染
     const recommendationsContainer = document.getElementById('healthRecommendations');
-    if (recommendationsContainer) {
-      recommendationsContainer.innerHTML = '';
-
-      // 氣血不足調理建議
-      recommendationsContainer.innerHTML += `
-        <div class="bg-neutral p-4 rounded-lg mb-3">
-          <h4 class="font-medium text-primary mb-2">一、氣血不足調理：<p>順時蓄養“生命能量”</p></h4>
-          <p class="text-sm text-neutral-dark/80">對應症狀：<p>記憶力下降、思維斷電、頭髮稀少、等</p></p>
-          <p class="text-sm text-neutral-dark/80 italic">《黃帝內經》<p>言“人以氣血為本，氣血隨時辰消長”</p></p>
-          <ul class="mt-2 text-sm text-neutral-dark/80 space-y-2 list-disc pl-5">
-            <li><strong>辰時（7:00-9:00，胃經當令）</strong>：<p>保持環境安靜，避免邊用餐邊處理事務。餐後留5分鐘靜息，不立即投入忙碌，提升氣血轉化效率。</p></li>
-            <li><strong>巳時（9:00-11:00，脾經當令）</strong>：<p>每小時暫停工作，閉眼靜息30秒。減少過度勞累導致的氣血瘀滯，促進氣血在全身順暢流轉。</p></li>
-            <li><strong>丑時前（23:00前，肝經當令預備期）</strong>：<p>營造昏暗、安靜的休息環境，減少電子屏幕使用。提前進入休息狀態以減少氣血消耗，避免熬夜致氣血虧虛。</p></li>
-          </ul>
-        </div>
-      `;
-
-      // 微循環不通改善建議
-      recommendationsContainer.innerHTML += `
-        <div class="bg-neutral p-4 rounded-lg mb-3">
-          <h4 class="font-medium text-primary mb-2">二、微循環不通改善：<p>按時疏通“氣血通道”</p></h4>
-          <p class="text-sm text-neutral-dark/80">對應症狀：<p>頭暈、頭麻、手足麻木、等</p></p>
-          <p class="text-sm text-neutral-dark/80 italic">《黃帝內經》<p>曰“經脈者，所以行血氣而營陰陽”</p></p>
-          <ul class="mt-2 text-sm text-neutral-dark/80 space-y-2 list-disc pl-5">
-            <li><strong>午時（11:00-13:00，心經當令）</strong>：<p>找安靜處靜坐，不思考複雜問題、不看電子設備。減少身心負擔，讓血液充分流向頭部緩解不適。</p></li>
-            <li><strong>戌時（19:00-21:00，心包經當令）</strong>：<p>保持身體自然舒展，避免彎腰駝背或久坐狹小空間。減少氣血阻滯，降低手腳發麻概率。</p></li>
-            <li><strong>酉時（17:00-19:00，腎經當令）</strong>：<p>到通風處停留10分鐘，避免長期處於密閉空調環境。借新鮮空氣促進經脈通暢，改善末梢循環不暢。</p></li>
-          </ul>
-        </div>
-      `;
-
-      // 毒素排毒調理建議
-      recommendationsContainer.innerHTML += `
-        <div class="bg-neutral p-4 rounded-lg mb-3">
-          <h4 class="font-medium text-primary mb-2">三、毒素排毒調理：<p>順時暢通“排濁通道”</p></h4>
-          <p class="text-sm text-neutral-dark/80">對應症狀：<p>頭面油膩、眼屎多、耳屎多、等</p></p>
-          <p class="text-sm text-neutral-dark/80 italic">《黃帝內經》<p>強調“濁邪出下竅，清陽實四肢”</p></p>
-          <ul class="mt-2 text-sm text-neutral-dark/80 space-y-2 list-disc pl-5">
-            <li><strong>卯時（5:00-7:00，大腸經當令）</strong>：<p>營造輕鬆排便環境，不匆忙、不憋便。借大腸經排毒時段促進毒素隨糞便排出，減少堆積。</p></li>
-            <li><strong>申時（15:00-17:00，膀胱經當令）</strong>：<p>保持環境通透，避免憋尿。助力膀胱經水液代謝功能，減少毒素在體內停留時間。</p></li>
-            <li><strong>戌時（19:00-21:00，三焦經當令）</strong>：<p>減少接觸油煙、粉塵環境，保持呼吸順暢。減少外源性毒素侵入，助力內毒素代謝。</p></li>
-          </ul>
-        </div>
-      `;
-
-      // 血脂黏稠調理建議
-      recommendationsContainer.innerHTML += `
-        <div class="bg-neutral p-4 rounded-lg mb-3">
-          <h4 class="font-medium text-primary mb-2">四、血脂黏稠調理：<p>順時清通“經脈瘀濁”</p></h4>
-          <p class="text-sm text-neutral-dark/80">對應症狀：<p>頭面油膩、痤瘡、脂肪瘤、等</p></p>
-          <p class="text-sm text-neutral-dark/80 italic">《黃帝內經》<p>曰“經脈流通，何病之有”</p></p>
-          <ul class="mt-2 text-sm text-neutral-dark/80 space-y-2 list-disc pl-5">
-            <li><strong>卯時（5:00-7:00，大腸經當令）</strong>：<p>晨起慢飲溫開水，喚醒身體代謝功能。溫和啓動排毒機制，稀釋血液雜質。</p></li>
-            <li><strong>申時（15:00-17:00，膀胱經當令）</strong>：<p>開窗通風，保持環境空氣清新，遠離油煙、悶熱環境。借膀胱經排濁功能減少油脂沈積。</p></li>
-            <li><strong>戌時（19:00-21:00，晚餐後1小時）</strong>：<p>保持坐姿放鬆，不立即躺臥或劇烈活動。讓身體專注代謝清理，減少經脈濁物堆積。</p></li>
-          </ul>
-        </div>
-      `;
-
-      // 寒涼濕症調理建議
-      recommendationsContainer.innerHTML += `
-        <div class="bg-neutral p-4 rounded-lg mb-3">
-          <h4 class="font-medium text-primary mb-2">五、寒涼濕症調理：<br>按時避寒“溫養陽氣”</h4>
-          <p class="text-sm text-neutral-dark/80">對應症狀：<p>鼻塞、關節痛、大便不成形、等</p></p>
-          <p class="text-sm text-neutral-dark/80 italic">《黃帝內經》<p>指出“寒邪客於經脈之中，則血泣而不通”</p></p>
-          <ul class="mt-2 text-sm text-neutral-dark/80 space-y-2 list-disc pl-5">
-            <li><strong>卯時（5:00-7:00，大腸經當令）</strong>：<p>穿好長袖衣物和襪子，避免腳部、腹部接觸涼地板或冷風。阻斷寒氣入侵，減少鼻塞流涕。</p></li>
-            <li><strong>午時（11:00-13:00，陽氣最盛時）</strong>：<p>到戶外曬後背10分鐘（避開強光時段）。借自然陽氣溫通經脈，增強驅寒能力。</p></li>
-            <li><strong>亥時（21:00-23:00，三焦經當令）</strong>：<p>用溫水洗漱，避免接觸冷水，減少空調直吹。保持身體溫潤，減少濕氣停留堆積。</p></li>
-          </ul>
-        </div>
-      `;
-
-      // 免疫系統調理建議
-      recommendationsContainer.innerHTML += `
-        <div class="bg-neutral p-4 rounded-lg mb-3">
-          <h4 class="font-medium text-primary mb-2">六、免疫系統調理：<p>順時培補“正氣屏障”</p></h4>
-          <p class="text-sm text-neutral-dark/80">對應症狀：<p>感冒時間長、各種過敏、等</p></p>
-          <p class="text-sm text-neutral-dark/80 italic">《黃帝內經》<p>提出“正氣存內，邪不可乾”</p></p>
-          <ul class="mt-2 text-sm text-neutral-dark/80 space-y-2 list-disc pl-5">
-            <li><strong>寅時（3:00-5:00，肺經當令）</strong>：<p>保持睡眠環境溫暖安靜，不熬夜。借深睡增強肺經衛氣功能，減少外邪入侵。</p></li>
-            <li><strong>辰時（7:00-9:00，胃經當令）</strong>：<p>用餐時細嚼慢嚥，不急躁。提升脾胃功能以充養正氣，增強免疫基礎。</p></li>
-            <li><strong>申時（15:00-17:00，膀胱經當令）</strong>：<p>到戶外接觸自然光10分鐘，避免長期待在陰暗環境。激發陽氣升發，降低過敏感冒頻率。</p></li>
-          </ul>
-        </div>
-      `;
-
-      // 情緒調理建議
-      recommendationsContainer.innerHTML += `
-        <div class="bg-neutral p-4 rounded-lg">
-          <h4 class="font-medium text-primary mb-2">七、情緒調理：<p>順時疏解“情志郁結”</p></h4>
-          <p class="text-sm text-neutral-dark/80">對應症狀：<p>多夢、常嘆氣、經期頭痛、等</p></p>
-          <p class="text-sm text-neutral-dark/80 italic">《黃帝內經》<p>曰“怒則氣上，喜則氣緩，悲則氣消”</p></p>
-          <ul class="mt-2 text-sm text-neutral-dark/80 space-y-2 list-disc pl-5">
-            <li><strong>未時（13:00-15:00，小腸經當令）</strong>：<p>暫停工作，到窗邊望向開闊處，不鑽牛角尖。借開闊視野疏解情緒郁結，減少煩躁嘆氣。</p></li>
-            <li><strong>戌時（19:00-21:00，心包經當令）</strong>：<p>不討論煩心事，做簡單放鬆活動（如聽舒緩聲音）。保持平和狀態讓氣血平穩，減少情緒性頭痛。</p></li>
-            <li><strong>亥時（21:00-23:00，三焦經當令）</strong>：<p>整理當日思緒，寫下未完成事項（避免睡前思慮），營造安靜氛圍。助力情緒疏洩，減少多夢失眠。</p></li>
-          </ul>
-        </div>
-      `;
-
-      // 補充提示
-      recommendationsContainer.innerHTML += `
-        <div class="mt-4 text-sm text-neutral-dark/70 text-center">
-          按以上時辰規律調理，能順應身體氣血運行節奏，<p>慢慢改善相關症狀～</p>若症狀持續不緩解，建議及時咨詢專業醫生。
-        </div>
-      `;
-    } else {
-      console.error('未找到健康建議容器元素');
-    }
+    if (recommendationsContainer) recommendationsContainer.innerHTML = `
+      <div class="bg-neutral p-4 rounded-lg mb-3"><h4 class="font-medium text-primary mb-2">一、氣血不足調理：<p>順時蓄養“生命能量”</p></h4><p class="text-sm text-neutral-dark/80">對應症狀：<p>記憶力下降、思維斷電、頭髮稀少、等</p></p><p class="text-sm text-neutral-dark/80 italic">《黃帝內經》<p>言“人以氣血為本，氣血隨時辰消長”</p></p><ul class="mt-2 text-sm text-neutral-dark/80 space-y-2 list-disc pl-5"><li><strong>辰時（7:00-9:00，胃經當令）</strong>：<p>保持環境安靜，避免邊用餐邊處理事務。餐後留5分鐘靜息，不立即投入忙碌，提升氣血轉化效率。</p></li><li><strong>巳時（9:00-11:00，脾經當令）</strong>：<p>每小時暫停工作，閉眼靜息30秒。減少過度勞累導致的氣血瘀滯，促進氣血在全身順暢流轉。</p></li><li><strong>丑時前（23:00前，肝經當令預備期）</strong>：<p>營造昏暗、安靜的休息環境，減少電子屏幕使用。提前進入休息狀態以減少氣血消耗，避免熬夜致氣血虧虛。</p></li></ul></div>
+      <div class="bg-neutral p-4 rounded-lg mb-3"><h4 class="font-medium text-primary mb-2">二、微循環不通改善：<p>按時疏通“氣血通道”</p></h4><p class="text-sm text-neutral-dark/80">對應症狀：<p>頭暈、頭麻、手足麻木、等</p></p><p class="text-sm text-neutral-dark/80 italic">《黃帝內經》<p>曰“經脈者，所以行血氣而營陰陽”</p></p><ul class="mt-2 text-sm text-neutral-dark/80 space-y-2 list-disc pl-5"><li><strong>午時（11:00-13:00，心經當令）</strong>：<p>找安靜處靜坐，不思考複雜問題、不看電子設備。減少身心負擔，讓血液充分流向頭部緩解不適。</p></li><li><strong>戌時（19:00-21:00，心包經當令）</strong>：<p>保持身體自然舒展，避免彎腰駝背或久坐狹小空間。減少氣血阻滯，降低手腳發麻概率。</p></li><li><strong>酉時（17:00-19:00，腎經當令）</strong>：<p>到通風處停留10分鐘，避免長期處於密閉空調環境。借新鮮空氣促進經脈通暢，改善末梢循環不暢。</p></li></ul></div>
+      <div class="bg-neutral p-4 rounded-lg mb-3"><h4 class="font-medium text-primary mb-2">三、毒素排毒調理：<p>順時暢通“排濁通道”</p></h4><p class="text-sm text-neutral-dark/80">對應症狀：<p>頭面油膩、眼屎多、耳屎多、等</p></p><p class="text-sm text-neutral-dark/80 italic">《黃帝內經》<p>強調“濁邪出下竅，清陽實四肢”</p></p><ul class="mt-2 text-sm text-neutral-dark/80 space-y-2 list-disc pl-5"><li><strong>卯時（5:00-7:00，大腸經當令）</strong>：<p>營造輕鬆排便環境，不匆忙、不憋便。借大腸經排毒時段促進毒素隨糞便排出，減少堆積。</p></li><li><strong>申時（15:00-17:00，膀胱經當令）</strong>：<p>保持環境通透，避免憋尿。助力膀胱經水液代謝功能，減少毒素在體內停留時間。</p></li><li><strong>戌時（19:00-21:00，三焦經當令）</strong>：<p>減少接觸油煙、粉塵環境，保持呼吸順暢。減少外源性毒素侵入，助力內毒素代謝。</p></li></ul></div>
+      <div class="bg-neutral p-4 rounded-lg mb-3"><h4 class="font-medium text-primary mb-2">四、血脂黏稠調理：<p>順時清通“經脈瘀濁”</p></h4><p class="text-sm text-neutral-dark/80">對應症狀：<p>頭面油膩、痤瘡、脂肪瘤、等</p></p><p class="text-sm text-neutral-dark/80 italic">《黃帝內經》<p>曰“經脈流通，何病之有”</p></p><ul class="mt-2 text-sm text-neutral-dark/80 space-y-2 list-disc pl-5"><li><strong>卯時（5:00-7:00，大腸經當令）</strong>：<p>晨起慢飲溫開水，喚醒身體代謝功能。溫和啓動排毒機制，稀釋血液雜質。</p></li><li><strong>申時（15:00-17:00，膀胱經當令）</strong>：<p>開窗通風，保持環境空氣清新，遠離油煙、悶熱環境。借膀胱經排濁功能減少油脂沈積。</p></li><li><strong>戌時（19:00-21:00，晚餐後1小時）</strong>：<p>保持坐姿放鬆，不立即躺臥或劇烈活動。讓身體專注代謝清理，減少經脈濁物堆積。</p></li></ul></div>
+      <div class="bg-neutral p-4 rounded-lg mb-3"><h4 class="font-medium text-primary mb-2">五、寒涼濕症調理：<br>按時避寒“溫養陽氣”</h4><p class="text-sm text-neutral-dark/80">對應症狀：<p>鼻塞、關節痛、大便不成形、等</p></p><p class="text-sm text-neutral-dark/80 italic">《黃帝內經》<p>指出“寒邪客於經脈之中，則血泣而不通”</p></p><ul class="mt-2 text-sm text-neutral-dark/80 space-y-2 list-disc pl-5"><li><strong>卯時（5:00-7:00，大腸經當令）</strong>：<p>穿好長袖衣物和襪子，避免腳部、腹部接觸涼地板或冷風。阻斷寒氣入侵，減少鼻塞流涕。</p></li><li><strong>午時（11:00-13:00，陽氣最盛時）</strong>：<p>到戶外曬後背10分鐘（避開強光時段）。借自然陽氣溫通經脈，增強驅寒能力。</p></li><li><strong>亥時（21:00-23:00，三焦經當令）</strong>：<p>用溫水洗漱，避免接觸冷水，減少空調直吹。保持身體溫潤，減少濕氣停留堆積。</p></li></ul></div>
+      <div class="bg-neutral p-4 rounded-lg mb-3"><h4 class="font-medium text-primary mb-2">六、免疫系統調理：<p>順時培補“正氣屏障”</p></h4><p class="text-sm text-neutral-dark/80">對應症狀：<p>感冒時間長、各種過敏、等</p></p><p class="text-sm text-neutral-dark/80 italic">《黃帝內經》<p>提出“正氣存內，邪不可乾”</p></p><ul class="mt-2 text-sm text-neutral-dark/80 space-y-2 list-disc pl-5"><li><strong>寅時（3:00-5:00，肺經當令）</strong>：<p>保持睡眠環境溫暖安靜，不熬夜。借深睡增強肺經衛氣功能，減少外邪入侵。</p></li><li><strong>辰時（7:00-9:00，胃經當令）</strong>：<p>用餐時細嚼慢嚥，不急躁。提升脾胃功能以充養正氣，增強免疫基礎。</p></li><li><strong>申時（15:00-17:00，膀胱經當令）</strong>：<p>到戶外接觸自然光10分鐘，避免長期待在陰暗環境。激發陽氣升發，降低過敏感冒頻率。</p></li></ul></div>
+      <div class="bg-neutral p-4 rounded-lg"><h4 class="font-medium text-primary mb-2">七、情緒調理：<p>順時疏解“情志郁結”</p></h4><p class="text-sm text-neutral-dark/80">對應症狀：<p>多夢、常嘆氣、經期頭痛、等</p></p><p class="text-sm text-neutral-dark/80 italic">《黃帝內經》<p>曰“怒則氣上，喜則氣緩，悲則氣消”</p></p><ul class="mt-2 text-sm text-neutral-dark/80 space-y-2 list-disc pl-5"><li><strong>未時（13:00-15:00，小腸經當令）</strong>：<p>暫停工作，到窗邊望向開闊處，不鑽牛角尖。借開闊視野疏解情緒郁結，減少煩躁嘆氣。</p></li><li><strong>戌時（19:00-21:00，心包經當令）</strong>：<p>不討論煩心事，做簡單放鬆活動（如聽舒緩聲音）。保持平和狀態讓氣血平穩，減少情緒性頭痛。</p></li><li><strong>亥時（21:00-23:00，三焦經當令）</strong>：<p>整理當日思緒，寫下未完成事項（避免睡前思慮），營造安靜氛圍。助力情緒疏洩，減少多夢失眠。</p></li></ul></div>
+      <div class="mt-4 text-sm text-neutral-dark/70 text-center">按以上時辰規律調理，能順應身體氣血運行節奏，<p>慢慢改善相關症狀～</p>若症狀持續不緩解，建議及時咨詢專業醫生。</div>
+    `;
+    else console.error('未找到健康建議容器');
   }
 
-  // 初始化頁面
+  // 初始化
   updateFormSteps();
-  // 初始檢查性別UI
   updateGenderBasedUI();
 });
 </script>
