@@ -2269,231 +2269,308 @@ document.addEventListener('DOMContentLoaded', function() {
   // -------------------------- 1. 圖片處理：本地下載+雲端存圖（適配LINE） --------------------------
   async function handleImageDownload() {
     try {
+      // 按钮加载状态（提升用户感知）
       downloadReportBtn.disabled = true;
       downloadReportBtn.innerHTML = '<i class="fa fa-spinner fa-spin mr-2"></i> 處理中...';
 
-      // 校驗依賴庫
+      // 校验依赖库（确保html2canvas已加载）
       if (typeof html2canvas === 'undefined') {
         throw new Error('圖片處理庫未加載，請刷新頁面重試');
       }
+
+      // 定位报告区域（确保截图完整）
       const reportElement = document.querySelector('#result .bg-white.rounded-2xl.shadow-md.p-6');
       if (!reportElement) {
         throw new Error('未找到評估結果，請先完成評估');
       }
 
-      // 臨時調整樣式+生成Canvas
-      const originalStyle = { padding: reportElement.style.padding, boxShadow: reportElement.style.boxShadow };
+      // 临时调整样式（避免截图边框缺失、阴影干扰）
+      const originalStyle = {
+        padding: reportElement.style.padding,
+        boxShadow: reportElement.style.boxShadow
+      };
       reportElement.style.padding = '24px';
       reportElement.style.boxShadow = 'none';
+
+      // 高质量截图（2倍分辨率，确保手机显示清晰）
+      downloadReportBtn.innerHTML = '<i class="fa fa-camera mr-2"></i> 生成圖片...';
       const canvas = await html2canvas(reportElement, {
-        useCORS: true, allowTaint: false, scale: 2, logging: false,
-        scrollY: -window.scrollY, windowWidth: reportElement.offsetWidth, windowHeight: reportElement.offsetHeight
+        useCORS: true,        // 解决跨域图片截图问题（如报告中的图标）
+        allowTaint: false,
+        scale: 2,             // 关键：2倍缩放，避免手机端图片模糊
+        logging: false,
+        scrollY: -window.scrollY, // 避免页面滚动导致截图偏移
+        windowWidth: reportElement.offsetWidth,
+        windowHeight: reportElement.offsetHeight
       });
+
+      // 恢复报告区域原始样式
       reportElement.style.padding = originalStyle.padding;
       reportElement.style.boxShadow = originalStyle.boxShadow;
 
-      // 生成文件名和Blob
+      // 生成带用户信息的文件名（便于相册中识别）
       const userName = document.getElementById('name').value.trim() || '未知用戶';
       const currentDate = new Date();
       const formattedDate = `${currentDate.getFullYear()}年${String(currentDate.getMonth() + 1).padStart(2, '0')}月${String(currentDate.getDate()).padStart(2, '0')}日`;
       localImageName = `${userName}_健康評估報告_${formattedDate}.jpg`;
-      const blob = await new Promise((resolve, reject) => {
-        canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('圖片生成失敗')), 'image/jpeg', 0.9);
-      });
-      localImageBlob = blob;
 
-      // -------------------------- 新增：上傳圖片到雲端（生成LINE可訪問的URL） --------------------------
-      let lineShareUrl = '';
-      try {
-        downloadReportBtn.innerHTML = '<i class="fa fa-cloud-upload mr-2"></i> 準備LINE分享...';
-        const formData = new FormData();
-        formData.append('image', blob, localImageName);
-        // 上傳到imgbb（支持LINE預覽，無防盜鏈）
-        const response = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}&name=${encodeURIComponent(localImageName)}`, {
-          method: 'POST', body: formData, timeout: 20000
-        });
-        const result = await response.json();
-        if (result.success) {
-          // 生成包含OG標籤的中間頁URL（關鍵：LINE需OG標籤識別圖片）
-          const middlePageUrl = generateLineShareMiddlePage(result.data.url, userName, formattedDate);
-          lineShareUrl = middlePageUrl;
-          lineShareImageUrl = result.data.url; // 存儲原始圖片URL
-        } else {
-          throw new Error('雲端圖片上傳失敗');
-        }
-      } catch (uploadErr) {
-        console.warn('LINE分享鏈接生成失敗:', uploadErr);
-        lineShareUrl = ''; // 上傳失敗時降級為本地提示
+      // 生成Blob对象（核心：用于保存到相册和原生分享）
+      const blob = await new Promise((resolve, reject) => {
+        canvas.toBlob(
+          (blob) => {
+            if (blob) {
+              resolve(blob);
+              localImageBlob = blob; // 保存Blob，供后续分享使用
+            } else {
+              reject(new Error('圖片數據生成失敗'));
+              localImageBlob = null;
+            }
+          },
+          'image/jpeg', // 手机相册兼容的JPG格式
+          0.9           // 高质量（0.9=90%质量，平衡清晰度和文件大小）
+        );
+      });
+
+      // -------------------------- 第一步：保存图片到手机相册 --------------------------
+      downloadReportBtn.innerHTML = '<i class="fa fa-image mr-2"></i> 保存到相簿...';
+      const isSaveSuccess = await saveToMobileGallery(blob, localImageName);
+      
+      if (!isSaveSuccess) {
+        throw new Error('圖片保存到相簿失敗，請手動保存');
       }
 
-      // -------------------------- 本地圖片下載 --------------------------
-      downloadReportBtn.innerHTML = '<i class="fa fa-download mr-2"></i> 下載中...';
-      const blobUrl = URL.createObjectURL(blob);
-      const downloadLink = document.createElement('a');
-      downloadLink.download = localImageName;
-      downloadLink.href = blobUrl;
-      document.body.appendChild(downloadLink);
-      downloadLink.click();
-
-      // -------------------------- 下載完成後觸發LINE群分享 --------------------------
+      // -------------------------- 第二步：保存成功后触发原生分享 --------------------------
+      downloadReportBtn.innerHTML = '<i class="fa fa-share-alt mr-2"></i> 準備分享...';
       setTimeout(() => {
-        document.body.removeChild(downloadLink);
-        URL.revokeObjectURL(blobUrl);
+        // 恢复按钮状态
         downloadReportBtn.disabled = false;
-        downloadReportBtn.innerHTML = '<i class="fa fa-download mr-2"></i> 下載圖片';
-        alert(`本地圖片已下載！\n即將為您打開LINE群分享選項`);
+        downloadReportBtn.innerHTML = '<i class="fa fa-download mr-2"></i> 重新保存/分享';
         
-        // 觸發LINE專屬分享
-        if (lineShareUrl) {
-          shareToLineGroup(lineShareUrl, userName, formattedDate);
-        } else {
-          // 雲端上傳失敗時，提示手動分享本地圖片
-          alert(`
-LINE分享鏈接生成失敗，請手動分享：
-1. 打開LINE群聊
-2. 點擊輸入框右側「+」→「照片」
-3. 在相冊/下載文件夾中找到「${localImageName}」
-4. 發送圖片即可
-          `);
-        }
+        // 提示用户并显示分享按钮
+        alert(`圖片已成功保存到相簿！\n文件名：${localImageName}\n即將為您打開原生分享選項`);
+        showNativeShareButton(userName, formattedDate);
       }, 1000);
 
     } catch (error) {
       console.error('圖片處理異常:', error);
+      // 异常时恢复按钮状态
       downloadReportBtn.disabled = false;
       downloadReportBtn.innerHTML = '<i class="fa fa-download mr-2"></i> 下載圖片';
-      alert(`操作失敗: ${error.message}\n請刷新頁面重試`);
+      alert(`操作失敗: ${error.message}\n請刷新頁面後重試`);
     }
   }
 
-  // -------------------------- 新增：生成LINE分享專用中間頁（含OG標籤） --------------------------
-  // 作用：LINE爬取該頁面時，通過OG標籤識別圖片，實現預覽
-  function generateLineShareMiddlePage(imageUrl, userName, date) {
-    // 中間頁HTML（含LINE識別的OG標籤）
-    const middlePageHtml = `
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- LINE預覽核心：OG標籤 -->
-  <meta property="og:type" content="image">
-  <meta property="og:image" content="${imageUrl}"> <!-- 雲端圖片URL -->
-  <meta property="og:image:width" content="800"> <!-- 圖片寬度（LINE推薦） -->
-  <meta property="og:image:height" content="1200"> <!-- 圖片高度（LINE推薦） -->
-  <meta property="og:title" content="${userName}的健康評估報告">
-  <meta property="og:description" content="生成時間：${date} | 包含六大調理方向建議">
-  <title>${userName}的健康評估報告</title>
-  <style>
-    body { margin: 0; padding: 20px; text-align: center; font-family: sans-serif; }
-    img { max-width: 100%; border-radius: 8px; margin: 20px 0; }
-    .tip { color: #666; font-size: 14px; margin-top: 20px; }
-  </style>
-</head>
-<body>
-  <h2>${userName}的健康評估報告</h2>
-  <p>生成時間：${date}</p>
-  <img src="${imageUrl}" alt="健康評估報告">
-  <p class="tip">若需分享圖片，長按圖片→保存到相冊，再在LINE群中發送</p>
-</body>
-</html>
-    `;
+  // -------------------------- 新增：保存图片到手机相册（适配安卓/iOS） --------------------------
+  function saveToMobileGallery(blob, fileName) {
+    return new Promise((resolve) => {
+      // 检测移动设备类型
+      const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+      const isAndroid = /Android/i.test(navigator.userAgent);
 
-    // 將中間頁HTML轉換為Data URL（無需服務器，直接在瀏覽器中訪問）
-    const htmlBlob = new Blob([middlePageHtml], { type: 'text/html;charset=utf-8' });
-    const middlePageUrl = URL.createObjectURL(htmlBlob);
-    return middlePageUrl;
+      // 方案1：现代浏览器支持的FileSystemAccess API（优先使用，保存更直接）
+      if (window.showSaveFilePicker && !isIOS) { // iOS暂不支持该API，单独处理
+        const options = {
+          suggestedName: fileName,
+          types: [{
+            description: '圖片文件',
+            accept: { 'image/jpeg': ['.jpg'] }
+          }]
+        };
+
+        window.showSaveFilePicker(options)
+          .then((fileHandle) => fileHandle.createWritable())
+          .then((writable) => writable.write(blob))
+          .then(() => {
+            alert('圖片已成功保存到相簿！');
+            resolve(true);
+          })
+          .catch((err) => {
+            console.warn('FileSystemAPI保存失敗，切換兼容方案:', err);
+            // 降级到方案2（a标签下载）
+            saveWithAnchorTag(blob, fileName, resolve);
+          });
+      } 
+      // 方案2：兼容所有手机浏览器的a标签下载（适配iOS/旧安卓）
+      else {
+        saveWithAnchorTag(blob, fileName, resolve);
+      }
+    });
   }
 
-  // -------------------------- 新增：LINE群專屬分享邏輯 --------------------------
-  function shareToLineGroup(shareUrl, userName, date) {
-    const shareTitle = `${userName}的健康評估報告（${date}）`;
-    const shareText = `📋 ${userName}的健康評估報告已生成，包含六大調理方向建議，點擊鏈接查看圖片，發送到群聊即可分享給大家！`;
+  // 辅助函数：用a标签实现图片下载（兼容方案）
+  function saveWithAnchorTag(blob, fileName, resolve) {
+    const blobUrl = URL.createObjectURL(blob);
+    const downloadLink = document.createElement('a');
+    downloadLink.download = fileName;
+    downloadLink.href = blobUrl;
+    downloadLink.style.display = 'none';
 
-    // 1. 優先嘗試LINE瀏覽器的原生分享（支持直接喚起LINE群）
+    // iOS特殊处理：a标签需target="_blank"才能触发下载预览
+    if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+      downloadLink.target = '_blank';
+    }
+
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+
+    // 清理资源+提示用户（区分iOS和安卓）
+    setTimeout(() => {
+      document.body.removeChild(downloadLink);
+      URL.revokeObjectURL(blobUrl);
+
+      const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+      if (isIOS) {
+        // iOS下载后会打开图片预览，需提示用户手动保存到相册
+        alert(`圖片已打開預覽，請點擊右上角「分享」圖標 → 選擇「保存圖片」，即可存入相簿`);
+      } else {
+        // 安卓会直接保存到下载目录，提示用户在相册中查找
+        alert(`圖片已保存到「下載」文件夾，可在相簿的「下載」專輯中找到\n文件名：${localImageName}`);
+      }
+      resolve(true);
+    }, 1000);
+  }
+
+  // -------------------------- 新增：显示手机原生分享按钮（适配移动操作） --------------------------
+  function showNativeShareButton(userName, date) {
+    // 先移除已存在的分享按钮（避免重复创建）
+    const existingShareBtn = document.getElementById('nativeShareBtn');
+    if (existingShareBtn) {
+      document.body.removeChild(existingShareBtn);
+    }
+
+    // 1. 创建原生分享按钮（固定在底部中央，符合手机操作习惯）
+    const shareBtn = document.createElement('button');
+    shareBtn.id = 'nativeShareBtn';
+    shareBtn.style.cssText = `
+      position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+      padding: 12px 24px; border-radius: 30px;
+      background: #165DFF; color: white; border: none;
+      box-shadow: 0 4px 15px rgba(22, 93, 255, 0.3);
+      font-size: 16px; font-weight: bold;
+      display: flex; align-items: center; gap: 8px;
+      z-index: 9999; cursor: pointer;
+    `;
+    shareBtn.innerHTML = '<i class="fa fa-share-alt"></i> 原生分享圖片';
+    document.body.appendChild(shareBtn);
+
+    // 2. 绑定分享事件（核心：传递图片文件，而非URL）
+    shareBtn.addEventListener('click', async () => {
+      try {
+        // 校验是否有图片数据
+        if (!localImageBlob) {
+          alert('圖片數據丟失，請重新生成圖片');
+          return;
+        }
+
+        // 关键：将Blob转换为File对象（Web Share API仅支持File数组）
+        const imageFile = new File(
+          [localImageBlob], 
+          localImageName, 
+          { type: 'image/jpeg' }
+        );
+
+        // 校验浏览器是否支持原生文件分享
+        if (navigator.share && navigator.canShare({ files: [imageFile] })) {
+          shareBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> 喚醒分享...';
+          
+          // 触发手机原生分享（传递图片文件）
+          await navigator.share({
+            title: `${userName}的健康評估報告`, // 分享标题
+            text: `${userName}的健康評估報告（${date}）\n包含六大調理方向建議`, // 分享描述
+            files: [imageFile], // 核心：传递图片文件（而非URL）
+            url: window.location.href // 辅助：传递页面URL（可选，部分应用需要）
+          });
+
+          alert('圖片分享成功！');
+          shareBtn.innerHTML = '<i class="fa fa-share-alt"></i> 原生分享圖片';
+        } else {
+          // 不支持文件分享时，提示手动从相册分享
+          throw new Error('您的瀏覽器不支持直接分享圖片，請從相簿手動分享');
+        }
+      } catch (shareError) {
+        console.error('原生分享失敗:', shareError);
+        shareBtn.innerHTML = '<i class="fa fa-share-alt"></i> 原生分享圖片';
+        
+        // 分享取消的友好提示
+        if (shareError.name === 'AbortError') {
+          alert('分享已取消');
+        } else {
+          // 降级提示：手动从相册分享
+          showManualShareGuide();
+        }
+      }
+    });
+  }
+
+  // -------------------------- 新增：手动分享指引（适配安卓/iOS相册） --------------------------
+  function showManualShareGuide() {
+    const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+    const isAndroid = /Android/i.test(navigator.userAgent);
+    let guideText = `圖片已保存到相簿（文件名：${localImageName}）\n\n`;
+
+    // 区分iOS和安卓的操作步骤（符合用户习惯）
+    if (isIOS) {
+      guideText += `手動分享步驟：
+1. 打開手機「照片」APP
+2. 在「所有照片」或「下載」專輯中找到該圖片
+3. 點擊左下角「分享」圖標（方形+箭頭）
+4. 選擇要分享的聯繫人或應用（如LINE、微信）`;
+    } else if (isAndroid) {
+      guideText += `手動分享步驟：
+1. 打開手機「相冊」或「圖庫」APP
+2. 在「下載」或「相機膠卷」專輯中找到該圖片
+3. 點擊右上角「分享」圖標（三點/箭頭）
+4. 選擇要分享的聯繫人或應用（如LINE、微信）`;
+    }
+
+    alert(guideText);
+  }
+
+  // -------------------------- 14. 原生分享功能（保留兼容，优先使用上述新逻辑） --------------------------
+  // （注：原shareImage函数可保留，作为极端情况下的降级方案，无需修改）
+  function shareImage(imageUrl, title, date) {
+    const shareText = `${title}\n生成時間：${date}\n點擊查看詳細健康評估結果`;
+
     if (navigator.share) {
-      // 創建LINE專屬分享按鈕（綠色，LINE圖標風格）
-      const lineShareBtn = document.createElement('button');
-      lineShareBtn.id = 'lineShareBtn';
-      lineShareBtn.style.cssText = `
+      const shareBtn = document.createElement('button');
+      shareBtn.id = 'tempShareBtn';
+      shareBtn.style.cssText = `
         position: fixed; bottom: 20px; right: 20px;
         width: 60px; height: 60px; border-radius: 50%;
-        background: #00C300; color: white; border: none;
+        background: #165DFF; color: white; border: none;
         box-shadow: 0 2px 10px rgba(0,0,0,0.2);
         display: flex; align-items: center; justify-content: center;
         z-index: 9999; cursor: pointer;
       `;
-      // 使用LINE風格圖標（需引入Font Awesome）
-      lineShareBtn.innerHTML = '<i class="fa fa-comment text-xl"></i>';
-      lineShareBtn.title = '分享到LINE群';
-      document.body.appendChild(lineShareBtn);
+      shareBtn.innerHTML = '<i class="fa fa-share-alt text-xl"></i>';
+      document.body.appendChild(shareBtn);
 
-      // 點擊觸發分享（傳遞含OG標籤的中間頁URL）
-      lineShareBtn.addEventListener('click', async () => {
+      shareBtn.addEventListener('click', async () => {
         try {
           await navigator.share({
-            title: shareTitle,
+            title: title,
             text: shareText,
-            url: shareUrl, // LINE會爬取該URL的OG標籤，顯示圖片預覽
+            url: imageUrl
           });
-          alert('已成功喚起LINE分享，選擇群聊即可發送圖片預覽！');
+          alert('分享成功！');
         } catch (shareError) {
-          console.error('LINE分享失敗:', shareError);
-          // 降級為手動複製鏈接到LINE
-          if (shareError.name === 'AbortError') {
-            alert('分享已取消');
-          } else {
-            copyLineShareLink(shareUrl, userName, date);
-          }
+          console.error('分享失敗:', shareError);
+          alert(`分享取消或失敗: ${shareError.message}`);
+        } finally {
+          document.body.removeChild(shareBtn);
         }
       });
 
-      // 提示用戶操作（針對LINE的專屬引導）
-      alert(`
-LINE群分享準備完成！
-操作步驟：
-1. 點擊右下角綠色「LINE」按鈕
-2. 在彈出的分享面板中選擇「LINE」
-3. 選擇要分享的群聊，發送即可（會自動顯示圖片預覽）
-      `);
-
-    // 2. 不支持原生分享時，複製鏈接+手動引導
+      alert('已生成分享鏈接，點擊右下角按鈕分享報告');
     } else {
-      copyLineShareLink(shareUrl, userName, date);
+      alert(`${shareText}\n\n分享鏈接：${imageUrl}\n鏈接已自動複製到剪貼板`);
+      navigator.clipboard.writeText(imageUrl).catch(err => {
+        console.error('剪貼板複製失敗:', err);
+        alert('鏈接複製失敗，請手動複製上面的鏈接');
+      });
     }
   }
 
-  // -------------------------- 新增：複製LINE分享鏈接（降級方案） --------------------------
-  function copyLineShareLink(shareUrl, userName, date) {
-    const shareText = `
-📋 ${userName}的健康評估報告（${date}）
-💡 包含六大調理方向建議，點擊鏈接即可查看圖片
-🔗 LINE群分享鏈接：${shareUrl}
-
-操作提示：
-1. 複製上方所有內容到LINE群聊
-2. 發送後，LINE會自動顯示圖片預覽
-3. 點擊預覽圖可查看完整報告，群成員可保存圖片
-    `;
-
-    // 複製到剪貼板
-    navigator.clipboard.writeText(shareText).then(() => {
-      alert(`
-LINE群分享鏈接已複製！
-請按以下步驟操作：
-1. 打開LINE應用，進入要分享的群聊
-2. 長按輸入框，選擇「粘貼」
-3. 點擊「發送」，LINE會自動顯示圖片預覽
-4. 群成員點擊預覽即可查看完整報告
-      `);
-    }).catch(err => {
-      console.error('剪貼板複製失敗:', err);
-      alert(`
-LINE群分享鏈接：${shareUrl}
-複製失敗，請手動複製鏈接到LINE群聊，發送後會顯示圖片預覽！
-      `);
-    });
-  }
 
 
   // 15. 生成評估結果（核心：六大調理方向雷達圖+健康建議）
