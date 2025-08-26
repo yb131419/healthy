@@ -1289,12 +1289,6 @@
     </div>
   </div> <!-- 閉合症狀列表容器 -->
             
-            <div class="mt-6">
-              <label for="otherSymptoms" class="block text-sm font-medium text-neutral-dark/80 mb-1">其他症狀或病史</label>
-              <textarea id="otherSymptoms" rows="3" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors" placeholder="請描述其他症狀或病史"></textarea>
-            </div>
-          </div>
-
           
           <!-- 步驟3: 生活習慣 -->
           <div class="form-step hidden" id="step3">
@@ -2835,8 +2829,8 @@ if (hasNoIssues) {
       // 氣血不足調理建議
       recommendationsContainer.innerHTML += `
         <div class="bg-neutral p-4 rounded-lg mb-3">
-          <h4 class="font-medium text-primary mb-2">一、氣血不足調理：順時蓄養“生命能量”</h4>
-          <p class="text-sm text-neutral-dark/80">對應症狀：記憶力下降、思維斷電、頭髮稀少等</p>
+          <h4 class="font-medium text-primary mb-2">一、氣血不足調理：\n順時蓄養“生命能量”</h4>
+          <p class="text-sm text-neutral-dark/80">對應症狀：記憶力下降、思維斷電、頭髮稀少、等</p>
           <p class="text-sm text-neutral-dark/80 italic">《黃帝內經》言“人以氣血為本，氣血隨時辰消長”</p>
           <ul class="mt-2 text-sm text-neutral-dark/80 space-y-2 list-disc pl-5">
             <li><strong>辰時（7:00-9:00，胃經當令）</strong>：保持環境安靜，避免邊用餐邊處理事務。餐後留5分鐘靜息，不立即投入忙碌，提升氣血轉化效率。</li>
@@ -2849,8 +2843,8 @@ if (hasNoIssues) {
       // 微循環不通改善建議
       recommendationsContainer.innerHTML += `
         <div class="bg-neutral p-4 rounded-lg mb-3">
-          <h4 class="font-medium text-primary mb-2">二、微循環不通改善：按時疏通“氣血通道”</h4>
-          <p class="text-sm text-neutral-dark/80">對應症狀：頭暈、頭麻、手足麻木等</p>
+          <h4 class="font-medium text-primary mb-2">二、微循環不通改善：\n按時疏通“氣血通道”</h4>
+          <p class="text-sm text-neutral-dark/80">對應症狀：頭暈、頭麻、手足麻木、等</p>
           <p class="text-sm text-neutral-dark/80 italic">《黃帝內經》曰“經脈者，所以行血氣而營陰陽”</p>
           <ul class="mt-2 text-sm text-neutral-dark/80 space-y-2 list-disc pl-5">
             <li><strong>午時（11:00-13:00，心經當令）</strong>：找安靜處靜坐，不思考複雜問題、不看電子設備。減少身心負擔，讓血液充分流向頭部緩解不適。</li>
@@ -2863,8 +2857,8 @@ if (hasNoIssues) {
       // 毒素排毒調理建議
       recommendationsContainer.innerHTML += `
         <div class="bg-neutral p-4 rounded-lg mb-3">
-          <h4 class="font-medium text-primary mb-2">三、毒素排毒調理：順時暢通“排濁通道”</h4>
-          <p class="text-sm text-neutral-dark/80">對應症狀：頭面油膩、眼屎多、耳屎多等</p>
+          <h4 class="font-medium text-primary mb-2">三、毒素排毒調理：\n順時暢通“排濁通道”</h4>
+          <p class="text-sm text-neutral-dark/80">對應症狀：頭面油膩、眼屎多、耳屎多、等</p>
           <p class="text-sm text-neutral-dark/80 italic">《黃帝內經》強調“濁邪出下竅，清陽實四肢”</p>
           <ul class="mt-2 text-sm text-neutral-dark/80 space-y-2 list-disc pl-5">
             <li><strong>卯時（5:00-7:00，大腸經當令）</strong>：營造輕鬆排便環境，不匆忙、不憋便。借大腸經排毒時段促進毒素隨糞便排出，減少堆積。</li>
@@ -2877,8 +2871,8 @@ if (hasNoIssues) {
       // 血脂黏稠調理建議
       recommendationsContainer.innerHTML += `
         <div class="bg-neutral p-4 rounded-lg mb-3">
-          <h4 class="font-medium text-primary mb-2">四、血脂黏稠調理：順時清通“經脈瘀濁”</h4>
-          <p class="text-sm text-neutral-dark/80">對應症狀：頭面油膩、痤瘡、脂肪瘤等</p>
+          <h4 class="font-medium text-primary mb-2">四、血脂黏稠調理：\n順時清通“經脈瘀濁”</h4>
+          <p class="text-sm text-neutral-dark/80">對應症狀：頭面油膩、痤瘡、脂肪瘤、等</p>
           <p class="text-sm text-neutral-dark/80 italic">《黃帝內經》曰“經脈流通，何病之有”</p>
           <ul class="mt-2 text-sm text-neutral-dark/80 space-y-2 list-disc pl-5">
             <li><strong>卯時（5:00-7:00，大腸經當令）</strong>：晨起慢飲溫開水，喚醒身體代謝功能。溫和啓動排毒機制，稀釋血液雜質。</li>
@@ -2905,8 +2899,8 @@ if (hasNoIssues) {
       // 免疫系統調理建議
       recommendationsContainer.innerHTML += `
         <div class="bg-neutral p-4 rounded-lg mb-3">
-          <h4 class="font-medium text-primary mb-2">六、免疫系統調理：順時培補“正氣屏障”</h4>
-          <p class="text-sm text-neutral-dark/80">對應症狀：感冒時間長、各種過敏等</p>
+          <h4 class="font-medium text-primary mb-2">六、免疫系統調理：\n順時培補“正氣屏障”</h4>
+          <p class="text-sm text-neutral-dark/80">對應症狀：感冒時間長、各種過敏、等</p>
           <p class="text-sm text-neutral-dark/80 italic">《黃帝內經》提出“正氣存內，邪不可乾”</p>
           <ul class="mt-2 text-sm text-neutral-dark/80 space-y-2 list-disc pl-5">
             <li><strong>寅時（3:00-5:00，肺經當令）</strong>：保持睡眠環境溫暖安靜，不熬夜。借深睡增強肺經衛氣功能，減少外邪入侵。</li>
@@ -2919,8 +2913,8 @@ if (hasNoIssues) {
       // 情緒調理建議
       recommendationsContainer.innerHTML += `
         <div class="bg-neutral p-4 rounded-lg">
-          <h4 class="font-medium text-primary mb-2">七、情緒調理：順時疏解“情志郁結”</h4>
-          <p class="text-sm text-neutral-dark/80">對應症狀：多夢、常嘆氣、經期頭痛等</p>
+          <h4 class="font-medium text-primary mb-2">七、情緒調理：\n順時疏解“情志郁結”</h4>
+          <p class="text-sm text-neutral-dark/80">對應症狀：多夢、常嘆氣、經期頭痛、等</p>
           <p class="text-sm text-neutral-dark/80 italic">《黃帝內經》曰“怒則氣上，喜則氣緩，悲則氣消”</p>
           <ul class="mt-2 text-sm text-neutral-dark/80 space-y-2 list-disc pl-5">
             <li><strong>未時（13:00-15:00，小腸經當令）</strong>：暫停工作，到窗邊望向開闊處，不鑽牛角尖。借開闊視野疏解情緒郁結，減少煩躁嘆氣。</li>
@@ -2933,7 +2927,7 @@ if (hasNoIssues) {
       // 補充提示
       recommendationsContainer.innerHTML += `
         <div class="mt-4 text-sm text-neutral-dark/70 text-center">
-          按以上時辰規律調理，能順應身體氣血運行節奏，慢慢改善相關症狀～ 若症狀持續不緩解，建議及時咨詢專業醫生。
+          按以上時辰規律調理，能順應身體氣血運行節奏，\n慢慢改善相關症狀～ \n若症狀持續不緩解，建議及時咨詢專業醫生。
         </div>
       `;
     } else {
