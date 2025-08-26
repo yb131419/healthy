@@ -1015,6 +1015,18 @@
     </div>
     <div class="symptom-item" data-category="skin">
       <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="產後脫發/抑鬱" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">產後脫發/抑鬱</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="skin">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="產後色斑" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">產後色斑</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="skin">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
         <input type="checkbox" name="symptoms" value="脂肪粒" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
         <span class="ml-2">脂肪粒</span>
       </label>
@@ -1027,18 +1039,6 @@
     </div>
     
    <!-- 女性症狀 -->
-       <div class="symptom-item" data-category="female">
-      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
-        <input type="checkbox" name="symptoms" value="產後脫發/抑鬱" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
-        <span class="ml-2">產後脫發/抑鬱</span>
-      </label>
-    </div>
-    <div class="symptom-item" data-category="female">
-      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
-        <input type="checkbox" name="symptoms" value="產後色斑" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
-        <span class="ml-2">產後色斑</span>
-      </label>
-    </div>
     <div class="symptom-item" data-category="female">
       <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
         <input type="checkbox" name="symptoms" value="不孕不育" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
@@ -1748,8 +1748,7 @@
     </div>
   </div>
 
-<script>
-document.addEventListener('DOMContentLoaded', function() {
+<script>document.addEventListener('DOMContentLoaded', function() {
   let currentStep = 1, totalSteps = 4;
   const menuToggle = document.getElementById('menuToggle'), mobileMenu = document.getElementById('mobileMenu');
   const prevBtn = document.getElementById('prevBtn'), nextBtn = document.getElementById('nextBtn'), submitBtn = document.getElementById('submitBtn');
@@ -2156,7 +2155,6 @@ document.addEventListener('DOMContentLoaded', function() {
   updateFormSteps();
   updateGenderBasedUI();
 });
-  
 </script>
 
     
