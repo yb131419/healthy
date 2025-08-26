@@ -2450,7 +2450,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   });
 
-    // 生成評估結果（含六邊形調理方向圖）
+      // 生成評估結果（含8級分級雷達圖）
   function generateResult() {
     // 獲取基本資料
     const name = document.getElementById('name').value || '未填寫';
@@ -2519,158 +2519,225 @@ document.addEventListener('DOMContentLoaded', function() {
       </div>
     `;
     
-    // 獲取選中的症狀和習慣
+    // 獲取選中的症狀和習慣（提升作用域，供雷達圖使用）
     const symptomElements = document.querySelectorAll('input[name="symptoms"]:checked');
     const selectedSymptoms = Array.from(symptomElements).map(checkbox => checkbox.value);
-    const totalSymptomCount = selectedSymptoms.length; // 總選中症狀數
+    const totalSymptomCount = selectedSymptoms.length;
     
     const habitElements = document.querySelectorAll('input[name="habits"]:checked');
     const selectedHabits = Array.from(habitElements).map(checkbox => checkbox.value);
     const habitCount = selectedHabits.length;
+    const isFemale = gender === '女';
     
-    // -------------------------- 核心修改：調理方向六邊形（雷達）圖邏輯 --------------------------
-    // 1. 定義六大調理方向及關聯症狀/習慣（用於計算得分）
-    const adjustmentDirections = {
-      體質: [
-        '頭部怕冷', '手足麻木/發青', '手腳熱/涼/脹/出汗', '關節痛/腫', '腰酸痛/腰涼', 
-        '大便不成形', '便溏不淨/便秘', '低熱37-38℃', '四肢乏力', '平衡差/易摔交', 
-        '經期小腹怕涼', '感冒時間長', '易感冒/不感冒'
-      ],
-      免疫: [
-        '感冒時間長', '易感冒/不感冒', '各種過敏/濕疹', '過敏性鼻炎', '口腔潰瘍/舌潰瘍', 
-        '淋巴腫大', '皮膚易青/紅點', '皮膚癢/後背痘', '牛皮癬/白癜風', '扁桃體炎'
-      ],
-      毒素: [
-        '頭/面油膩', '痤瘡/痘/斑', '皮膚易青/紅點', '皮膚癢/後背痘', '眼屎多/麥粒腫', 
-        '耳內潮濕/膿', '耳屎多/痛/癢', '口苦/乾/臭/腥', '口氣重/口辣', '舌苔厚/黃/膩', 
-        '大便不成形', '便溏不淨/便秘', '腹脹/屁多/臭'
-      ],
-      營養: [
-        '食慾差/易飽', '偏食/厭食', '食慾過旺', '消化不良', '形體消瘦', '肥胖/將軍肚', 
-        '個頭矮/發育慢', '體重突增/減10%', '半月痕無/少', '指甲易斷/手指倒刺', 
-        '貧血/高血脂', '頭髮稀少', '頭髮乾/脫發'
-      ],
-      循環: [
-        '低血壓/高血壓', '貧血/高血脂', '心絞痛', '心跳快/慢', '心慌/心律失常', 
-        '胸悶/胸痛', '手足麻木/發青', '手腳熱/涼/脹/出汗', '頭暈/頭麻/易打哈欠', 
-        '面色異常（白/青）', '靜脈曲張', '右肝區悶痛'
-      ],
-      內分泌: [
-        '甲亢/甲減', '甲狀腺結節', '肥胖/將軍肚', '形體消瘦', '體重突增/減10%', 
-        '低血糖/高血糖', '高血脂', '月經少/有塊', '經量多/子宮肌瘤', '經期提前/推後', 
-        '卵巢囊腫', '不孕不育', '產後脫發/抑鬱'
-      ]
+    // -------------------------- 8級分級雷達圖核心邏輯 --------------------------
+    // 1. 8級分級配置（含顏色、名稱、建議）
+    const scoreLevelConfig = [
+      { min: 0, max: 15, level: '極重度', color: 'rgba(220, 0, 0, 1)', suggestion: '⚠️ 極重度問題：立即就醫檢查，需專業醫療干預' },
+      { min: 15, max: 30, level: '重度', color: 'rgba(233, 30, 99, 1)', suggestion: '🔴 重度問題：1周內就醫，結合藥物+生活調理' },
+      { min: 30, max: 45, level: '中重度', color: 'rgba(255, 87, 34, 1)', suggestion: '🟠 中重度問題：2周內制定調理計劃，密切監測' },
+      { min: 45, max: 60, level: '中度', color: 'rgba(255, 159, 64, 1)', suggestion: '🟡 中度問題：1個月內改善習慣，定期復查' },
+      { min: 60, max: 75, level: '輕度', color: 'rgba(255, 205, 86, 1)', suggestion: '🟢 輕度問題：調整飲食作息，2個月後復查' },
+      { min: 75, max: 85, level: '輕微', color: 'rgba(132, 204, 22, 1)', suggestion: '✅ 輕微問題：保持現有習慣，偶爾優化即可' },
+      { min: 85, max: 95, level: '良好', color: 'rgba(54, 162, 235, 1)', suggestion: '🌟 狀態良好：繼續保持，無需特殊調理' },
+      { min: 95, max: 100, level: '優秀', color: 'rgba(22, 93, 255, 1)', suggestion: '🏆 健康優秀：可分享經驗，幫助他人' }
+    ];
+
+    // 2. 根據得分獲取對應分級
+    const getScoreLevel = (score) => {
+      return scoreLevelConfig.find(level => score >= level.min && score < level.max);
     };
 
-    // 2. 計算各調理方向得分（0-100分，得分越低=需重點調理）
+    // 3. 精准定義六大調理維度及權重
+    const adjustmentDirections = {
+      體質: {
+        core: ['手足麻木/發青', '關節痛/腫', '腰酸痛/腰涼', '四肢乏力', '平衡差/易摔交', '經期小腹怕涼'], // 權重2
+        secondary: ['頭部怕冷', '手腳熱/涼/脹/出汗', '大便不成形', '便溏不淨/便秘', '低熱37-38℃', '感冒時間長', '易感冒/不感冒'], // 權重1
+        badHabits: ['長期熬夜', '缺乏運動', '久坐不動', '愛吃生冷食物', '不注意保暖'] // 權重1.5
+      },
+      免疫: {
+        core: ['各種過敏/濕疹', '過敏性鼻炎', '淋巴腫大', '牛皮癬/白癜風', '感冒時間長'],
+        secondary: ['口腔潰瘍/舌潰瘍', '皮膚易青/紅點', '皮膚癢/後背痘', '易感冒/不感冒', '扁桃體炎'],
+        badHabits: ['熬夜', '飲食不規律', '壓力過大', '缺乏睡眠', '過度疲勞']
+      },
+      毒素: {
+        core: ['頭/面油膩', '痤瘡/痘/斑', '口苦/乾/臭/腥', '舌苔厚/黃/膩', '大便不成形', '便溏不淨/便秘'],
+        secondary: ['皮膚易青/紅點', '皮膚癢/後背痘', '眼屎多/麥粒腫', '耳內潮濕/膿', '耳屎多/痛/癢', '口氣重/口辣', '腹脹/屁多/臭'],
+        badHabits: ['高油高糖飲食', '喝水少', '長期憋便', '熬夜', '久坐不運動']
+      },
+      營養: {
+        core: ['食慾差/易飽', '偏食/厭食', '食慾過旺', '消化不良', '形體消瘦', '肥胖/將軍肚', '體重突增/減10%'],
+        secondary: ['個頭矮/發育慢', '半月痕無/少', '指甲易斷/手指倒刺', '貧血/高血脂', '頭髮稀少', '頭髮乾/脫發'],
+        badHabits: ['挑食偏食', '暴飲暴食', '不吃早餐', '過度減肥', '長期吃速食']
+      },
+      循環: {
+        core: ['低血壓/高血壓', '貧血/高血脂', '心絞痛', '心跳快/慢', '心慌/心律失常', '胸悶/胸痛'],
+        secondary: ['手足麻木/發青', '手腳熱/涼/脹/出汗', '頭暈/頭麻/易打哈欠', '面色異常（白/青）', '靜脈曲張', '右肝區悶痛'],
+        badHabits: ['久坐不動', '高鹽飲食', '抽煙', '酗酒', '情緒波動大']
+      },
+      內分泌: {
+        core: ['甲亢/甲減', '甲狀腺結節', '肥胖/將軍肚', '低血糖/高血糖', '高血脂', '月經少/有塊', '經量多/子宮肌瘤', '卵巢囊腫'],
+        secondary: ['形體消瘦', '體重突增/減10%', '經期提前/推後', '不孕不育', '產後脫發/抑鬱'],
+        badHabits: ['熬夜', '壓力過大', '飲食不規律', '缺乏運動', '長期熬夜']
+      }
+    };
+
+    // 4. 精准計算各維度得分
     const calculateAdjustmentScores = () => {
       const scores = {};
-      const allIssues = [...selectedSymptoms, ...selectedHabits]; // 合併症狀和不良習慣
-      
-      Object.entries(adjustmentDirections).forEach(([direction, relatedItems]) => {
-        // 統計該方向關聯的選中項數量
-        const matchedCount = allIssues.filter(item => relatedItems.includes(item)).length;
-        // 計算得分：(1 - 匹配數量/總關聯項數) * 100（避免除以0）
-        const totalRelated = relatedItems.length || 1;
-        const score = Math.max(0, Math.round((1 - matchedCount / totalRelated) * 100));
-        scores[direction] = score;
+      Object.entries(adjustmentDirections).forEach(([direction, { core, secondary, badHabits }]) => {
+        // 計算匹配數量
+        const coreMatched = selectedSymptoms.filter(sym => core.includes(sym)).length;
+        const secondaryMatched = selectedSymptoms.filter(sym => secondary.includes(sym)).length;
+        const habitMatched = selectedHabits.filter(habit => badHabits.includes(habit)).length;
+
+        // 加權計算（核心2 + 次要1 + 習慣1.5）
+        const weightedScore = (coreMatched * 2) + (secondaryMatched * 1) + (habitMatched * 1.5);
+        const maxWeightedScore = (core.length * 2) + (secondary.length * 1) + (badHabits.length * 1.5);
+
+        // 歸一化為0-100分（保留1位小數）
+        let finalScore = maxWeightedScore === 0 ? 100 : Math.max(0, Math.round((1 - weightedScore / maxWeightedScore) * 1000) / 10);
+        
+        // 特殊修正：核心症狀≥3個強制≤45分（中重度以下）
+        if (coreMatched >= 3) finalScore = Math.min(finalScore, 45);
+        // 無問題強制100分
+        if (weightedScore === 0) finalScore = 100;
+
+        scores[direction] = finalScore;
       });
-      
       return scores;
     };
 
-    // 3. 生成雷達圖數據
+    // 5. 渲染8級分級雷達圖
+    const ctx = document.getElementById('healthBarChart').getContext('2d');
+    if (window.healthChart) window.healthChart.destroy(); // 銷毀舊圖表
+
     const adjustmentScores = calculateAdjustmentScores();
     const adjustmentLabels = Object.keys(adjustmentScores);
     const adjustmentData = Object.values(adjustmentScores);
 
-    // 4. 渲染六邊形（雷達）圖
-    const ctx = document.getElementById('healthBarChart').getContext('2d');
-    // 銷毀舊圖表避免重復渲染
-    if (window.healthChart) window.healthChart.destroy();
-    
-    // 處理無數據情況
-    if (adjustmentData.every(score => score === 100)) {
+    // 處理全部優秀的情況
+    const hasNoIssues = Object.values(adjustmentScores).every(score => score >= 95);
+    if (hasNoIssues) {
       const chartContainer = document.getElementById('healthBarChart').parentNode;
-      chartContainer.innerHTML = '<p class="text-center text-gray-500 py-10">未選擇相關症狀，無法生成調理方向圖</p>';
+      chartContainer.innerHTML = `
+        <div class="text-center text-gray-600 py-10">
+          <p class="text-lg font-medium text-blue-600 mb-2">🎉 恭喜！各調理維度均達優秀水平</p>
+          <p class="text-sm mb-3">您的健康管理能力突出，建議繼續保持當前習慣</p>
+          <p class="text-xs text-gray-500">（評分≥95分，已超過90%人群的健康狀態）</p>
+        </div>
+      `;
     } else {
-      // 創建雷達圖（六邊形視覺效果）
+      // 創建雷達圖（六邊形視覺）
       window.healthChart = new Chart(ctx, {
         type: 'radar',
         data: {
           labels: adjustmentLabels,
           datasets: [{
-            label: '調理優先級得分（越低需重點調理）',
+            label: '調理優先級得分（0-100分，越低需重點調理）',
             data: adjustmentData,
-            backgroundColor: 'rgba(22, 93, 255, 0.2)', // 填充色
-            borderColor: 'rgba(22, 93, 255, 1)',       // 邊框色
+            backgroundColor: 'rgba(22, 93, 255, 0.15)',
+            borderColor: 'rgba(22, 93, 255, 1)',
             borderWidth: 2,
-            pointBackgroundColor: 'rgba(22, 93, 255, 1)', // 數據點顏色
+            pointBackgroundColor: (context) => {
+              // 按8級分級匹配數據點顏色
+              const score = context.raw;
+              const level = getScoreLevel(score);
+              return level ? level.color : 'rgba(22, 93, 255, 1)';
+            },
             pointBorderColor: '#fff',
-            pointHoverBackgroundColor: '#fff',
-            pointHoverBorderColor: 'rgba(22, 93, 255, 1)'
+            pointHoverRadius: 9,
+            pointRadius: 7,
+            pointHoverBorderWidth: 2
           }]
         },
         options: {
           scales: {
             r: {
-              angleLines: { display: true, color: 'rgba(0,0,0,0.1)' }, // 角度線（構成六邊形框架）
-              grid: { color: 'rgba(0,0,0,0.1)' }, // 網格線
-              pointLabels: { 
-                font: { size: 12, weight: 'bold' }, 
-                color: '#333',
-                padding: 15 // 標籤與圖形間距
-              },
+              angleLines: { display: true, color: 'rgba(0,0,0,0.1)', lineWidth: 1.5 }, // 強化六邊形輪廓
+              grid: { color: 'rgba(0,0,0,0.08)', lineWidth: 1 },
               ticks: {
                 backdropColor: 'transparent',
                 color: '#666',
-                stepSize: 20, // 刻度間隔（0-100分，5個間隔）
-                max: 100,     // 滿分（完全健康）
-                min: 0        // 零分（急需調理）
-              }
+                stepSize: 15, // 匹配8級分級間隔
+                max: 100,
+                min: 0,
+                autoSkip: false,
+                callback: (value) => {
+                  // 刻度標注對應分級
+                  const level = scoreLevelConfig.find(l => value >= l.min && value <= l.max);
+                  return level ? `${value}分(${level.level})` : `${value}分`;
+                }
+              },
+              pointLabels: { font: { size: 14, weight: 'bold' }, color: '#333', padding: 22 }
             }
           },
           plugins: {
-            legend: {
-              position: 'top',
-              labels: { font: { size: 11 } }
-            },
             tooltip: {
+              backgroundColor: 'rgba(0,0,0,0.85)',
+              padding: 14,
+              titleFont: { size: 14, weight: 'bold' },
+              bodyFont: { size: 13 },
               callbacks: {
-                // Tooltip提示：增加調理建議
-                label: function(context) {
+                label: (context) => {
+                  const score = context.raw;
+                  const level = getScoreLevel(score);
+                  return `得分：${score}分（${level ? level.level : '正常'}）`;
+                },
+                afterLabel: (context) => {
                   const dir = adjustmentLabels[context.dataIndex];
-                  const score = adjustmentData[context.dataIndex];
-                  let suggestion = '';
+                  const score = context.raw;
+                  const level = getScoreLevel(score);
+                  const suggestion = level ? level.suggestion : '✅ 狀態良好：繼續保持當前習慣';
+
+                  // 顯示問題詳情
+                  const dimConfig = adjustmentDirections[dir];
+                  const coreMatched = selectedSymptoms.filter(sym => dimConfig.core.includes(sym)).length;
+                  const secondaryMatched = selectedSymptoms.filter(sym => dimConfig.secondary.includes(sym)).length;
+                  const habitMatched = selectedHabits.filter(h => dimConfig.badHabits.includes(h)).length;
                   
-                  if (score < 30) suggestion = '（急需重點調理）';
-                  else if (score < 60) suggestion = '（建議加強調理）';
-                  else suggestion = '（狀態良好，維持即可）';
-                  
-                  return `${dir}: ${score}分 ${suggestion}`;
+                  return `\n問題詳情：核心症狀${coreMatched}個，次要症狀${secondaryMatched}個，不良習慣${habitMatched}個\n${suggestion}`;
                 }
               }
             },
             title: {
               display: true,
-              text: '調理方向優先級分布（六邊形圖）',
+              text: '健康調理方向優先級分布（8級精准評分）',
               font: { size: 16, weight: 'bold' },
-              padding: { bottom: 20 }
+              padding: { bottom: 25 },
+              color: '#2d3748'
+            },
+            legend: {
+              position: 'bottom',
+              labels: {
+                padding: 25,
+                font: { size: 12 },
+                generateLabels: (chart) => {
+                  const baseLabels = chart.defaults.plugins.legend.labels.generateLabels(chart);
+                  // 添加8級分級說明
+                  const levelLabels = scoreLevelConfig.map((level, index) => ({
+                    text: `${level.min}-${level.max}分(${level.level})`,
+                    fillStyle: level.color,
+                    strokeStyle: level.color,
+                    lineWidth: 2,
+                    hidden: false,
+                    index: baseLabels.length + index
+                  }));
+                  return [
+                    ...baseLabels,
+                    { text: '—— 8級分級說明 ——', fillStyle: 'transparent', strokeStyle: 'transparent', font: { size: 12, weight: 'bold' }, color: '#4a5568' },
+                    ...levelLabels
+                  ];
+                }
+              }
             }
           },
-          elements: {
-            line: { tension: 0.2 } // 線條平滑度（0=折線，1=平滑線）
-          }
+          elements: { line: { tension: 0.15 } },
+          interaction: { mode: 'index', intersect: false, axis: 'r' },
+          animation: { duration: 2000, easing: 'easeOutQuart' }
         }
       });
     }
-    // -------------------------- 六邊形圖表邏輯結束 --------------------------
-    
-    // 獲取主要健康問題
-    const mainConcern = document.getElementById('mainConcern').value || '未明確說明';
-    const symptomDuration = document.getElementById('symptomDuration').value || '未說明';
-    const possibleCauses = document.getElementById('possibleCauses').value || '未說明';
-    const isFemale = gender === '女';
+    // -------------------------- 雷達圖邏輯結束 --------------------------
     
     // 更新結果數據
     document.getElementById('symptomCount').textContent = `${totalSymptomCount} 項症狀`;
@@ -2703,12 +2770,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // 構建分類症狀HTML
     Object.keys(symptomCategories).forEach(category => {
-      // 男性不顯示女性症狀分類
-      if (!isFemale && category === '女性症狀') return;
+      if (!isFemale && category === '女性症狀') return; // 男性隱藏女性症狀
       
-      const categorySymptoms = selectedSymptoms.filter(symptom => 
-        symptomCategories[category].includes(symptom)
-      );
+      const categorySymptoms = selectedSymptoms.filter(symptom => symptomCategories[category].includes(symptom));
       if (categorySymptoms.length > 0) {
         symptomsHtml += `<div class="mt-2">
           <p class="text-sm font-medium">${category}：</p>
@@ -2718,9 +2782,9 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     mainIssuesContainer.innerHTML = `
-      <p class="mb-3"><strong>主要關注問題：</strong> ${mainConcern}</p>
-      <p class="mb-3"><strong>症狀持續時間：</strong> ${symptomDuration}</p>
-      <p class="mb-3"><strong>可能原因：</strong> ${possibleCauses}</p>
+      <p class="mb-3"><strong>主要關注問題：</strong> ${document.getElementById('mainConcern').value || '未明確說明'}</p>
+      <p class="mb-3"><strong>症狀持續時間：</strong> ${document.getElementById('symptomDuration').value || '未說明'}</p>
+      <p class="mb-3"><strong>可能原因：</strong> ${document.getElementById('possibleCauses').value || '未說明'}</p>
       ${totalSymptomCount > 0 ? `<div class="mt-3"><strong>詳細症狀：</strong>${symptomsHtml}</div>` : ''}
     `;
     
