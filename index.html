@@ -229,8 +229,8 @@
               </div>
               
               <div>
-                <label for="phone" class="block text-sm font-medium text-neutral-dark/80 mb-1">聯繫電話</label>
-                <input type="tel" id="phone" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors" placeholder="請輸入您的聯繫電話">
+                <label for="phone" class="block text-sm font-medium text-neutral-dark/80 mb-1">電話 or Line</label>
+                <input type="tel" id="phone" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors" placeholder="請輸入您的聯繫 電話 or Line">
               </div>
             </div>
             
@@ -1288,13 +1288,13 @@
       </label>
     </div>
   </div> <!-- 閉合症狀列表容器 -->
-            
-            <div class="mt-6">
+
+              <div class="mt-6">
               <label for="otherSymptoms" class="block text-sm font-medium text-neutral-dark/80 mb-1">其他症狀或病史</label>
               <textarea id="otherSymptoms" rows="3" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors" placeholder="請描述其他症狀或病史"></textarea>
             </div>
           </div>
-
+            
           
           <!-- 步驟3: 生活習慣 -->
           <div class="form-step hidden" id="step3">
@@ -2528,142 +2528,366 @@ document.addEventListener('DOMContentLoaded', function() {
     const selectedHabits = Array.from(habitElements).map(checkbox => checkbox.value);
     const habitCount = selectedHabits.length;
     
-    // -------------------------- 核心修改：調理方向六邊形（雷達）圖邏輯 --------------------------
-    // 1. 定義六大調理方向及關聯症狀/習慣（用於計算得分）
-    const adjustmentDirections = {
-      體質: [
-        '頭部怕冷', '手足麻木/發青', '手腳熱/涼/脹/出汗', '關節痛/腫', '腰酸痛/腰涼', 
-        '大便不成形', '便溏不淨/便秘', '低熱37-38℃', '四肢乏力', '平衡差/易摔交', 
-        '經期小腹怕涼', '感冒時間長', '易感冒/不感冒'
-      ],
-      免疫: [
-        '感冒時間長', '易感冒/不感冒', '各種過敏/濕疹', '過敏性鼻炎', '口腔潰瘍/舌潰瘍', 
-        '淋巴腫大', '皮膚易青/紅點', '皮膚癢/後背痘', '牛皮癬/白癜風', '扁桃體炎'
-      ],
-      毒素: [
-        '頭/面油膩', '痤瘡/痘/斑', '皮膚易青/紅點', '皮膚癢/後背痘', '眼屎多/麥粒腫', 
-        '耳內潮濕/膿', '耳屎多/痛/癢', '口苦/乾/臭/腥', '口氣重/口辣', '舌苔厚/黃/膩', 
-        '大便不成形', '便溏不淨/便秘', '腹脹/屁多/臭'
-      ],
-      營養: [
-        '食慾差/易飽', '偏食/厭食', '食慾過旺', '消化不良', '形體消瘦', '肥胖/將軍肚', 
-        '個頭矮/發育慢', '體重突增/減10%', '半月痕無/少', '指甲易斷/手指倒刺', 
-        '貧血/高血脂', '頭髮稀少', '頭髮乾/脫發'
-      ],
-      循環: [
-        '低血壓/高血壓', '貧血/高血脂', '心絞痛', '心跳快/慢', '心慌/心律失常', 
-        '胸悶/胸痛', '手足麻木/發青', '手腳熱/涼/脹/出汗', '頭暈/頭麻/易打哈欠', 
-        '面色異常（白/青）', '靜脈曲張', '右肝區悶痛'
-      ],
-      內分泌: [
-        '甲亢/甲減', '甲狀腺結節', '肥胖/將軍肚', '形體消瘦', '體重突增/減10%', 
-        '低血糖/高血糖', '高血脂', '月經少/有塊', '經量多/子宮肌瘤', '經期提前/推後', 
-        '卵巢囊腫', '不孕不育', '產後脫發/抑鬱'
-      ]
-    };
+    // -------------------------- 精准化雷达图得分计算与渲染（核心修改部分） --------------------------// -------------------------- 精准化雷達圖得分計算與渲染（核心修改部分） --------------------------
+// 1. 精准定義六大調理維度及關聯症狀/習慣（按影響程度分層，用於權重計算）
+const adjustmentDirections = {
+  體質: {
+    // 核心症狀（權重2）：直接反映體質基礎問題
+    core: ['手足麻木/發青', '關節痛/腫', '腰酸痛/腰涼', '四肢乏力', '平衡差/易摔交', '經期小腹怕涼'],
+    // 次要症狀（權重1）：間接關聯體質狀態
+    secondary: ['頭部怕冷', '手腳熱/涼/脹/出汗', '大便不成形', '便溏不淨/便秘', '低熱37-38℃', '感冒時間長', '易感冒/不感冒'],
+    // 不良習慣（權重1.5）：長期影響體質的行為
+    badHabits: ['長期熬夜', '缺乏運動', '久坐不動', '愛吃生冷食物', '不注意保暖']
+  },
+  免疫: {
+    core: ['各種過敏/濕疹', '過敏性鼻炎', '淋巴腫大', '牛皮癬/白癜風', '感冒時間長'],
+    secondary: ['口腔潰瘍/舌潰瘍', '皮膚易青/紅點', '皮膚癢/後背痘', '易感冒/不感冒', '扁桃體炎'],
+    badHabits: ['熬夜', '飲食不規律', '壓力過大', '缺乏睡眠', '過度疲勞']
+  },
+  毒素: {
+    core: ['頭/面油膩', '痤瘡/痘/斑', '口苦/乾/臭/腥', '舌苔厚/黃/膩', '大便不成形', '便溏不淨/便秘'],
+    secondary: ['皮膚易青/紅點', '皮膚癢/後背痘', '眼屎多/麥粒腫', '耳內潮濕/膿', '耳屎多/痛/癢', '口氣重/口辣', '腹脹/屁多/臭'],
+    badHabits: ['高油高糖飲食', '喝水少', '長期憋便', '熬夜', '久坐不運動']
+  },
+  營養: {
+    core: ['食慾差/易飽', '偏食/厭食', '食慾過旺', '消化不良', '形體消瘦', '肥胖/將軍肚', '體重突增/減10%'],
+    secondary: ['個頭矮/發育慢', '半月痕無/少', '指甲易斷/手指倒刺', '貧血/高血脂', '頭髮稀少', '頭髮乾/脫發'],
+    badHabits: ['挑食偏食', '暴飲暴食', '不吃早餐', '過度減肥', '長期吃速食']
+  },
+  循環: {
+    core: ['低血壓/高血壓', '貧血/高血脂', '心絞痛', '心跳快/慢', '心慌/心律失常', '胸悶/胸痛'],
+    secondary: ['手足麻木/發青', '手腳熱/涼/脹/出汗', '頭暈/頭麻/易打哈欠', '面色異常（白/青）', '靜脈曲張', '右肝區悶痛'],
+    badHabits: ['久坐不動', '高鹽飲食', '抽煙', '酗酒', '情緒波動大']
+  },
+  內分泌: {
+    core: ['甲亢/甲減', '甲狀腺結節', '肥胖/將軍肚', '低血糖/高血糖', '高血脂', '月經少/有塊', '經量多/子宮肌瘤', '卵巢囊腫'],
+    secondary: ['形體消瘦', '體重突增/減10%', '經期提前/推後', '不孕不育', '產後脫發/抑鬱'],
+    badHabits: ['熬夜', '壓力過大', '飲食不規律', '缺乏運動', '長期熬夜']
+  }
+};
 
-    // 2. 計算各調理方向得分（0-100分，得分越低=需重點調理）
-    const calculateAdjustmentScores = () => {
-      const scores = {};
-      const allIssues = [...selectedSymptoms, ...selectedHabits]; // 合併症狀和不良習慣
-      
-      Object.entries(adjustmentDirections).forEach(([direction, relatedItems]) => {
-        // 統計該方向關聯的選中項數量
-        const matchedCount = allIssues.filter(item => relatedItems.includes(item)).length;
-        // 計算得分：(1 - 匹配數量/總關聯項數) * 100（避免除以0）
-        const totalRelated = relatedItems.length || 1;
-        const score = Math.max(0, Math.round((1 - matchedCount / totalRelated) * 100));
-        scores[direction] = score;
-      });
-      
-      return scores;
-    };
+// 2. 精准化得分計算函數（基於權重加權，避免單一計數導致的偏差）
+const calculateAdjustmentScores = () => {
+  const scores = {};
+  // 分別獲取選中的症狀和習慣（避免交叉計數）
+  const selectedSymptoms = Array.from(document.querySelectorAll('input[name="symptoms"]:checked')).map(cb => cb.value);
+  const selectedHabits = Array.from(document.querySelectorAll('input[name="habits"]:checked')).map(cb => cb.value);
 
-    // 3. 生成雷達圖數據
-    const adjustmentScores = calculateAdjustmentScores();
-    const adjustmentLabels = Object.keys(adjustmentScores);
-    const adjustmentData = Object.values(adjustmentScores);
+  // 遍歷每個調理維度計算得分
+  Object.entries(adjustmentDirections).forEach(([direction, { core, secondary, badHabits }]) => {
+    // 1. 計算各類型問題的匹配數量
+    const coreMatched = selectedSymptoms.filter(sym => core.includes(sym)).length; // 核心症狀匹配數
+    const secondaryMatched = selectedSymptoms.filter(sym => secondary.includes(sym)).length; // 次要症狀匹配數
+    const habitMatched = selectedHabits.filter(habit => badHabits.includes(habit)).length; // 不良習慣匹配數
 
-    // 4. 渲染六邊形（雷達）圖
-    const ctx = document.getElementById('healthBarChart').getContext('2d');
-    // 銷毀舊圖表避免重復渲染
-    if (window.healthChart) window.healthChart.destroy();
-    
-    // 處理無數據情況
-    if (adjustmentData.every(score => score === 100)) {
-      const chartContainer = document.getElementById('healthBarChart').parentNode;
-      chartContainer.innerHTML = '<p class="text-center text-gray-500 py-10">未選擇相關症狀，無法生成調理方向圖</p>';
+    // 2. 計算加權總分（核心症狀權重2，不良習慣1.5，次要症狀1）
+    const weightedScore = (coreMatched * 2) + (secondaryMatched * 1) + (habitMatched * 1.5);
+    // 計算該維度的最大可能加權分（用于歸一化）
+    const maxWeightedScore = (core.length * 2) + (secondary.length * 1) + (badHabits.length * 1.5);
+
+    // 3. 得分歸一化（0-100分，得分越低=問題越嚴重）
+    let finalScore;
+    if (maxWeightedScore === 0) {
+      finalScore = 100; // 無關聯項時默認滿分
     } else {
-      // 創建雷達圖（六邊形視覺效果）
-      window.healthChart = new Chart(ctx, {
-        type: 'radar',
-        data: {
-          labels: adjustmentLabels,
-          datasets: [{
-            label: '調理優先級得分（越低需重點調理）',
-            data: adjustmentData,
-            backgroundColor: 'rgba(22, 93, 255, 0.2)', // 填充色
-            borderColor: 'rgba(22, 93, 255, 1)',       // 邊框色
-            borderWidth: 2,
-            pointBackgroundColor: 'rgba(22, 93, 255, 1)', // 數據點顏色
-            pointBorderColor: '#fff',
-            pointHoverBackgroundColor: '#fff',
-            pointHoverBorderColor: 'rgba(22, 93, 255, 1)'
-          }]
+      // 保留1位小數，避免整數偏差
+      finalScore = Math.max(0, Math.round((1 - weightedScore / maxWeightedScore) * 1000) / 10);
+    }
+
+    // 4. 特殊情況修正（避免極端值）
+    // - 若核心症狀匹配≥3個，強制得分≤40（表示嚴重問題）
+    if (coreMatched >= 3) finalScore = Math.min(finalScore, 40);
+    // - 若無任何問題，強制得分=100（完全健康）
+    if (weightedScore === 0) finalScore = 100;
+
+    scores[direction] = finalScore;
+  });
+
+  return scores;
+};
+
+// 3. 精准化雷達圖渲染（增加得分詳情提示）
+const ctx = document.getElementById('healthBarChart').getContext('2d');
+// 銷毀舊圖表避免重復渲染
+if (window.healthChart) window.healthChart.destroy();
+
+// 獲取精准計算後的得分
+const adjustmentScores = calculateAdjustmentScores();
+const adjustmentLabels = Object.keys(adjustmentScores);
+const adjustmentData = Object.values(adjustmentScores);
+
+// 處理無數據情況（更精准的判斷：是否所有維度均無問題）
+const hasNoIssues = Object.values(adjustmentScores).every(score => score === 100);
+if (hasNoIssues) {
+  const chartContainer = document.getElementById('healthBarChart').parentNode;
+  chartContainer.innerHTML = `
+    <div class="text-center text-gray-600 py-10">
+      <p class="text-lg font-medium mb-2">恭喜！各調理維度均無明顯問題</p>
+      <p class="text-sm">建議繼續保持當前健康習慣，定期復查即可</p>
+    </div>
+  `;
+} else {
+  // 創建精准化雷達圖（六邊形效果）
+  window.healthChart = new Chart(ctx, {
+    type: 'radar',
+    data: {
+      labels: adjustmentLabels,
+      datasets: [{
+        label: '調理優先級得分（0-100分，越低需重點調理）',
+        data: adjustmentData,
+        backgroundColor: 'rgba(22, 93, 255, 0.2)',
+        borderColor: 'rgba(22, 93, 255, 1)',
+        borderWidth: 2,
+        pointBackgroundColor: (context) => {
+          // 按得分給數據點上色（直觀區分嚴重程度）
+          const score = context.raw;
+          if (score < 30) return 'rgba(233, 30, 99, 1)'; // 紅色：急需調理
+          if (score < 60) return 'rgba(255, 159, 64, 1)'; // 橙色：加強調理
+          return 'rgba(22, 93, 255, 1)'; // 藍色：正常/維持
         },
-        options: {
-          scales: {
-            r: {
-              angleLines: { display: true, color: 'rgba(0,0,0,0.1)' }, // 角度線（構成六邊形框架）
-              grid: { color: 'rgba(0,0,0,0.1)' }, // 網格線
-              pointLabels: { 
-                font: { size: 12, weight: 'bold' }, 
-                color: '#333',
-                padding: 15 // 標籤與圖形間距
-              },
-              ticks: {
-                backdropColor: 'transparent',
-                color: '#666',
-                stepSize: 20, // 刻度間隔（0-100分，5個間隔）
-                max: 100,     // 滿分（完全健康）
-                min: 0        // 零分（急需調理）
-              }
+        pointBorderColor: '#fff',
+        pointHoverRadius: 8, //  hover時放大，提升交互體驗
+        pointRadius: 6
+      }]// -------------------------- 精准化雷達圖得分計算與渲染（核心修改部分） --------------------------
+// 1. 精准定義六大調理維度及關聯症狀/習慣（按影響程度分層，用於權重計算）
+const adjustmentDirections = {
+  體質: {
+    // 核心症狀（權重2）：直接反映體質基礎問題
+    core: ['手足麻木/發青', '關節痛/腫', '腰酸痛/腰涼', '四肢乏力', '平衡差/易摔交', '經期小腹怕涼'],
+    // 次要症狀（權重1）：間接關聯體質狀態
+    secondary: ['頭部怕冷', '手腳熱/涼/脹/出汗', '大便不成形', '便溏不淨/便秘', '低熱37-38℃', '感冒時間長', '易感冒/不感冒'],
+    // 不良習慣（權重1.5）：長期影響體質的行為
+    badHabits: ['長期熬夜', '缺乏運動', '久坐不動', '愛吃生冷食物', '不注意保暖']
+  },
+  免疫: {
+    core: ['各種過敏/濕疹', '過敏性鼻炎', '淋巴腫大', '牛皮癬/白癜風', '感冒時間長'],
+    secondary: ['口腔潰瘍/舌潰瘍', '皮膚易青/紅點', '皮膚癢/後背痘', '易感冒/不感冒', '扁桃體炎'],
+    badHabits: ['熬夜', '飲食不規律', '壓力過大', '缺乏睡眠', '過度疲勞']
+  },
+  毒素: {
+    core: ['頭/面油膩', '痤瘡/痘/斑', '口苦/乾/臭/腥', '舌苔厚/黃/膩', '大便不成形', '便溏不淨/便秘'],
+    secondary: ['皮膚易青/紅點', '皮膚癢/後背痘', '眼屎多/麥粒腫', '耳內潮濕/膿', '耳屎多/痛/癢', '口氣重/口辣', '腹脹/屁多/臭'],
+    badHabits: ['高油高糖飲食', '喝水少', '長期憋便', '熬夜', '久坐不運動']
+  },
+  營養: {
+    core: ['食慾差/易飽', '偏食/厭食', '食慾過旺', '消化不良', '形體消瘦', '肥胖/將軍肚', '體重突增/減10%'],
+    secondary: ['個頭矮/發育慢', '半月痕無/少', '指甲易斷/手指倒刺', '貧血/高血脂', '頭髮稀少', '頭髮乾/脫發'],
+    badHabits: ['挑食偏食', '暴飲暴食', '不吃早餐', '過度減肥', '長期吃速食']
+  },
+  循環: {
+    core: ['低血壓/高血壓', '貧血/高血脂', '心絞痛', '心跳快/慢', '心慌/心律失常', '胸悶/胸痛'],
+    secondary: ['手足麻木/發青', '手腳熱/涼/脹/出汗', '頭暈/頭麻/易打哈欠', '面色異常（白/青）', '靜脈曲張', '右肝區悶痛'],
+    badHabits: ['久坐不動', '高鹽飲食', '抽煙', '酗酒', '情緒波動大']
+  },
+  內分泌: {
+    core: ['甲亢/甲減', '甲狀腺結節', '肥胖/將軍肚', '低血糖/高血糖', '高血脂', '月經少/有塊', '經量多/子宮肌瘤', '卵巢囊腫'],
+    secondary: ['形體消瘦', '體重突增/減10%', '經期提前/推後', '不孕不育', '產後脫發/抑鬱'],
+    badHabits: ['熬夜', '壓力過大', '飲食不規律', '缺乏運動', '長期熬夜']
+  }
+};
+
+// 2. 精准化得分計算函數（基於權重加權，避免單一計數導致的偏差）
+const calculateAdjustmentScores = () => {
+  const scores = {};
+  // 分別獲取選中的症狀和習慣（避免交叉計數）
+  const selectedSymptoms = Array.from(document.querySelectorAll('input[name="symptoms"]:checked')).map(cb => cb.value);
+  const selectedHabits = Array.from(document.querySelectorAll('input[name="habits"]:checked')).map(cb => cb.value);
+
+  // 遍歷每個調理維度計算得分
+  Object.entries(adjustmentDirections).forEach(([direction, { core, secondary, badHabits }]) => {
+    // 1. 計算各類型問題的匹配數量
+    const coreMatched = selectedSymptoms.filter(sym => core.includes(sym)).length; // 核心症狀匹配數
+    const secondaryMatched = selectedSymptoms.filter(sym => secondary.includes(sym)).length; // 次要症狀匹配數
+    const habitMatched = selectedHabits.filter(habit => badHabits.includes(habit)).length; // 不良習慣匹配數
+
+    // 2. 計算加權總分（核心症狀權重2，不良習慣1.5，次要症狀1）
+    const weightedScore = (coreMatched * 2) + (secondaryMatched * 1) + (habitMatched * 1.5);
+    // 計算該維度的最大可能加權分（用于歸一化）
+    const maxWeightedScore = (core.length * 2) + (secondary.length * 1) + (badHabits.length * 1.5);
+
+    // 3. 得分歸一化（0-100分，得分越低=問題越嚴重）
+    let finalScore;
+    if (maxWeightedScore === 0) {
+      finalScore = 100; // 無關聯項時默認滿分
+    } else {
+      // 保留1位小數，避免整數偏差
+      finalScore = Math.max(0, Math.round((1 - weightedScore / maxWeightedScore) * 1000) / 10);
+    }
+
+    // 4. 特殊情況修正（避免極端值）
+    // - 若核心症狀匹配≥3個，強制得分≤40（表示嚴重問題）
+    if (coreMatched >= 3) finalScore = Math.min(finalScore, 40);
+    // - 若無任何問題，強制得分=100（完全健康）
+    if (weightedScore === 0) finalScore = 100;
+
+    scores[direction] = finalScore;
+  });
+
+  return scores;
+};
+
+// 3. 精准化雷達圖渲染（增加得分詳情提示）
+const ctx = document.getElementById('healthBarChart').getContext('2d');
+// 銷毀舊圖表避免重復渲染
+if (window.healthChart) window.healthChart.destroy();
+
+// 獲取精准計算後的得分
+const adjustmentScores = calculateAdjustmentScores();
+const adjustmentLabels = Object.keys(adjustmentScores);
+const adjustmentData = Object.values(adjustmentScores);
+
+// 處理無數據情況（更精准的判斷：是否所有維度均無問題）
+const hasNoIssues = Object.values(adjustmentScores).every(score => score === 100);
+if (hasNoIssues) {
+  const chartContainer = document.getElementById('healthBarChart').parentNode;
+  chartContainer.innerHTML = `
+    <div class="text-center text-gray-600 py-10">
+      <p class="text-lg font-medium mb-2">恭喜！各調理維度均無明顯問題</p>
+      <p class="text-sm">建議繼續保持當前健康習慣，定期復查即可</p>
+    </div>
+  `;
+} else {
+  // 創建精准化雷達圖（六邊形效果）
+  window.healthChart = new Chart(ctx, {
+    type: 'radar',
+    data: {
+      labels: adjustmentLabels,
+      datasets: [{
+        label: '調理優先級得分（0-100分，越低需重點調理）',
+        data: adjustmentData,
+        backgroundColor: 'rgba(22, 93, 255, 0.2)',
+        borderColor: 'rgba(22, 93, 255, 1)',
+        borderWidth: 2,
+        pointBackgroundColor: (context) => {
+          // 按得分給數據點上色（直觀區分嚴重程度）
+          const score = context.raw;
+          if (score < 30) return 'rgba(233, 30, 99, 1)'; // 紅色：急需調理
+          if (score < 60) return 'rgba(255, 159, 64, 1)'; // 橙色：加強調理
+          return 'rgba(22, 93, 255, 1)'; // 藍色：正常/維持
+        },
+        pointBorderColor: '#fff',
+        pointHoverRadius: 8, //  hover時放大，提升交互體驗
+        pointRadius: 6
+      }]
+    },
+    options: {
+      scales: {
+        r: {
+          // 六邊形網格精准配置
+          angleLines: { 
+            display: true, 
+            color: 'rgba(0,0,0,0.1)',
+            lineWidth: 1.5 // 加粗角度線，強化六邊形輪廓
+          },
+          grid: { 
+            color: 'rgba(0,0,0,0.08)',
+            lineWidth: 1 
+          },
+          // 刻度精准化（按調理優先級分段）
+          ticks: {
+            backdropColor: 'transparent',
+            color: '#666',
+            stepSize: 20, // 每20分一段，對應優先級：0-20(極重)-40(重度)-60(中度)-80(輕度)-100(正常)
+            max: 100,
+            min: 0,
+            callback: (value) => {
+              // 刻度文字標注優先級，更直觀
+              const levelMap = {
+                0: '極重',
+                20: '重度',
+                40: '中度',
+                60: '輕度',
+                80: '輕微',
+                100: '正常'
+              };
+              return `${value}分(${levelMap[value]})`;
             }
           },
-          plugins: {
-            legend: {
-              position: 'top',
-              labels: { font: { size: 11 } }
-            },
-            tooltip: {
-              callbacks: {
-                // Tooltip提示：增加調理建議
-                label: function(context) {
-                  const dir = adjustmentLabels[context.dataIndex];
-                  const score = adjustmentData[context.dataIndex];
-                  let suggestion = '';
-                  
-                  if (score < 30) suggestion = '（急需重點調理）';
-                  else if (score < 60) suggestion = '（建議加強調理）';
-                  else suggestion = '（狀態良好，維持即可）';
-                  
-                  return `${dir}: ${score}分 ${suggestion}`;
-                }
-              }
-            },
-            title: {
-              display: true,
-              text: '調理方向優先級分布（六邊形圖）',
-              font: { size: 16, weight: 'bold' },
-              padding: { bottom: 20 }
-            }
-          },
-          elements: {
-            line: { tension: 0.2 } // 線條平滑度（0=折線，1=平滑線）
+          // 維度標籤優化
+          pointLabels: {
+            font: { size: 14, weight: 'bold' },
+            color: '#333',
+            padding: 20 // 增加標籤間距，避免文字重疊
           }
         }
-      });
+      },
+      plugins: {
+        // 精准化提示框（顯示得分詳情）
+        tooltip: {
+          backgroundColor: 'rgba(0,0,0,0.8)',
+          padding: 12,
+          titleFont: { size: 14 },
+          bodyFont: { size: 13 },
+          callbacks: {
+            // 顯示維度得分+優先級+改善建議
+            afterLabel: (context) => {
+              const dir = adjustmentLabels[context.dataIndex];
+              const score = adjustmentData[context.dataIndex];
+              let suggestion = '';
+              
+              // 按得分給出精准建議
+              if (score < 30) {
+                suggestion = '⚠️ 急需重點調理：建議1周內就醫檢查，結合專業方案改善';
+              } else if (score < 60) {
+                suggestion = '🔔 建議加強調理：制定2-4周改善計劃，定期監測變化';
+              } else if (score < 80) {
+                suggestion = '💡 輕微調理即可：通過調整飲食/作息改善，1個月後復查';
+              } else {
+                suggestion = '✅ 狀態良好：繼續保持當前習慣，無需特殊調理';
+              }
+
+              // 顯示該維度具體問題數（增強透明度）
+              const dimConfig = adjustmentDirections[dir];
+              const coreMatched = selectedSymptoms.filter(sym => dimConfig.core.includes(sym)).length;
+              const secondaryMatched = selectedSymptoms.filter(sym => dimConfig.secondary.includes(sym)).length;
+              const habitMatched = selectedHabits.filter(h => dimConfig.badHabits.includes(h)).length;
+              
+              return `\n問題詳情：核心症狀${coreMatched}個，次要症狀${secondaryMatched}個，不良習慣${habitMatched}個\n${suggestion}`;
+            }
+          }
+        },
+        // 圖表標題與圖例優化
+        title: {
+          display: true,
+          text: '健康調理方向優先級分布（精准評分）',
+          font: { size: 16, weight: 'bold' },
+          padding: { bottom: 25 }
+        },
+        legend: {
+          position: 'bottom',
+          labels: {
+            padding: 20,
+            font: { size: 12 },
+            // 圖例添加評分說明
+            generateLabels: (chart) => {
+              const baseLabels = chart.defaults.plugins.legend.labels.generateLabels(chart);
+              return [
+                ...baseLabels,
+                {
+                  text: '評分說明：0-30分(極重) | 30-60分(中度) | 60-100分(正常)',
+                  fillStyle: 'transparent',
+                  strokeStyle: 'transparent',
+                  font: { size: 11, style: 'italic' },
+                  color: '#666'
+                }
+              ];
+            }
+          }
+        }
+      },
+      elements: {
+        line: { tension: 0.1 } // 輕微平滑線條，既保持輪廓又避免失真
+      },
+      // 交互優化：點擊數據點顯示詳情
+      interaction: {
+        mode: 'index',
+        intersect: false // 鼠標懸浮到維度標籤也能觸發提示
+      }
     }
+  });
+}
+
+
     // -------------------------- 六邊形圖表邏輯結束 --------------------------
     
     // 獲取主要健康問題
@@ -2732,8 +2956,8 @@ document.addEventListener('DOMContentLoaded', function() {
       // 氣血不足調理建議
       recommendationsContainer.innerHTML += `
         <div class="bg-neutral p-4 rounded-lg mb-3">
-          <h4 class="font-medium text-primary mb-2">一、氣血不足調理：順時蓄養“生命能量”</h4>
-          <p class="text-sm text-neutral-dark/80">對應症狀：記憶力下降、思維斷電、頭髮稀少等</p>
+          <h4 class="font-medium text-primary mb-2">一、氣血不足調理：\n順時蓄養“生命能量”</h4>
+          <p class="text-sm text-neutral-dark/80">對應症狀：記憶力下降、思維斷電、頭髮稀少、等</p>
           <p class="text-sm text-neutral-dark/80 italic">《黃帝內經》言“人以氣血為本，氣血隨時辰消長”</p>
           <ul class="mt-2 text-sm text-neutral-dark/80 space-y-2 list-disc pl-5">
             <li><strong>辰時（7:00-9:00，胃經當令）</strong>：保持環境安靜，避免邊用餐邊處理事務。餐後留5分鐘靜息，不立即投入忙碌，提升氣血轉化效率。</li>
@@ -2746,8 +2970,8 @@ document.addEventListener('DOMContentLoaded', function() {
       // 微循環不通改善建議
       recommendationsContainer.innerHTML += `
         <div class="bg-neutral p-4 rounded-lg mb-3">
-          <h4 class="font-medium text-primary mb-2">二、微循環不通改善：按時疏通“氣血通道”</h4>
-          <p class="text-sm text-neutral-dark/80">對應症狀：頭暈、頭麻、手足麻木等</p>
+          <h4 class="font-medium text-primary mb-2">二、微循環不通改善：\n按時疏通“氣血通道”</h4>
+          <p class="text-sm text-neutral-dark/80">對應症狀：頭暈、頭麻、手足麻木、等</p>
           <p class="text-sm text-neutral-dark/80 italic">《黃帝內經》曰“經脈者，所以行血氣而營陰陽”</p>
           <ul class="mt-2 text-sm text-neutral-dark/80 space-y-2 list-disc pl-5">
             <li><strong>午時（11:00-13:00，心經當令）</strong>：找安靜處靜坐，不思考複雜問題、不看電子設備。減少身心負擔，讓血液充分流向頭部緩解不適。</li>
@@ -2760,8 +2984,8 @@ document.addEventListener('DOMContentLoaded', function() {
       // 毒素排毒調理建議
       recommendationsContainer.innerHTML += `
         <div class="bg-neutral p-4 rounded-lg mb-3">
-          <h4 class="font-medium text-primary mb-2">三、毒素排毒調理：順時暢通“排濁通道”</h4>
-          <p class="text-sm text-neutral-dark/80">對應症狀：頭面油膩、眼屎多、耳屎多等</p>
+          <h4 class="font-medium text-primary mb-2">三、毒素排毒調理：\n順時暢通“排濁通道”</h4>
+          <p class="text-sm text-neutral-dark/80">對應症狀：頭面油膩、眼屎多、耳屎多、等</p>
           <p class="text-sm text-neutral-dark/80 italic">《黃帝內經》強調“濁邪出下竅，清陽實四肢”</p>
           <ul class="mt-2 text-sm text-neutral-dark/80 space-y-2 list-disc pl-5">
             <li><strong>卯時（5:00-7:00，大腸經當令）</strong>：營造輕鬆排便環境，不匆忙、不憋便。借大腸經排毒時段促進毒素隨糞便排出，減少堆積。</li>
@@ -2774,8 +2998,8 @@ document.addEventListener('DOMContentLoaded', function() {
       // 血脂黏稠調理建議
       recommendationsContainer.innerHTML += `
         <div class="bg-neutral p-4 rounded-lg mb-3">
-          <h4 class="font-medium text-primary mb-2">四、血脂黏稠調理：順時清通“經脈瘀濁”</h4>
-          <p class="text-sm text-neutral-dark/80">對應症狀：頭面油膩、痤瘡、脂肪瘤等</p>
+          <h4 class="font-medium text-primary mb-2">四、血脂黏稠調理：\n順時清通“經脈瘀濁”</h4>
+          <p class="text-sm text-neutral-dark/80">對應症狀：頭面油膩、痤瘡、脂肪瘤、等</p>
           <p class="text-sm text-neutral-dark/80 italic">《黃帝內經》曰“經脈流通，何病之有”</p>
           <ul class="mt-2 text-sm text-neutral-dark/80 space-y-2 list-disc pl-5">
             <li><strong>卯時（5:00-7:00，大腸經當令）</strong>：晨起慢飲溫開水，喚醒身體代謝功能。溫和啓動排毒機制，稀釋血液雜質。</li>
@@ -2802,8 +3026,8 @@ document.addEventListener('DOMContentLoaded', function() {
       // 免疫系統調理建議
       recommendationsContainer.innerHTML += `
         <div class="bg-neutral p-4 rounded-lg mb-3">
-          <h4 class="font-medium text-primary mb-2">六、免疫系統調理：順時培補“正氣屏障”</h4>
-          <p class="text-sm text-neutral-dark/80">對應症狀：感冒時間長、各種過敏等</p>
+          <h4 class="font-medium text-primary mb-2">六、免疫系統調理：\n順時培補“正氣屏障”</h4>
+          <p class="text-sm text-neutral-dark/80">對應症狀：感冒時間長、各種過敏、等</p>
           <p class="text-sm text-neutral-dark/80 italic">《黃帝內經》提出“正氣存內，邪不可乾”</p>
           <ul class="mt-2 text-sm text-neutral-dark/80 space-y-2 list-disc pl-5">
             <li><strong>寅時（3:00-5:00，肺經當令）</strong>：保持睡眠環境溫暖安靜，不熬夜。借深睡增強肺經衛氣功能，減少外邪入侵。</li>
@@ -2816,8 +3040,8 @@ document.addEventListener('DOMContentLoaded', function() {
       // 情緒調理建議
       recommendationsContainer.innerHTML += `
         <div class="bg-neutral p-4 rounded-lg">
-          <h4 class="font-medium text-primary mb-2">七、情緒調理：順時疏解“情志郁結”</h4>
-          <p class="text-sm text-neutral-dark/80">對應症狀：多夢、常嘆氣、經期頭痛等</p>
+          <h4 class="font-medium text-primary mb-2">七、情緒調理：\n順時疏解“情志郁結”</h4>
+          <p class="text-sm text-neutral-dark/80">對應症狀：多夢、常嘆氣、經期頭痛、等</p>
           <p class="text-sm text-neutral-dark/80 italic">《黃帝內經》曰“怒則氣上，喜則氣緩，悲則氣消”</p>
           <ul class="mt-2 text-sm text-neutral-dark/80 space-y-2 list-disc pl-5">
             <li><strong>未時（13:00-15:00，小腸經當令）</strong>：暫停工作，到窗邊望向開闊處，不鑽牛角尖。借開闊視野疏解情緒郁結，減少煩躁嘆氣。</li>
@@ -2830,7 +3054,7 @@ document.addEventListener('DOMContentLoaded', function() {
       // 補充提示
       recommendationsContainer.innerHTML += `
         <div class="mt-4 text-sm text-neutral-dark/70 text-center">
-          按以上時辰規律調理，能順應身體氣血運行節奏，慢慢改善相關症狀～ 若症狀持續不緩解，建議及時咨詢專業醫生。
+          按以上時辰規律調理，能順應身體氣血運行節奏，\n慢慢改善相關症狀～ \n若症狀持續不緩解，建議及時咨詢專業醫生。
         </div>
       `;
     } else {
