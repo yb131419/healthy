@@ -2450,7 +2450,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   });
 
-    // 生成評估結果（含六边形调理方向图）
+    // 生成評估結果（含六邊形調理方向圖）
   function generateResult() {
     // 獲取基本資料
     const name = document.getElementById('name').value || '未填寫';
@@ -2528,10 +2528,10 @@ document.addEventListener('DOMContentLoaded', function() {
     const selectedHabits = Array.from(habitElements).map(checkbox => checkbox.value);
     const habitCount = selectedHabits.length;
     
-    // -------------------------- 核心修改：调理方向六边形（雷达）图逻辑 --------------------------
-    // 1. 定义六大调理方向及关联症状/习惯（用于计算得分）
+    // -------------------------- 核心修改：調理方向六邊形（雷達）圖邏輯 --------------------------
+    // 1. 定義六大調理方向及關聯症狀/習慣（用於計算得分）
     const adjustmentDirections = {
-      体质: [
+      體質: [
         '頭部怕冷', '手足麻木/發青', '手腳熱/涼/脹/出汗', '關節痛/腫', '腰酸痛/腰涼', 
         '大便不成形', '便溏不淨/便秘', '低熱37-38℃', '四肢乏力', '平衡差/易摔交', 
         '經期小腹怕涼', '感冒時間長', '易感冒/不感冒'
@@ -2545,32 +2545,32 @@ document.addEventListener('DOMContentLoaded', function() {
         '耳內潮濕/膿', '耳屎多/痛/癢', '口苦/乾/臭/腥', '口氣重/口辣', '舌苔厚/黃/膩', 
         '大便不成形', '便溏不淨/便秘', '腹脹/屁多/臭'
       ],
-      营养: [
+      營養: [
         '食慾差/易飽', '偏食/厭食', '食慾過旺', '消化不良', '形體消瘦', '肥胖/將軍肚', 
         '個頭矮/發育慢', '體重突增/減10%', '半月痕無/少', '指甲易斷/手指倒刺', 
         '貧血/高血脂', '頭髮稀少', '頭髮乾/脫發'
       ],
-      循环: [
+      循環: [
         '低血壓/高血壓', '貧血/高血脂', '心絞痛', '心跳快/慢', '心慌/心律失常', 
         '胸悶/胸痛', '手足麻木/發青', '手腳熱/涼/脹/出汗', '頭暈/頭麻/易打哈欠', 
         '面色異常（白/青）', '靜脈曲張', '右肝區悶痛'
       ],
-      内分泌: [
+      內分泌: [
         '甲亢/甲減', '甲狀腺結節', '肥胖/將軍肚', '形體消瘦', '體重突增/減10%', 
         '低血糖/高血糖', '高血脂', '月經少/有塊', '經量多/子宮肌瘤', '經期提前/推後', 
         '卵巢囊腫', '不孕不育', '產後脫發/抑鬱'
       ]
     };
 
-    // 2. 计算各调理方向得分（0-100分，得分越低=需重点调理）
+    // 2. 計算各調理方向得分（0-100分，得分越低=需重點調理）
     const calculateAdjustmentScores = () => {
       const scores = {};
-      const allIssues = [...selectedSymptoms, ...selectedHabits]; // 合并症状和不良习惯
+      const allIssues = [...selectedSymptoms, ...selectedHabits]; // 合併症狀和不良習慣
       
       Object.entries(adjustmentDirections).forEach(([direction, relatedItems]) => {
-        // 统计该方向关联的选中项数量
+        // 統計該方向關聯的選中項數量
         const matchedCount = allIssues.filter(item => relatedItems.includes(item)).length;
-        // 计算得分：(1 - 匹配数量/总关联项数) * 100（避免除以0）
+        // 計算得分：(1 - 匹配數量/總關聯項數) * 100（避免除以0）
         const totalRelated = relatedItems.length || 1;
         const score = Math.max(0, Math.round((1 - matchedCount / totalRelated) * 100));
         scores[direction] = score;
@@ -2579,33 +2579,33 @@ document.addEventListener('DOMContentLoaded', function() {
       return scores;
     };
 
-    // 3. 生成雷达图数据
+    // 3. 生成雷達圖數據
     const adjustmentScores = calculateAdjustmentScores();
     const adjustmentLabels = Object.keys(adjustmentScores);
     const adjustmentData = Object.values(adjustmentScores);
 
-    // 4. 渲染六边形（雷达）图
+    // 4. 渲染六邊形（雷達）圖
     const ctx = document.getElementById('healthBarChart').getContext('2d');
-    // 销毁旧图表避免重复渲染
+    // 銷毀舊圖表避免重復渲染
     if (window.healthChart) window.healthChart.destroy();
     
-    // 处理无数据情况
+    // 處理無數據情況
     if (adjustmentData.every(score => score === 100)) {
       const chartContainer = document.getElementById('healthBarChart').parentNode;
-      chartContainer.innerHTML = '<p class="text-center text-gray-500 py-10">未选择相关症状，无法生成调理方向图</p>';
+      chartContainer.innerHTML = '<p class="text-center text-gray-500 py-10">未選擇相關症狀，無法生成調理方向圖</p>';
     } else {
-      // 创建雷达图（六边形视觉效果）
+      // 創建雷達圖（六邊形視覺效果）
       window.healthChart = new Chart(ctx, {
         type: 'radar',
         data: {
           labels: adjustmentLabels,
           datasets: [{
-            label: '调理优先级得分（越低需重点调理）',
+            label: '調理優先級得分（越低需重點調理）',
             data: adjustmentData,
             backgroundColor: 'rgba(22, 93, 255, 0.2)', // 填充色
-            borderColor: 'rgba(22, 93, 255, 1)',       // 边框色
+            borderColor: 'rgba(22, 93, 255, 1)',       // 邊框色
             borderWidth: 2,
-            pointBackgroundColor: 'rgba(22, 93, 255, 1)', // 数据点颜色
+            pointBackgroundColor: 'rgba(22, 93, 255, 1)', // 數據點顏色
             pointBorderColor: '#fff',
             pointHoverBackgroundColor: '#fff',
             pointHoverBorderColor: 'rgba(22, 93, 255, 1)'
@@ -2614,19 +2614,19 @@ document.addEventListener('DOMContentLoaded', function() {
         options: {
           scales: {
             r: {
-              angleLines: { display: true, color: 'rgba(0,0,0,0.1)' }, // 角度线（构成六边形框架）
-              grid: { color: 'rgba(0,0,0,0.1)' }, // 网格线
+              angleLines: { display: true, color: 'rgba(0,0,0,0.1)' }, // 角度線（構成六邊形框架）
+              grid: { color: 'rgba(0,0,0,0.1)' }, // 網格線
               pointLabels: { 
                 font: { size: 12, weight: 'bold' }, 
                 color: '#333',
-                padding: 15 // 标签与图形间距
+                padding: 15 // 標籤與圖形間距
               },
               ticks: {
                 backdropColor: 'transparent',
                 color: '#666',
-                stepSize: 20, // 刻度间隔（0-100分，5个间隔）
-                max: 100,     // 满分（完全健康）
-                min: 0        // 零分（急需调理）
+                stepSize: 20, // 刻度間隔（0-100分，5個間隔）
+                max: 100,     // 滿分（完全健康）
+                min: 0        // 零分（急需調理）
               }
             }
           },
@@ -2637,15 +2637,15 @@ document.addEventListener('DOMContentLoaded', function() {
             },
             tooltip: {
               callbacks: {
-                // Tooltip提示：增加调理建议
+                // Tooltip提示：增加調理建議
                 label: function(context) {
                   const dir = adjustmentLabels[context.dataIndex];
                   const score = adjustmentData[context.dataIndex];
                   let suggestion = '';
                   
-                  if (score < 30) suggestion = '（急需重点调理）';
-                  else if (score < 60) suggestion = '（建议加强调理）';
-                  else suggestion = '（状态良好，维持即可）';
+                  if (score < 30) suggestion = '（急需重點調理）';
+                  else if (score < 60) suggestion = '（建議加強調理）';
+                  else suggestion = '（狀態良好，維持即可）';
                   
                   return `${dir}: ${score}分 ${suggestion}`;
                 }
@@ -2653,18 +2653,18 @@ document.addEventListener('DOMContentLoaded', function() {
             },
             title: {
               display: true,
-              text: '调理方向优先级分布（六边形图）',
+              text: '調理方向優先級分布（六邊形圖）',
               font: { size: 16, weight: 'bold' },
               padding: { bottom: 20 }
             }
           },
           elements: {
-            line: { tension: 0.2 } // 线条平滑度（0=折线，1=平滑线）
+            line: { tension: 0.2 } // 線條平滑度（0=折線，1=平滑線）
           }
         }
       });
     }
-    // -------------------------- 六边形图表逻辑结束 --------------------------
+    // -------------------------- 六邊形圖表邏輯結束 --------------------------
     
     // 獲取主要健康問題
     const mainConcern = document.getElementById('mainConcern').value || '未明確說明';
@@ -2687,7 +2687,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const mainIssuesContainer = document.getElementById('mainHealthIssues');
     let symptomsHtml = '';
     
-    // 創建症狀分類映射（用于展示详细症状）
+    // 創建症狀分類映射（用於展示詳細症狀）
     const symptomCategories = {
       '頭部症狀': ['頭疼/頭暈', '頭麻/腦鳴', '嗜睡/易醒', '失眠/多夢', '偏頭痛/健忘', '懶語/結巴', '暈車/暈機', '頭部怕冷', '思維斷電', '反應遲鈍', '易打哈欠', '眉骨痛'],
       '眼耳鼻喉': ['花眼', '眼癢/脹/凸/痛', '眼怕光/眼流淚', '眼乾澀/眼飛影', '眼屎多/麥粒腫', '眼疲勞', '夜盲症', '視力模糊', '耳內潮濕/膿', '耳屎多/痛/癢', '耳鳴/耳聾', '聽力下降', '鼻炎/鼻塞', '鼻流涕/鼻流血', '打噴嚏', '過敏性鼻炎', '酒糟鼻', '嗅覺不靈', '嗓子異物感', '聲音嘶啞'],
@@ -2844,6 +2844,7 @@ document.addEventListener('DOMContentLoaded', function() {
   updateGenderBasedUI();
 });
 </script>
+
     
 </body>
 </html>
