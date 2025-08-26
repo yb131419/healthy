@@ -1,63 +1,2919 @@
-function doGet(e) {
-  try {
-    // 1. 獲取JSONP回調函數名和表單數據
-    const callback = e.parameter.callback;
-    const dataStr = e.parameter.data;
-    if (!callback || !dataStr) {
-      return ContentService.createTextOutput(`${callback}({"status":"error","message":"缺少參數"})`)
-        .setMimeType(ContentService.MimeType.JAVASCRIPT);
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>健康自檢表 - 您的個人健康評估工具</title>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind 配置 -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#165DFF',
+            secondary: '#36D399',
+            accent: '#FF7D00',
+            warning: '#FF5630',
+            neutral: '#F5F7FA',
+            'neutral-dark': '#333F51'
+          },
+          fontFamily: {
+            inter: ['Inter', 'sans-serif'],
+          },
+        },
+      }
     }
-    
-    // 2. 解析表單數據
-    const formData = JSON.parse(dataStr);
-    
-    // 3. 獲取當前表格，創建新工作表（如果不存在）
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
-    let sheet = ss.getSheetByName('健康評估數據');
-    if (!sheet) {
-      sheet = ss.insertSheet('健康評估數據');
-      // 創建表頭
-      sheet.appendRow([
-        '提交時間', '姓名', '年齡', '性別', '電話', '身高', '體重', 'BMI',
-        '腰圍', '血壓', '血糖', '職業', '症狀列表', '症狀數量',
-        '習慣列表', '習慣數量', '主要問題', '症狀持續時間',
-        '可能原因', '過敏史', '既往病史'
-      ]);
+  </script>
+  
+  <style type="text/tailwindcss">
+    @layer utilities {
+      .content-auto {
+        content-visibility: auto;
+      }
+      .scrollbar-hide {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
+      .scrollbar-hide::-webkit-scrollbar {
+        display: none;
+      }
+      .text-shadow {
+        text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      }
+      .card-hover {
+        transition: all 0.3s ease;
+      }
+      .card-hover:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 25px -5px rgba(22, 93, 255, 0.1), 0 10px 10px -5px rgba(22, 93, 255, 0.04);
+      }
+      .error-input {
+        border-color: #FF5630 !important;
+      }
+      .error-message {
+        color: #FF5630;
+        font-size: 0.875rem;
+        margin-top: 0.25rem;
+      }
     }
+  </style>
+</head>
+
+<body class="font-inter bg-neutral text-neutral-dark min-h-screen">
+  <!-- 導航欄 -->
+  <header class="sticky top-0 z-50 bg-white/95 shadow-sm backdrop-blur-sm transition-all duration-300">
+    <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+      <div class="flex items-center space-x-2">
+        <i class="fa fa-heartbeat text-primary text-2xl"></i>
+        <h1 class="text-xl md:text-2xl font-bold text-primary">彥彬 健康自檢表</h1>
+      </div>
+      <nav class="hidden md:flex items-center space-x-6">
+        <a href="#intro" class="text-neutral-dark/80 hover:text-primary transition-colors">簡介</a>
+        <a href="#form" class="text-neutral-dark/80 hover:text-primary transition-colors">開始評估</a>
+        <a href="#guide" class="text-neutral-dark/80 hover:text-primary transition-colors">填寫指南</a>
+        <a href="#result" class="text-neutral-dark/80 hover:text-primary transition-colors">結果解讀</a>
+      </nav>
+      <button class="md:hidden text-neutral-dark text-xl" id="menuToggle">
+        <i class="fa fa-bars"></i>
+      </button>
+    </div>
+    <!-- 移動端菜單 -->
+    <div id="mobileMenu" class="hidden md:hidden bg-white border-t">
+      <div class="container mx-auto px-4 py-2 flex flex-col space-y-3">
+        <a href="#intro" class="py-2 text-neutral-dark/80 hover:text-primary transition-colors">簡介</a>
+        <a href="#form" class="py-2 text-neutral-dark/80 hover:text-primary transition-colors">開始評估</a>
+        <a href="#guide" class="py-2 text-neutral-dark/80 hover:text-primary transition-colors">填寫指南</a>
+        <a href="#result" class="py-2 text-neutral-dark/80 hover:text-primary transition-colors">結果解讀</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- 英雄區域 -->
+  <section class="bg-gradient-to-br from-primary/90 to-primary text-white py-12 md:py-20">
+    <div class="container mx-auto px-4">
+      <div class="max-w-3xl mx-auto text-center">
+        <h2 class="text-[clamp(1.8rem,5vw,3rem)] font-bold mb-4 text-shadow leading-tight">
+          瞭解您的身體信號
+        </h2>
+        <p class="text-lg md:text-xl opacity-90 mb-8">
+          通過科學的自檢表，發現健康隱患，掌握身體狀況，邁向更健康的生活
+        </p>
+        <a href="#form" class="inline-block bg-white text-primary font-semibold px-6 py-3 rounded-full shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1">
+          開始我的健康評估 <i class="fa fa-arrow-right ml-2"></i>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- 簡介部分 -->
+  <section id="intro" class="py-12 md:py-16 bg-white">
+    <div class="container mx-auto px-4">
+      <div class="max-w-3xl mx-auto">
+        <h2 class="text-2xl md:text-3xl font-bold mb-6 text-center">為什麼需要健康自檢？</h2>
+        <p class="text-lg mb-8 text-neutral-dark/80 leading-relaxed">
+          許多健康問題在早期並沒有明顯症狀，等到出現明顯不適時往往已經發展到較嚴重的階段。定期進行健康自檢，
+          可以幫助您及時發現身體發出的預警信號，採取相應措施，防患於未然。
+        </p>
+        
+        <div class="grid md:grid-cols-3 gap-6 mb-8">
+          <div class="bg-neutral p-6 rounded-xl text-center card-hover">
+            <div class="w-14 h-14 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+              <i class="fa fa-stethoscope text-primary text-2xl"></i>
+            </div>
+            <h3 class="font-semibold text-lg mb-2">早期發現</h3>
+            <p class="text-neutral-dark/70">及時捕捉身體異常信號，早發現潛在健康風險</p>
+          </div>
+          
+          <div class="bg-neutral p-6 rounded-xl text-center card-hover">
+            <div class="w-14 h-14 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+              <i class="fa fa-line-chart text-primary text-2xl"></i>
+            </div>
+            <h3 class="font-semibold text-lg mb-2">跟蹤變化</h3>
+            <p class="text-neutral-dark/70">記錄健康數據變化，掌握身體狀況發展趨勢</p>
+          </div>
+          
+          <div class="bg-neutral p-6 rounded-xl text-center card-hover">
+            <div class="w-14 h-14 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+              <i class="fa fa-medkit text-primary text-2xl"></i>
+            </div>
+            <h3 class="font-semibold text-lg mb-2">科學調理</h3>
+            <p class="text-neutral-dark/70">為健康調理提供依據，實現個性化健康管理</p>
+          </div>
+        </div>
+        
+        <div class="bg-primary/5 border-l-4 border-primary p-5 rounded-r-lg">
+          <p class="italic text-neutral-dark/80">
+            <i class="fa fa-info-circle text-primary mr-2"></i> 
+            本表僅作為健康參考，不能替代專業醫療診斷。如有嚴重不適，請及時咨詢醫生。
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 進度指示器 -->
+  <section id="form" class="py-12 bg-neutral">
+    <div class="container mx-auto px-4">
+      <div class="max-w-4xl mx-auto">
+        <h2 class="text-2xl md:text-3xl font-bold mb-8 text-center">健康自檢表單</h2>
+        
+        <!-- 步驟指示器 -->
+        <div class="mb-10">
+          <div class="flex items-center justify-between">
+            <div class="flex flex-col items-center w-full">
+              <div class="step-indicator w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center font-bold mb-2">1</div>
+              <span class="text-sm md:text-base text-center">基本信息</span>
+            </div>
+            <div class="flex-1 max-w-[80px] h-1 bg-gray-200 mx-2">
+              <div class="step-progress h-full bg-primary" style="width: 0%"></div>
+            </div>
+            <div class="flex flex-col items-center w-full">
+              <div class="step-indicator w-10 h-10 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center font-bold mb-2">2</div>
+              <span class="text-sm md:text-base text-center">身體症狀</span>
+            </div>
+            <div class="flex-1 max-w-[80px] h-1 bg-gray-200 mx-2">
+              <div class="step-progress h-full bg-primary" style="width: 0%"></div>
+            </div>
+            <div class="flex flex-col items-center w-full">
+              <div class="step-indicator w-10 h-10 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center font-bold mb-2">3</div>
+              <span class="text-sm md:text-base text-center">生活習慣</span>
+            </div>
+            <div class="flex-1 max-w-[80px] h-1 bg-gray-200 mx-2">
+              <div class="step-progress h-full bg-primary" style="width: 0%"></div>
+            </div>
+            <div class="flex flex-col items-center w-full">
+              <div class="step-indicator w-10 h-10 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center font-bold mb-2">4</div>
+              <span class="text-sm md:text-base text-center">健康評估</span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 表單容器 -->
+        <div class="bg-white rounded-2xl shadow-md p-6 md:p-8 mb-8">
+          <!-- 步驟1: 基本信息 -->
+          <div class="form-step active" id="step1">
+            <h3 class="text-xl font-semibold mb-6 pb-2 border-b">基本信息</h3>
+            
+            <div class="grid md:grid-cols-2 gap-6 mb-6">
+              <div>
+                <label for="name" class="block text-sm font-medium text-neutral-dark/80 mb-1">姓名 <span class="text-warning">*</span></label>
+                <input type="text" id="name" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors" placeholder="請輸入您的姓名">
+                <div class="error-message hidden" id="nameError">請輸入您的姓名</div>
+              </div>
+              
+              <div>
+                <label for="age" class="block text-sm font-medium text-neutral-dark/80 mb-1">年齡 <span class="text-warning">*</span></label>
+                <input type="number" id="age" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors" placeholder="請輸入您的年齡">
+                <div class="error-message hidden" id="ageError">請輸入有效的年齡（1-120歲）</div>
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium text-neutral-dark/80 mb-1">性別 <span class="text-warning">*</span></label>
+                <div class="flex space-x-4">
+                  <label class="inline-flex items-center">
+                    <input type="radio" name="gender" value="male" class="w-4 h-4 text-primary focus:ring-primary">
+                    <span class="ml-2">男</span>
+                  </label>
+                  <label class="inline-flex items-center">
+                    <input type="radio" name="gender" value="female" class="w-4 h-4 text-primary focus:ring-primary">
+                    <span class="ml-2">女</span>
+                  </label>
+                </div>
+                <div class="error-message hidden" id="genderError">請選擇您的性別</div>
+              </div>
+              
+              <div>
+                <label for="phone" class="block text-sm font-medium text-neutral-dark/80 mb-1">聯繫電話</label>
+                <input type="tel" id="phone" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors" placeholder="請輸入您的聯繫電話">
+              </div>
+            </div>
+            
+            <div class="grid md:grid-cols-3 gap-6 mb-6">
+              <div>
+                <label for="height" class="block text-sm font-medium text-neutral-dark/80 mb-1">身高 (CM)</label>
+                <input type="number" id="height" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors" placeholder="身高">
+              </div>
+              
+              <div>
+                <label for="weight" class="block text-sm font-medium text-neutral-dark/80 mb-1">體重 (KG)</label>
+                <input type="number" id="weight" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors" placeholder="體重">
+              </div>
+              
+              <div>
+                <label for="waist" class="block text-sm font-medium text-neutral-dark/80 mb-1">腰圍 (CM)</label>
+                <input type="number" id="waist" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors" placeholder="腰圍">
+              </div>
+            </div>
+            
+            <div class="grid md:grid-cols-2 gap-6 mb-6">
+              <div>
+                <label for="bloodPressure" class="block text-sm font-medium text-neutral-dark/80 mb-1">血壓 (mmHg)</label>
+                <input type="text" id="bloodPressure" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors" placeholder="如: 120/80">
+              </div>
+              
+              <div>
+                <label for="bloodSugar" class="block text-sm font-medium text-neutral-dark/80 mb-1">血糖 (mmol/l)</label>
+                <input type="number" step="0.01" id="bloodSugar" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors" placeholder="血糖值">
+              </div>
+            </div>
+            
+            <div>
+              <label for="occupation" class="block text-sm font-medium text-neutral-dark/80 mb-1">職業</label>
+              <input type="text" id="occupation" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors" placeholder="請輸入您的職業">
+            </div>
+          </div>
+          
+<!-- 步驟2: 身體症狀 -->
+<div class="form-step hidden" id="step2">
+  <h3 class="text-xl font-semibold mb-6 pb-2 border-b">身體症狀自檢</h3>
+  <p class="text-neutral-dark/70 mb-6 text-sm">請勾選您目前存在的症狀（可多選）</p>
+  
+  <!-- 症狀分類標籤 -->
+  <div class="flex flex-wrap gap-2 mb-6 overflow-x-auto scrollbar-hide pb-2">
+    <button class="symptom-tab active px-4 py-2 bg-primary text-white rounded-full text-sm whitespace-nowrap" data-category="all">全部症狀</button>
+    <button class="symptom-tab px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-full text-sm whitespace-nowrap" data-category="head">頭部症狀</button>
+    <button class="symptom-tab px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-full text-sm whitespace-nowrap" data-category="eye-ear-nose-throat">眼耳鼻喉</button>
+    <button class="symptom-tab px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-full text-sm whitespace-nowrap" data-category="respiratory">呼吸系統</button>
+    <button class="symptom-tab px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-full text-sm whitespace-nowrap" data-category="circulatory">循環系統</button>
+    <button class="symptom-tab px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-full text-sm whitespace-nowrap" data-category="digestive">消化系統</button>
+    <button class="symptom-tab px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-full text-sm whitespace-nowrap" data-category="endocrine">內分泌與代謝</button>
+    <button class="symptom-tab px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-full text-sm whitespace-nowrap" data-category="muscle-joint">肌肉骨骼與關節</button>
+    <button class="symptom-tab px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-full text-sm whitespace-nowrap" data-category="skin">皮膚與毛髮</button>
+    <button class="symptom-tab px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-full text-sm whitespace-nowrap" data-category="female">女性症狀</button>
+    <button class="symptom-tab px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-full text-sm whitespace-nowrap" data-category="urinary">泌尿生殖系統</button>
+  </div>
+    <!-- 症狀列表 -->
+  <div class="grid md:grid-cols-2 gap-4 mb-6">
+    <!-- 頭部症狀 -->
+    <div class="symptom-item" data-category="head">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="頭疼/頭暈" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">頭疼/頭暈</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="head">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="頭麻/腦鳴" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">頭麻/腦鳴</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="head">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="嗜睡/易醒" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">嗜睡/易醒</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="head">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="失眠/多夢" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">失眠/多夢</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="head">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="偏頭痛/健忘" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">偏頭痛/健忘</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="head">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="懶語/結巴" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">懶語/結巴</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="head">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="暈車/暈機" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">暈車/暈機</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="head">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="頭部怕冷" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">頭部怕冷</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="head">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="思維斷電" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">思維斷電</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="head">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="反應遲鈍" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">反應遲鈍</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="head">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="易打哈欠" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">易打哈欠</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="head">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="眉骨痛" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">眉骨痛</span>
+      </label>
+    </div>
+              
+    <!-- 眼耳鼻喉 -->
+    <div class="symptom-item" data-category="eye-ear-nose-throat">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="花眼" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">花眼</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="eye-ear-nose-throat">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="眼癢/脹/凸/痛" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">眼癢/脹/凸/痛</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="eye-ear-nose-throat">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="眼怕光/眼流淚" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">眼怕光/眼流淚</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="eye-ear-nose-throat">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="眼乾澀/眼飛影" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">眼乾澀/眼飛影</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="eye-ear-nose-throat">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="眼屎多/麥粒腫" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">眼屎多/麥粒腫</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="eye-ear-nose-throat">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="眼疲勞" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">眼疲勞</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="eye-ear-nose-throat">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="夜盲症" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">夜盲症</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="eye-ear-nose-throat">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="視力模糊" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">視力模糊</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="eye-ear-nose-throat">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="耳內潮濕/膿" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">耳內潮濕/膿</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="eye-ear-nose-throat">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="耳屎多/痛/癢" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">耳屎多/痛/癢</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="eye-ear-nose-throat">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="耳鳴/耳聾" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">耳鳴/耳聾</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="eye-ear-nose-throat">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="聽力下降" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">聽力下降</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="eye-ear-nose-throat">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="鼻炎/鼻塞" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">鼻炎/鼻塞</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="eye-ear-nose-throat">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="鼻流涕/鼻流血" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">鼻流涕/鼻流血</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="eye-ear-nose-throat">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="打噴嚏" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">打噴嚏</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="eye-ear-nose-throat">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="過敏性鼻炎" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">過敏性鼻炎</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="eye-ear-nose-throat">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="酒糟鼻" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">酒糟鼻</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="eye-ear-nose-throat">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="嗅覺不靈" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">嗅覺不靈</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="eye-ear-nose-throat">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="嗓子異物感" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">嗓子異物感</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="eye-ear-nose-throat">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="聲音嘶啞" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">聲音嘶啞</span>
+      </label>
+    </div>
     
-    // 4. 插入數據行
-    sheet.appendRow([
-      formData.submitTime,
-      formData.basicInfo.name,
-      formData.basicInfo.age,
-      formData.basicInfo.gender,
-      formData.basicInfo.phone,
-      formData.basicInfo.height,
-      formData.basicInfo.weight,
-      formData.basicInfo.bmi,
-      formData.basicInfo.waist,
-      formData.basicInfo.bloodPressure,
-      formData.basicInfo.bloodSugar,
-      formData.basicInfo.occupation,
-      formData.symptoms,
-      formData.symptomCount,
-      formData.habits,
-      formData.habitCount,
-      formData.healthIssues.mainConcern,
-      formData.healthIssues.symptomDuration,
-      formData.healthIssues.possibleCauses,
-      formData.healthIssues.allergyHistory,
-      formData.healthIssues.medicalHistory
-    ]);
+    <!-- 呼吸系統 -->
+    <div class="symptom-item" data-category="respiratory">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="咳嗽/哮喘" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">咳嗽/哮喘</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="respiratory">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="支氣管炎" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">支氣管炎</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="respiratory">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="感冒時間長" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">感冒時間長</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="respiratory">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="易感冒/不感冒" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">易感冒/不感冒</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="respiratory">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="痰多/黃/涼" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">痰多/黃/涼</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="respiratory">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="痰白/黑/血" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">痰白/黑/血</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="respiratory">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="嘆氣/氣短/喘" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">嘆氣/氣短/喘</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="respiratory">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="打鼾" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">打鼾</span>
+      </label>
+    </div>
     
-    // 5. 返回JSONP成功響應
-    return ContentService.createTextOutput(`${callback}({"status":"success","message":"提交成功"})`)
-      .setMimeType(ContentService.MimeType.JAVASCRIPT);
+    <!-- 循環系統 -->
+    <div class="symptom-item" data-category="circulatory">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="低血壓/高血壓" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">低血壓/高血壓</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="circulatory">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="貧血/高血脂" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">貧血/高血脂</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="circulatory">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="心絞痛" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">心絞痛</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="circulatory">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="心跳快/慢" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">心跳快/慢</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="circulatory">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="心慌/心律失常" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">心慌/心律失常</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="circulatory">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="胸悶/胸痛" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">胸悶/胸痛</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="circulatory">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="右肝區悶痛" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">右肝區悶痛</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="circulatory">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="手足麻木/發青" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">手足麻木/發青</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="circulatory">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="手腳熱/涼/脹/出汗" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">手腳熱/涼/脹/出汗</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="circulatory">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="頭暈/頭麻/易打哈欠" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">頭暈/頭麻/易打哈欠</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="circulatory">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="面色異常（白/青）" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">面色異常（白/青）</span>
+      </label>
+    </div>
+    
+    <!-- 消化系統 -->
+    <div class="symptom-item" data-category="digestive">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="胃痛/酸/脹/涼" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">胃痛/酸/脹/涼</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="digestive">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="惡心/打嗝/噯氣" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">惡心/打嗝/噯氣</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="digestive">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="消化不良" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">消化不良</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="digestive">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="食慾差/易飽" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">食慾差/易飽</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="digestive">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="偏食/厭食" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">偏食/厭食</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="digestive">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="食慾過旺" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">食慾過旺</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="digestive">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="腹脹/屁多/臭" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">腹脹/屁多/臭</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="digestive">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="唇白/青/麻" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">唇白/青/麻</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="digestive">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="口苦/乾/臭/腥" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">口苦/乾/臭/腥</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="digestive">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="口咸/甜/酸" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">口咸/甜/酸</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="digestive">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="口氣重/口辣" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">口氣重/口辣</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="digestive">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="口腔潰瘍/舌潰瘍" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">口腔潰瘍/舌潰瘍</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="digestive">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="舌苔厚/黃/膩" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">舌苔厚/黃/膩</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="digestive">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="地圖舌/舌白點" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">地圖舌/舌白點</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="digestive">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="舌質紫暗/舌邊鋸齒" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">舌質紫暗/舌邊鋸齒</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="digestive">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="舌硬/舌額" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">舌硬/舌額</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="digestive">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="唇裂/咽乾" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">唇裂/咽乾</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="digestive">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="大便不成形" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">大便不成形</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="digestive">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="便溏不淨/便秘" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">便溏不淨/便秘</span>
+      </label>
+    </div>
+
+    <!-- 內分泌與代謝 -->
+    <div class="symptom-item" data-category="endocrine">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="甲亢/甲減" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">甲亢/甲減</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="endocrine">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="甲狀腺結節" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">甲狀腺結節</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="endocrine">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="肥胖/將軍肚" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">肥胖/將軍肚</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="endocrine">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="形體消瘦" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">形體消瘦</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="endocrine">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="個頭矮/發育慢" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">個頭矮/發育慢</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="endocrine">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="體重突增/減10%" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">體重突增/減10%</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="endocrine">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="半月痕無/少" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">半月痕無/少</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="endocrine">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="指甲易斷/手指倒刺" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">指甲易斷/手指倒刺</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="endocrine">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="指甲凹/竪紋" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">指甲凹/竪紋</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="endocrine">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="血管瘤/脂肪瘤" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">血管瘤/脂肪瘤</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="endocrine">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="纖維瘤/粉瘤" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">纖維瘤/粉瘤</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="endocrine">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="膽結石/腎結石" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">膽結石/腎結石</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="endocrine">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="扁平疣/尋常疣" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">扁平疣/尋常疣</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="endocrine">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="皮贅/雞眼" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">皮贅/雞眼</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="endocrine">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="淋巴腫大" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">淋巴腫大</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="endocrine">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="低熱37-38℃" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">低熱37-38℃</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="endocrine">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="手腳抽搐/手腳抖" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">手腳抽搐/手腳抖</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="endocrine">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="低血糖/高血糖" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">低血糖/高血糖</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="endocrine">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="高血脂" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">高血脂</span>
+      </label>
+    </div>
+    
+    <!-- 肌肉骨骼與關節 -->
+    <div class="symptom-item" data-category="muscle-joint">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="四肢乏力" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">四肢乏力</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="muscle-joint">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="平衡差/易摔交" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">平衡差/易摔交</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="muscle-joint">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="手/足脫皮/凍瘡" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">手/足脫皮/凍瘡</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="muscle-joint">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="小腿浮腫" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">小腿浮腫</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="muscle-joint">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="關節痛/腫" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">關節痛/腫</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="muscle-joint">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="易落枕/脖子硬" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">易落枕/脖子硬</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="muscle-joint">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="肩酸/麻/痛" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">肩酸/麻/痛</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="muscle-joint">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="頸疼痛/頸涼" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">頸疼痛/頸涼</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="muscle-joint">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="頸部水牛背" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">頸部水牛背</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="muscle-joint">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="腰酸痛/腰涼" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">腰酸痛/腰涼</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="muscle-joint">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="游走性疼痛" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">游走性疼痛</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="muscle-joint">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="脊椎僵硬/脊椎疼痛" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">脊椎僵硬/脊椎疼痛</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="muscle-joint">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="靜脈曲張" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">靜脈曲張</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="muscle-joint">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="容易扭傷" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">容易扭傷</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="muscle-joint">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="腳後跟疼" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">腳後跟疼</span>
+      </label>
+    </div>
+    
+    <!-- 皮膚與毛髮 -->
+    <div class="symptom-item" data-category="skin">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="頭髮稀少" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">頭髮稀少</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="skin">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="頭髮乾/脫發" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">頭髮乾/脫發</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="skin">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="白髮/斑禿" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">白髮/斑禿</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="skin">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="頭/面油膩" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">頭/面油膩</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="skin">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="面頰泛紅" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">面頰泛紅</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="skin">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="面黃/白/黑" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">面黃/白/黑</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="skin">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="痤瘡/痘/斑" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">痤瘡/痘/斑</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="skin">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="皮膚易青/紅點" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">皮膚易青/紅點</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="skin">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="皮膚癢/後背痘" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">皮膚癢/後背痘</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="skin">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="皮膚乾燥/皮炎" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">皮膚乾燥/皮炎</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="skin">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="牛皮癬/白癜風" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">牛皮癬/白癜風</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="skin">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="黑痣變大/多" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">黑痣變大/多</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="skin">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="蜘蛛痣/魚鱗病" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">蜘蛛痣/魚鱗病</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="skin">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="各種過敏/濕疹" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">各種過敏/濕疹</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="skin">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="產後脫發/抑鬱" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">產後脫發/抑鬱</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="skin">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="產後色斑" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">產後色斑</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="skin">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="脂肪粒" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">脂肪粒</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="skin">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="身體異味" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">身體異味</span>
+      </label>
+    </div>
+    
+   <!-- 女性症狀 -->
+    <div class="symptom-item" data-category="female">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="不孕不育" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">不孕不育</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="female">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="流產/死胎" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">流產/死胎</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="female">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="月經少/有塊" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">月經少/有塊</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="female">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="經量多/子宮肌瘤" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">經量多/子宮肌瘤</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="female">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="經期提前/推後" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">經期提前/推後</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="female">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="經期煩躁/胸脹" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">經期煩躁/胸脹</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="female">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="經期厭食/浮腫" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">經期厭食/浮腫</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="female">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="經期腰痛/頭痛" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">經期腰痛/頭痛</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="female">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="經期困倦/失眠" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">經期困倦/失眠</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="female">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="經期腹脹/痛經" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">經期腹脹/痛經</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="female">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="子宮腺肌症" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">子宮腺肌症</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="female">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="經期小腹怕涼" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">經期小腹怕涼</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="female">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="經期小腹下墜" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">經期小腹下墜</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="female">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="月經暗/淡/黑" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">月經暗/淡/黑</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="female">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="經期長痘" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">經期長痘</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="female">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="經期時間長" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">經期時間長</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="female">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="絕經" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">絕經</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="female">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="乳頭凹陷/流膿" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">乳頭凹陷/流膿</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="female">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="乳房腫塊/增生" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">乳房腫塊/增生</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="female">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="卵巢囊腫" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">卵巢囊腫</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="female">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="宮頸息肉" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">宮頸息肉</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="female">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="宮頸肥大/囊腫" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">宮頸肥大/囊腫</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="female">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="白帶多/血絲" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">白帶多/血絲</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="female">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="白帶色黃/粘稠" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">白帶色黃/粘稠</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="female">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="白帶稀水/腥臭" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">白帶稀水/腥臭</span>
+      </label>
+    </div>
+    
+    <!-- 泌尿生殖系統 -->
+    <div class="symptom-item" data-category="urinary">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="起夜/尿頻/尿急" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">起夜/尿頻/尿急</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="urinary">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="尿不淨/尿床" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">尿不淨/尿床</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="urinary">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="尿痛/尿血" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">尿痛/尿血</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="urinary">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="尿分叉/尿等待" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">尿分叉/尿等待</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="urinary">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="濃尿/怪味尿" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">濃尿/怪味尿</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="urinary">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="尿渾濁/多沫" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">尿渾濁/多沫</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="urinary">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="尿道口灼燒/發炎" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">尿道口灼燒/發炎</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="urinary">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="外陰瘙癢/異味" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">外陰瘙癢/異味</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="urinary">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="小腹悶痛" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">小腹悶痛</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="urinary">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="睪丸腫塊/疝氣" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">睪丸腫塊/疝氣</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="urinary">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="肛門瘙癢" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">肛門瘙癢</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="urinary">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="便血/痔瘡" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">便血/痔瘡</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="urinary">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="脫肛/肛裂/肛瘻" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">脫肛/肛裂/肛瘻</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="urinary">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="性慾低" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">性慾低</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="urinary">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="自汗/多汗/盜汗" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">自汗/多汗/盜汗</span>
+      </label>
+    </div>
+    <div class="symptom-item" data-category="urinary">
+      <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <input type="checkbox" name="symptoms" value="冒冷汗/後背涼" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+        <span class="ml-2">冒冷汗/後背涼</span>
+      </label>
+    </div>
+  </div> <!-- 閉合症狀列表容器 -->
+            
+            <div class="mt-6">
+              <label for="otherSymptoms" class="block text-sm font-medium text-neutral-dark/80 mb-1">其他症狀或病史</label>
+              <textarea id="otherSymptoms" rows="3" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors" placeholder="請描述其他症狀或病史"></textarea>
+            </div>
+          </div>
+
+          
+          <!-- 步驟3: 生活習慣 -->
+          <div class="form-step hidden" id="step3">
+            <h3 class="text-xl font-semibold mb-6 pb-2 border-b">生活習慣評估</h3>
+            <p class="text-neutral-dark/70 mb-6 text-sm">請勾選您存在的不良生活習慣（可多選）</p>
+            
+            <!-- 生活習慣分類標籤 -->
+            <div class="flex flex-wrap gap-2 mb-6 overflow-x-auto scrollbar-hide pb-2">
+              <button class="habit-tab active px-4 py-2 bg-primary text-white rounded-full text-sm whitespace-nowrap" data-category="all">全部習慣</button>
+              <button class="habit-tab px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-full text-sm whitespace-nowrap" data-category="diet">飲食習慣</button>
+              <button class="habit-tab px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-full text-sm whitespace-nowrap" data-category="sleep">睡眠習慣</button>
+              <button class="habit-tab px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-full text-sm whitespace-nowrap" data-category="exercise">運動習慣</button>
+              <button class="habit-tab px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-full text-sm whitespace-nowrap" data-category="cold">寒濕因素</button>
+              <button class="habit-tab px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-full text-sm whitespace-nowrap" data-category="emotion">情緒因素</button>
+            </div>
+            
+            <!-- 飲食習慣 -->
+            <div class="mb-8">
+              <h4 class="font-medium text-lg mb-4 text-neutral-dark/90 habit-category-title" data-category="diet">飲食習慣</h4>
+              <div class="grid md:grid-cols-2 gap-4">
+                <div class="habit-item" data-category="diet">
+                  <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                    <input type="checkbox" name="habits" value="經常不吃早餐" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+                    <span class="ml-2">經常不吃早餐</span>
+                  </label>
+                </div>
+                
+                <div class="habit-item" data-category="diet">
+                  <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                    <input type="checkbox" name="habits" value="8點後吃晚飯/吃夜宵" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+                    <span class="ml-2">8點後吃晚飯/吃夜宵</span>
+                  </label>
+                </div>
+                
+                <div class="habit-item" data-category="diet">
+                  <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                    <input type="checkbox" name="habits" value="吃飯過飽/過急/過快/過少" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+                    <span class="ml-2">吃飯過飽/過急/過快/過少</span>
+                  </label>
+                </div>
+                
+                <div class="habit-item" data-category="diet">
+                  <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                    <input type="checkbox" name="habits" value="常外面吃飯/點外賣" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+                    <span class="ml-2">常外面吃飯/點外賣</span>
+                  </label>
+                </div>
+                
+                <div class="habit-item" data-category="diet">
+                  <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                    <input type="checkbox" name="habits" value="偏辣/偏咸(口味重)" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+                    <span class="ml-2">偏辣/偏咸(口味重)</span>
+                  </label>
+                </div>
+                
+                <div class="habit-item" data-category="diet">
+                  <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                    <input type="checkbox" name="habits" value="很少吃蔬菜/素食者" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+                    <span class="ml-2">很少吃蔬菜/素食者</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+            
+            <!-- 睡眠習慣 -->
+            <div class="mb-8">
+              <h4 class="font-medium text-lg mb-4 text-neutral-dark/90 habit-category-title" data-category="sleep">睡眠習慣</h4>
+              <div class="grid md:grid-cols-2 gap-4">
+                <div class="habit-item" data-category="sleep">
+                  <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                    <input type="checkbox" name="habits" value="晚過11點睡早9點後起" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+                    <span class="ml-2">晚過11點睡早9點後起</span>
+                  </label>
+                </div>
+                
+                <div class="habit-item" data-category="sleep">
+                  <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                    <input type="checkbox" name="habits" value="經常上夜班(到天亮)" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+                    <span class="ml-2">經常上夜班(到天亮)</span>
+                  </label>
+                </div>
+                
+                <div class="habit-item" data-category="sleep">
+                  <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                    <input type="checkbox" name="habits" value="睡眠不足7-8小時" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+                    <span class="ml-2">睡眠不足7-8小時</span>
+                  </label>
+                </div>
+                
+                <div class="habit-item" data-category="sleep">
+                  <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                    <input type="checkbox" name="habits" value="開空調/開窗睡覺" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+                    <span class="ml-2">開空調/開窗睡覺</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+            
+            <!-- 其他習慣 -->
+            <div class="grid md:grid-cols-2 gap-6">
+              <!-- 運動習慣 -->
+              <div>
+                <h4 class="font-medium text-lg mb-4 text-neutral-dark/90 habit-category-title" data-category="exercise">運動習慣</h4>
+                <div class="space-y-4">
+                  <div class="habit-item" data-category="exercise">
+                    <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                      <input type="checkbox" name="habits" value="不運動/少運動/超運動" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+                      <span class="ml-2">不運動/少運動/超運動</span>
+                    </label>
+                  </div>
+                  
+                  <div class="habit-item" data-category="exercise">
+                    <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                      <input type="checkbox" name="habits" value="久站/久坐/久伏案工作" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+                      <span class="ml-2">久站/久坐/久伏案工作</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- 情緒因素 -->
+              <div>
+                <h4 class="font-medium text-lg mb-4 text-neutral-dark/90 habit-category-title" data-category="emotion">情緒因素</h4>
+                <div class="space-y-4">
+                  <div class="habit-item" data-category="emotion">
+                    <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                      <input type="checkbox" name="habits" value="經常生氣/愛發脾氣" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+                      <span class="ml-2">經常生氣/愛發脾氣</span>
+                    </label>
+                  </div>
+                  
+                  <div class="habit-item" data-category="emotion">
+                    <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                      <input type="checkbox" name="habits" value="壓力大/精神緊張" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+                      <span class="ml-2">壓力大/精神緊張</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- 步驟4: 健康評估 -->
+          <div class="form-step hidden" id="step4">
+            <h3 class="text-xl font-semibold mb-6 pb-2 border-b">健康問題評估</h3>
+            
+            <div class="space-y-6 mb-8">
+              <div>
+                <label class="block text-sm font-medium text-neutral-dark/80 mb-2">您目前最想解決的健康問題是？ <span class="text-warning">*</span></label>
+                <input type="text" id="mainConcern" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors" placeholder="請描述您最關注的健康問題">
+                <div class="error-message hidden" id="mainConcernError">請描述您最關注的健康問題</div>
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium text-neutral-dark/80 mb-2">這個症狀已經持續多久了？ <span class="text-warning">*</span></label>
+                <select id="symptomDuration" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors">
+                  <option value="">請選擇</option>
+                  <option value="少於1周">少於1周</option>
+                  <option value="1-4周">1-4周</option>
+                  <option value="1-3個月">1-3個月</option>
+                  <option value="3-6個月">3-6個月</option>
+                  <option value="6個月-1年">6個月-1年</option>
+                  <option value="1-3年">1-3年</option>
+                  <option value="3年以上">3年以上</option>
+                </select>
+                <div class="error-message hidden" id="symptomDurationError">請選擇症狀持續時間</div>
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium text-neutral-dark/80 mb-2">您認為是什麼原因引起的？</label>
+                <textarea id="possibleCauses" rows="2" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors" placeholder="請描述您認為的可能原因"></textarea>
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium text-neutral-dark/80 mb-2">在什麼情況下症狀會加重？</label>
+                <textarea id="aggravatingFactors" rows="2" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors" placeholder="請描述加重症狀的因素"></textarea>
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium text-neutral-dark/80 mb-2">您之前嘗試過哪些治療或調理方法？</label>
+                <textarea id="previousTreatments" rows="2" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors" placeholder="請描述您之前的治療或調理經歷"></textarea>
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium text-neutral-dark/80 mb-2">您是否有藥物或食物過敏史？ <span class="text-warning">*</span></label>
+                <div class="flex space-x-4 mb-2">
+                  <label class="inline-flex items-center">
+                    <input type="radio" name="allergyHistory" value="none" class="w-4 h-4 text-primary focus:ring-primary">
+                    <span class="ml-2">無</span>
+                  </label>
+                  <label class="inline-flex items-center">
+                    <input type="radio" name="allergyHistory" value="drug" class="w-4 h-4 text-primary focus:ring-primary">
+                    <span class="ml-2">藥物過敏</span>
+                  </label>
+                  <label class="inline-flex items-center">
+                    <input type="radio" name="allergyHistory" value="food" class="w-4 h-4 text-primary focus:ring-primary">
+                    <span class="ml-2">食物過敏</span>
+                  </label>
+                  <label class="inline-flex items-center">
+                    <input type="radio" name="allergyHistory" value="both" class="w-4 h-4 text-primary focus:ring-primary">
+                    <span class="ml-2">兩者都有</span>
+                  </label>
+                </div>
+                <div class="error-message hidden" id="allergyHistoryError">請選擇是否有過敏史</div>
+                <textarea id="allergyDetails" rows="2" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors" placeholder="如有，請詳細描述"></textarea>
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium text-neutral-dark/80 mb-2">您是否做過手術或有既往病史？ <span class="text-warning">*</span></label>
+                <div class="flex space-x-4 mb-2">
+                  <label class="inline-flex items-center">
+                    <input type="radio" name="medicalHistory" value="none" class="w-4 h-4 text-primary focus:ring-primary">
+                    <span class="ml-2">無</span>
+                  </label>
+                  <label class="inline-flex items-center">
+                    <input type="radio" name="medicalHistory" value="surgery" class="w-4 h-4 text-primary focus:ring-primary">
+                    <span class="ml-2">做過手術</span>
+                  </label>
+                  <label class="inline-flex items-center">
+                    <input type="radio" name="medicalHistory" value="disease" class="w-4 h-4 text-primary focus:ring-primary">
+                    <span class="ml-2">有既往病史</span>
+                  </label>
+                  <label class="inline-flex items-center">
+                    <input type="radio" name="medicalHistory" value="both" class="w-4 h-4 text-primary focus:ring-primary">
+                    <span class="ml-2">兩者都有</span>
+                  </label>
+                </div>
+                <div class="error-message hidden" id="medicalHistoryError">請選擇是否有手術史或既往病史</div>
+                <textarea id="medicalDetails" rows="2" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors" placeholder="如有，請詳細描述"></textarea>
+              </div>
+            </div>
+            
+            <div class="bg-primary/5 p-5 rounded-lg">
+              <h4 class="font-medium text-primary mb-2">健康宣言</h4>
+              <p class="text-sm text-neutral-dark/80 mb-3">
+                我已如實填寫以上信息，瞭解本表僅作為健康參考，不能替代專業醫療診斷。
+                如有嚴重不適，我會及時咨詢醫生。
+              </p>
+              <label class="inline-flex items-start mt-2">
+                <input type="checkbox" id="healthDeclaration" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+                <span class="ml-2 text-sm">我已閱讀並同意以上內容 <span class="text-warning">*</span></span>
+              </label>
+              <div class="error-message hidden" id="declarationError">請閱讀並同意健康宣言</div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 表單導航按鈕 -->
+        <div class="flex justify-between">
+          <button id="prevBtn" class="px-6 py-3 bg-gray-200 text-neutral-dark rounded-lg hover:bg-gray-300 transition-colors hidden">
+            <i class="fa fa-arrow-left mr-2"></i> 上一步
+          </button>
+          <div class="ml-auto">
+            <button id="nextBtn" class="px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors">
+              下一步 <i class="fa fa-arrow-right ml-2"></i>
+            </button>
+            <button id="submitBtn" class="px-6 py-3 bg-secondary text-white rounded-lg hover:bg-secondary/90 transition-colors hidden">
+              提交評估 <i class="fa fa-check ml-2"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+  
+  <!-- 填寫指南 -->
+  <section id="guide" class="py-12 md:py-16 bg-white">
+    <div class="container mx-auto px-4">
+      <div class="max-w-3xl mx-auto">
+        <h2 class="text-2xl md:text-3xl font-bold mb-8 text-center">填寫指南</h2>
+        
+        <div class="space-y-8">
+          <div class="flex flex-col md:flex-row gap-6 items-center">
+            <div class="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+              <i class="fa fa-check-circle text-primary text-2xl"></i>
+            </div>
+            <div>
+              <h3 class="text-xl font-semibold mb-2">如實填寫</h3>
+              <p class="text-neutral-dark/70">請根據您的實際情況如實勾選症狀和習慣，信息越準確，評估結果越有參考價值。</p>
+            </div>
+          </div>
+          
+          <div class="flex flex-col md:flex-row gap-6 items-center">
+            <div class="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+              <i class="fa fa-clock-o text-primary text-2xl"></i>
+            </div>
+            <div>
+              <h3 class="text-xl font-semibold mb-2">耐心完成</h3>
+              <p class="text-neutral-dark/70">整個評估過程大約需要15-20分鐘，請預留足夠時間，盡量一次性完成所有問題。</p>
+            </div>
+          </div>
+          
+          <div class="flex flex-col md:flex-row gap-6 items-center">
+            <div class="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+              <i class="fa fa-question-circle text-primary text-2xl"></i>
+            </div>
+            <div>
+              <h3 class="text-xl font-semibold mb-2">明確症狀</h3>
+              <p class="text-neutral-dark/70">如果對某些症狀描述不確定，請根據字面意思理解，或咨詢專業人士後再填寫。</p>
+            </div>
+          </div>
+          
+          <div class="flex flex-col md:flex-row gap-6 items-center">
+            <div class="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+              <i class="fa fa-refresh text-primary text-2xl"></i>
+            </div>
+            <div>
+              <h3 class="text-xl font-semibold mb-2">定期復查</h3>
+              <p class="text-neutral-dark/70">建議每3個月重新評估一次，跟蹤健康變化趨勢，及時調整健康管理方案。</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+  
+  <!-- 結果展示區域 -->
+  <section id="result" class="py-12 bg-neutral hidden">
+    <div class="container mx-auto px-4">
+      <div class="max-w-4xl mx-auto">
+        <h2 class="text-2xl md:text-3xl font-bold mb-8 text-center">健康評估結果</h2>
+        
+        <div class="bg-white rounded-2xl shadow-md p-6 md:p-8 mb-8">
+          <!-- 新增基本資料部分 -->
+          <div class="mb-8">
+            <h3 class="text-xl font-semibold mb-4 pb-2 border-b">基本資料</h3>
+            <div id="basicInfo" class="grid md:grid-cols-2 gap-4">
+              <!-- 基本資料將在這裡動態顯示 -->
+            </div>
+          </div>
+          
+          <div class="mb-8">
+            <h3 class="text-xl font-semibold mb-4 pb-2 border-b">健康狀況概覽</h3>
+            
+            <div class="grid md:grid-cols-2 gap-6 mb-6">
+              <div class="bg-neutral p-5 rounded-xl">
+                <h4 class="font-medium text-lg mb-3 flex items-center">
+                  <i class="fa fa-stethoscope text-primary mr-2"></i> 症狀評估
+                </h4>
+                <div class="flex items-center">
+                  <div class="w-full bg-gray-200 rounded-full h-4 mr-3">
+                    <div id="symptomScoreBar" class="bg-primary h-4 rounded-full" style="width: 0%"></div>
+                  </div>
+                  <span id="symptomCount" class="font-medium">0 項症狀</span>
+                </div>
+              </div>
+              
+              <div class="bg-neutral p-5 rounded-xl">
+                <h4 class="font-medium text-lg mb-3 flex items-center">
+                  <i class="fa fa-balance-scale text-primary mr-2"></i> 習慣評估
+                </h4>
+                <div class="flex items-center">
+                  <div class="w-full bg-gray-200 rounded-full h-4 mr-3">
+                    <div id="habitScoreBar" class="bg-warning h-4 rounded-full" style="width: 0%"></div>
+                  </div>
+                  <span id="habitCount" class="font-medium">0 項不良習慣</span>
+                </div>
+              </div>
+            </div>
+            
+  <div class="mb-6">
+    <h4 class="font-medium text-lg mb-3 flex items-center">
+      <i class="fa fa-bar-chart text-primary mr-2"></i> 健康風險分布
+    </h4>
+    <div class="h-80"> <!-- 增加高度確保圖表完整顯示 -->
+      <canvas id="healthBarChart"></canvas> <!-- ID修正為healthBarChart -->
+    </div>
+  </div>
+</div>
+          
+          <div class="mb-8">
+            <h3 class="text-xl font-semibold mb-4 pb-2 border-b">主要健康問題</h3>
+            <div id="mainHealthIssues" class="bg-primary/5 p-5 rounded-xl">
+              <!-- 結果將在這裡動態顯示 -->
+            </div>
+          </div>
+          
+          <div>
+            <h3 class="text-xl font-semibold mb-4 pb-2 border-b">改善建議</h3>
+            <div id="healthRecommendations" class="space-y-4">
+              <!-- 建議將在這裡動態顯示 -->
+            </div>
+          </div>
+        </div>
+        
+        <div class="text-center">
+          <button id="restartBtn" class="px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors mr-3">
+            <i class="fa fa-refresh mr-2"></i> 重新評估
+          </button>
+          <button id="downloadReportBtn" class="px-6 py-3 bg-gray-200 text-neutral-dark rounded-lg hover:bg-gray-300 transition-colors">
+            <i class="fa fa-download mr-2"></i> 下載圖片
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+  
+  <!-- 頁腳 -->
+  <footer class="bg-neutral-dark text-white py-10">
+    <div class="container mx-auto px-4">
+      <div class="max-w-4xl mx-auto">
+        <div class="grid md:grid-cols-3 gap-8 mb-8">
+          <div>
+            <h3 class="text-lg font-semibold mb-4 flex items-center">
+              <i class="fa fa-heartbeat text-primary mr-2"></i> 健康自檢表
+            </h3>
+            <p class="text-gray-400 text-sm">
+              提供專業的健康自我評估工具，幫助您瞭解身體狀況，預防健康風險。
+            </p>
+          </div>
+          
+          <div>
+            <h3 class="text-lg font-semibold mb-4">快速鏈接</h3>
+            <ul class="space-y-2 text-sm text-gray-400">
+              <li><a href="#intro" class="hover:text-primary transition-colors">關於自檢表</a></li>
+              <li><a href="#guide" class="hover:text-primary transition-colors">填寫指南</a></li>
+              <li><a href="#result" class="hover:text-primary transition-colors">結果解讀</a></li>
+            </ul>
+          </div>
+          
+          <div>
+            <h3 class="text-lg font-semibold mb-4">免責聲明</h3>
+            <p class="text-gray-400 text-sm">
+              本健康自檢表僅作為健康參考，不能替代專業醫療診斷。如有嚴重不適，請及時咨詢醫生。
+            </p>
+          </div>
+        </div>
+        
+        <div class="pt-6 border-t border-gray-700 text-center text-gray-500 text-sm">
+          <p>© 2025 健康自檢表 - 您的個人健康評估工具</p>
+        </div>
+      </div>
+    </div>
+  </footer>
+  
+  <!-- 成功提交模態框 -->
+  <div id="successModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-2xl p-8 max-w-md w-full mx-4 transform transition-all">
+      <div class="text-center">
+        <div class="w-16 h-16 bg-secondary/20 rounded-full flex items-center justify-center mx-auto mb-4">
+          <i class="fa fa-check text-secondary text-2xl"></i>
+        </div>
+        <h3 class="text-xl font-bold mb-2">提交成功！</h3>
+        <p class="text-neutral-dark/70 mb-6">
+          您的健康評估已完成，正在生成評估報告...
+        </p>
+        <button id="viewResultBtn" class="w-full py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors">
+          查看評估結果
+        </button>
+      </div>
+    </div>
+  </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // 當前步驟
+  let currentStep = 1;
+  const totalSteps = 4;
+
+  // DOM 元素
+  const menuToggle = document.getElementById('menuToggle');
+  const mobileMenu = document.getElementById('mobileMenu');
+  const prevBtn = document.getElementById('prevBtn');
+  const nextBtn = document.getElementById('nextBtn');
+  const submitBtn = document.getElementById('submitBtn');
+  const viewResultBtn = document.getElementById('viewResultBtn');
+  const restartBtn = document.getElementById('restartBtn');
+  const downloadReportBtn = document.getElementById('downloadReportBtn');
+  const successModal = document.getElementById('successModal');
+  const resultSection = document.getElementById('result');
+  const healthDeclaration = document.getElementById('healthDeclaration');
+  // 性別相關元素
+  const genderRadios = document.querySelectorAll('input[name="gender"]');
+  const femaleSymptomTab = document.querySelector('.symptom-tab[data-category="female"]');
+  const femaleSymptomItems = document.querySelectorAll('.symptom-item[data-category="female"]');
+
+  // 導航菜單切換
+  menuToggle.addEventListener('click', () => {
+    mobileMenu.classList.toggle('hidden');
+  });
+
+  // 監聽性別選擇變化，控制女性症狀標籤顯示
+  genderRadios.forEach(radio => {
+    radio.addEventListener('change', updateGenderBasedUI);
+  });
+
+  // 根據性別更新UI（隱藏/顯示女性相關內容）
+  function updateGenderBasedUI() {
+    const selectedGender = document.querySelector('input[name="gender"]:checked')?.value;
+    
+    // 控制女性症狀分類標籤顯示
+    if (selectedGender === 'male') {
+      // 男性：隱藏女性症狀標籤和內容
+      if (femaleSymptomTab) femaleSymptomTab.style.display = 'none';
+      femaleSymptomItems.forEach(item => {
+        item.style.display = 'none';
+      });
       
-  } catch (error) {
-    // 6. 返回錯誤響應
-    const callback = e.parameter.callback || 'jsonpError';
-    return ContentService.createTextOutput(`${callback}({"status":"error","message":"${error.message}"})`)
-      .setMimeType(ContentService.MimeType.JAVASCRIPT);
+      // 如果當前選中的是女性症狀標籤，自動切換到全部
+      const activeTab = document.querySelector('.symptom-tab.active');
+      if (activeTab && activeTab.getAttribute('data-category') === 'female') {
+        document.querySelector('.symptom-tab[data-category="all"]').click();
+      }
+    } else {
+      // 女性或未選擇：顯示女性症狀標籤和內容
+      if (femaleSymptomTab) femaleSymptomTab.style.display = 'inline-flex';
+      
+      // 如果當前是全部標籤，顯示女性症狀內容
+      const activeTab = document.querySelector('.symptom-tab.active');
+      if (activeTab && activeTab.getAttribute('data-category') === 'all') {
+        femaleSymptomItems.forEach(item => {
+          item.style.display = 'block';
+        });
+      }
+    }
   }
+
+  // 步驟導航
+  prevBtn.addEventListener('click', () => {
+    if (currentStep > 1) {
+      currentStep--;
+      updateFormSteps();
+      // 如果回到第一步，重新檢查性別設置
+      if (currentStep === 1) {
+        updateGenderBasedUI();
+      }
+    }
+  });
+
+  nextBtn.addEventListener('click', () => {
+    // 驗證當前步驟
+    if (validateStep(currentStep)) {
+      if (currentStep < totalSteps) {
+        currentStep++;
+        updateFormSteps();
+        // 如果進入第二步（症狀頁），檢查性別設置
+        if (currentStep === 2) {
+          updateGenderBasedUI();
+        }
+      }
+    }
+  });
+
+  // 表單驗證函數
+  function validateStep(step) {
+    let isValid = true;
+    
+    // 清除之前的錯誤提示
+    document.querySelectorAll('.error-message').forEach(el => {
+      el.classList.add('hidden');
+    });
+    document.querySelectorAll('input, select, textarea').forEach(el => {
+      el.classList.remove('error-input');
+    });
+    
+    // 驗證第一步：基本信息
+    if (step === 1) {
+      const name = document.getElementById('name').value.trim();
+      const age = document.getElementById('age').value.trim();
+      const genderSelected = document.querySelector('input[name="gender"]:checked');
+      
+      // 驗證姓名
+      if (!name) {
+        showError('name', '請輸入您的姓名');
+        isValid = false;
+      }
+      
+      // 驗證年齡
+      if (!age || isNaN(age) || age < 1 || age > 120) {
+        showError('age', '請輸入有效的年齡（1-120歲）');
+        isValid = false;
+      }
+      
+      // 驗證性別
+      if (!genderSelected) {
+        showError('gender', '請選擇您的性別');
+        isValid = false;
+      }
+    }
+    // 驗證第四步：健康評估
+    else if (step === 4) {
+      const mainConcern = document.getElementById('mainConcern').value.trim();
+      const symptomDuration = document.getElementById('symptomDuration').value;
+      const allergySelected = document.querySelector('input[name="allergyHistory"]:checked');
+      const medicalSelected = document.querySelector('input[name="medicalHistory"]:checked');
+      const declarationChecked = document.getElementById('healthDeclaration').checked;
+      
+      // 驗證主要關注問題
+      if (!mainConcern) {
+        showError('mainConcern', '請描述您最關注的健康問題');
+        isValid = false;
+      }
+      
+      // 驗證症狀持續時間
+      if (!symptomDuration) {
+        showError('symptomDuration', '請選擇症狀持續時間');
+        isValid = false;
+      }
+      
+      // 驗證過敏史
+      if (!allergySelected) {
+        showError('allergyHistory', '請選擇是否有過敏史');
+        isValid = false;
+      }
+      
+      // 驗證手術史或既往病史
+      if (!medicalSelected) {
+        showError('medicalHistory', '請選擇是否有手術史或既往病史');
+        isValid = false;
+      }
+      
+      // 驗證健康宣言
+      if (!declarationChecked) {
+        showError('declaration', '請閱讀並同意健康宣言');
+        isValid = false;
+      }
+    }
+    
+    return isValid;
+  }
+
+  // 顯示錯誤信息
+  function showError(fieldId, message) {
+    const errorElement = document.getElementById(`${fieldId}Error`);
+    if (errorElement) {
+      errorElement.textContent = message;
+      errorElement.classList.remove('hidden');
+    }
+    
+    const inputElement = document.getElementById(fieldId);
+    if (inputElement) {
+      inputElement.classList.add('error-input');
+      inputElement.focus();
+    } else {
+      // 處理沒有單個輸入框的情況
+      const fieldElement = document.querySelector(`input[name="${fieldId}"]`) || 
+                          document.querySelector(`input[id="${fieldId}"]`);
+      if (fieldElement) {
+        fieldElement.closest('div').scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+  }
+
+  // 提交表單
+  submitBtn.addEventListener('click', () => {
+    if (validateStep(4)) {
+      // 顯示成功模態框
+      successModal.classList.remove('hidden');
+      // 模擬加載過程
+      setTimeout(async () => {
+        // 先提交數據到Google Sheets
+        const submitSuccess = await submitToGoogleSheets();
+        if (submitSuccess) {
+          generateResult();
+        } else {
+          alert('數據提交失敗，請重試');
+          successModal.classList.add('hidden');
+        }
+      }, 1500);
+    }
+  });
+
+  // 提交數據到Google Sheets
+  function submitToGoogleSheets() {
+    return new Promise((resolve, reject) => {
+      try {
+        // 1. 收集表單數據
+        const formData = collectFormData();
+        
+        // 2. 轉換數據為URL參數（JSONP僅支持GET，需序列化數據）
+        const params = new URLSearchParams();
+        params.append('data', JSON.stringify(formData));
+        // 生成唯一回調函數名（避免緩存）
+        const callbackName = `jsonpCallback_${Date.now()}`;
+        params.append('callback', callbackName);
+        
+        // 3. 替換為你的Google Apps Script Web應用URL
+        const googleSheetUrl = 'https://script.google.com/macros/s/AKfycbwQH5XE3u9vgedphUCOnXpYl9WG4-3ScF29SYoSb3MGLMQX28qBeY3tqt56PiIFsAtw4w/exec';
+        const fullUrl = `${googleSheetUrl}?${params.toString()}`;
+        
+        // 4. 創建JSONP腳本標籤
+        const script = document.createElement('script');
+        script.src = fullUrl;
+        script.type = 'text/javascript';
+        script.async = true;
+        
+        // 5. 定義回調函數
+        window[callbackName] = function(response) {
+          // 清理回調和腳本標籤
+          delete window[callbackName];
+          document.body.removeChild(script);
+          
+          if (response.status === 'success') {
+            resolve(true);
+          } else {
+            reject(new Error(response.message || '提交失敗'));
+          }
+        };
+        
+        // 6. 錯誤處理
+        script.onerror = function() {
+          delete window[callbackName];
+          document.body.removeChild(script);
+          reject(new Error('網絡錯誤，提交失敗'));
+        };
+        
+        // 7. 添加腳本到頁面
+        document.body.appendChild(script);
+        
+      } catch (error) {
+        console.error('JSONP提交錯誤:', error);
+        reject(error);
+      }
+    });
+  }
+
+  // 收集表單數據
+  function collectFormData() {
+    // 基本信息
+    const name = document.getElementById('name').value || '未填寫';
+    const age = document.getElementById('age').value || '未填寫';
+    const genderElem = document.querySelector('input[name="gender"]:checked');
+    const gender = genderElem ? (genderElem.value === 'male' ? '男' : '女') : '未填寫';
+    const phone = document.getElementById('phone').value || '未填寫';
+    const height = document.getElementById('height').value ? `${document.getElementById('height').value} cm` : '未填寫';
+    const weight = document.getElementById('weight').value ? `${document.getElementById('weight').value} kg` : '未填寫';
+    const waist = document.getElementById('waist').value ? `${document.getElementById('waist').value} cm` : '未填寫';
+    const bloodPressure = document.getElementById('bloodPressure').value || '未填寫';
+    const bloodSugar = document.getElementById('bloodSugar').value ? `${document.getElementById('bloodSugar').value} mmol/l` : '未填寫';
+    const occupation = document.getElementById('occupation').value || '未填寫';
+    
+    // BMI計算
+    let bmi = '未計算';
+    if (document.getElementById('height').value && document.getElementById('weight').value) {
+      const h = parseFloat(document.getElementById('height').value) / 100;
+      const w = parseFloat(document.getElementById('weight').value);
+      if (h > 0) {
+        const bmiValue = (w / (h * h)).toFixed(1);
+        let bmiStatus = '';
+        if (bmiValue < 18.5) bmiStatus = '（偏瘦）';
+        else if (bmiValue < 24) bmiStatus = '（正常）';
+        else if (bmiValue < 28) bmiStatus = '（超重）';
+        else bmiStatus = '（肥胖）';
+        bmi = `${bmiValue} ${bmiStatus}`;
+      }
+    }
+    
+    // 症狀信息
+    const symptomElements = document.querySelectorAll('input[name="symptoms"]:checked');
+    const selectedSymptoms = Array.from(symptomElements).map(checkbox => checkbox.value);
+    
+    // 習慣信息
+    const habitElements = document.querySelectorAll('input[name="habits"]:checked');
+    const selectedHabits = Array.from(habitElements).map(checkbox => checkbox.value);
+    
+    // 健康問題信息
+    const mainConcern = document.getElementById('mainConcern').value || '未說明';
+    const symptomDuration = document.getElementById('symptomDuration').value || '未說明';
+    const possibleCauses = document.getElementById('possibleCauses').value || '未說明';
+    const allergyHistory = document.querySelector('input[name="allergyHistory"]:checked')?.value || '未選擇';
+    const medicalHistory = document.querySelector('input[name="medicalHistory"]:checked')?.value || '未選擇';
+    
+    // 提交時間
+    const submitTime = new Date().toLocaleString('zh-CN', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    });
+
+    return {
+      submitTime,
+      basicInfo: {
+        name,
+        age,
+        gender,
+        phone,
+        height,
+        weight,
+        bmi,
+        waist,
+        bloodPressure,
+        bloodSugar,
+        occupation
+      },
+      symptoms: selectedSymptoms.join('; '),
+      symptomCount: selectedSymptoms.length,
+      habits: selectedHabits.join('; '),
+      habitCount: selectedHabits.length,
+      healthIssues: {
+        mainConcern,
+        symptomDuration,
+        possibleCauses,
+        allergyHistory,
+        medicalHistory
+      }
+    };
+  }
+
+  // 查看結果
+  viewResultBtn.addEventListener('click', () => {
+    successModal.classList.add('hidden');
+    resultSection.classList.remove('hidden');
+    // 滾動到結果區域
+    resultSection.scrollIntoView({ behavior: 'smooth' });
+  });
+
+  // 重新評估
+  restartBtn.addEventListener('click', () => {
+    // 重置表單
+    document.querySelectorAll('input, textarea, select').forEach(element => {
+      if (element.type === 'checkbox' || element.type === 'radio') {
+        element.checked = false;
+      } else {
+        element.value = '';
+      }
+      element.classList.remove('error-input');
+    });
+    
+    // 清除錯誤提示
+    document.querySelectorAll('.error-message').forEach(el => {
+      el.classList.add('hidden');
+    });
+    
+    // 重置步驟
+    currentStep = 1;
+    updateFormSteps();
+    
+    // 重置性別相關UI
+    updateGenderBasedUI();
+    
+    // 隱藏結果區域
+    resultSection.classList.add('hidden');
+    
+    // 滾動到表單頂部
+    document.getElementById('form').scrollIntoView({ behavior: 'smooth' });
+  });
+
+  // 圖片處理函數：嘗試上傳至雲端，失敗則直接下載
+  async function handleImageDownload() {
+    try {
+      // 顯示加載狀態
+      downloadReportBtn.disabled = true;
+      downloadReportBtn.innerHTML = '<i class="fa fa-spinner fa-spin mr-2"></i> 處理中...';
+      
+      // 確認 html2canvas 已加載
+      if (typeof html2canvas === 'undefined') {
+        throw new Error('圖片處理庫未加載，請刷新頁面重試');
+      }
+
+      // 獲取健康評估結果區域
+      const reportElement = document.querySelector('#result .bg-white.rounded-2xl.shadow-md.p-6');
+      if (!reportElement) {
+        throw new Error('無法找到評估結果區域，請確保已生成報告');
+      }
+
+      // 臨時調整樣式確保截圖完整
+      const originalPadding = reportElement.style.padding;
+      reportElement.style.padding = '20px';
+      
+      // 捕獲結果區域為圖片
+      downloadReportBtn.innerHTML = '<i class="fa fa-camera mr-2"></i> 生成圖片...';
+      const canvas = await html2canvas(reportElement, {
+        useCORS: true,
+        allowTaint: false,
+        scale: 2, // 高分辨率
+        logging: false,
+        scrollY: -window.scrollY // 避免滾動影響截圖
+      });
+      
+      // 恢復原始樣式
+      reportElement.style.padding = originalPadding;
+      
+      // 獲取姓名和當前時間用於分享標題
+      const userName = document.getElementById('name').value.trim() || '未知用戶';
+      const currentDate = new Date();
+      const formattedDate = `${currentDate.getFullYear()}年${currentDate.getMonth() + 1}月${currentDate.getDate()}日`;
+      const shareTitle = `${userName} 的健康評估報告`;
+      const shareFileName = `${shareTitle}_${formattedDate}.png`;
+      
+      // 嘗試上傳至雲端
+      try {
+        downloadReportBtn.innerHTML = '<i class="fa fa-cloud-upload mr-2"></i> 嘗試上傳...';
+        
+        // 轉換為Blob
+        const blob = await new Promise((resolve, reject) => {
+          canvas.toBlob(blob => {
+            if (blob) resolve(blob);
+            else reject(new Error('無法生成圖片數據'));
+          }, 'image/jpg');
+        });
+        
+        // 上傳至imgbb
+        const formData = new FormData();
+        formData.append('image', blob, shareFileName);
+        
+        // 注意：請替換為您自己的imgbb API密鑰
+        const imgbbApiKey = '60691c91e77a7ad5a7eabaf332fbdffe'; // 示例密鑰
+        const response = await fetch(`https://api.imgbb.com/1/upload?key=${imgbbApiKey}`, {
+          method: 'POST',
+          body: formData,
+          timeout: 10000 // 10秒超時
+        });
+        
+        if (!response.ok) {
+          throw new Error(`上傳請求失敗: HTTP狀態碼 ${response.status}`);
+        }
+        
+        const result = await response.json();
+        
+        if (!result.success) {
+          const errorMsg = result.error?.message || '上傳失敗，原因未知';
+          throw new Error(`雲端上傳失敗: ${errorMsg}`);
+        }
+        
+        // 上傳成功，使用雲端URL下載
+        downloadReportBtn.innerHTML = '<i class="fa fa-download mr-2"></i> 開始下載...';
+        
+        const downloadLink = document.createElement('a');
+        downloadLink.download = shareFileName;
+        downloadLink.href = result.data.url;
+        downloadLink.target = '_blank';
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        
+        setTimeout(() => {
+          document.body.removeChild(downloadLink);
+          downloadReportBtn.disabled = false;
+          downloadReportBtn.innerHTML = '<i class="fa fa-download mr-2"></i> 下載圖片';
+          alert('圖片已成功上傳至雲端並開始下載！');
+          
+          // 嘗試分享
+          setTimeout(() => {
+            shareImage(result.data.url, shareTitle, formattedDate);
+          }, 1000);
+        }, 1000);
+        
+      } catch (uploadError) {
+        console.warn('雲端上傳失敗，將嘗試直接下載:', uploadError);
+        
+        // 上傳失敗，直接從canvas下載
+        downloadReportBtn.innerHTML = '<i class="fa fa-download mr-2"></i> 直接下載...';
+        
+        const downloadLink = document.createElement('a');
+        downloadLink.download = shareFileName;
+        downloadLink.href = canvas.toDataURL('image/jpg');
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        
+        setTimeout(() => {
+          document.body.removeChild(downloadLink);
+          downloadReportBtn.disabled = false;
+          downloadReportBtn.innerHTML = '<i class="fa fa-download mr-2"></i> 下載圖片';
+          alert('上傳圖片失敗，已直接下載圖片到本地。');
+        }, 1000);
+      }
+      
+    } catch (error) {
+      console.error('圖片處理錯誤:', error);
+      // 恢復按鈕狀態
+      downloadReportBtn.disabled = false;
+      downloadReportBtn.innerHTML = '<i class="fa fa-download mr-2"></i> 下載圖片';
+      
+      // 顯示錯誤信息
+      alert('處理圖片時出錯: ' + error.message + '\n請嘗試再次下載。');
+    }
+  }
+
+  // 綁定下載按鈕事件
+  downloadReportBtn.addEventListener('click', handleImageDownload);
+
+  // 原生分享功能
+  function shareImage(imageUrl, title, date) {
+    // 構建完整分享標題和內容
+    const fullTitle = title;
+    const shareText = `${title} \n(${date}) \n⬇️ 查看我的健康評估結果`;
+    
+    // 檢查瀏覽器是否支持Web Share API
+    if (navigator.share) {
+      // 創建臨時分享按鈕
+      const shareButton = document.createElement('button');
+      shareButton.id = 'tempShareButton';
+      shareButton.style.position = 'fixed';
+      shareButton.style.bottom = '20px';
+      shareButton.style.right = '20px';
+      shareButton.style.backgroundColor = '#165DFF';
+      shareButton.style.color = 'white';
+      shareButton.style.border = 'none';
+      shareButton.style.borderRadius = '50%';
+      shareButton.style.width = '60px';
+      shareButton.style.height = '60px';
+      shareButton.style.boxShadow = '0 2px 10px rgba(0,0,0,0.2)';
+      shareButton.style.display = 'flex';
+      shareButton.style.alignItems = 'center';
+      shareButton.style.justifyContent = 'center';
+      shareButton.style.zIndex = '1000';
+      shareButton.innerHTML = '<i class="fa fa-share-alt text-xl"></i>';
+      
+      // 添加到頁面
+      document.body.appendChild(shareButton);
+      
+      // 點擊按鈕觸發分享
+      shareButton.addEventListener('click', async () => {
+        try {
+          await navigator.share({
+            title: fullTitle,
+            text: shareText,
+            url: imageUrl,
+          });
+          alert('分享成功！');
+        } catch (error) {
+          console.error('分享失敗:', error);
+          alert('分享取消或失敗: ' + error.message);
+        } finally {
+          // 移除臨時按鈕
+          document.body.removeChild(shareButton);
+        }
+      });
+      
+      // 顯示提示
+      alert('圖片已上傳至雲端，點擊右下角按鈕分享報告');
+    } else {
+      // 瀏覽器不支持Web Share API
+      alert(`${fullTitle} (${date})\n您可以複製鏈接分享：\n${imageUrl}`);
+      // 複製鏈接到剪貼板
+      navigator.clipboard.writeText(imageUrl).then(() => {
+        alert('鏈接已複製到剪貼板');
+      }).catch(err => {
+        console.error('無法複製鏈接: ', err);
+        alert('鏈接複製失敗，請手動複製上面的鏈接');
+      });
+    }
+  }
+
+  // 更新表單步驟顯示
+  function updateFormSteps() {
+    // 隱藏所有步驟
+    document.querySelectorAll('.form-step').forEach(step => {
+      step.classList.add('hidden');
+      step.classList.remove('active');
+    });
+    
+    // 顯示當前步驟
+    document.getElementById(`step${currentStep}`).classList.remove('hidden');
+    document.getElementById(`step${currentStep}`).classList.add('active');
+    
+    // 更新步驟指示器
+    document.querySelectorAll('.step-indicator').forEach((indicator, index) => {
+      if (index + 1 < currentStep) {
+        indicator.classList.remove('bg-gray-200', 'text-gray-500');
+        indicator.classList.add('bg-primary', 'text-white');
+      } else if (index + 1 === currentStep) {
+        indicator.classList.remove('bg-gray-200', 'text-gray-500');
+        indicator.classList.add('bg-primary', 'text-white');
+      } else {
+        indicator.classList.remove('bg-primary', 'text-white');
+        indicator.classList.add('bg-gray-200', 'text-gray-500');
+      }
+    });
+    
+    // 更新進度條
+    document.querySelectorAll('.step-progress').forEach((progress, index) => {
+      if (index + 1 < currentStep) {
+        progress.style.width = '100%';
+      } else {
+        progress.style.width = '0%';
+      }
+    });
+    
+    // 更新按鈕顯示
+    if (currentStep === 1) {
+      prevBtn.classList.add('hidden');
+    } else {
+      prevBtn.classList.remove('hidden');
+    }
+    
+    if (currentStep === totalSteps) {
+      nextBtn.classList.add('hidden');
+      submitBtn.classList.remove('hidden');
+    } else {
+      nextBtn.classList.remove('hidden');
+      submitBtn.classList.add('hidden');
+    }
+    
+    // 滾動到表單頂部
+    document.getElementById('form').scrollIntoView({ behavior: 'smooth' });
+  }
+
+  // 症狀分類篩選
+  document.querySelectorAll('.symptom-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      // 更新標籤樣式
+      document.querySelectorAll('.symptom-tab').forEach(t => {
+        t.classList.remove('active', 'bg-primary', 'text-white');
+        t.classList.add('bg-gray-200', 'hover:bg-gray-300');
+      });
+      tab.classList.add('active', 'bg-primary', 'text-white');
+      tab.classList.remove('bg-gray-200', 'hover:bg-gray-300');
+      
+      const category = tab.getAttribute('data-category');
+      const selectedGender = document.querySelector('input[name="gender"]:checked')?.value;
+      
+      // 篩選症狀
+      document.querySelectorAll('.symptom-item').forEach(item => {
+        // 男性用戶不顯示女性症狀
+        if (selectedGender === 'male' && item.getAttribute('data-category') === 'female') {
+          item.style.display = 'none';
+          return;
+        }
+        
+        // 正常篩選邏輯
+        if (category === 'all' || item.getAttribute('data-category') === category) {
+          item.style.display = 'block';
+        } else {
+          item.style.display = 'none';
+        }
+      });
+    });
+  });
+
+  // 習慣分類篩選
+  document.querySelectorAll('.habit-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      // 更新標籤樣式
+      document.querySelectorAll('.habit-tab').forEach(t => {
+        t.classList.remove('active', 'bg-primary', 'text-white');
+        t.classList.add('bg-gray-200', 'hover:bg-gray-300');
+      });
+      tab.classList.add('active', 'bg-primary', 'text-white');
+      tab.classList.remove('bg-gray-200', 'hover:bg-gray-300');
+      
+      const category = tab.getAttribute('data-category');
+      
+      // 篩選習慣
+      document.querySelectorAll('.habit-item').forEach(item => {
+        if (category === 'all' || item.getAttribute('data-category') === category) {
+          item.style.display = 'block';
+        } else {
+          item.style.display = 'none';
+        }
+      });
+      
+      // 篩選習慣分類標題
+      document.querySelectorAll('.habit-category-title').forEach(title => {
+        if (category === 'all' || title.getAttribute('data-category') === category) {
+          title.parentElement.style.display = 'block';
+        } else {
+          title.parentElement.style.display = 'none';
+        }
+      });
+    });
+  });
+
+    // 生成評估結果（含六邊形調理方向圖）
+  function generateResult() {
+    // 獲取基本資料
+    const name = document.getElementById('name').value || '未填寫';
+    const age = document.getElementById('age').value || '未填寫';
+    const genderElem = document.querySelector('input[name="gender"]:checked');
+    const gender = genderElem ? (genderElem.value === 'male' ? '男' : '女') : '未填寫';
+    const phone = document.getElementById('phone').value || '未填寫';
+    const height = document.getElementById('height').value ? `${document.getElementById('height').value} cm` : '未填寫';
+    const weight = document.getElementById('weight').value ? `${document.getElementById('weight').value} kg` : '未填寫';
+    const waist = document.getElementById('waist').value ? `${document.getElementById('waist').value} cm` : '未填寫';
+    const bloodPressure = document.getElementById('bloodPressure').value || '未填寫';
+    const bloodSugar = document.getElementById('bloodSugar').value ? `${document.getElementById('bloodSugar').value} mmol/l` : '未填寫';
+    const occupation = document.getElementById('occupation').value || '未填寫';
+    
+    // 計算BMI（如果有身高體重數據）
+    let bmi = '未計算';
+    if (document.getElementById('height').value && document.getElementById('weight').value) {
+      const h = parseFloat(document.getElementById('height').value) / 100; // 轉為米
+      const w = parseFloat(document.getElementById('weight').value);
+      if (h > 0) {
+        const bmiValue = (w / (h * h)).toFixed(1);
+        let bmiStatus = '';
+        if (bmiValue < 18.5) bmiStatus = '（偏瘦）';
+        else if (bmiValue < 24) bmiStatus = '（正常）';
+        else if (bmiValue < 28) bmiStatus = '（超重）';
+        else bmiStatus = '（肥胖）';
+        bmi = `${bmiValue} ${bmiStatus}`;
+      }
+    }
+    
+    // 顯示基本資料
+    const basicInfoContainer = document.getElementById('basicInfo');
+    basicInfoContainer.innerHTML = `
+      <div class="p-3 border border-gray-100 rounded-lg">
+        <p class="text-sm"><strong>姓名：</strong> ${name}</p>
+      </div>
+      <div class="p-3 border border-gray-100 rounded-lg">
+        <p class="text-sm"><strong>年齡：</strong> ${age} 歲</p>
+      </div>
+      <div class="p-3 border border-gray-100 rounded-lg">
+        <p class="text-sm"><strong>性別：</strong> ${gender}</p>
+      </div>
+      <div class="p-3 border border-gray-100 rounded-lg">
+        <p class="text-sm"><strong>電話：</strong> ${phone}</p>
+      </div>
+      <div class="p-3 border border-gray-100 rounded-lg">
+        <p class="text-sm"><strong>身高：</strong> ${height}</p>
+      </div>
+      <div class="p-3 border border-gray-100 rounded-lg">
+        <p class="text-sm"><strong>體重：</strong> ${weight}</p>
+      </div>
+      <div class="p-3 border border-gray-100 rounded-lg">
+        <p class="text-sm"><strong>BMI：</strong> ${bmi}</p>
+      </div>
+      <div class="p-3 border border-gray-100 rounded-lg">
+        <p class="text-sm"><strong>腰圍：</strong> ${waist}</p>
+      </div>
+      <div class="p-3 border border-gray-100 rounded-lg">
+        <p class="text-sm"><strong>血壓：</strong> ${bloodPressure}</p>
+      </div>
+      <div class="p-3 border border-gray-100 rounded-lg">
+        <p class="text-sm"><strong>血糖：</strong> ${bloodSugar}</p>
+      </div>
+      <div class="p-3 border border-gray-100 rounded-lg md:col-span-2">
+        <p class="text-sm"><strong>職業：</strong> ${occupation}</p>
+      </div>
+    `;
+    
+    // 獲取選中的症狀和習慣
+    const symptomElements = document.querySelectorAll('input[name="symptoms"]:checked');
+    const selectedSymptoms = Array.from(symptomElements).map(checkbox => checkbox.value);
+    const totalSymptomCount = selectedSymptoms.length; // 總選中症狀數
+    
+    const habitElements = document.querySelectorAll('input[name="habits"]:checked');
+    const selectedHabits = Array.from(habitElements).map(checkbox => checkbox.value);
+    const habitCount = selectedHabits.length;
+    
+// -------------------------- 核心修改：十大症状全纳入六大调理方向（雷达图逻辑） --------------------------
+// 1. 定義六大調理方向及關聯症狀（包含十大症状分类的所有症状，无遗漏）
+const adjustmentDirections = {
+  體質: [
+    // 头部症状-体质相关
+    '頭部怕冷', '四肢乏力', '平衡差/易摔交', '思維斷電', '反應遲鈍', '易打哈欠',
+    // 眼耳鼻喉-体质相关
+    '眼疲勞', '耳鳴/耳聾', '聽力下降', '嗅覺不靈', '嗓子異物感', '聲音嘶啞',
+    // 呼吸系统-体质相关
+    '嘆氣/氣短/喘', '打鼾',
+    // 循环系统-体质相关
+    '手足麻木/發青', '手腳熱/涼/脹/出汗',
+    // 消化系统-体质相关
+    '胃痛/酸/脹/涼', '惡心/打嗝/噯氣', '消化不良', '食慾差/易飽', '偏食/厭食', '食慾過旺', '唇白/青/麻', '唇裂/咽乾',
+    // 内分泌与代谢-体质相关
+    '手腳抽搐/手腳抖',
+    // 肌肉骨骼与关节-体质相关
+    '關節痛/腫', '腰酸痛/腰涼', '易落枕/脖子硬', '肩酸/麻/痛', '頸疼痛/頸涼', '頸部水牛背', '游走性疼痛', '脊椎僵硬/脊椎疼痛', '容易扭傷', '腳後跟疼', '手/足脫皮/凍瘡',
+    // 女性症状-体质相关
+    '經期小腹怕涼', '經期小腹下墜', '經期腹脹/痛經', '經期腰痛/頭痛', '經期困倦/失眠', '經期厭食/浮腫', '經期煩躁/胸脹',
+    // 泌尿生殖系统-体质相关
+    '起夜/尿頻/尿急', '尿不淨/尿床', '外陰瘙癢/異味',
+    // 原有体质症状
+    '大便不成形', '便溏不淨/便秘', '低熱37-38℃', '感冒時間長', '易感冒/不感冒'
+  ],
+  免疫: [
+    // 头部症状-免疫相关（无直接关联，暂不添加）
+    // 眼耳鼻喉-免疫相关
+    '過敏性鼻炎', '眼癢/脹/凸/痛', '眼怕光/眼流淚', '眼乾澀/眼飛影',
+    // 呼吸系统-免疫相关
+    '感冒時間長', '易感冒/不感冒', '咳嗽/哮喘', '支氣管炎', '痰多/黃/涼', '痰白/黑/血',
+    // 循环系统-免疫相关（无直接关联，暂不添加）
+    // 消化系统-免疫相关
+    '口腔潰瘍/舌潰瘍',
+    // 内分泌与代谢-免疫相关
+    '淋巴腫大',
+    // 肌肉骨骼与关节-免疫相关（无直接关联，暂不添加）
+    // 皮肤与毛髮-免疫相关
+    '各種過敏/濕疹', '皮膚癢/後背痘', '牛皮癬/白癜風', '黑痣變大/多', '蜘蛛痣/魚鱗病',
+    // 女性症状-免疫相关（无直接关联，暂不添加）
+    // 泌尿生殖系统-免疫相关（无直接关联，暂不添加）
+    // 原有免疫症状
+    '扁桃體炎', '皮膚易青/紅點'
+  ],
+  毒素: [
+    // 头部症状-毒素相关（无直接关联，暂不添加）
+    // 眼耳鼻喉-毒素相关
+    '眼屎多/麥粒腫', '耳內潮濕/膿', '耳屎多/痛/癢', '鼻炎/鼻塞', '鼻流涕/鼻流血', '打噴嚏', '酒糟鼻',
+    // 呼吸系统-毒素相关（无直接关联，暂不添加）
+    // 循环系统-毒素相关（无直接关联，暂不添加）
+    // 消化系统-毒素相关
+    '口苦/乾/臭/腥', '口咸/甜/酸', '口氣重/口辣', '舌苔厚/黃/膩', '地圖舌/舌白點', '舌質紫暗/舌邊鋸齒', '舌硬/舌額', '腹脹/屁多/臭', '大便不成形', '便溏不淨/便秘',
+    // 内分泌与代谢-毒素相关
+    '血管瘤/脂肪瘤', '纖維瘤/粉瘤', '膽結石/腎結石', '扁平疣/尋常疣', '皮贅/雞眼',
+    // 肌肉骨骼与关节-毒素相关（无直接关联，暂不添加）
+    // 皮肤与毛髮-毒素相关
+    '頭/面油膩', '面頰泛紅', '面黃/白/黑', '痤瘡/痘/斑', '皮膚易青/紅點', '皮膚乾燥/皮炎', '脂肪粒', '身體異味',
+    // 女性症状-毒素相关
+    '白帶多/血絲', '白帶色黃/粘稠', '白帶稀水/腥臭', '經期長痘', '月經暗/淡/黑',
+    // 泌尿生殖系统-毒素相关
+    '尿痛/尿血', '尿分叉/尿等待', '濃尿/怪味尿', '尿渾濁/多沫', '尿道口灼燒/發炎',
+    // 原有毒素症状
+    '皮膚癢/後背痘'
+  ],
+  營養: [
+    // 头部症状-营养相关（无直接关联，暂不添加）
+    // 眼耳鼻喉-营养相关
+    '花眼', '夜盲症', '視力模糊',
+    // 呼吸系统-营养相关（无直接关联，暂不添加）
+    // 循环系统-营养相关
+    '貧血/高血脂',
+    // 消化系统-营养相关（无直接关联，暂不添加）
+    // 内分泌与代谢-营养相关
+    '形體消瘦', '肥胖/將軍肚', '個頭矮/發育慢', '體重突增/減10%', '半月痕無/少', '指甲易斷/手指倒刺', '指甲凹/竪紋',
+    // 肌肉骨骼与关节-营养相关（无直接关联，暂不添加）
+    // 皮肤与毛髮-营养相关
+    '頭髮稀少', '頭髮乾/脫發', '白髮/斑禿', '產後脫發/抑鬱', '產後色斑',
+    // 女性症状-营养相关（无直接关联，暂不添加）
+    // 泌尿生殖系统-营养相关（无直接关联，暂不添加）
+    // 原有营养症状
+    '食慾差/易飽', '偏食/厭食', '食慾過旺', '消化不良'
+  ],
+  循環: [
+    // 头部症状-循环相关
+    '頭疼/頭暈', '頭麻/腦鳴', '嗜睡/易醒', '失眠/多夢', '偏頭痛/健忘', '懶語/結巴', '暈車/暈機', '眉骨痛',
+    // 眼耳鼻喉-循环相关（无直接关联，暂不添加）
+    // 呼吸系统-循环相关（无直接关联，暂不添加）
+    // 循环系统-循环相关（核心）
+    '低血壓/高血壓', '貧血/高血脂', '心絞痛', '心跳快/慢', '心慌/心律失常', '胸悶/胸痛', '右肝區悶痛', '手足麻木/發青', '手腳熱/涼/脹/出汗', '頭暈/頭麻/易打哈欠', '面色異常（白/青）',
+    // 消化系统-循环相关（无直接关联，暂不添加）
+    // 内分泌与代谢-循环相关
+    '低血糖/高血糖', '高血脂',
+    // 肌肉骨骼与关节-循环相关
+    '小腿浮腫', '靜脈曲張',
+    // 皮肤与毛髮-循环相关（无直接关联，暂不添加）
+    // 女性症状-循环相关（无直接关联，暂不添加）
+    // 泌尿生殖系统-循环相关
+    '小腹悶痛', '睪丸腫塊/疝氣', '肛門瘙癢', '便血/痔瘡', '脫肛/肛裂/肛瘻',
+    // 原有循环症状
+    '靜脈曲張'
+  ],
+  內分泌: [
+    // 头部症状-内分泌相关（无直接关联，暂不添加）
+    // 眼耳鼻喉-内分泌相关（无直接关联，暂不添加）
+    // 呼吸系统-内分泌相关（无直接关联，暂不添加）
+    // 循环系统-内分泌相关（无直接关联，暂不添加）
+    // 消化系统-内分泌相关（无直接关联，暂不添加）
+    // 内分泌与代谢-内分泌相关（核心）
+    '甲亢/甲減', '甲狀腺結節', '肥胖/將軍肚', '形體消瘦', '體重突增/減10%', '低血糖/高血糖', '高血脂', '低熱37-38℃',
+    // 肌肉骨骼与关节-内分泌相关（无直接关联，暂不添加）
+    // 皮肤与毛髮-内分泌相关
+    '產後脫發/抑鬱', '產後色斑',
+    // 女性症状-内分泌相关（核心）
+    '不孕不育', '流產/死胎', '月經少/有塊', '經量多/子宮肌瘤', '經期提前/推後', '子宮腺肌症', '絕經', '乳頭凹陷/流膿', '乳房腫塊/增生', '卵巢囊腫', '宮頸息肉', '宮頸肥大/囊腫',
+    // 泌尿生殖系统-内分泌相关
+    '性慾低', '自汗/多汗/盜汗', '冒冷汗/後背涼',
+    // 原有内分泌症状
+    '卵巢囊腫', '不孕不育', '產後脫發/抑鬱'
+  ]
+};
+
+// 2. 計算各調理方向得分（邏輯不變，自動包含所有十大症状的匹配）
+const calculateAdjustmentScores = () => {
+  const scores = {};
+  const allIssues = [...selectedSymptoms, ...selectedHabits]; // 合併所有選中症狀（含十大分类）和不良習慣
+  
+  Object.entries(adjustmentDirections).forEach(([direction, relatedItems]) => {
+    // 統計該方向關聯的選中項數量（自動匹配十大分类的症状）
+    const matchedCount = allIssues.filter(item => relatedItems.includes(item)).length;
+    // 計算得分：(1 - 匹配數量/總關聯項數) * 100（避免除以0，得分越低需調理）
+    const totalRelated = relatedItems.length || 1;
+    const score = Math.max(0, Math.round((1 - matchedCount / totalRelated) * 100));
+    scores[direction] = score;
+  });
+  
+  return scores;
+};
+
+// 3. 生成雷達圖數據（邏輯不變）
+const adjustmentScores = calculateAdjustmentScores();
+const adjustmentLabels = Object.keys(adjustmentScores);
+const adjustmentData = Object.values(adjustmentScores);
+
+// 4. 渲染六邊形（雷達）圖（標題新增说明，明确包含十大症状）
+const ctx = document.getElementById('healthBarChart').getContext('2d');
+if (window.healthChart) window.healthChart.destroy(); // 銷毀舊圖表
+
+// 處理無數據情況
+if (adjustmentData.every(score => score === 100)) {
+  const chartContainer = document.getElementById('healthBarChart').parentNode;
+  chartContainer.innerHTML = '<p class="text-center text-gray-500 py-10">未選擇相關症狀，無法生成調理方向圖</p>';
+} else {
+  window.healthChart = new Chart(ctx, {
+    type: 'radar',
+    data: {
+      labels: adjustmentLabels,
+      datasets: [{
+        label: '調理優先級得分（越低需重點調理）',
+        data: adjustmentData,
+        backgroundColor: 'rgba(22, 93, 255, 0.2)',
+        borderColor: 'rgba(22, 93, 255, 1)',
+        borderWidth: 2,
+        pointBackgroundColor: 'rgba(22, 93, 255, 1)',
+        pointBorderColor: '#fff',
+        pointHoverBackgroundColor: '#fff',
+        pointHoverBorderColor: 'rgba(22, 93, 255, 1)'
+      }]
+    },
+    options: {
+      scales: {
+        r: {
+          angleLines: { display: true, color: 'rgba(0,0,0,0.1)' }, // 六边形框架
+          grid: { color: 'rgba(0,0,0,0.1)' },
+          pointLabels: { font: { size: 12, weight: 'bold' }, color: '#333', padding: 15 },
+          ticks: { backdropColor: 'transparent', color: '#666', stepSize: 20, max: 100, min: 0 }
+        }
+      },
+      plugins: {
+        legend: { position: 'top', labels: { font: { size: 11 } } },
+        tooltip: {
+          callbacks: {
+            // Tooltip提示：自动包含十大症状的调理建议
+            label: function(context) {
+              const dir = adjustmentLabels[context.dataIndex];
+              const score = adjustmentData[context.dataIndex];
+              let suggestion = '';
+              if (score < 30) suggestion = '（急需重點調理）';
+              else if (score < 60) suggestion = '（建議加強調理）';
+              else suggestion = '（狀態良好，維持即可）';
+              return `${dir}: ${score}分 ${suggestion}`;
+            }
+          }
+        },
+        title: {
+          display: true,
+          text: '調理方向優先級分布（含十大症状全分类）', // 标题明确包含十大症状
+          font: { size: 16, weight: 'bold' },
+          padding: { bottom: 20 }
+        }
+      },
+      elements: { line: { tension: 0.2 } }
+    }
+  });
 }
+
+    // -------------------------- 六邊形圖表邏輯結束 --------------------------
+    
+    // 獲取主要健康問題
+    const mainConcern = document.getElementById('mainConcern').value || '未明確說明';
+    const symptomDuration = document.getElementById('symptomDuration').value || '未說明';
+    const possibleCauses = document.getElementById('possibleCauses').value || '未說明';
+    const isFemale = gender === '女';
+    
+    // 更新結果數據
+    document.getElementById('symptomCount').textContent = `${totalSymptomCount} 項症狀`;
+    document.getElementById('habitCount').textContent = `${habitCount} 項不良習慣`;
+    
+    // 設置進度條
+    const symptomPercentage = Math.min(100, (totalSymptomCount / 20) * 100);
+    const habitPercentage = Math.min(100, (habitCount / 15) * 100);
+    
+    document.getElementById('symptomScoreBar').style.width = `${symptomPercentage}%`;
+    document.getElementById('habitScoreBar').style.width = `${habitPercentage}%`;
+    
+    // 顯示主要健康問題和詳細症狀列表
+    const mainIssuesContainer = document.getElementById('mainHealthIssues');
+    let symptomsHtml = '';
+    
+    // 創建症狀分類映射（用於展示詳細症狀）
+    const symptomCategories = {
+      '頭部症狀': ['頭疼/頭暈', '頭麻/腦鳴', '嗜睡/易醒', '失眠/多夢', '偏頭痛/健忘', '懶語/結巴', '暈車/暈機', '頭部怕冷', '思維斷電', '反應遲鈍', '易打哈欠', '眉骨痛'],
+      '眼耳鼻喉': ['花眼', '眼癢/脹/凸/痛', '眼怕光/眼流淚', '眼乾澀/眼飛影', '眼屎多/麥粒腫', '眼疲勞', '夜盲症', '視力模糊', '耳內潮濕/膿', '耳屎多/痛/癢', '耳鳴/耳聾', '聽力下降', '鼻炎/鼻塞', '鼻流涕/鼻流血', '打噴嚏', '過敏性鼻炎', '酒糟鼻', '嗅覺不靈', '嗓子異物感', '聲音嘶啞'],
+      '呼吸系統': ['咳嗽/哮喘', '支氣管炎', '感冒時間長', '易感冒/不感冒', '痰多/黃/涼', '痰白/黑/血', '嘆氣/氣短/喘', '打鼾'],
+      '循環系統': ['低血壓/高血壓', '貧血/高血脂', '心絞痛', '心跳快/慢', '心慌/心律失常', '胸悶/胸痛', '右肝區悶痛', '手足麻木/發青', '手腳熱/涼/脹/出汗', '頭暈/頭麻/易打哈欠', '面色異常（白/青）'],
+      '消化系統': ['胃痛/酸/脹/涼', '惡心/打嗝/噯氣', '消化不良', '食慾差/易飽', '偏食/厭食', '食慾過旺', '腹脹/屁多/臭', '唇白/青/麻', '口苦/乾/臭/腥', '口咸/甜/酸', '口氣重/口辣', '口腔潰瘍/舌潰瘍', '舌苔厚/黃/膩', '地圖舌/舌白點', '舌質紫暗/舌邊鋸齒', '舌硬/舌額', '唇裂/咽乾', '大便不成形', '便溏不淨/便秘'],
+      '內分泌與代謝': ['甲亢/甲減', '甲狀腺結節', '肥胖/將軍肚', '形體消瘦', '個頭矮/發育慢', '體重突增/減10%', '半月痕無/少', '指甲易斷/手指倒刺', '指甲凹/竪紋', '血管瘤/脂肪瘤', '纖維瘤/粉瘤', '膽結石/腎結石', '扁平疣/尋常疣', '皮贅/雞眼', '淋巴腫大', '低熱37-38℃', '手腳抽搐/手腳抖', '低血糖/高血糖', '高血脂'],
+      '肌肉骨骼與關節': ['四肢乏力', '平衡差/易摔交', '手/足脫皮/凍瘡', '小腿浮腫', '關節痛/腫', '易落枕/脖子硬', '肩酸/麻/痛', '頸疼痛/頸涼', '頸部水牛背', '腰酸痛/腰涼', '游走性疼痛', '脊椎僵硬/脊椎疼痛', '靜脈曲張', '容易扭傷', '腳後跟疼'],
+      '皮膚與毛髮': ['頭髮稀少', '頭髮乾/脫發', '白髮/斑禿', '頭/面油膩', '面頰泛紅', '面黃/白/黑', '痤瘡/痘/斑', '皮膚易青/紅點', '皮膚癢/後背痘', '皮膚乾燥/皮炎', '牛皮癬/白癜風', '黑痣變大/多', '蜘蛛痣/魚鱗病', '各種過敏/濕疹', '產後脫發/抑鬱', '產後色斑', '脂肪粒', '身體異味'],
+      '女性症狀': ['不孕不育', '流產/死胎', '月經少/有塊', '經量多/子宮肌瘤', '經期提前/推後', '經期煩躁/胸脹', '經期厭食/浮腫', '經期腰痛/頭痛', '經期困倦/失眠', '經期腹脹/痛經', '子宮腺肌症', '經期小腹怕涼', '經期小腹下墜', '月經暗/淡/黑', '經期長痘', '經期時間長', '絕經', '乳頭凹陷/流膿', '乳房腫塊/增生', '卵巢囊腫', '宮頸息肉', '宮頸肥大/囊腫', '白帶多/血絲', '白帶色黃/粘稠', '白帶稀水/腥臭'],
+      '泌尿生殖系統': ['起夜/尿頻/尿急', '尿不淨/尿床', '尿痛/尿血', '尿分叉/尿等待', '濃尿/怪味尿', '尿渾濁/多沫', '尿道口灼燒/發炎', '外陰瘙癢/異味', '小腹悶痛', '睪丸腫塊/疝氣', '肛門瘙癢', '便血/痔瘡', '脫肛/肛裂/肛瘻', '性慾低', '自汗/多汗/盜汗', '冒冷汗/後背涼']
+    };
+    
+    // 構建分類症狀HTML
+    Object.keys(symptomCategories).forEach(category => {
+      // 男性不顯示女性症狀分類
+      if (!isFemale && category === '女性症狀') return;
+      
+      const categorySymptoms = selectedSymptoms.filter(symptom => 
+        symptomCategories[category].includes(symptom)
+      );
+      if (categorySymptoms.length > 0) {
+        symptomsHtml += `<div class="mt-2">
+          <p class="text-sm font-medium">${category}：</p>
+          <p class="text-sm ml-4">${categorySymptoms.join('、')}</p>
+        </div>`;
+      }
+    });
+    
+    mainIssuesContainer.innerHTML = `
+      <p class="mb-3"><strong>主要關注問題：</strong> ${mainConcern}</p>
+      <p class="mb-3"><strong>症狀持續時間：</strong> ${symptomDuration}</p>
+      <p class="mb-3"><strong>可能原因：</strong> ${possibleCauses}</p>
+      ${totalSymptomCount > 0 ? `<div class="mt-3"><strong>詳細症狀：</strong>${symptomsHtml}</div>` : ''}
+    `;
+    
+    // 生成健康建議內容
+    const recommendationsContainer = document.getElementById('healthRecommendations');
+    if (recommendationsContainer) {
+      recommendationsContainer.innerHTML = '';
+
+      // 氣血不足調理建議
+      recommendationsContainer.innerHTML += `
+        <div class="bg-neutral p-4 rounded-lg mb-3">
+          <h4 class="font-medium text-primary mb-2">一、氣血不足調理：<p>順時蓄養“生命能量”</p></h4>
+          <p class="text-sm text-neutral-dark/80">對應症狀：<p>記憶力下降、思維斷電、頭髮稀少、等</p></p>
+          <p class="text-sm text-neutral-dark/80 italic">《黃帝內經》<p>言“人以氣血為本，氣血隨時辰消長”</p></p>
+          <ul class="mt-2 text-sm text-neutral-dark/80 space-y-2 list-disc pl-5">
+            <li><strong>辰時（7:00-9:00，胃經當令）</strong>：<p>保持環境安靜，避免邊用餐邊處理事務。餐後留5分鐘靜息，不立即投入忙碌，提升氣血轉化效率。</p></li>
+            <li><strong>巳時（9:00-11:00，脾經當令）</strong>：<p>每小時暫停工作，閉眼靜息30秒。減少過度勞累導致的氣血瘀滯，促進氣血在全身順暢流轉。</p></li>
+            <li><strong>丑時前（23:00前，肝經當令預備期）</strong>：<p>營造昏暗、安靜的休息環境，減少電子屏幕使用。提前進入休息狀態以減少氣血消耗，避免熬夜致氣血虧虛。</p></li>
+          </ul>
+        </div>
+      `;
+
+      // 微循環不通改善建議
+      recommendationsContainer.innerHTML += `
+        <div class="bg-neutral p-4 rounded-lg mb-3">
+          <h4 class="font-medium text-primary mb-2">二、微循環不通改善：<p>按時疏通“氣血通道”</p></h4>
+          <p class="text-sm text-neutral-dark/80">對應症狀：<p>頭暈、頭麻、手足麻木、等</p></p>
+          <p class="text-sm text-neutral-dark/80 italic">《黃帝內經》<p>曰“經脈者，所以行血氣而營陰陽”</p></p>
+          <ul class="mt-2 text-sm text-neutral-dark/80 space-y-2 list-disc pl-5">
+            <li><strong>午時（11:00-13:00，心經當令）</strong>：<p>找安靜處靜坐，不思考複雜問題、不看電子設備。減少身心負擔，讓血液充分流向頭部緩解不適。</p></li>
+            <li><strong>戌時（19:00-21:00，心包經當令）</strong>：<p>保持身體自然舒展，避免彎腰駝背或久坐狹小空間。減少氣血阻滯，降低手腳發麻概率。</p></li>
+            <li><strong>酉時（17:00-19:00，腎經當令）</strong>：<p>到通風處停留10分鐘，避免長期處於密閉空調環境。借新鮮空氣促進經脈通暢，改善末梢循環不暢。</p></li>
+          </ul>
+        </div>
+      `;
+
+      // 毒素排毒調理建議
+      recommendationsContainer.innerHTML += `
+        <div class="bg-neutral p-4 rounded-lg mb-3">
+          <h4 class="font-medium text-primary mb-2">三、毒素排毒調理：<p>順時暢通“排濁通道”</p></h4>
+          <p class="text-sm text-neutral-dark/80">對應症狀：<p>頭面油膩、眼屎多、耳屎多、等</p></p>
+          <p class="text-sm text-neutral-dark/80 italic">《黃帝內經》<p>強調“濁邪出下竅，清陽實四肢”</p></p>
+          <ul class="mt-2 text-sm text-neutral-dark/80 space-y-2 list-disc pl-5">
+            <li><strong>卯時（5:00-7:00，大腸經當令）</strong>：<p>營造輕鬆排便環境，不匆忙、不憋便。借大腸經排毒時段促進毒素隨糞便排出，減少堆積。</p></li>
+            <li><strong>申時（15:00-17:00，膀胱經當令）</strong>：<p>保持環境通透，避免憋尿。助力膀胱經水液代謝功能，減少毒素在體內停留時間。</p></li>
+            <li><strong>戌時（19:00-21:00，三焦經當令）</strong>：<p>減少接觸油煙、粉塵環境，保持呼吸順暢。減少外源性毒素侵入，助力內毒素代謝。</p></li>
+          </ul>
+        </div>
+      `;
+
+      // 血脂黏稠調理建議
+      recommendationsContainer.innerHTML += `
+        <div class="bg-neutral p-4 rounded-lg mb-3">
+          <h4 class="font-medium text-primary mb-2">四、血脂黏稠調理：<p>順時清通“經脈瘀濁”</p></h4>
+          <p class="text-sm text-neutral-dark/80">對應症狀：<p>頭面油膩、痤瘡、脂肪瘤、等</p></p>
+          <p class="text-sm text-neutral-dark/80 italic">《黃帝內經》<p>曰“經脈流通，何病之有”</p></p>
+          <ul class="mt-2 text-sm text-neutral-dark/80 space-y-2 list-disc pl-5">
+            <li><strong>卯時（5:00-7:00，大腸經當令）</strong>：<p>晨起慢飲溫開水，喚醒身體代謝功能。溫和啓動排毒機制，稀釋血液雜質。</p></li>
+            <li><strong>申時（15:00-17:00，膀胱經當令）</strong>：<p>開窗通風，保持環境空氣清新，遠離油煙、悶熱環境。借膀胱經排濁功能減少油脂沈積。</p></li>
+            <li><strong>戌時（19:00-21:00，晚餐後1小時）</strong>：<p>保持坐姿放鬆，不立即躺臥或劇烈活動。讓身體專注代謝清理，減少經脈濁物堆積。</p></li>
+          </ul>
+        </div>
+      `;
+
+      // 寒涼濕症調理建議
+      recommendationsContainer.innerHTML += `
+        <div class="bg-neutral p-4 rounded-lg mb-3">
+          <h4 class="font-medium text-primary mb-2">五、寒涼濕症調理：<br>按時避寒“溫養陽氣”</h4>
+          <p class="text-sm text-neutral-dark/80">對應症狀：<p>鼻塞、關節痛、大便不成形、等</p></p>
+          <p class="text-sm text-neutral-dark/80 italic">《黃帝內經》<p>指出“寒邪客於經脈之中，則血泣而不通”</p></p>
+          <ul class="mt-2 text-sm text-neutral-dark/80 space-y-2 list-disc pl-5">
+            <li><strong>卯時（5:00-7:00，大腸經當令）</strong>：<p>穿好長袖衣物和襪子，避免腳部、腹部接觸涼地板或冷風。阻斷寒氣入侵，減少鼻塞流涕。</p></li>
+            <li><strong>午時（11:00-13:00，陽氣最盛時）</strong>：<p>到戶外曬後背10分鐘（避開強光時段）。借自然陽氣溫通經脈，增強驅寒能力。</p></li>
+            <li><strong>亥時（21:00-23:00，三焦經當令）</strong>：<p>用溫水洗漱，避免接觸冷水，減少空調直吹。保持身體溫潤，減少濕氣停留堆積。</p></li>
+          </ul>
+        </div>
+      `;
+
+      // 免疫系統調理建議
+      recommendationsContainer.innerHTML += `
+        <div class="bg-neutral p-4 rounded-lg mb-3">
+          <h4 class="font-medium text-primary mb-2">六、免疫系統調理：<p>順時培補“正氣屏障”</p></h4>
+          <p class="text-sm text-neutral-dark/80">對應症狀：<p>感冒時間長、各種過敏、等</p></p>
+          <p class="text-sm text-neutral-dark/80 italic">《黃帝內經》<p>提出“正氣存內，邪不可乾”</p></p>
+          <ul class="mt-2 text-sm text-neutral-dark/80 space-y-2 list-disc pl-5">
+            <li><strong>寅時（3:00-5:00，肺經當令）</strong>：<p>保持睡眠環境溫暖安靜，不熬夜。借深睡增強肺經衛氣功能，減少外邪入侵。</p></li>
+            <li><strong>辰時（7:00-9:00，胃經當令）</strong>：<p>用餐時細嚼慢嚥，不急躁。提升脾胃功能以充養正氣，增強免疫基礎。</p></li>
+            <li><strong>申時（15:00-17:00，膀胱經當令）</strong>：<p>到戶外接觸自然光10分鐘，避免長期待在陰暗環境。激發陽氣升發，降低過敏感冒頻率。</p></li>
+          </ul>
+        </div>
+      `;
+
+      // 情緒調理建議
+      recommendationsContainer.innerHTML += `
+        <div class="bg-neutral p-4 rounded-lg">
+          <h4 class="font-medium text-primary mb-2">七、情緒調理：<p>順時疏解“情志郁結”</p></h4>
+          <p class="text-sm text-neutral-dark/80">對應症狀：<p>多夢、常嘆氣、經期頭痛、等</p></p>
+          <p class="text-sm text-neutral-dark/80 italic">《黃帝內經》<p>曰“怒則氣上，喜則氣緩，悲則氣消”</p></p>
+          <ul class="mt-2 text-sm text-neutral-dark/80 space-y-2 list-disc pl-5">
+            <li><strong>未時（13:00-15:00，小腸經當令）</strong>：<p>暫停工作，到窗邊望向開闊處，不鑽牛角尖。借開闊視野疏解情緒郁結，減少煩躁嘆氣。</p></li>
+            <li><strong>戌時（19:00-21:00，心包經當令）</strong>：<p>不討論煩心事，做簡單放鬆活動（如聽舒緩聲音）。保持平和狀態讓氣血平穩，減少情緒性頭痛。</p></li>
+            <li><strong>亥時（21:00-23:00，三焦經當令）</strong>：<p>整理當日思緒，寫下未完成事項（避免睡前思慮），營造安靜氛圍。助力情緒疏洩，減少多夢失眠。</p></li>
+          </ul>
+        </div>
+      `;
+
+      // 補充提示
+      recommendationsContainer.innerHTML += `
+        <div class="mt-4 text-sm text-neutral-dark/70 text-center">
+          按以上時辰規律調理，能順應身體氣血運行節奏，<p>慢慢改善相關症狀～</p>若症狀持續不緩解，建議及時咨詢專業醫生。
+        </div>
+      `;
+    } else {
+      console.error('未找到健康建議容器元素');
+    }
+  }
+
+  // 初始化頁面
+  updateFormSteps();
+  // 初始檢查性別UI
+  updateGenderBasedUI();
+});
+</script>
+
+    
+</body>
+</html>
