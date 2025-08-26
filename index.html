@@ -2348,12 +2348,12 @@ async function handleImageDownload() {
       if (result.success) {
         imgbbImageUrl = result.data.url; // 保存imgbb的公开图片URL（用于分享）
         isImgbbUploadSuccess = true;
-        console.log('imgbb上传成功，分享URL：', imgbbImageUrl);
+        console.log('上傳成功，分享URL：', imgbbImageUrl);
       } else {
         throw new Error(`imgbb返回錯誤：${result.error?.message || '未知錯誤'}`);
       }
     } catch (uploadErr) {
-      console.warn('imgbb上傳失敗，仍可正常保存到相冊:', uploadErr);
+      console.warn('上傳失敗，仍可正常保存到相冊:', uploadErr);
       isImgbbUploadSuccess = false; // 上传失败不影响本地保存
     }
 
@@ -2375,9 +2375,9 @@ async function handleImageDownload() {
       // 根据imgbb上传结果显示不同提示
       let shareTip = `圖片已成功保存到相簿！\n文件名：${localImageName}\n\n`;
       if (isImgbbUploadSuccess) {
-        shareTip += '已生成imgbb分享鏈接，點擊下方按鈕即可分享！';
+        shareTip += '已生成分享鏈接，點擊下方按鈕即可分享！';
       } else {
-        shareTip += 'imgbb上傳失敗，可從相簿手動分享圖片';
+        shareTip += '上傳失敗，可從相簿手動分享圖片';
       }
       alert(shareTip);
       
@@ -2455,7 +2455,7 @@ function saveWithAnchorTag(blob, fileName, resolve) {
     const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
     if (isIOS) {
       // iOS下載後會打開圖片預覽，需提示用戶手動保存到相冊
-      alert(`圖片已打開預覽，請點擊右上角「分享」圖標 → 選擇「保存圖片」，即可存入相簿`);
+      alert(`圖片已打開預覽，請點擊下方「分享」圖標 → 選擇「分享圖片」，即可分享圖片`);
     } else {
       // 安卓會直接保存到下載目錄，提示用戶在相冊中查找
       alert(`圖片已保存到「下載」文件夾，可在相簿的「下載」專輯中找到\n文件名：${localImageName}`);
@@ -2512,7 +2512,7 @@ function showNativeShareButton(userName, date, isImgbbSuccess) {
             text: shareText,
             url: imgbbImageUrl, // 核心：分享imgbb的图片URL
           });
-          alert('imgbb圖片鏈接分享成功！');
+          alert('圖片鏈接分享成功！');
         } else {
           // 不支持原生分享，复制URL到剪贴板（优化排版）
           await navigator.clipboard.writeText(shareText);
@@ -2605,7 +2605,7 @@ function shareImage(imageUrl, title, date) {
           text: shareText,
           url: imageUrl // 分享imgbb URL
         });
-        alert('imgbb圖片鏈接分享成功！');
+        alert('圖片鏈接分享成功！');
       } catch (shareError) {
         console.error('分享失敗:', shareError);
         // 复制优化后的文字到剪贴板
@@ -2623,7 +2623,7 @@ ${shareText}
       }
     });
 
-    alert('已生成imgbb分享鏈接，點擊右下角按鈕分享報告');
+    alert('已生成圖片分享鏈接，點擊下方按鈕分享報告');
   } else {
     // 不支持原生分享，复制优化后的文字
     navigator.clipboard.writeText(shareText).then(() => {
