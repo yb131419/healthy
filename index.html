@@ -3005,12 +3005,12 @@ ${shareText}
       `;
     }
 
-    // 11. 渲染健康調理建議（含優化後六大調理方向故事）
+    // 11. 渲染健康調理建議（含優化後六大調理方向故事）- 已修正錯誤
 const recommendationsContainer = document.getElementById('healthRecommendations');
 if (recommendationsContainer) {
   recommendationsContainer.innerHTML = `
    <!-- 六大調理方向 -->
-    <div class="bg-light p-5 rounded-lg border border-neutral/20">
+    <div class="bg-light p-5 my-4 rounded-lg border border-neutral/20">
       <h3 class="font-semibold text-primary mb-4 text-lg">🟢 六大調理方向：找到健康的根本邏輯</h3>
 
       <!-- ① 體質 -->
@@ -3105,6 +3105,7 @@ if (recommendationsContainer) {
     </div>
   `;
 }
+
 
   // 16. 綁定下載按鈕事件（確保頁面加載完成後綁定）
   if (downloadReportBtn) {
