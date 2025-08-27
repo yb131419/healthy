@@ -2258,15 +2258,15 @@ document.addEventListener('DOMContentLoaded', function() {
     };
   }
 
-  // 13. 圖片下載（原生高質量存檔，單一按鈕分享：圖片文件+imgbb URL）
-// -------------------------- 全局變量：存儲本地圖片和imgbb鏈接 --------------------------
-let localImageBlob = null;   // 本地圖片Blob（核心：用於圖片文件分享）
+  // 13. 圖片下載（原生高質量存檔，支持雲上傳後備）
+// -------------------------- 全局變量：存儲本地圖片和LINE分享鏈接 --------------------------
+let localImageBlob = null;   // 本地圖片Blob（用於下載）
 let localImageName = '';     // 本地圖片名稱
-let imgbbImageUrl = '';      // 新增：imgbb 雲端URL（同步傳遞，兼容特殊場景）
-// imgbb API Key（生成公開可分享的圖片URL）
+let imgbbImageUrl = '';      // imgbb 云端图片URL（核心：用于分享）
+// imgbb API Key（用于生成公开可分享的图片URL）
 const IMGBB_API_KEY = '60691c91e77a7ad5a7eabaf332fbdffe';
 
-// -------------------------- 1. 圖片處理：本地下載+imgbb上傳（URL準備） --------------------------
+// -------------------------- 1. 圖片處理：本地下載+imgbb雲端存圖（支持URL分享） --------------------------
 async function handleImageDownload() {
   try {
     // 按鈕加載狀態（提升用戶感知）
@@ -2314,50 +2314,50 @@ async function handleImageDownload() {
     const formattedDate = `${currentDate.getFullYear()}年${String(currentDate.getMonth() + 1).padStart(2, '0')}月${String(currentDate.getDate()).padStart(2, '0')}日`;
     localImageName = `${userName}_健康評估報告_${formattedDate}.jpg`;
 
-    // 生成Blob對象（核心：用於圖片文件分享、保存到相冊、imgbb上傳）
+    // 生成Blob對象（用於保存到相冊和上傳到imgbb）
     const blob = await new Promise((resolve, reject) => {
       canvas.toBlob(
         (blob) => {
           if (blob) {
             resolve(blob);
-            localImageBlob = blob; // 保存Blob，用於圖片文件分享
+            localImageBlob = blob; // 保存Blob，供保存到相册使用
           } else {
             reject(new Error('圖片數據生成失敗'));
             localImageBlob = null;
           }
         },
-        'image/jpeg', // 手機相冊/分享兼容的JPG格式
+        'image/jpeg', // 手機相冊兼容的JPG格式
         0.9           // 高質量（0.9=90%質量，平衡清晰度和文件大小）
       );
     });
 
-    // -------------------------- 新增：上傳圖片到imgbb，同步準備URL --------------------------
-    let isImgbbSuccess = false;
+    // -------------------------- 新增：上傳圖片到imgbb，获取可分享URL --------------------------
+    let isImgbbUploadSuccess = false;
     try {
-      downloadReportBtn.innerHTML = '<i class="fa fa-cloud-upload mr-2"></i> 準備分享資源...';
+      downloadReportBtn.innerHTML = '<i class="fa fa-cloud-upload mr-2"></i> 上傳雲端...';
       const formData = new FormData();
-      formData.append('image', blob, localImageName); // 上傳Blob到imgbb
+      formData.append('image', blob, localImageName); // 上传Blob到imgbb
       
-      // 調用imgbb API上傳
+      // 调用imgbb API上传
       const response = await fetch(
         `https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}&name=${encodeURIComponent(localImageName)}`,
-        { method: 'POST', body: formData, timeout: 20000 } // 20秒超時保障
+        { method: 'POST', body: formData, timeout: 20000 } // 20秒超时，确保上传完成
       );
 
       const result = await response.json();
       if (result.success) {
-        imgbbImageUrl = result.data.url; // 保存imgbb URL（同步傳遞）
-        isImgbbSuccess = true;
-        console.log('imgbb分享URL準備完成：', imgbbImageUrl);
+        imgbbImageUrl = result.data.url; // 保存imgbb的公开图片URL（用于分享）
+        isImgbbUploadSuccess = true;
+        console.log('上傳成功，分享URL：', imgbbImageUrl);
       } else {
-        throw new Error(`imgbb錯誤：${result.error?.message || '未知錯誤'}`);
+        throw new Error(`imgbb返回錯誤：${result.error?.message || '未知錯誤'}`);
       }
     } catch (uploadErr) {
-      console.warn('imgbb上傳失敗，不影響圖片文件分享:', uploadErr);
-      isImgbbSuccess = false; // URL準備失敗僅隱藏URL，不阻斷圖片分享
+      console.warn('上傳失敗，仍可正常保存到相冊:', uploadErr);
+      isImgbbUploadSuccess = false; // 上传失败不影响本地保存
     }
 
-    // -------------------------- 第一步：保存圖片到手機相冊（完全保留原功能） --------------------------
+    // -------------------------- 第一步：保存圖片到手機相冊（功能不变） --------------------------
     downloadReportBtn.innerHTML = '<i class="fa fa-image mr-2"></i> 保存到相簿...';
     const isSaveSuccess = await saveToMobileGallery(blob, localImageName);
     
@@ -2365,22 +2365,24 @@ async function handleImageDownload() {
       throw new Error('圖片保存到相簿失敗，請手動保存');
     }
 
-    // -------------------------- 第二步：顯示單一分享按鈕（底部中央，圖片+URL同步傳遞） --------------------------
+    // -------------------------- 第二步：保存成功後觸發原生分享（优先分享imgbb URL） --------------------------
     downloadReportBtn.innerHTML = '<i class="fa fa-share-alt mr-2"></i> 準備分享...';
     setTimeout(() => {
       // 恢復按鈕狀態
       downloadReportBtn.disabled = false;
       downloadReportBtn.innerHTML = '<i class="fa fa-download mr-2"></i> 重新保存/分享';
       
-      // 提示用戶（明確分享內容：圖片+URL）
+      // 根据imgbb上传结果显示不同提示
       let shareTip = `圖片已成功保存到相簿！\n文件名：${localImageName}\n\n`;
-      shareTip += isImgbbSuccess 
-        ? '✅ 點擊下方按鈕分享，對方可直接查看圖片預覽\n🔗 同步攜帶imgbb鏈接，兼容所有應用' 
-        : '⚠️ imgbb鏈接生成失敗，仍可分享圖片文件';
+      if (isImgbbUploadSuccess) {
+        shareTip += '已生成分享鏈接，點擊下方按鈕即可分享！';
+      } else {
+        shareTip += '上傳失敗，可從相簿手動分享圖片';
+      }
       alert(shareTip);
       
-      // 顯示單一分享按鈕（底部中央，保留原功能+同步傳URL）
-      showSingleShareButton(userName, formattedDate, isImgbbSuccess);
+      // 显示分享按钮（传入imgbb URL，用于分享）
+      showNativeShareButton(userName, formattedDate, isImgbbUploadSuccess);
     }, 1000);
 
   } catch (error) {
@@ -2392,7 +2394,7 @@ async function handleImageDownload() {
   }
 }
 
-// -------------------------- 新增：保存圖片到手機相冊（適配安卓/iOS）【完全保留原功能】 --------------------------
+// -------------------------- 新增：保存圖片到手機相冊（適配安卓/iOS）【功能完全不变】 --------------------------
 function saveToMobileGallery(blob, fileName) {
   return new Promise((resolve) => {
     // 檢測移動設備類型
@@ -2429,7 +2431,7 @@ function saveToMobileGallery(blob, fileName) {
   });
 }
 
-// 輔助函數：用a標籤實現圖片下載（兼容方案）【完全保留原功能】
+// 輔助函數：用a標籤實現圖片下載（兼容方案）【功能完全不变】
 function saveWithAnchorTag(blob, fileName, resolve) {
   const blobUrl = URL.createObjectURL(blob);
   const downloadLink = document.createElement('a');
@@ -2453,7 +2455,7 @@ function saveWithAnchorTag(blob, fileName, resolve) {
     const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
     if (isIOS) {
       // iOS下載後會打開圖片預覽，需提示用戶手動保存到相冊
-      alert(`圖片已打開預覽，請點擊下方「分享」圖標 `);
+      alert(`圖片已打開預覽，請點擊下方「分享」圖標 → 選擇「分享圖片」，即可分享圖片`);
     } else {
       // 安卓會直接保存到下載目錄，提示用戶在相冊中查找
       alert(`圖片已保存到「下載」文件夾，可在相簿的「下載」專輯中找到\n文件名：${localImageName}`);
@@ -2462,112 +2464,90 @@ function saveWithAnchorTag(blob, fileName, resolve) {
   }, 1000);
 }
 
-// -------------------------- 核心修改：單一分享按鈕（底部中央，圖片+URL同步傳遞） --------------------------
-function showSingleShareButton(userName, date, isImgbbSuccess) {
+// -------------------------- 新增：顯示手機原生分享按鈕（修改为分享imgbb URL） --------------------------
+function showNativeShareButton(userName, date, isImgbbSuccess) {
   // 先移除已存在的分享按鈕（避免重復創建）
-  const existingShareBtn = document.getElementById('singleShareBtn');
+  const existingShareBtn = document.getElementById('nativeShareBtn');
   if (existingShareBtn) {
     document.body.removeChild(existingShareBtn);
   }
 
-  // 1. 創建單一分享按鈕（固定在底部中央，保留原圖分享的藍色風格）
+  // 1. 創建原生分享按鈕（固定在底部中央，符合手機操作習慣）【样式不变】
   const shareBtn = document.createElement('button');
-  shareBtn.id = 'singleShareBtn';
+  shareBtn.id = 'nativeShareBtn';
   shareBtn.style.cssText = `
     position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
-    padding: 12px 28px; border-radius: 30px;
-    background: #165DFF; color: white; border: none; /* 保留原圖分享的藍色，保持用戶習慣 */
+    padding: 12px 24px; border-radius: 30px;
+    background: #165DFF; color: white; border: none;
     box-shadow: 0 4px 15px rgba(22, 93, 255, 0.3);
     font-size: 16px; font-weight: bold;
     display: flex; align-items: center; gap: 8px;
     z-index: 9999; cursor: pointer;
   `;
-  shareBtn.innerHTML = '<i class="fa fa-share-alt"></i> 分享健康報告'; // 通用文案，覆蓋兩種分享內容
+  shareBtn.innerHTML = isImgbbSuccess ? '<i class="fa fa-share-alt"></i> 分享圖片' : '<i class="fa fa-share-alt"></i> 手動分享圖片';
   document.body.appendChild(shareBtn);
 
-  // 2. 綁定分享事件（核心：同步傳遞「圖片文件+imgbb URL」，保留原功能）
+  // 2. 綁定分享事件（核心：imgbb成功则分享URL，失败则提示手动分享）
   shareBtn.addEventListener('click', async () => {
     try {
-      // 校驗圖片數據（核心：保留原圖分享的前置判斷）
-      if (!localImageBlob) {
-        alert('圖片數據丟失，請重新生成圖片');
-        return;
-      }
-
-      // Blob轉File（保留原邏輯，確保圖片文件可分享）
-      const imageFile = new File(
-        [localImageBlob], 
-        localImageName, 
-        { type: 'image/jpeg' }
-      );
-
-      // 校驗瀏覽器是否支持原生文件分享（保留原兼容判斷）
-      if (navigator.share && navigator.canShare({ files: [imageFile] })) {
+      // 情况1：imgbb上传成功，分享其URL（优化排版后的文字）
+      if (isImgbbSuccess && imgbbImageUrl) {
         shareBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> 喚醒分享...';
         
-        // 優化分享文字（同步包含圖片提示和URL，結構化排版）
-        let shareText = `
-📋 ${userName}的健康評估報告
+        // 优化分享文字排版：分行清晰，突出关键信息
+        const shareTitle = `${userName}的健康評估報告`;
+        const shareText = `
+📋 ${userName}健康評估報告
 🗓️ 生成時間：${date}
-💡 包含：六大調理方向+健康建議
-🖼️ 可直接查看圖片預覽
-        `.trim();
-        
+💡 包含內容：六大調理方向建議
+🔗 查看圖片：${imgbbImageUrl}
 
+點擊鏈接即可查看完整報告，分享給需要的人吧！
+        `.trim(); // 去除首尾空格，保留内部排版
 
-        // 觸發原生分享（核心：同時傳遞「圖片文件+URL」，保留原參數）
-        await navigator.share({
-          title: `${userName}的健康評估報告`, // 保留原標題
-          text: shareText,                     // 同步包含圖片提示和URL
-          files: [imageFile],                  // 核心1：保留圖片文件，確保預覽
-          url: isImgbbSuccess ? imgbbImageUrl : window.location.href // 核心2：imgbb成功則傳URL，否則傳頁面URL（保留原邏輯）
-        });
+        // 触发原生分享（传递imgbb URL）
+        if (navigator.share) {
+          await navigator.share({
+            title: shareTitle,
+            text: shareText,
+            url: imgbbImageUrl, // 核心：分享imgbb的图片URL
+          });
+          alert('圖片鏈接分享成功！');
+        } else {
+          // 不支持原生分享，复制URL到剪贴板（优化排版）
+          await navigator.clipboard.writeText(shareText);
+          alert(`
+分享鏈接已復製到剪貼板！
+${shareText}
 
-        // 分享成功提示（覆蓋兩種場景）
-        const successMsg = isImgbbSuccess 
-          ? '圖片+imgbb鏈接分享成功！對方可直接查看預覽或點擊鏈接' 
-          : '圖片文件分享成功！對方可直接查看預覽';
-        alert(successMsg);
-        shareBtn.innerHTML = '<i class="fa fa-share-alt"></i> 分享健康報告';
+操作提示：
+1. 打開聊天窗口
+2. 長按輸入框粘貼
+3. 發送後可點擊鏈接查看圖片
+          `.trim());
+        }
+        shareBtn.innerHTML = '<i class="fa fa-share-alt"></i> 分享圖片';
 
+      // 情况2：imgbb上传失败，提示从相册手动分享（功能不变）
       } else {
-        // 不支持文件分享時，降級處理（保留原手動指引邏輯）
-        throw new Error('您的瀏覽器不支持直接分享圖片文件');
+        throw new Error('imgbb上傳失敗，請從相簿手動分享圖片');
       }
     } catch (shareError) {
       console.error('分享失敗:', shareError);
-      shareBtn.innerHTML = '<i class="fa fa-share-alt"></i> 分享健康報告';
+      shareBtn.innerHTML = isImgbbSuccess ? '<i class="fa fa-share-alt"></i> 分享圖片' : '<i class="fa fa-share-alt"></i> 手動分享圖片';
       
-      // 分享取消的友好提示（保留原邏輯）
+      // 分享取消的友好提示
       if (shareError.name === 'AbortError') {
         alert('分享已取消');
       } else {
-        // 降級處理：若有imgbb URL則複製，否則提示從相冊分享（新增兼容）
-        if (isImgbbSuccess && imgbbImageUrl) {
-          // 複製包含URL的文字，供手動分享
-          const copyText = `
-📋 ${userName}的健康評估報告
-🗓️ 生成時間：${date}
-💡 包含：六大調理方向+健康建議
-🔗 圖片查看鏈接：${imgbbImageUrl}
-\n操作提示：粘貼到聊天窗口，點擊鏈接查看圖片
-          `.trim();
-          await navigator.clipboard.writeText(copyText);
-          alert(`
-瀏覽器不支持圖片分享，已複製鏈接：
-${imgbbImageUrl}\n
-請手動粘貼到聊天窗口，點擊鏈接查看圖片
-          `.trim());
-        } else {
-          // 無URL時，保留原手動分享指引
-          showManualShareGuide();
-        }
+        // 降级提示：手动从相册分享（功能不变）
+        showManualShareGuide();
       }
     }
   });
 }
 
-// -------------------------- 新增：手動分享指引（適配安卓/iOS相冊）【完全保留原功能】 --------------------------
+// -------------------------- 新增：手動分享指引（適配安卓/iOS相冊）【功能完全不变】 --------------------------
 function showManualShareGuide() {
   const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
   const isAndroid = /Android/i.test(navigator.userAgent);
@@ -2591,30 +2571,31 @@ function showManualShareGuide() {
   alert(guideText);
 }
 
-// -------------------------- 14. 原生分享功能（同步優化：單一按鈕+圖片+URL） --------------------------
+// -------------------------- 14. 原生分享功能（保留兼容，優先使用上述新邏輯） --------------------------
+// （注：原shareImage函數可保留，作為極端情況下的降級方案，無需修改）
 function shareImage(imageUrl, title, date) {
-  // 優化分享文字（同步包含圖片提示風格，保持統一）
+  // 优化分享文字排版（与showNativeShareButton保持一致）
   const shareText = `
 📋 ${title}
 🗓️ 生成時間：${date}
-💡 包含：六大調理方向+健康建議
-🔗 圖片查看鏈接：${imageUrl}
-🖼️ 若無法直接查看，點擊鏈接即可瀏覽
+💡 包含內容：六大調理方向建議
+🔗 查看圖片：${imageUrl}
+
+點擊鏈接即可查看完整報告，分享給需要的人吧！
   `.trim();
 
   if (navigator.share) {
     const shareBtn = document.createElement('button');
     shareBtn.id = 'tempShareBtn';
     shareBtn.style.cssText = `
-      position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
-      padding: 12px 28px; border-radius: 30px;
+      position: fixed; bottom: 20px; right: 20px;
+      width: 60px; height: 60px; border-radius: 50%;
       background: #165DFF; color: white; border: none;
-      box-shadow: 0 4px 15px rgba(22, 93, 255, 0.3);
-      font-size: 16px; font-weight: bold;
-      display: flex; align-items: center; gap: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+      display: flex; align-items: center; justify-content: center;
       z-index: 9999; cursor: pointer;
     `;
-    shareBtn.innerHTML = '<i class="fa fa-share-alt"></i> 分享健康報告';
+    shareBtn.innerHTML = '<i class="fa fa-share-alt text-xl"></i>';
     document.body.appendChild(shareBtn);
 
     shareBtn.addEventListener('click', async () => {
@@ -2622,18 +2603,17 @@ function shareImage(imageUrl, title, date) {
         await navigator.share({
           title: title,
           text: shareText,
-          url: imageUrl
+          url: imageUrl // 分享imgbb URL
         });
-        alert('報告鏈接分享成功！對方可點擊鏈接查看圖片');
+        alert('圖片鏈接分享成功！');
       } catch (shareError) {
         console.error('分享失敗:', shareError);
+        // 复制优化后的文字到剪贴板
         if (shareError.name !== 'AbortError') {
-          // 複製優化後的文字到剪貼板
           await navigator.clipboard.writeText(shareText);
           alert(`
-📋 已複製分享內容：
-${shareText}\n
-提示：可手動粘貼到聊天窗口分享
+分享已取消或失敗，鏈接已復製：
+${shareText}
           `.trim());
         } else {
           alert('分享已取消');
@@ -2643,27 +2623,29 @@ ${shareText}\n
       }
     });
 
-    alert('已生成報告分享鏈接，點擊下方按鈕分享');
+    alert('已生成圖片分享鏈接，點擊下方按鈕分享報告');
   } else {
-    // 不支持原生分享，複製優化後的文字
+    // 不支持原生分享，复制优化后的文字
     navigator.clipboard.writeText(shareText).then(() => {
       alert(`
-📋 已複製分享內容：
-${shareText}\n
-操作步驟：
+分享鏈接已復製到剪貼板：
+${shareText}
+
+操作提示：
 1. 打開聊天窗口
 2. 長按輸入框粘貼
-3. 發送後點擊鏈接查看圖片
+3. 發送後可點擊鏈接查看圖片
       `.trim());
     }).catch(err => {
       console.error('剪貼板複製失敗:', err);
       alert(`
-📋 請手動複製分享內容：
+分享鏈接複製失敗，請手動複製：
 ${shareText}
       `.trim());
     });
   }
 }
+
 
   // 15. 生成評估結果（核心：六大調理方向雷達圖+健康建議）
   function generateResult() {
@@ -3005,105 +2987,109 @@ ${shareText}
       `;
     }
 
-    // 11. 渲染健康調理建議（含優化後六大調理方向故事）- 已修正錯誤
+    // 11. 渲染健康調理建議（含六大調理方向故事）
 const recommendationsContainer = document.getElementById('healthRecommendations');
 if (recommendationsContainer) {
   recommendationsContainer.innerHTML = `
-   <!-- 六大調理方向 -->
-    <div class="bg-light p-5 my-4 rounded-lg border border-neutral/20">
-      <h3 class="font-semibold text-primary mb-4 text-lg">🟢 六大調理方向：找到健康的根本邏輯</h3>
-
+    <div class="mb-6">
+      <h3 class="font-semibold text-primary mb-4 text-lg">🟢 六大調理方向</h3>
+      
       <!-- ① 體質 -->
-      <div class="mb-6 pb-4 border-b border-neutral/10">
-        <h4 class="font-medium text-neutral-dark mb-2">① 體質 —— 決定你是否容易生病</h4>
-        <div class="pl-3 border-l-2 border-primary/30">
-          <p class="text-sm text-neutral-dark/80 mb-2"><strong>📖 故事1：老舊衣櫃的故事</strong><br>
-            南方梅雨季，同樣的衣櫃，有的總是潮氣重、衣服發霉，有的卻乾爽整潔。原來發霉的衣櫃長年靠牆、通風差，潮氣散不出去；而乾爽的衣櫃擺在通風處，還墊了防潮墊。<br>
-            👉 寓意：體質就像衣櫃的「基礎環境」！若體內寒濕重、循環差（像不通風的衣櫃），即使暫時緩解了炎症、痘痘，只要寒濕根源沒改，問題遲早反覆；調好體質，才是擺脫反覆不適的根本。
+      <div class="bg-light p-4 rounded-lg mb-4 border border-neutral/20">
+        <h4 class="font-medium text-neutral-dark mb-3">① 體質 —— 決定你是否容易生病</h4>
+        <div class="pl-3 border-l-2 border-primary/30 mb-4">
+          <p class="text-sm text-neutral-dark/80 mb-2"><strong>📖 故事1：壁紙發霉的故事</strong><br>
+            房子潮濕，壁紙發霉、木頭爛、鐵生鏽。你找不同專家修理，但根本原因是「房子潮濕」。<br>
+            👉 寓意：人健不健康，看體質！ 如果體內寒濕沒調整，炎症就會反覆。
           </p>
-          <p class="text-sm text-neutral-dark/80"><strong>📖 故事2：花盆土壤的故事</strong><br>
-            兩盆同款多肉，一盆總爛根、長黑腐，一盆飽滿健壯。原來爛根的花盆沒底孔、土壤板結，澆水後積水排不出去；健壯的花盆透氣性好，土壤酥鬆。<br>
-            👉 寓意：體質是健康的「土壤」！寒濕體質好比板結的土壤，營養進不來、廢物排不出，自然容易長各種「毛病」；先調整體質（松土、通氣），身體才能像健康的多肉一樣「長得好」。
+          <p class="text-sm text-neutral-dark/80"><strong>📖 故事2：臭水溝的故事</strong><br>
+            夏天臭水溝一熱，蚊蟲、細菌全冒出來。人體也是，當血液里有寒濕毒，夏天皮膚病就多。<br>
+            👉 寓意：改善體質，才能少生病。
           </p>
         </div>
-      </div>
+        
 
       <!-- ② 免疫 -->
-      <div class="mb-6 pb-4 border-b border-neutral/10">
-        <h4 class="font-medium text-neutral-dark mb-2">② 免疫 —— 身體自帶的保護傘</h4>
-        <div class="pl-3 border-l-2 border-primary/30">
-          <p class="text-sm text-neutral-dark/80 mb-2"><strong>📖 故事1：小區保安的故事</strong><br>
-            有兩個小區，A區保安認真登記來訪者、定期巡邏，陌生閒雜人等很少進來；B區保安經常缺席，門口隨意進出，結果經常丟東西、出現閒散人員騷擾。<br>
-            👉 寓意：免疫力就像小區的「保安隊」！抗生素好比臨時請的「外來幫手」，若過度依賴（濫用），反而會讓自家保安（自身免疫力）變得懶惰、能力下降；真正的健康防護，是養好自身免疫力，讓它能主動抵擋「外來威脅」。
+      <div class="bg-light p-4 rounded-lg mb-4 border border-neutral/20">
+        <h4 class="font-medium text-neutral-dark mb-3">② 免疫 —— 身體自帶的保護傘</h4>
+        <div class="pl-3 border-l-2 border-primary/30 mb-4">
+          <p class="text-sm text-neutral-dark/80 mb-2"><strong>📖 故事1：養雞場的故事</strong><br>
+            養雞人濫用抗生素，壞菌好菌一起死，雞更容易生病。人類也是，濫用抗生素削弱了免疫力。<br>
+            👉 寓意：真正的防護不是靠藥，而是靠免疫系統。
           </p>
-          <p class="text-sm text-neutral-dark/80"><strong>📖 故事2：雨傘的故事</strong><br>
-            下雨天，有人總靠別人撐傘躲雨，一旦沒人幫忙就會淋濕；有人自己帶著結實的雨傘，無論風雨多大都能保護自己。後來常借傘的人，因為總淋濕，反而容易感冒；帶傘的人從來沒被大雨困擾。<br>
-            👉 寓意：免疫力是身體的「自帶雨傘」！藥物好比「別人借的傘」，能暫時擋雨（緩解症狀），但不能替代自己的雨傘（免疫力）；只有把免疫力養強，才能在病毒、細菌的「風雨」中，真正保護自己。
+          <p class="text-sm text-neutral-dark/80"><strong>📖 故事2：小驢的故事</strong><br>
+            小驢掉進井里，被土埋住，它抖掉身上的土，一步步踩上去。<br>
+            👉 寓意：免疫力就像小驢的韌性，身體會自救，只要我們不壓垮它。
           </p>
         </div>
-      </div>
+        
 
       <!-- ③ 毒素 -->
-      <div class="mb-6 pb-4 border-b border-neutral/10">
-        <h4 class="font-medium text-neutral-dark mb-2">③ 毒素 —— 為什麼病會反覆？</h4>
-        <div class="pl-3 border-l-2 border-primary/30">
-          <p class="text-sm text-neutral-dark/80 mb-2"><strong>📖 故事1：廚房水槽的故事</strong><br>
-            廚房水槽的排水管堵了，水越積越多，還飄著食物殘渣。有人只把表面的髒水舀掉，沒通排水管，結果過一會兒又積滿了髒水；有人先拆開管道清走堵塞物，再用水沖洗，水槽從此暢通。<br>
-            👉 寓意：毒素就像水槽里的「堵塞物」！若只針對囊腫、炎症等「表面髒水」做處理，沒打通體內的排毒通道（腸道、膀胱、皮膚等），毒素遲早再次堆積，問題反覆出現；先通排毒通道，才能從根本上減少毒素堆積。
+      <div class="bg-light p-4 rounded-lg mb-4 border border-neutral/20">
+        <h4 class="font-medium text-neutral-dark mb-3">③ 毒素 —— 為什麼病會反覆？</h4>
+        <div class="pl-3 border-l-2 border-primary/30 mb-4">
+          <p class="text-sm text-neutral-dark/80 mb-2"><strong>📖 故事1：蓄水池的故事</strong><br>
+            兩個一樣的水池，一個出口堵住了，污水越積越多。你只是撈掉髒水，沒打通出口，很快又滿。<br>
+            👉 寓意：毒素排不出去，就會反覆囊腫、炎症。
           </p>
-          <p class="text-sm text-neutral-dark/80"><strong>📖 故事2：冰箱保鮮層的故事</strong><br>
-            冰箱保鮮層里，壞掉的水果、剩菜沒及時清理，時間長了不僅發臭，還把旁邊新買的蔬菜也熏壞了。有人只把壞蔬菜扔掉，沒清潔冰箱、沒扔壞水果，結果新放的食物還是很快變質；有人徹底清理壞東西、擦淨冰箱，後來食物保鮮時間明顯變長。<br>
-            👉 寓意：體內毒素好比冰箱里的「壞食物」！若不及時排出，不僅會引發局部問題（如口臭、皮膚油膩），還會「污染」全身環境，導致更多健康問題；定期清毒素，就像清理冰箱，才能讓身體的「保鮮環境」維持健康。
+          <p class="text-sm text-neutral-dark/80"><strong>📖 故事2：半杯水的故事</strong><br>
+            半杯水日積月累不倒，最後發臭發霉。<br>
+            👉 寓意：毒素不清，身體就會出問題。
           </p>
         </div>
-      </div>
+        
 
       <!-- ④ 營養 -->
-      <div class="mb-6 pb-4 border-b border-neutral/10">
-        <h4 class="font-medium text-neutral-dark mb-2">④ 營養 —— 吃進去的不一定吸收</h4>
-        <div class="pl-3 border-l-2 border-primary/30">
-          <p class="text-sm text-neutral-dark/80 mb-2"><strong>📖 故事1：花園澆水的故事</strong><br>
-            有人種花時，總是猛澆水、猛施肥，以為「給得多就長得好」，結果花根被澆爛、葉子被肥料燒枯；另一人先觀察土壤乾濕度，只在土壤微乾時澆水，還定期松土，讓根能呼吸，即使施肥不多，花也開得艷麗。<br>
-            👉 寓意：營養吸收的關鍵在「根」！脾胃就像花的「根系」，若脾胃虛弱（根壞了），即使吃再多補品、營養餐，也無法吸收，反而增加身體負擔；先調好脾胃功能（松土、護根），才能讓吃進去的營養真正被利用，而不是浪費或變成「負擔」。
+      <div class="bg-light p-4 rounded-lg mb-4 border border-neutral/20">
+        <h4 class="font-medium text-neutral-dark mb-3">④ 營養 —— 吃進去的不一定吸收</h4>
+        <div class="pl-3 border-l-2 border-primary/30 mb-4">
+          <p class="text-sm text-neutral-dark/80 mb-2"><strong>📖 故事1：蘋果樹的故事</strong><br>
+            果子是結果，根是原因。樹根壞了，你光摘果子沒用。<br>
+            👉 寓意：營養要從"根"吸收，不是吃多少補品，而是吸收與利用。
           </p>
-          <p class="text-sm text-neutral-dark/80"><strong>📖 故事2：自來水過濾器的故事</strong><br>
-            兩戶人家用同一個水廠的水，A戶直接接自來水燒開喝，水里總有雜質、水垢，燒水壺經常要清理；B戶裝了過濾器，先過濾掉雜質、異味，燒出來的水乾淨無水垢，喝著也放心。<br>
-            👉 寓意：營養吸收需要「好通道」！腸道就像身體的「過濾器」，若腸道菌群失衡、腸壁不通透（過濾器堵了），即使吃的食物再營養，也會被雜質（毒素、壞菌）干擾，無法有效吸收；先改善腸道環境（清理過濾器），營養才能順暢進入身體，補到「點上」。
+          <p class="text-sm text-neutral-dark/80"><strong>📖 故事2：水田的故事</strong><br>
+            稻田需要良好的水源，若水濁稻死，人也一樣，營養環境差就會掉發、消瘦。<br>
+            👉 寓意：養分供應的質量，比吃多少重要。
           </p>
         </div>
-      </div>
+        
 
       <!-- ⑤ 循環 -->
-      <div class="mb-6 pb-4 border-b border-neutral/10">
-        <h4 class="font-medium text-neutral-dark mb-2">⑤ 循環 —— 通則不痛，痛則不通</h4>
-        <div class="pl-3 border-l-2 border-primary/30">
-          <p class="text-sm text-neutral-dark/80 mb-2"><strong>📖 故事1：小區水管的故事</strong><br>
-            老舊小區的自來水管，一開始只是個別用戶家水壓小、水流細，大家以為是「暫時問題」沒在意；後來水管里的水垢越積越多，不僅水壓越來越小，還經常堵塞，最後整棟樓都沒水用，只能花大錢換整條水管。<br>
-            👉 寓意：循環暢通是健康的「水管系統」！微循環好比家裡的「細小水管」，一開始的「小堵」（如手足麻木、頭暈）若不重視，水垢（毒素、血脂）會慢慢堆積，最後變成「大堵」（腦梗、心梗、腎衰）；早期疏通循環，比後期「換水管」（治療大病）容易得多。
+      <div class="bg-light p-4 rounded-lg mb-4 border border-neutral/20">
+        <h4 class="font-medium text-neutral-dark mb-3">⑤ 循環 —— 通則不痛，痛則不通</h4>
+        <div class="pl-3 border-l-2 border-primary/30 mb-4">
+          <p class="text-sm text-neutral-dark/80 mb-2"><strong>📖 故事1：微循環的故事</strong><br>
+            人體就像無數小河道，先小堵 → 再慢病 → 再大病。腦梗、心梗、腎衰、肝硬化，其實都是"不同部位的微循環不好"。<br>
+            👉 寓意：保持循環暢通，是預防大病的核心。
           </p>
-          <p class="text-sm text-neutral-dark/80"><strong>📖 故事2：自行車鏈條的故事</strong><br>
-            自行車鏈條若長時間不清理、不加油，一開始只是騎起來有點沈、有異響，後來鏈條生鏽、卡殼，甚至磨損齒輪，最後自行車根本騎不動，只能換鏈條、修齒輪。<br>
-            👉 寓意：循環就像自行車的「鏈條」！身體的血液、氣機流動靠循環推動，若循環不暢（鏈條生鏽），一開始只是局部不適（騎著沈），若不管不顧，會慢慢損傷五臟六腑（磨損齒輪）；定期「潤滑」（調理循環），才能讓身體的「運轉」一直暢通。
+          <p class="text-sm text-neutral-dark/80"><strong>📖 故事2：堤壩的故事</strong><br>
+            小水壩裂縫不修，終有一天整個堤壩決口。<br>
+            👉 寓意：循環的小堵口，要在早期就處理。
           </p>
         </div>
-      </div>
+        
 
       <!-- ⑥ 內分泌 -->
-      <div>
-        <h4 class="font-medium text-neutral-dark mb-2">⑥ 內分泌 —— 身體的總開關</h4>
-        <div class="pl-3 border-l-2 border-primary/30">
-          <p class="text-sm text-neutral-dark/80 mb-2"><strong>📖 故事1：家庭電路的故事</strong><br>
-            家裡的燈忽明忽暗、電視經常斷電，有人以為是燈泡壞了，換了好幾個燈泡還是沒用；後來電工檢查發現，是總電閘的線路接觸不良，導致全屋電壓不穩。修好總電閘後，所有家電都恢復正常。<br>
-            👉 寓意：內分泌是身體的「總電閘」！月經不調、失眠、皮膚差等問題，好比「個別家電故障」，若只針對單一問題調理（換燈泡），沒解決內分泌失調的「總開關問題」，症狀遲早反覆；調整內分泌平衡，才能讓身體的「所有系統」都正常運轉。
+      <div class="bg-light p-4 rounded-lg mb-4 border border-neutral/20">
+        <h4 class="font-medium text-neutral-dark mb-3">⑥ 內分泌 —— 身體的總開關</h4>
+        <div class="pl-3 border-l-2 border-primary/30 mb-4">
+          <p class="text-sm text-neutral-dark/80 mb-2"><strong>📖 故事1：燈泡的故事</strong><br>
+            燈泡壞了，有人換線路，有人換燈座，但其實要看整個"系統"。<br>
+            👉 寓意：內分泌是身體的"總開關"，要調整整體，不是只修某一個零件。
           </p>
-          <p class="text-sm text-neutral-dark/80"><strong>📖 故事2：樂隊指揮的故事</strong><br>
-            一個樂隊沒有指揮，小提琴、鋼琴、鼓手各奏各的，聲音雜亂無章；有了指揮後，大家按節奏配合，才能奏出和諧動聽的音樂。若指揮節奏亂了，即使每個樂手技術再好，音樂也會難聽。<br>
-            👉 寓意：內分泌就像身體的「樂隊指揮」！五臟六腑（樂手）的運轉需要內分泌（指揮）協調，若內分泌失調（指揮亂節奏），肝膽、脾胃、腎臟等就會「各自為政」，導致情緒差、月經亂、睡眠糟；只有讓內分泌回到「正常節奏」，五臟六腑才能協同工作，身體才會和諧健康。
+          <p class="text-sm text-neutral-dark/80"><strong>📖 故事2：肝膽相照的故事</strong><br>
+            中醫講"肝膽相照"，肝膽失衡會影響情緒、月經、睡眠、皮膚。<br>
+            👉 寓意：內分泌要平衡，五臟六腑要協調。
           </p>
-        </div>
+        </div>    
+
+      <div class="mt-4 text-sm text-neutral-dark/70 text-center">
+        按以上時辰規律調理，能順應身體氣血運行節奏，慢慢改善相關症狀～<br>
+        若症狀持續不緩解，建議及時咨詢專業醫生。
       </div>
-    </div>
   `;
+} else {
+  console.error('健康建議容器元素未找到，無法渲染調理建議');
 }
 
 
