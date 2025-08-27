@@ -2494,11 +2494,10 @@ function showSingleShareButton(userName, date) {
 
       // 分享文字（強制包含imgbb URL）
       const shareText = `
-📋 ${userName}的健康評估報告
+📋 『 ${userName} 』的健康評估報告
 🗓️ 生成時間：${date}
-💡 包含：六大調理方向+健康建議
-🖼️ 圖片預覽：直接查看下方圖片
-🔗 備用鏈接：${imgbbImageUrl}（點擊可查看高清圖片）
+💡 包含：六大調理方向
+🖼️ 圖片預覽：🔗 圖片連結
       `.trim();
 
       // 場景1：支持原生文件分享（優先方案）
@@ -2581,7 +2580,7 @@ function shareImage(title, date) {
   const shareText = `
 📋 ${title}
 🗓️ 生成時間：${date}
-💡 包含：六大調理方向+健康建議
+💡 包含：六大調理方向
 🔗 圖片查看鏈接：${imgbbImageUrl}
 🖼️ 點擊鏈接即可查看高清健康報告圖片
   `.trim();
