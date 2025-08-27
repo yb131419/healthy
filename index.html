@@ -1664,7 +1664,7 @@
 </div>
           
           <div class="mb-8">
-            <h3 class="text-xl font-semibold mb-4 pb-2 border-b">主要健康問題</h3>
+            <h3 class="text-xl font-semibold mb-4 pb-2 border-b">🟢 主要健康問題</h3>
             <div id="mainHealthIssues" class="bg-primary/5 p-5 rounded-xl">
               <!-- 結果將在這裡動態顯示 -->
             </div>
@@ -1748,12 +1748,19 @@
 
 <script>
 
+// 上部健康健康自檢表
+// 上部：頁面加載前的準備工作和全局變量定義
 document.addEventListener('DOMContentLoaded', function() {
   // 當前步驟與總步數
   let currentStep = 1;
   const totalSteps = 4;
 
-  // DOM 元素獲取（基礎交互相關）
+  // AI評估核心配置
+  const OPENAI_API_KEY = 'SuX8WeRpZEmwDF34e6u6KQx4ml9AsRR8VGR_70q8zDjJ5w31Yuw4BWJx-ntzgcRWd3zM4DAcEST3BlbkFJQZLLcCfsRaiG1Wlv8t53Et_8urC8n9CD5mbom7-LidGR5z8dCjAjG6NT_oVJnXfIWRXiZYhVUA';
+  const OPENAI_MODEL = 'gpt-3.5-turbo';
+  let globalAiComment = ''; // 存儲AI評語（用於渲染+Google Sheets）
+
+  // DOM 元素獲取（含AI評估容器）
   const menuToggle = document.getElementById('menuToggle');
   const mobileMenu = document.getElementById('mobileMenu');
   const prevBtn = document.getElementById('prevBtn');
@@ -1766,94 +1773,110 @@ document.addEventListener('DOMContentLoaded', function() {
   const resultSection = document.getElementById('result');
   const healthDeclaration = document.getElementById('healthDeclaration');
   const formContainer = document.getElementById('form');
+  // AI評估容器（確保HTML中有<div id="aiEvaluationContainer"></div>）
+  const aiEvaluationContainer = document.getElementById('aiEvaluationContainer') || createAiContainer();
 
-  // 性別相關元素（單獨歸類，便於控制顯隱）
+  // 性別相關元素
   const genderRadios = document.querySelectorAll('input[name="gender"]');
   const femaleSymptomTab = document.querySelector('.symptom-tab[data-category="female"]');
   const femaleSymptomItems = document.querySelectorAll('.symptom-item[data-category="female"]');
   const postpartumSymptoms = document.querySelectorAll('.symptom-item[data-special="postpartum"]');
 
-  // -------------------------- 核心修復1：統一症狀數據存儲（全局可訪問）
-  let globalUniqueSymptoms = []; // 所有模塊共用的「去重後選中症狀」
-  let globalUniqueHabits = [];   // 所有模塊共用的「去重後不良習慣」
+  // 核心：全局數據存儲
+  let globalUniqueSymptoms = []; // 去重選中症狀
+  let globalUniqueHabits = [];   // 去重選中習慣
+  let windowHealthChart = null;  // 雷達圖實例（避免重復創建）
 
+  // 如果頁面中沒有AI評估容器，動態創建一個
+  function createAiContainer() {
+    const container = document.createElement('div');
+    container.id = 'aiEvaluationContainer';
+    container.className = 'ai-evaluation-container';
+    // 將容器添加到主要健康問題區域
+    const mainIssuesContainer = document.getElementById('mainHealthIssues');
+    if (mainIssuesContainer) {
+      mainIssuesContainer.parentNode.insertBefore(container, mainIssuesContainer.nextSibling);
+    } else {
+      // 如果找不到目標位置，添加到結果區域
+      const resultContainer = document.getElementById('result');
+      if (resultContainer) {
+        resultContainer.appendChild(container);
+      } else {
+        document.body.appendChild(container);
+      }
+    }
+    return container;
+  }
 
-  // 1. 導航菜單切換（移動端）
+  // -------------------------- 1. 導航菜單切換（移動端）
   menuToggle.addEventListener('click', () => {
     mobileMenu.classList.toggle('hidden');
   });
 
-  // 2. 性別選擇驅動UI變化（核心：男性隱藏女性症狀+產後症狀）
+  // -------------------------- 2. 性別選擇驅動UI變化
   genderRadios.forEach(radio => {
     radio.addEventListener('change', updateGenderBasedUI);
   });
 
   function updateGenderBasedUI() {
     const selectedGender = document.querySelector('input[name="gender"]:checked')?.value;
-    
-    // 控制女性專屬症狀標籤
+    if (!selectedGender) return;
+
+    // 控制女性專屬症狀標籤/項
     if (femaleSymptomTab) {
       femaleSymptomTab.style.display = selectedGender === 'male' ? 'none' : 'inline-flex';
     }
-
-    // 控制女性專屬症狀項
     femaleSymptomItems.forEach(item => {
       item.style.display = selectedGender === 'male' ? 'none' : 'block';
     });
-
-    // 單獨控制產後相關症狀
-    postpartumSymptoms.forEach(item => {
+    postpartumpartumSymptoms.forEach(item => {
       item.style.display = selectedGender === 'male' ? 'none' : 'block';
     });
 
-    // 若當前選中女性標籤，男性時自動切換到「全部」
+    // 男性切換時自動選中"全部"標籤
     const activeTab = document.querySelector('.symptom-tab.active');
     if (selectedGender === 'male' && activeTab?.getAttribute('data-category') === 'female') {
       document.querySelector('.symptom-tab[data-category="all"]')?.click();
     }
 
-    // 同步更新症狀數據（避免切換性別後數據殘留）
+    // 更新全局症狀數據
     updateGlobalSymptomData();
   }
 
-  // -------------------------- 核心修復2：更新全局症狀數據（所有模塊從這裡取數）
+  // -------------------------- 3. 全局症狀/習慣數據更新
   function updateGlobalSymptomData() {
-    // 獲取選中症狀（去重）
+    // 症狀去重
     const symptomElements = document.querySelectorAll('input[name="symptoms"]:checked');
     globalUniqueSymptoms = [...new Set(Array.from(symptomElements).map(checkbox => checkbox.value))];
-    
-    // 獲取選中習慣（去重）
+
+    // 習慣去重
     const habitElements = document.querySelectorAll('input[name="habits"]:checked');
     globalUniqueHabits = [...new Set(Array.from(habitElements).map(checkbox => checkbox.value))];
   }
 
-  // 3. 表單步驟導航（上一步/下一步）
+  // -------------------------- 4. 表單步驟導航
   prevBtn.addEventListener('click', () => {
     if (currentStep > 1) {
       currentStep--;
       updateFormSteps();
-      if (currentStep === 1) {
-        updateGenderBasedUI();
-      }
+      if (currentStep === 1) updateGenderBasedUI();
     }
   });
 
   nextBtn.addEventListener('click', () => {
     if (validateStep(currentStep)) {
-      // 切換到下一步前，先更新全局症狀數據
+      // 切換到症狀步驟後更新全局數據
       if (currentStep === 2) updateGlobalSymptomData();
       
       if (currentStep < totalSteps) {
         currentStep++;
         updateFormSteps();
-        if (currentStep === 2) {
-          updateGenderBasedUI();
-        }
+        if (currentStep === 2) updateGenderBasedUI();
       }
     }
   });
 
-  // 4. 表單驗證邏輯（按步驟驗證）
+  // -------------------------- 5. 表單驗證邏輯
   function validateStep(step) {
     let isValid = true;
     clearAllErrors();
@@ -1864,21 +1887,12 @@ document.addEventListener('DOMContentLoaded', function() {
       const age = document.getElementById('age').value.trim();
       const genderSelected = document.querySelector('input[name="gender"]:checked');
 
-      if (!name) {
-        showError('name', '請輸入您的姓名');
-        isValid = false;
-      }
-      if (!age || isNaN(age) || age < 1 || age > 120) {
-        showError('age', '請輸入有效的年齡（1-120歲）');
-        isValid = false;
-      }
-      if (!genderSelected) {
-        showError('gender', '請選擇您的性別');
-        isValid = false;
-      }
+      if (!name) { showError('name', '請輸入您的姓名'); isValid = false; }
+      if (!age || isNaN(age) || age < 1 || age > 120) { showError('age', '請輸入有效的年齡（1-120歲）'); isValid = false; }
+      if (!genderSelected) { showError('gender', '請選擇您的性別'); isValid = false; }
     }
 
-    // 步驟4：健康評估驗證（補充：若未填主要問題，自動提示從症狀選擇）
+    // 步驟4：健康評估驗證
     else if (step === 4) {
       const mainConcern = document.getElementById('mainConcern').value.trim();
       const symptomDuration = document.getElementById('symptomDuration').value;
@@ -1886,7 +1900,7 @@ document.addEventListener('DOMContentLoaded', function() {
       const medicalSelected = document.querySelector('input[name="medicalHistory"]:checked');
       const declarationChecked = document.getElementById('healthDeclaration').checked;
 
-      // 核心修復：若未填主要問題，且有選中症狀，提示用戶關聯
+      // 關聯選中症狀提示
       if (!mainConcern && globalUniqueSymptoms.length > 0) {
         showError('mainConcern', `請描述您最關注的健康問題（可從選中症狀：${globalUniqueSymptoms.slice(0,2).join('、')}... 中選擇）`);
         isValid = false;
@@ -1894,39 +1908,22 @@ document.addEventListener('DOMContentLoaded', function() {
         showError('mainConcern', '請描述您最關注的健康問題');
         isValid = false;
       }
-
-      if (!symptomDuration) {
-        showError('symptomDuration', '請選擇症狀持續時間');
-        isValid = false;
-      }
-      if (!allergySelected) {
-        showError('allergyHistory', '請選擇是否有過敏史');
-        isValid = false;
-      }
-      if (!medicalSelected) {
-        showError('medicalHistory', '請選擇是否有手術史或既往病史');
-        isValid = false;
-      }
-      if (!declarationChecked) {
-        showError('declaration', '請閱讀並同意健康宣言');
-        isValid = false;
-      }
+      if (!symptomDuration) { showError('symptomDuration', '請選擇症狀持續持續時間'); isValid = false; }
+      if (!allergySelected) { showError('allergyHistory', '請選擇是否有過敏史'); isValid = false; }
+      if (!medicalSelected) { showError('medicalHistory', '請選擇是否有手術史或既往病史'); isValid = false; }
+      if (!declarationChecked) { showError('declaration', '請閱讀並同意健康宣言'); isValid = false; }
     }
 
     return isValid;
   }
 
-  // 清除所有錯誤提示（工具函數）
+  // 清除所有錯誤提示
   function clearAllErrors() {
-    document.querySelectorAll('.error-message').forEach(el => {
-      el.classList.add('hidden');
-    });
-    document.querySelectorAll('input, select, textarea').forEach(el => {
-      el.classList.remove('error-input');
-    });
+    document.querySelectorAll('.error-message').forEach(el => el.classList.add('hidden'));
+    document.querySelectorAll('input, select, textarea').forEach(el => el.classList.remove('error-input'));
   }
 
-  // 顯示單個錯誤提示（定位到錯誤字段）
+  // 顯示單個錯誤提示
   function showError(fieldId, message) {
     const errorElement = document.getElementById(`${fieldId}Error`);
     if (errorElement) {
@@ -1941,64 +1938,183 @@ document.addEventListener('DOMContentLoaded', function() {
       inputElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
     } else {
       const fieldGroup = document.querySelector(`input[name="${fieldId}"]`)?.closest('div');
-      if (fieldGroup) {
-        fieldGroup.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
+      if (fieldGroup) fieldGroup.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
   }
 
-  // 5. 表單提交觸發（先驗證再提交）
-  submitBtn.addEventListener('click', () => {
-    // 提交前最後一次更新全局症狀數據
-    updateGlobalSymptomData();
-    
-    if (validateStep(4)) {
-      successModal.classList.remove('hidden');
-      setTimeout(async () => {
-        const submitSuccess = await submitToGoogleSheets();
-        if (submitSuccess) {
-          generateResult(); // 生成結果時直接使用全局數據
-        } else {
-          alert('數據提交失敗，請檢查網絡後重試');
-          successModal.classList.add('hidden');
-        }
-      }, 1500);
+  // -------------------------- 6. OpenAI調用（生成六大大調理故事化評語）
+  async function callOpenAI(healthData) {
+    try {
+      // 顯示加載狀態
+      aiEvaluationContainer.innerHTML = `
+        <div class="bg-blue-50 p-4 rounded-lg border border-blue-100 mt-4">
+          <h4 class="font-semibold text-primary mb-2 flex items-center">
+            <i class="fa fa-spinner fa-spin mr-2"></i> AI正在分析您的健康數據...
+          </h4>
+          <p class="text-sm text-gray-600">預計需要10-15秒，請稍候...</p>
+        </div>
+      `;
+
+      // Prompt核心：引導AI圍繞繞六大大調理生成故事化評語
+      const prompt = `
+        你是專業健康管理顧問，基於用戶健康自檢數據，圍繞「體質、免疫、毒素、營養、循環、內分泌」」六大調理方向，生成故事化評語，要求：
+        1. 開頭：用1個生活化故事（如傢具維護、植物養護）比喻用戶當前健康狀態（結合年齡、性別、BMI、核心症狀）；
+        2. 核心：針對用戶選中的症狀/習慣，關聯2-3個調理方向，每個方向用1個小故事解釋問題根源（避免專業術語）；
+        3. 建議：每個關聯的調理方向給1條可執行建議（結合故事邏輯，如"像給植物松土一樣，通過運動改善循環"）；
+        4. 結尾：用1句溫馨提示（強調持續調理的重要性，不替代醫療診斷）；
+        5. 總字數：200-300字，語言口語化、有溫度，避免生硬分析。
+
+        用戶健康數據：
+        - 基本信息：${healthData.basicInfo.name}（${healthData.basicInfo.age}歲，${healthData.basicInfo.gender}），BMI：${healthData.basicInfo.bmi}，血壓：${healthData.basicInfo.bloodPressure}
+        - 核心症狀（${healthData.symptomCount}項）：${healthData.symptoms || '無'}
+        - 不良習慣（${healthData.habitCount}項）：${healthData.habits || '無'}
+        - 主要關注問題：${healthData.healthIssues.mainConcern}（持續時間：${healthData.healthIssues.symptomDuration}）
+      `;
+
+      // 調用OpenAI API
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${OPENAI_API_KEY}`
+        },
+        body: JSON.stringify({
+          model: OPENAI_MODEL,
+          messages: [
+            { role: 'system', content: '評語必須故事化，圍繞六大調理，語言通俗有溫度' },
+            { role: 'user', content: prompt.trim() }
+          ],
+          temperature: 0.7, // 保留故事化靈活性
+          max_tokens: 600, // 足夠長度存儲故事化內容
+          timeout: 30000 // 30秒超時保護
+        })
+      });
+
+      const result = await response.json();
+      if (result.error) throw new Error(`OpenAI錯誤：${result.error.message || '未知錯誤'}`);
+
+      // 提取並存儲AI評語
+      globalAiComment = result.choices[0].message.content.trim();
+      // 渲染AI評估結果
+      renderAiEvaluation();
+      return true;
+
+    } catch (error) {
+      console.error('OpenAI調用失敗：', error);
+      // 顯示錯誤+重試按鈕
+      aiEvaluationContainer.innerHTML = `
+        <div class="bg-red-50 p-4 rounded-lg border border-red-100 mt-4">
+          <h4 class="font-semibold text-red-600 mb-2">AI評估生成失敗</h4>
+          <p class="text-sm text-gray-600 mb-3">原因：${error.message || '網絡異常，請檢查網絡後重試'}</p>
+          <button id="aiRetryBtn" class="px-3 py-1 bg-primary text-white rounded text-sm hover:bg-primary/90">
+            <i class="fa fa-refresh mr-1"></i> 重新生成
+          </button>
+        </div>
+      `;
+      // 綁定重試事件
+      document.getElementById('aiRetryBtn')?.addEventListener('click', async () => {
+        const healthData = collectHealthData();
+        await callOpenAI(healthData);
+      });
+      return false;
+    }
+  }
+
+  // -------------------------- 7. 渲染AI評估結果（在主要健康問題下方）
+  function renderAiEvaluation() {
+    // 確保容器存在
+    if (!aiEvaluationContainer) return;
+
+    // 格式化評語（換行轉段落）
+    const formattedComment = globalAiComment
+      .split('\n')
+      .filter(para => para.trim())
+      .map(para => `<p class="text-sm mb-2">${para}</p>`)
+      .join('');
+
+    // 渲染AI評估卡片
+    aiEvaluationContainer.innerHTML = `
+      <div class="bg-white p-4 rounded-lg border border-gray-200 shadow-sm mt-4">
+        <h3 class="font-semibold text-lg text-primary mb-3 flex items-center">
+          <i class="fa fa-robot mr-2"></i> AI健康評估（六大調理故事版）
+        </h3>
+        <div class="text-gray-700">${formattedComment}</div>
+        <p class="text-xs text-gray-500 mt-3">
+          提示：此評語基於自檢數據生成，僅供參考，不能替代醫生診斷
+        </p>
+      </div>
+    `;
+  }
+
+  // -------------------------- 8. 表單提交（先生成AI評語，再提交Google Sheets）
+  submitBtn.addEventListener('click', async () => {
+    updateGlobalSymptomData(); // 提交前更新全局數據
+    if (!validateStep(4)) return;
+
+    successModal.classList.remove('hidden');
+    try {
+      // 步驟1：收集健康數據，調用OpenAI生成評語
+      const healthData = collectHealthData();
+      const aiSuccess = await callOpenAI(healthData);
+      
+      // 即使AI生成失敗，也嘗試提交數據
+      const submitSuccess = await submitToGoogleSheets();
+      if (submitSuccess) {
+        generateResult(); // 生成結果頁（含AI評估）
+      } else {
+        alert('數據提交失敗，請檢查網絡後重試');
+        successModal.classList.add('hidden');
+      }
+    } catch (error) {
+      console.error('提交異常：', error);
+      alert(`提交失敗：${error.message}`);
+      successModal.classList.add('hidden');
     }
   });
 
-  // 6. 查看結果按鈕事件
+  // -------------------------- 9. 查看結果/重新評估按鈕事件
   viewResultBtn.addEventListener('click', () => {
     successModal.classList.add('hidden');
     resultSection.classList.remove('hidden');
     resultSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    // 確保AI評語在結果頁顯示
+    if (globalAiComment) {
+      renderAiEvaluation();
+    }
   });
 
-  // 7. 重新評估按鈕事件（重置全局數據）
   restartBtn.addEventListener('click', () => {
-    // 重置全局症狀/習慣數據
+    // 重置全局數據（含AI評語）
     globalUniqueSymptoms = [];
     globalUniqueHabits = [];
+    globalAiComment = '';
+    currentStep = 1;
+
+    // 重置雷達圖
+    if (windowHealthChart) {
+      windowHealthChart.destroy();
+      windowHealthChart = null;
+    }
+
+    // 重置AI評估容器
+    aiEvaluationContainer.innerHTML = '';
 
     // 重置表單元素
-    document.querySelectorAll('input, textarea, select').forEach(element => {
-      if (element.type === 'checkbox' || element.type === 'radio') {
-        element.checked = false;
-      } else {
-        element.value = '';
-      }
-      element.classList.remove('error-input');
+    document.querySelectorAll('input, textarea, select').forEach(el => {
+      if (el.type === 'checkbox' || el.type === 'radio') el.checked = false;
+      else el.value = '';
+      el.classList.remove('error-input');
     });
 
+    // 重置UI
     clearAllErrors();
-    currentStep = 1;
     updateFormSteps();
     updateGenderBasedUI();
-
     resultSection.classList.add('hidden');
     formContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
 
-  // 8. 症狀分類篩選（篩選後同步更新全局數據）
+  // -------------------------- 10. 症狀/習慣分類篩選
   document.querySelectorAll('.symptom-tab').forEach(tab => {
     tab.addEventListener('click', () => {
       // 更新標籤樣式
@@ -2017,28 +2133,17 @@ document.addEventListener('DOMContentLoaded', function() {
         const itemCategory = item.getAttribute('data-category');
         const isPostpartum = item.hasAttribute('data-special') && item.getAttribute('data-special') === 'postpartum';
 
-        // 男性：隱藏女性+產後症狀
         if (selectedGender === 'male') {
-          if (itemCategory === 'female' || isPostpartum) {
-            item.style.display = 'none';
-            return;
-          }
+          if (itemCategory === 'female' || isPostpartum) { item.style.display = 'none'; return; }
         }
 
-        // 正常分類篩選
-        if (selectedCategory === 'all' || itemCategory === selectedCategory) {
-          item.style.display = 'block';
-        } else {
-          item.style.display = 'none';
-        }
+        item.style.display = (selectedCategory === 'all' || itemCategory === selectedCategory) ? 'block' : 'none';
       });
 
-      // 篩選後更新全局症狀數據
       updateGlobalSymptomData();
     });
   });
 
-  // 9. 習慣分類篩選（篩選後同步更新全局數據）
   document.querySelectorAll('.habit-tab').forEach(tab => {
     tab.addEventListener('click', () => {
       document.querySelectorAll('.habit-tab').forEach(t => {
@@ -2050,27 +2155,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
       const selectedCategory = tab.getAttribute('data-category');
       document.querySelectorAll('.habit-item').forEach(item => {
-        if (selectedCategory === 'all' || item.getAttribute('data-category') === selectedCategory) {
-          item.style.display = 'block';
-        } else {
-          item.style.display = 'none';
-        }
+        item.style.display = (selectedCategory === 'all' || item.getAttribute('data-category') === selectedCategory) ? 'block' : 'none';
       });
-
       document.querySelectorAll('.habit-category-title').forEach(title => {
-        if (selectedCategory === 'all' || title.getAttribute('data-category') === selectedCategory) {
-          title.parentElement.style.display = 'block';
-        } else {
-          title.parentElement.style.display = 'none';
-        }
+        title.parentElement.style.display = (selectedCategory === 'all' || title.getAttribute('data-category') === selectedCategory) ? 'block' : 'none';
       });
 
-      // 篩選後更新全局習慣數據
       updateGlobalSymptomData();
     });
   });
 
-  // 10. 更新表單步驟顯示
+  // -------------------------- 11. 表單步驟更新
   function updateFormSteps() {
     document.querySelectorAll('.form-step').forEach(step => {
       step.classList.add('hidden');
@@ -2109,85 +2204,29 @@ document.addEventListener('DOMContentLoaded', function() {
     formContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
-  // 11. 提交數據到Google Sheets（使用全局數據）
-  function submitToGoogleSheets() {
-    return new Promise((resolve, reject) => {
-      try {
-        // 直接使用全局症狀/習慣數據
-        const formData = {
-          submitTime: new Date().toLocaleString('zh-CN', {
-            year: 'numeric', month: '2-digit', day: '2-digit',
-            hour: '2-digit', minute: '2-digit', second: '2-digit'
-          }),
-          basicInfo: {
-            name: document.getElementById('name').value || '未填寫',
-            age: document.getElementById('age').value || '未填寫',
-            gender: document.querySelector('input[name="gender"]:checked') ? 
-              (document.querySelector('input[name="gender"]:checked').value === 'male' ? '男' : '女') : '未填寫',
-            phone: document.getElementById('phone').value || '未填寫',
-            height: document.getElementById('height').value ? `${document.getElementById('height').value} cm` : '未填寫',
-            weight: document.getElementById('weight').value ? `${document.getElementById('weight').value} kg` : '未填寫',
-            bmi: calculateBMI(), // 單獨抽離BMI計算
-            waist: document.getElementById('waist').value ? `${document.getElementById('waist').value} cm` : '未填寫',
-            bloodPressure: document.getElementById('bloodPressure').value || '未填寫',
-            bloodSugar: document.getElementById('bloodSugar').value ? `${document.getElementById('bloodSugar').value} mmol/l` : '未填寫',
-            occupation: document.getElementById('occupation').value || '未填寫'
-          },
-          symptoms: globalUniqueSymptoms.join('; '),
-          symptomCount: globalUniqueSymptoms.length,
-          habits: globalUniqueHabits.join('; '),
-          habitCount: globalUniqueHabits.length,
-          healthIssues: {
-            mainConcern: document.getElementById('mainConcern').value || '未明確說明',
-            symptomDuration: document.getElementById('symptomDuration').value || '未說明',
-            possibleCauses: document.getElementById('possibleCauses').value || '未說明',
-            allergyHistory: document.querySelector('input[name="allergyHistory"]:checked')?.value || '未選擇',
-            medicalHistory: document.querySelector('input[name="medicalHistory"]:checked')?.value || '未選擇'
-          }
-        };
-
-        // 序列化數據
-        const params = new URLSearchParams();
-        params.append('data', JSON.stringify(formData));
-        const callbackName = `jsonpCallback_${Date.now()}`;
-        params.append('callback', callbackName);
-
-        // Google Sheets URL（替換為你的真實URL）
-        const googleSheetUrl = 'https://script.google.com/macros/s/AKfycbwQH5XE3u9vgedphUCOnXpYl9WG4-3ScF29SYoSb3MGLMQX28qBeY3tqt56PiIFsAtw4w/exec';
-        const fullUrl = `${googleSheetUrl}?${params.toString()}`;
-
-        // JSONP請求
-        const script = document.createElement('script');
-        script.src = fullUrl;
-        script.type = 'text/javascript';
-        script.async = true;
-
-        window[callbackName] = function(response) {
-          delete window[callbackName];
-          document.body.removeChild(script);
-          if (response.status === 'success') {
-            resolve(true);
-          } else {
-            reject(new Error(response.message || '數據提交失敗'));
-          }
-        };
-
-        script.onerror = function() {
-          delete window[callbackName];
-          document.body.removeChild(script);
-          reject(new Error('網絡錯誤，無法連接服務器'));
-        };
-
-        document.body.appendChild(script);
-
-      } catch (error) {
-        console.error('JSONP提交異常:', error);
-        reject(error);
+  // -------------------------- 12. 工具函數：收集健康數據（給OpenAI用）
+  function collectHealthData() {
+    const selectedGender = document.querySelector('input[name="gender"]:checked');
+    return {
+      basicInfo: {
+        name: document.getElementById('name').value || '未填寫',
+        age: document.getElementById('age').value || '未填寫',
+        gender: selectedGender ? (selectedGender.value === 'male' ? '男' : '女') : '未填寫',
+        bmi: calculateBMI(),
+        bloodPressure: document.getElementById('bloodPressure').value || '未填寫'
+      },
+      symptoms: globalUniqueSymptoms.join('; '),
+      symptomCount: globalUniqueSymptoms.length,
+      habits: globalUniqueHabits.join('; '),
+      habitCount: globalUniqueHabits.length,
+      healthIssues: {
+        mainConcern: document.getElementById('mainConcern').value || '未明確說明',
+        symptomDuration: document.getElementById('symptomDuration').value || '未說明'
       }
-    });
+    };
   }
 
-  // 12. 單獨抽離BMI計算（便於復用）
+  // -------------------------- 13. 工具函數：BMI計算
   function calculateBMI() {
     const height = document.getElementById('height').value;
     const weight = document.getElementById('weight').value;
@@ -2206,258 +2245,96 @@ document.addEventListener('DOMContentLoaded', function() {
     return `${bmiValue} ${bmiStatus}`;
   }
 
-  // 13. 圖片下載與分享（保留原功能，使用全局數據）
-  let localImageBlob = null;
-  let localImageName = '';
-  let imgbbImageUrl = '';
-  const IMGBB_API_KEY = '60691c91e77a7ad5a7eabaf332fbdffe';
-
-  async function handleImageDownload() {
-    try {
-      downloadReportBtn.disabled = true;
-      downloadReportBtn.innerHTML = '<i class="fa fa-spinner fa-spin mr-2"></i> 處理中...';
-
-      if (typeof html2canvas === 'undefined') {
-        throw new Error('圖片處理庫未加載，請刷新頁面重試');
-      }
-
-      const reportElement = document.querySelector('#result .bg-white.rounded-2xl.shadow-md.p-6');
-      if (!reportElement) {
-        throw new Error('未找到評估結果，請先完成評估');
-      }
-
-      // 臨時調整樣式
-      const originalStyle = {
-        padding: reportElement.style.padding,
-        boxShadow: reportElement.style.boxShadow
-      };
-      reportElement.style.padding = '24px';
-      reportElement.style.boxShadow = 'none';
-
-      // 高質量截圖
-      const canvas = await html2canvas(reportElement, {
-        useCORS: true,
-        allowTaint: false,
-        scale: 2,
-        logging: false,
-        scrollY: -window.scrollY,
-        windowWidth: reportElement.offsetWidth,
-        windowHeight: reportElement.offsetHeight
-      });
-
-      // 恢復樣式
-      reportElement.style.padding = originalStyle.padding;
-      reportElement.style.boxShadow = originalStyle.boxShadow;
-
-      // 生成文件名（使用用戶姓名）
-      const userName = document.getElementById('name').value.trim() || '未知用戶';
-      const currentDate = new Date();
-      const formattedDate = `${currentDate.getFullYear()}年${String(currentDate.getMonth() + 1).padStart(2, '0')}月${String(currentDate.getDate()).padStart(2, '0')}日`;
-      localImageName = `${userName}_健康自檢表_${formattedDate}.jpg`;
-
-      // 生成Blob
-      const blob = await new Promise((resolve, reject) => {
-        canvas.toBlob((blob) => {
-          if (blob) {
-            resolve(blob);
-            localImageBlob = blob;
-          } else {
-            reject(new Error('圖片數據生成失敗'));
-          }
-        }, 'image/jpeg', 0.9);
-      });
-
-      // 上傳imgbb生成URL
-      downloadReportBtn.innerHTML = '<i class="fa fa-cloud-upload mr-2"></i> 生成分享連結...';
-      const formData = new FormData();
-      formData.append('image', blob, localImageName);
-      
-      const response = await fetch(
-        `https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}&name=${encodeURIComponent(localImageName)}`,
-        { method: 'POST', body: formData, timeout: 30000 }
-      );
-
-      const result = await response.json();
-      if (result.success) {
-        imgbbImageUrl = result.data.url;
-      } else {
-        throw new Error(`imgbb生成失敗：${result.error?.message || '未知錯誤'}`);
-      }
-
-      // 保存到相冊
-      downloadReportBtn.innerHTML = '<i class="fa fa-image mr-2"></i> 保存到相簿...';
-      const isSaveSuccess = await saveToMobileGallery(blob, localImageName);
-      if (!isSaveSuccess) {
-        throw new Error('圖片保存到相簿失敗，請手動保存');
-      }
-
-      // 顯示分享按鈕
-      setTimeout(() => {
-        downloadReportBtn.disabled = false;
-        downloadReportBtn.innerHTML = '<i class="fa fa-download mr-2"></i> 重新保存/分享';
-        
-        const shareTip = `
-圖片已成功保存！
-文件名：${localImageName}
-✅ 分享將同步分享圖片與連結
-🔗 鏈接：${imgbbImageUrl}
-        `.trim();
-        alert(shareTip);
-        
-        showSingleShareButton(userName, formattedDate);
-      }, 1000);
-
-    } catch (error) {
-      console.error('圖片處理異常:', error);
-      downloadReportBtn.disabled = false;
-      downloadReportBtn.innerHTML = '<i class="fa fa-download mr-2"></i> 下載圖片';
-      alert(`操作失敗: ${error.message}\n請刷新頁面後重試`);
-    }
-  }
-
-  // 保存圖片到手機相冊
-  function saveToMobileGallery(blob, fileName) {
-    return new Promise((resolve) => {
-      const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-
-      if (window.showSaveFilePicker && !isIOS) {
-        const options = {
-          suggestedName: fileName,
-          types: [{ description: '圖片文件', accept: { 'image/jpeg': ['.jpg'] } }]
+  // -------------------------- 14. 提交數據到Google Sheets（含AI評語）
+  function submitToGoogleSheets() {
+    return new Promise((resolve, reject) => {
+      try {
+        // 構建完整數據（含AI評語字段）
+        const formData = {
+          submitTime: new Date().toLocaleString('zh-CN', {
+            year: 'numeric', month: '2-digit', day: '2-digit',
+            hour: '2-digit', minute: '2-digit', second: '2-digit'
+          }),
+          basicInfo: {
+            name: document.getElementById('name').value || '未填寫',
+            age: document.getElementById('age').value || '未填寫',
+            gender: document.querySelector('input[name="gender"]:checked') ? 
+              (document.querySelector('input[name="gender"]:checked').value === 'male' ? '男' : '女') : '未填寫',
+            phone: document.getElementById('phone').value || '未填寫',
+            height: document.getElementById('height').value ? `${document.getElementById('height').value} cm` : '未填寫',
+            weight: document.getElementById('weight').value ? `${document.getElementById('weight').value} kg` : '未填寫',
+            bmi: calculateBMI(),
+            waist: document.getElementById('waist').value ? `${document.getElementById('waist').value} cm` : '未填寫',
+            bloodPressure: document.getElementById('bloodPressure').value || '未填寫',
+            bloodSugar: document.getElementById('bloodSugar').value ? `${document.getElementById('bloodSugar').value} mmol/l` : '未填寫',
+            occupation: document.getElementById('occupation').value || '未填寫'
+          },
+          symptoms: globalUniqueSymptoms.join('; '),
+          symptomCount: globalUniqueSymptoms.length,
+          habits: globalUniqueHabits.join('; '),
+          habitCount: globalUniqueHabits.length,
+          healthIssues: {
+            mainConcern: document.getElementById('mainConcern').value || '未明確說明',
+            symptomDuration: document.getElementById('symptomDuration').value || '未說明',
+            possibleCauses: document.getElementById('possibleCauses').value || '未說明',
+            allergyHistory: document.querySelector('input[name="allergyHistory"]:checked')?.value || '未選擇',
+            medicalHistory: document.querySelector('input[name="medicalHistory"]:checked')?.value || '未選擇'
+          },
+          // AI評語字段（同步到Google Sheets）
+          aiComment: globalAiComment || 'AI評語生成失敗'
         };
 
-        window.showSaveFilePicker(options)
-          .then((fileHandle) => fileHandle.createWritable())
-          .then((writable) => writable.write(blob))
-          .then(() => {
-            alert('圖片已成功保存！');
+        // JSONP提交（避免跨域）
+        const callbackName = `jsonpCallback_${Date.now()}`;
+        const params = new URLSearchParams({
+          data: JSON.stringify(formData),
+          callback: callbackName
+        });
+
+        // Google Sheets腳本URL（替換為你的真實URL）
+        const googleSheetUrl = 'https://script.google.com/macros/s/AKfycbwQH5XE3u9vgedphUCOnXpYl9WG4-3ScF29SYoSb3MGLMQX28qBeY3tqt56PiIFsAtw4w/exec';
+        const fullUrl = `${googleSheetUrl}?${params.toString()}`;
+
+        // 創建腳本標籤發起請求
+        const script = document.createElement('script');
+        script.src = fullUrl;
+        script.type = 'text/javascript';
+        script.async = true;
+
+        // 回調處理
+        window[callbackName] = function(response) {
+          delete window[callbackName];
+          document.body.removeChild(script);
+          if (response?.status === 'success') {
             resolve(true);
-          })
-          .catch(() => saveWithAnchorTag(blob, fileName, resolve));
-      } else {
-        saveWithAnchorTag(blob, fileName, resolve);
+          } else {
+            reject(new Error(response?.message || '數據提交失敗'));
+          }
+        };
+
+        // 錯誤處理
+        script.onerror = function() {
+          delete window[callbackName];
+          document.body.removeChild(script);
+          reject(new Error('網絡錯誤，無法連接服務器'));
+        };
+
+        document.body.appendChild(script);
+
+      } catch (error) {
+        console.error('Google Sheets提交異常:', error);
+        reject(error);
       }
     });
   }
 
-  // a標籤兼容下載
-  function saveWithAnchorTag(blob, fileName, resolve) {
-    const blobUrl = URL.createObjectURL(blob);
-    const downloadLink = document.createElement('a');
-    downloadLink.download = fileName;
-    downloadLink.href = blobUrl;
-    downloadLink.style.display = 'none';
-
-    if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
-      downloadLink.target = '_blank';
-    }
-
-    document.body.appendChild(downloadLink);
-    downloadLink.click();
-
-    setTimeout(() => {
-      document.body.removeChild(downloadLink);
-      URL.revokeObjectURL(blobUrl);
-
-      const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-      if (isIOS) {
-        alert(`圖片已存檔，請點擊「分享」圖標`);
-      } else {
-        alert(`圖片已保存到「下載」文件夾，可在相簿的「下載」專輯中找到\n文件名：${localImageName}`);
-      }
-      resolve(true);
-    }, 1000);
-  }
-
-  // 單一分享按鈕
-  function showSingleShareButton(userName, date) {
-    const existingShareBtn = document.getElementById('singleShareBtn');
-    if (existingShareBtn) {
-      document.body.removeChild(existingShareBtn);
-    }
-
-    const shareBtn = document.createElement('button');
-    shareBtn.id = 'singleShareBtn';
-    shareBtn.style.cssText = `
-      position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
-      padding: 12px 28px; border-radius: 30px;
-      background: #165DFF; color: white; border: none;
-      box-shadow: 0 4px 15px rgba(22, 93, 255, 0.3);
-      font-size: 16px; font-weight: bold;
-      display: flex; align-items: center; gap: 8px;
-      z-index: 9999; cursor: pointer;
-    `;
-    shareBtn.innerHTML = '<i class="fa fa-share-alt"></i> 分享健康自檢表';
-    document.body.appendChild(shareBtn);
-
-    shareBtn.addEventListener('click', async () => {
-      try {
-        if (!localImageBlob || !imgbbImageUrl) {
-          alert('分享資源不完整，請重新生成圖片');
-          return;
-        }
-
-        const imageFile = new File([localImageBlob], localImageName, { type: 'image/jpeg' });
-        const shareText = `
-📋 『 ${userName} 』的健康自檢表
-🗓️ 自檢日期：${date}
-💡 包含：六大調理方向
-🔗 圖片連結：${imgbbImageUrl}
-        `.trim();
-
-        if (navigator.share && navigator.canShare({ files: [imageFile] })) {
-          shareBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> 喚醒分享...';
-          await navigator.share({
-            title: `${userName}的健康自檢表`,
-            text: shareText,
-            files: [imageFile],
-            url: imgbbImageUrl
-          });
-          alert('分享成功！對方可直接查看圖片預覽');
-          shareBtn.innerHTML = '<i class="fa fa-share-alt"></i> 分享健康自檢表';
-
-        } else {
-          await navigator.clipboard.writeText(shareText);
-          alert(`
-您的瀏覽器不支持圖片分享，已複製分享內容：
-${shareText}\n
-操作提示：
-1. 打開聊天窗口
-2. 長按輸入框粘貼
-3. 對方可點擊imgbb鏈接查看圖片
-        `.trim());
-        }
-
-      } catch (shareError) {
-        console.error('分享失敗:', shareError);
-        shareBtn.innerHTML = '<i class="fa fa-share-alt"></i> 分享健康自檢表';
-        
-        if (shareError.name !== 'AbortError') {
-          alert(`
-分享失敗，請手動使用imgbb鏈接：
-🔗 ${imgbbImageUrl}
-\n提示：將鏈接粘貼到聊天窗口，對方可直接查看圖片
-        `.trim());
-        } else {
-          alert('分享已取消');
-        }
-      }
-    });
-  }
-
-  // 綁定下載按鈕事件
-  if (downloadReportBtn) {
-    downloadReportBtn.addEventListener('click', handleImageDownload);
-  }
-
-
-  // -------------------------- 核心修復3：生成評估結果（完全使用全局數據）
+  // -------------------------- 15. 生成評估結果（含AI評估渲染）
   function generateResult() {
     // 1. 加載基本信息
     const name = document.getElementById('name').value || '未填寫';
     const age = document.getElementById('age').value || '未填寫';
-    const gender = document.querySelector('input[name="gender"]:checked') ? 
-      (document.querySelector('input[name="gender"]:checked').value === 'male' ? '男' : '女') : '未填寫';
+    const selectedGender = document.querySelector('input[name="gender"]:checked');
+    const gender = selectedGender ? (selectedGender.value === 'male' ? '男' : '女') : '未填寫';
     const phone = document.getElementById('phone').value || '未填寫';
     const height = document.getElementById('height').value ? `${document.getElementById('height').value} cm` : '未填寫';
     const weight = document.getElementById('weight').value ? `${document.getElementById('weight').value} kg` : '未填寫';
@@ -2467,7 +2344,7 @@ ${shareText}\n
     const occupation = document.getElementById('occupation').value || '未填寫';
     const bmi = calculateBMI();
 
-    // 2. 渲染基本信息到頁面
+    // 2. 渲染基本信息
     const basicInfoContainer = document.getElementById('basicInfo');
     if (basicInfoContainer) {
       basicInfoContainer.innerHTML = `
@@ -2507,106 +2384,94 @@ ${shareText}\n
       `;
     }
 
-    // 3. 從全局變量獲取症狀/習慣（確保數據統一）
+    // 3. 加載全局症狀/習慣數據
     const totalSymptomCount = globalUniqueSymptoms.length;
     const habitCount = globalUniqueHabits.length;
 
-    // -------------------------- 核心修復4：六大調理方向（使用全局症狀數據）
+    // 4. 六大調理方向得分計算
     const adjustmentDirections = {
       體質: [
         '頭部畏冷', '四肢無力', '平衡能力差/容易跌倒', '思緒中斷', '反應遲鈍', '容易打哈欠',
         '眼睛疲勞', '耳鳴/耳聾', '聽力減退', '嗅覺遲鈍', '咽喉異物感', '聲音沙啞',
-        '嘆氣/呼吸短促/喘氣', '打呼',
-        '手足麻木/發紺', '手足發熱/冰涼/腫脹/出汗',
-        '胃痛/胃酸過多/腹脹/胃部畏寒', '噁心/打嗝/噯氣', '消化不良', '食慾不佳/容易飽脹', 
+        '嘆氣/呼吸短促/喘氣', '打呼', '手足麻木/發紺', '手足發熱/冰涼/腫脹/出汗',
+        '胃痛/胃酸過多/腹脹/胃部畏寒', '惡心/打嗝/噯氣', '消化不良', '食慾不佳/容易飽脹',
         '偏食/厭食', '食慾過盛', '嘴唇蒼白/發青/麻木', '嘴唇龜裂/咽喉乾燥',
-        '手足抽搐/手足顫抖',
-        '關節疼痛/腫脹', '腰部酸痛/腰部畏寒', '容易落枕/頸部僵硬', '肩膀酸脹/麻木/疼痛', 
-        '頸部疼痛/頸部畏寒', '頸部脂肪堆積', '游離性疼痛', '脊椎僵硬/脊椎疼痛', 
-        '容易扭傷', '腳跟疼痛', '手足脫皮/凍瘡',
-        '月經期間下腹部畏寒', '月經期間下腹部墜脹', '月經期間腹脹/痛經', 
-        '月經期間腰痛/頭痛', '月經期間嗜睡/失眠', '月經期間厭食/水腫', '月經期間煩躁/乳房脹痛',
+        '手足抽搐/手足顫抖', '關節疼痛/腫脹', '腰部酸痛/腰部畏寒', '容易落枕/頸部僵硬',
+        '肩膀酸脹/麻木/疼痛', '頸部疼痛/頸部畏寒', '頸部脂肪堆積', '游離性疼痛',
+        '脊椎僵硬/脊椎疼痛', '容易扭傷', '腳跟疼痛', '手足脫皮/凍瘡',
+        '月經期間下腹部畏寒', '月經期間下腹部墜脹', '月經期間腹脹/痛經', '月經期間腰痛/頭痛',
+        '月經期間嗜睡/失眠', '月經期間厭食/水腫', '月經期間煩躁/乳房脹痛',
         '夜尿頻繁/尿頻/尿急', '尿不盡/尿失禁', '外陰瘙癢/外陰異味',
         '大便不成形', '便溏不盡/便秘', '低燒37-38℃', '感冒久不愈', '容易感冒/不易感冒'
       ],
       免疫: [
         '過敏性鼻炎', '眼睛癢/腫脹/突出/疼痛', '眼睛畏光/流淚', '眼睛乾澀/飛蚊症',
         '咳嗽/氣喘', '支氣管炎', '痰液多/黃痰/痰液清稀', '白痰/黑痰/痰中帶血',
-        '口腔潰瘍/舌潰瘍',
-        '淋巴結腫大',
-        '各類過敏/濕疹', '皮膚癢/背部青春痘', '銀屑病/白斑病', '黑痣增大/增多', '蜘蛛痣/魚鱗癬',
-        '扁桃腺炎', '皮膚容易瘀青/紅點'
+        '口腔潰瘍/舌潰瘍', '淋巴結腫大', '各類過敏/濕疹', '皮膚癢/背部青春痘',
+        '銀屑病/白斑病', '黑痣增大/增多', '蜘蛛痣/魚鱗病', '扁桃腺炎', '皮膚容易瘀青/紅點'
       ],
       毒素: [
-        '眼糞多/麥粒腫', '耳朵內潮濕/化膿', '耳垢多/耳朵疼痛/癢', '鼻炎/鼻塞', 
-        '流鼻水/流鼻血', '打噴嚏', '酒渣鼻',
-        '口苦/口乾/口臭/口中腥味', '口咸/口甜/口酸', '口臭明顯/口中辣味', '舌苔厚/黃苔/膩苔', 
-        '地圖舌/舌頭白斑', '舌質紫暗/舌邊齒痕', '舌頭僵硬/舌頭前端不適', '腹脹/排氣多/排氣臭',
-        '血管瘤/脂肪瘤', '纖維瘤/皮脂腺囊腫', '膽結石/腎結石', '扁平疣/尋常疣', '皮贅/雞眼',
-        '頭部/面部油膩', '臉頰泛紅', '面色黃/蒼白/黝黑', '痤瘡/青春痘/色素斑', 
-        '皮膚乾燥/接觸性皮膚炎', '脂肪粒', '身體異味',
-        '白帶增多/白帶帶血絲', '白帶顏色偏黃/黏稠', '白帶呈稀水狀/有腥臭味', 
-        '月經期間長青春痘', '月經顏色暗/淡/深黑',
-        '排尿疼痛/血尿', '尿分叉/排尿等待', '尿液濃稠/尿液有異味', '尿液混濁/尿液泡沫多', '尿道口灼熱感/尿道口發炎'
+        '眼糞多/麥粒腫', '耳朵內潮濕/化膿', '耳垢多/耳朵疼痛/癢', '鼻炎/鼻塞',
+        '流鼻水/流鼻血', '打噴嚏', '酒渣鼻', '口苦/口乾/口臭/口中腥味',
+        '口咸/口甜/口酸', '口臭明顯/口中辣味', '舌苔厚/黃苔/膩苔', '地圖舌/舌頭白斑',
+        '舌質紫暗/舌邊齒痕', '舌頭僵硬/舌頭前端不適', '腹脹/排氣多/排氣臭',
+        '血管瘤/脂肪瘤', '纖維瘤/皮脂腺囊腫', '膽結石/腎結石', '扁平疣/尋常疣',
+        '皮贅/雞眼', '頭部/面部油膩', '臉頰泛紅', '面色黃/蒼白/黝黑',
+        '痤瘡/青春痘/色素斑', '皮膚乾燥/接觸性皮膚炎', '脂肪粒', '身體異味',
+        '白帶增多/白帶帶血絲', '白帶顏色偏黃/黏稠', '白帶呈稀水狀/有腥臭味',
+        '月經期間長青春痘', '月經顏色暗/淡/深黑', '排尿疼痛/血尿', '尿分叉/排尿等待',
+        '尿液濃稠/尿液有異味', '尿液混濁/尿液泡沫多', '尿道口灼熱感/尿道口發炎'
       ],
       營養: [
-        '老花眼', '夜盲症', '視力模糊',
-        '貧血/高血脂症',
-        '身體消瘦', '肥胖/腹型肥胖', '身高矮小/發育遲緩', '體重突然增加/減少10%', 
-        '指甲半月痕缺失/稀少', '指甲易斷裂/手指倒刺', '指甲凹陷/指甲竪紋',
-        '頭髮稀疏', '頭髮乾燥/掉發', '白髮/圓形禿'
+        '老花眼', '夜盲症', '視力模糊', '貧血/高血脂症', '身體消瘦', '肥胖/腹型肥胖',
+        '身高矮小/發育遲緩', '體重突然增加/減少10%', '指甲半月痕缺失/稀少',
+        '指甲易斷裂/手指倒刺', '指甲凹陷/指甲竪紋', '頭髮稀疏', '頭髮乾燥/掉發', '白髮/圓形禿'
       ],
       循環: [
-        '頭痛/頭暈', '頭部麻木/腦鳴', '嗜睡/易醒', '失眠/多夢', '偏頭痛/健忘', 
-        '言語懶散/口吃', '暈車/暈機', '眉骨疼痛',
-        '低血壓/高血壓', '心絞痛', '心跳過快/過慢', '心悸/心律不整', '胸悶/胸痛', 
-        '右側肝區悶痛', '頭暈/頭部麻木/容易打哈欠', '面色異常（蒼白/發青）',
-        '低血糖/高血糖', '高血脂症',
-        '小腿水腫', '靜脈曲張',
-        '下腹部悶痛', '睪丸腫塊/疝氣', '肛門瘙癢', '便血/痔瘡', '脫肛/肛裂/肛瘻'
+        '頭痛/頭暈', '頭部麻木/腦鳴', '嗜睡/易醒', '失眠/多夢', '偏頭痛/健忘',
+        '言語懶散/口吃', '暈車/暈機', '眉骨疼痛', '低血壓/高血壓', '心絞痛',
+        '心跳過快/過慢', '心悸/心律不整', '胸悶/胸痛', '右側肝區悶痛',
+        '頭暈/頭部麻木/容易打哈欠', '面色異常（蒼白/發青）', '低血糖/高血糖', '高血脂症',
+        '小腿水腫', '靜脈曲張', '下腹部悶痛', '睪丸腫塊/疝氣', '肛門瘙癢',
+        '便血/痔瘡', '脫肛/肛裂/肛瘻'
       ],
       內分泌: [
-        '甲狀腺機能亢進/甲狀腺機能低下', '甲狀腺結節', '肥胖/腹型肥胖', '身體消瘦', 
+        '甲狀腺機能亢進/甲狀腺機能低下', '甲狀腺結節', '肥胖/腹型肥胖', '身體消瘦',
         '體重突然增加/減少10%', '低血糖/高血糖', '高血脂症', '低燒37-38℃',
-        '產後掉發/產後憂鬱', '產後色素沈澱',
-        '不孕', '流產/死胎', '月經量少/月經有血塊', '月經量多/子宮肌瘤', 
-        '月經提前/延後', '子宮腺肌症', '停經', '乳頭凹陷/乳頭溢膿', 
+        '產後掉發/產後憂鬱', '產後色素沈澱', '不孕', '流產/死胎', '月經量少/月經有血塊',
+        '月經量多/子宮肌瘤', '月經提前/延後', '子宮腺肌症', '停經', '乳頭凹陷/乳頭溢膿',
         '乳房腫塊/乳腺增生', '卵巢囊腫', '子宮頸息肉', '子宮頸肥大/子宮頸囊腫',
         '性慾降低', '自汗/多汗/盜汗', '冒冷汗/後背畏寒'
       ]
     };
 
-    // 計算調理方向得分（使用全局症狀+習慣數據）
+    // 計算得分（越低需重點調理）
     const calculateAdjustmentScores = () => {
       const scores = {};
-      const allIssues = [...globalUniqueSymptoms, ...globalUniqueHabits]; // 統一數據來源
-
-      Object.entries(adjustmentDirections).forEach(([direction, relatedItems]) => {
+      const allIssues = [...globalUniqueSymptoms, ...globalUniqueHabits];
+      Object.entries(adjustmentDirections).forEach(([dir, relatedItems]) => {
         const matchedCount = allIssues.filter(item => relatedItems.includes(item)).length;
         const totalRelated = relatedItems.length || 1;
-        const score = Math.max(0, Math.round((1 - matchedCount / totalRelated) * 100));
-        scores[direction] = score;
+        scores[dir] = Math.max(0, Math.round((1 - matchedCount / totalRelated) * 100));
       });
-
       return scores;
     };
 
-    // 生成雷達圖數據
     const adjustmentScores = calculateAdjustmentScores();
     const adjustmentLabels = Object.keys(adjustmentScores);
     const adjustmentData = Object.values(adjustmentScores);
 
-    // 4. 渲染雷達圖（症狀評估核心）
+    // 5. 渲染雷達圖
     const ctx = document.getElementById('healthBarChart')?.getContext('2d');
     if (ctx) {
-      if (window.healthChart) window.healthChart.destroy();
+      if (windowHealthChart) windowHealthChart.destroy();
 
-      // 核心修復5：空數據提示（避免圖表空白）
+      // 空數據提示
       if (adjustmentData.every(score => score === 100) && totalSymptomCount === 0) {
         const chartParent = document.getElementById('healthBarChart').parentNode;
         chartParent.innerHTML = '<p class="text-center text-gray-500 py-10">未選擇任何症狀，暫無法生成調理方向圖</p>';
       } else {
-        window.healthChart = new Chart(ctx, {
+        windowHealthChart = new Chart(ctx, {
           type: 'radar',
           data: {
             labels: adjustmentLabels,
@@ -2631,73 +2496,45 @@ ${shareText}\n
               r: {
                 angleLines: { display: true, color: 'rgba(0,0,0,0.1)' },
                 grid: { color: 'rgba(0,0,0,0.1)' },
-                pointLabels: { 
-                  font: { size: 12, weight: 'bold', family: 'sans-serif' }, 
-                  color: '#333', 
-                  padding: 15 
-                },
-                ticks: { 
-                  backdropColor: 'transparent', 
-                  color: '#666', 
-                  stepSize: 20, 
-                  max: 100, 
-                  min: 0,
-                  font: { size: 10 }
-                }
+                pointLabels: { font: { size: 12, weight: 'bold' }, color: '#333', padding: 15 },
+                ticks: { backdropColor: 'transparent', color: '#666', stepSize: 20, max: 100, min: 0 }
               }
             },
             plugins: {
-              legend: { 
-                position: 'top', 
-                labels: { 
-                  font: { size: 11, family: 'sans-serif' },
-                  padding: 20
-                } 
-              },
+              legend: { position: 'top', labels: { font: { size: 11 }, padding: 20 } },
               tooltip: {
                 callbacks: {
                   label: function(context) {
                     const dir = adjustmentLabels[context.dataIndex];
                     const score = adjustmentData[context.dataIndex];
-                    let suggestion = '';
-                    if (score < 30) suggestion = '（急需重點調理）';
-                    else if (score < 60) suggestion = '（建議加強調理）';
-                    else suggestion = '（狀態良好，維持即可）';
-                    return `${dir}: ${score}分 ${suggestion}`;
+                    let tip = score < 30 ? '（急需重點調理）' : score < 60 ? '（建議加強調理）' : '（狀態良好）';
+                    return `${dir}: ${score}分 ${tip}`;
                   }
                 }
               },
-              title: {
-                display: true,
-                text: '六大調理方向優先級分布',
-                font: { size: 16, weight: 'bold', family: 'sans-serif' },
-                padding: { bottom: 20 }
-              }
+              title: { display: true, text: '六大調理方向優先級分布', font: { size: 16, weight: 'bold' }, padding: { bottom: 20 } }
             },
-            elements: { 
-              line: { tension: 0.2 }
-            }
+            elements: { line: { tension: 0.2 } }
           }
         });
       }
     }
 
-    // 5. 渲染症狀統計（與雷達圖數據對應）
+    // 6. 渲染症狀/習慣統計
     document.getElementById('symptomCount').textContent = `${totalSymptomCount} 項症狀`;
     document.getElementById('habitCount').textContent = `${habitCount} 項不良習慣`;
 
-    // 設置進度條（基準值與症狀數量匹配）
-    const symptomPercentage = Math.min(100, (totalSymptomCount / 50) * 100); // 調整基準為實際症狀總數
-    const habitPercentage = Math.min(100, (habitCount / 20) * 100); // 調整基準為實際習慣總數
-    document.getElementById('symptomScoreBar').style.width = `${symptomPercentage}%`;
-    document.getElementById('habitScoreBar').style.width = `${habitPercentage}%`;
+    // 進度條設置
+    const symptomPercent = Math.min(100, (totalSymptomCount / 50) * 100);
+    const habitPercent = Math.min(100, (habitCount / 20) * 100);
+    document.getElementById('symptomScoreBar').style.width = `${symptomPercent}%`;
+    document.getElementById('habitScoreBar').style.width = `${habitPercent}%`;
 
-    // -------------------------- 核心修復6：詳細症狀渲染（與全局症狀對應）
+    // 7. 渲染主要健康問題 + AI評估
     const mainIssuesContainer = document.getElementById('mainHealthIssues');
-    // 核心關聯：若未填主要問題，從選中症狀提取
     let mainConcern = document.getElementById('mainConcern').value.trim();
+    // 未填主要問題時從症狀提取
     if (!mainConcern && totalSymptomCount > 0) {
-      // 提取高頻分類的症狀作為主要問題
       const symptomCategoryCount = countSymptomCategories();
       const topCategory = Object.entries(symptomCategoryCount).sort((a,b) => b[1]-a[1])[0]?.[0] || '全身不適';
       mainConcern = `${topCategory}（${globalUniqueSymptoms.slice(0,3).join('、')}...）`;
@@ -2709,60 +2546,27 @@ ${shareText}\n
     const possibleCauses = document.getElementById('possibleCauses').value || '未說明';
     const isFemale = gender === '女';
 
-    // 核心修復7：補全症狀分類映射（確保所有症狀能匹配）
+    // 症狀分類映射
     const symptomCategories = {
-      '頭部症狀': ['頭痛/頭暈', '頭部麻木/腦鳴', '嗜睡/易醒', '失眠/多夢', '偏頭痛/健忘', 
-        '言語懶散/口吃', '暈車/暈機', '頭部畏冷', '思緒中斷', '反應遲鈍', '容易打哈欠', '眉骨疼痛'],
-      '眼耳鼻喉': ['老花眼', '眼睛癢/腫脹/突出/疼痛', '眼睛畏光/流淚', '眼睛乾澀/飛蚊症', 
-        '眼糞多/麥粒腫', '眼睛疲勞', '夜盲症', '視力模糊', '耳朵內潮濕/化膿', '耳垢多/耳朵疼痛/癢', 
-        '耳鳴/耳聾', '聽力減退', '鼻炎/鼻塞', '流鼻水/流鼻血', '打噴嚏', '過敏性鼻炎', 
-        '酒渣鼻', '嗅覺遲鈍', '咽喉異物感', '聲音沙啞'],
-      '呼吸系統': ['咳嗽/氣喘', '支氣管炎', '感冒久不愈', '容易感冒/不易感冒', 
-        '痰液多/黃痰/痰液清稀', '白痰/黑痰/痰中帶血', '嘆氣/呼吸短促/喘氣', '打呼'],
-      '循環系統': ['低血壓/高血壓', '貧血/高血脂症', '心絞痛', '心跳過快/過慢', 
-        '心悸/心律不整', '胸悶/胸痛', '右側肝區悶痛', '手足麻木/發紺', 
-        '手足發熱/冰涼/腫脹/出汗', '頭暈/頭部麻木/容易打哈欠', '面色異常（蒼白/發青）'],
-      '消化系統': ['胃痛/胃酸過多/腹脹/胃部畏寒', '噁心/打嗝/噯氣', '消化不良', 
-        '食慾不佳/容易飽脹', '偏食/厭食', '食慾過盛', '腹脹/排氣多/排氣臭', 
-        '嘴唇蒼白/發青/麻木', '口苦/口乾/口臭/口中腥味', '口咸/口甜/口酸', 
-        '口臭明顯/口中辣味', '口腔潰瘍/舌潰瘍', '舌苔厚/黃苔/膩苔', '地圖舌/舌頭白斑', 
-        '舌質紫暗/舌邊齒痕', '舌頭僵硬/舌頭前端不適', '嘴唇龜裂/咽喉乾燥', 
-        '大便不成形', '便溏不盡/便秘'],
-      '內分泌與代謝': ['甲狀腺機能亢進/甲狀腺機能低下', '甲狀腺結節', '肥胖/腹型肥胖', 
-        '身體消瘦', '身高矮小/發育遲緩', '體重突然增加/減少10%', '指甲半月痕缺失/稀少', 
-        '指甲易斷裂/手指倒刺', '指甲凹陷/指甲竪紋', '血管瘤/脂肪瘤', '纖維瘤/皮脂腺囊腫', 
-        '膽結石/腎結石', '扁平疣/尋常疣', '皮贅/雞眼', '淋巴結腫大', '低燒37-38℃', 
-        '手足抽搐/手足顫抖', '低血糖/高血糖', '高血脂症'],
-      '肌肉骨骼與關節': ['四肢無力', '平衡能力差/容易跌倒', '手足脫皮/凍瘡', '小腿水腫', 
-        '關節疼痛/腫脹', '容易落枕/頸部僵硬', '肩膀酸脹/麻木/疼痛', '頸部疼痛/頸部畏寒', 
-        '頸部脂肪堆積', '腰部酸痛/腰部畏寒', '游離性疼痛', '脊椎僵硬/脊椎疼痛', 
-        '靜脈曲張', '容易扭傷', '腳跟疼痛'],
-      '皮膚與毛髮': ['頭髮稀疏', '頭髮乾燥/掉發', '白髮/圓形禿', '頭部/面部油膩', 
-        '臉頰泛紅', '面色黃/蒼白/黝黑', '痤瘡/青春痘/色素斑', '皮膚容易瘀青/紅點', 
-        '皮膚癢/背部青春痘', '皮膚乾燥/接觸性皮膚炎', '銀屑病/白斑病', '黑痣增大/增多', 
-        '蜘蛛痣/魚鱗癬', '各類過敏/濕疹', '產後掉發/產後憂鬱', '產後色素沈澱', 
-        '脂肪粒', '身體異味'],
-      '女性症狀': ['不孕', '流產/死胎', '月經量少/月經有血塊', '月經量多/子宮肌瘤', 
-        '月經提前/延後', '月經期間煩躁/乳房脹痛', '月經期間厭食/水腫', '月經期間腰痛/頭痛', 
-        '月經期間嗜睡/失眠', '月經期間腹脹/痛經', '子宮腺肌症', '月經期間下腹部畏寒', 
-        '月經期間下腹部墜脹', '月經顏色暗/淡/深黑', '月經期間長青春痘', '月經期延長', 
-        '停經', '乳頭凹陷/乳頭溢膿', '乳房腫塊/乳腺增生', '卵巢囊腫', '子宮頸息肉', 
-        '子宮頸肥大/子宮頸囊腫', '白帶增多/白帶帶血絲', '白帶顏色偏黃/黏稠', '白帶呈稀水狀/有腥臭味'],
-      '泌尿生殖系統': ['夜尿頻繁/尿頻/尿急', '尿不盡/尿失禁', '排尿疼痛/血尿', 
-        '尿分叉/排尿等待', '尿液濃稠/尿液有異味', '尿液混濁/尿液泡沫多', 
-        '尿道口灼熱感/尿道口發炎', '外陰瘙癢/外陰異味', '下腹部悶痛', '睪丸腫塊/疝氣', 
-        '肛門瘙癢', '便血/痔瘡', '脫肛/肛裂/肛瘻', '性慾降低', '自汗/多汗/盜汗', '冒冷汗/後背畏寒']
+      '頭部症狀': ['頭痛/頭暈', '頭部麻木/腦鳴', '嗜睡/易醒', '失眠/多夢', '偏頭痛/健忘', '言語懶散/口吃', '暈車/暈機', '頭部畏冷', '思緒中斷', '反應遲鈍', '容易打哈欠', '眉骨疼痛'],
+      '眼耳鼻喉': ['老花眼', '眼睛癢/腫脹/突出/疼痛', '眼睛畏光/流淚', '眼睛乾澀/飛蚊症', '眼糞多/麥粒腫', '眼睛疲勞', '夜盲症', '視力模糊', '耳朵內潮濕/化膿', '耳垢多/耳朵疼痛/癢', '耳鳴/耳聾', '聽力減退', '鼻炎/鼻塞', '流鼻水/流鼻血', '打噴嚏', '過敏性鼻炎', '酒渣鼻', '嗅覺遲鈍', '咽喉異物感', '聲音沙啞'],
+      '呼吸系統': ['咳嗽/氣喘', '支氣管炎', '感冒久不愈', '容易感冒/不易感冒', '痰液多/黃痰/痰液清稀', '白痰/黑痰/痰中帶血', '嘆氣/呼吸短促/喘氣', '打呼'],
+      '循環系統': ['低血壓/高血壓', '貧血/高血脂症', '心絞痛', '心跳過快/過慢', '心悸/心律不整', '胸悶/胸痛', '右側肝區悶痛', '手足麻木/發紺', '手足發熱/冰涼/腫脹/出汗', '頭暈/頭部麻木/容易打哈欠', '面色異常（蒼白/發青）'],
+      '消化系統': ['胃痛/胃酸過多/腹脹/胃部畏寒', '惡心/打嗝/噯氣', '消化不良', '食慾不佳/容易飽脹', '偏食/厭食', '食慾過盛', '腹脹/排氣多/排氣臭', '嘴唇蒼白/發青/麻木', '口苦/口乾/口臭/口中腥味', '口咸/口甜/口酸', '口臭明顯/口中辣味', '口腔潰瘍/舌潰瘍', '舌苔厚/黃苔/膩苔', '地圖舌/舌頭白斑', '舌質紫暗/舌邊齒痕', '舌頭僵硬/舌頭前端不適', '嘴唇龜裂/咽喉乾燥', '大便不成形', '便溏不盡/便秘'],
+      '內分泌與代謝': ['甲狀腺機能亢進/甲狀腺機能低下', '甲狀腺結節', '肥胖/腹型肥胖', '身體消瘦', '身高矮小/發育遲緩', '體重突然增加/減少10%', '指甲半月痕缺失/稀少', '指甲易斷裂/手指倒刺', '指甲凹陷/指甲竪紋', '血管瘤/脂肪瘤', '纖維瘤/皮脂腺囊腫', '膽結石/腎結石', '扁平疣/尋常疣', '皮贅/雞眼', '淋巴結腫大', '低燒37-38℃', '手足抽搐/手足顫抖', '低血糖/高血糖', '高血脂症'],
+      '肌肉骨骼與關節': ['四肢無力', '平衡能力差/容易跌倒', '手足脫皮/凍瘡', '小腿水腫', '關節疼痛/腫脹', '容易落枕/頸部僵硬', '肩膀酸脹/麻木/疼痛', '頸部疼痛/頸部畏寒', '頸部脂肪堆積', '腰部酸痛/腰部畏寒', '游離性疼痛', '脊椎僵硬/脊椎疼痛', '靜脈曲張', '容易扭傷', '腳跟疼痛'],
+      '皮膚與毛髮': ['頭髮稀疏', '頭髮乾燥/掉發', '白髮/圓形禿', '頭部/面部油膩', '臉頰泛紅', '面色黃/蒼白/黝黑', '痤瘡/青春痘/色素斑', '皮膚容易瘀青/紅點', '皮膚癢/背部青春痘', '皮膚乾燥/接觸性皮膚炎', '銀屑病/白斑病', '黑痣增大/增多', '蜘蛛痣/魚鱗病', '各類過敏/濕疹', '產後掉發/產後憂鬱', '產後色素沈澱', '脂肪粒', '身體異味'],
+      '女性症狀': ['不孕', '流產/死胎', '月經量少/月經有血塊', '月經量多/子宮肌瘤', '月經提前/延後', '月經期間煩躁/乳房脹痛', '月經期間厭食/水腫', '月經期間腰痛/頭痛', '月經期間嗜睡/失眠', '月經期間腹脹/痛經', '子宮腺肌症', '月經期間下腹部畏寒', '月經期間下腹部墜脹', '月經顏色暗/淡/深黑', '月經期間長青春痘', '月經期延長', '停經', '乳頭凹陷/乳頭溢膿', '乳房腫塊/乳腺增生', '卵巢囊腫', '子宮頸息肉', '子宮頸肥大/子宮頸囊腫', '白帶增多/白帶帶血絲', '白帶顏色偏黃/黏稠', '白帶呈稀水狀/有腥臭味'],
+      '泌尿生殖系統': ['夜尿頻繁/尿頻/尿急', '尿不盡/尿失禁', '排尿疼痛/血尿', '尿分叉/排尿等待', '尿液濃稠/尿液有異味', '尿液混濁/尿液泡沫多', '尿道口灼熱感/尿道口發炎', '外陰瘙癢/外陰異味', '下腹部悶痛', '睪丸腫塊/疝氣', '肛門瘙癢', '便血/痔瘡', '脫肛/肛裂/肛瘻', '性慾降低', '自汗/多汗/盜汗', '冒冷汗/後背畏寒']
     };
 
-    // 統計症狀所屬分類（用於提取主要問題）
+    // 統計症狀分類
     function countSymptomCategories() {
       const count = {};
       Object.keys(symptomCategories).forEach(category => {
         count[category] = 0;
         globalUniqueSymptoms.forEach(symptom => {
-          if (symptomCategories[category].includes(symptom)) {
-            count[category]++;
-          }
+          if (symptomCategories[category].includes(symptom)) count[category]++;
         });
       });
       return count;
@@ -2771,15 +2575,8 @@ ${shareText}\n
     // 構建分類症狀HTML
     let symptomsHtml = '';
     Object.keys(symptomCategories).forEach(category => {
-      // 男性隱藏女性症狀分類
       if (!isFemale && category === '女性症狀') return;
-
-      // 過濾當前分類的選中症狀
-      const categorySymptoms = globalUniqueSymptoms.filter(symptom => 
-        symptomCategories[category].includes(symptom)
-      );
-
-      // 有選中症狀才渲染
+      const categorySymptoms = globalUniqueSymptoms.filter(sym => symptomCategories[category].includes(sym));
       if (categorySymptoms.length > 0) {
         symptomsHtml += `<div class="mt-2">
           <p class="text-sm font-medium">${category}：</p>
@@ -2788,7 +2585,7 @@ ${shareText}\n
       }
     });
 
-    // 核心修復8：渲染健康問題（與詳細症狀關聯）
+    // 渲染主要健康問題
     if (mainIssuesContainer) {
       mainIssuesContainer.innerHTML = `
         <p class="mb-3"><strong>主要關注問題：</strong> ${mainConcern}</p>
@@ -2801,23 +2598,41 @@ ${shareText}\n
       `;
     }
 
-    // 6. 渲染健康調理建議（與調理方向匹配）
+    // 確保AI評語在結果頁顯示
+    if (globalAiComment) {
+      renderAiEvaluation();
+    } else {
+      aiEvaluationContainer.innerHTML = `
+        <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-100 mt-4">
+          <h4 class="font-semibold text-yellow-600 mb-2 flex items-center">
+            <i class="fa fa-info-circle mr-2"></i> AI評估提示
+          </h4>
+          <p class="text-sm text-gray-600">AI評語未生成，請點擊下方按鈕重新生成</p>
+          <button id="aiRetryBtn" class="mt-2 px-3 py-1 bg-primary text-white rounded text-sm hover:bg-primary/90">
+            <i class="fa fa-refresh mr-1"></i> 重新生成AI評語
+          </button>
+        </div>
+      `;
+      document.getElementById('aiRetryBtn')?.addEventListener('click', async () => {
+        const healthData = collectHealthData();
+        await callOpenAI(healthData);
+      });
+    }
+
+    // 8. 渲染健康調理建議
     const recommendationsContainer = document.getElementById('healthRecommendations');
     if (recommendationsContainer) {
-      // 根據調理方向得分，優先顯示低分（需重點調理）的建議
       const lowScoreDirections = Object.entries(adjustmentScores)
         .filter(([_, score]) => score < 60)
         .sort((a,b) => a[1]-b[1])
         .map(([dir]) => dir);
 
-      // 優先顯示需重點調理的方向建議
       let recommendationsHtml = '';
       if (lowScoreDirections.length > 0) {
         recommendationsHtml += `<p class="text-sm font-medium text-primary mb-3">🔴 需重點調理方向：${lowScoreDirections.join('、')}</p>`;
       }
 
       recommendationsHtml += `
-
 <div class="bg-neutral p-4 rounded-lg mb-3">
   <h4 class="font-semibold text-primary mb-3 text-base">① 體質 —— 決定你是否容易生病</h4>
   <div class="mb-4">
@@ -2956,20 +2771,219 @@ ${shareText}\n
   </div>
 </div>
 
-<div class="mt-4 text-sm text-neutral-dark/70 text-center">
-  理解六大調理核心邏輯：先調體質根基，再清毒素、暢循環、強免疫，<br>
-  搭配均衡營養與規律作息，健康改善更高效～<br>
-  如出現持續疼痛、異常出血等症狀，請盡快就醫檢查。
-</div>
+
+        <div class="mt-4 text-sm text-neutral-dark/70 text-center">
+          六大調理邏輯：體質是根基，循環是動力，毒素要清除，免疫要增強，<br>
+          營養要均衡，內分泌要穩定，全方位調理才能長久健康～<br>
+          如出現持續疼痛、異常出血等症狀，請盡快就醫檢查。
+        </div>
       `;
 
       recommendationsContainer.innerHTML = recommendationsHtml;
-    } else {
-      console.error('健康建議容器元素未找到，無法渲染調理建議');
     }
   }
 
-  // 頁面初始化補充
+  // -------------------------- 16. 圖片下載與分享
+  let localImageBlob = null;
+  let localImageName = '';
+  let imgbbImageUrl = '';
+  const IMGBB_API_KEY = '60691c91e77a7ad5a7eabaf332fbdffe';
+
+  async function handleImageDownload() {
+    try {
+      downloadReportBtn.disabled = true;
+      downloadReportBtn.innerHTML = '<i class="fa fa-spinner fa-spin mr-2"></i> 處理中...';
+
+      if (typeof html2canvas === 'undefined') throw new Error('圖片處理庫未加載，請刷新頁面重試');
+      const reportElement = document.querySelector('#result .bg-white.rounded-2xl.shadow-md.p-6');
+      if (!reportElement) throw new Error('未找到評估結果，請先完成評估');
+
+      // 臨時調整樣式
+      const originalStyle = { padding: reportElement.style.padding, boxShadow: reportElement.style.boxShadow };
+      reportElement.style.padding = '24px';
+      reportElement.style.boxShadow = 'none';
+
+      // 生成截圖（確保包含AI評語）
+      const canvas = await html2canvas(reportElement, {
+        useCORS: true,
+        allowTaint: false,
+        scale: 2,
+        logging: false,
+        scrollY: -window.scrollY,
+        windowWidth: reportElement.offsetWidth,
+        windowHeight: reportElement.offsetHeight
+      });
+
+      // 恢復樣式
+      reportElement.style.padding = originalStyle.padding;
+      reportElement.style.boxShadow = originalStyle.boxShadow;
+
+      // 生成文件名
+      const userName = document.getElementById('name').value.trim() || '未知用戶';
+      const currentDate = new Date();
+      const formattedDate = `${currentDate.getFullYear()}年${String(currentDate.getMonth() + 1).padStart(2, '0')}月${String(currentDate.getDate()).padStart(2, '0')}日`;
+      localImageName = `${userName}_健康自檢表_${formattedDate}.jpg`;
+
+      // 生成Blob
+      const blob = await new Promise((resolve, reject) => {
+        canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('圖片數據生成失敗')), 'image/jpeg', 0.9);
+      });
+      localImageBlob = blob;
+
+      // 上傳到imgbb
+      downloadReportBtn.innerHTML = '<i class="fa fa-cloud-upload mr-2"></i> 生成分享鏈接...';
+      const formData = new FormData();
+      formData.append('image', blob, localImageName);
+      const imgbbResponse = await fetch(
+        `https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}&name=${encodeURIComponent(localImageName)}`,
+        { method: 'POST', body: formData, timeout: 30000 }
+      );
+      const imgbbResult = await imgbbResponse.json();
+      if (!imgbbResult.success) throw new Error(`imgbb生成失敗：${imgbbResult.error?.message || '未知錯誤'}`);
+      imgbbImageUrl = imgbbResult.data.url;
+
+      // 保存到相冊
+      downloadReportBtn.innerHTML = '<i class="fa fa-image mr-2"></i> 保存到相冊...';
+      await saveToGallery(blob, localImageName);
+
+      // 完成處理
+      setTimeout(() => {
+        downloadReportBtn.disabled = false;
+        downloadReportBtn.innerHTML = '<i class="fa fa-download mr-2"></i> 重新保存/分享';
+        alert(`
+圖片已成功保存！
+文件名：${localImageName}
+✅ 分享將同步分享圖片與鏈接
+🔗 圖片鏈接：${imgbbImageUrl}
+        `.trim());
+        showSingleShareButton(userName, formattedDate);
+      }, 1000);
+
+    } catch (error) {
+      console.error('圖片處理失敗：', error);
+      downloadReportBtn.disabled = false;
+      downloadReportBtn.innerHTML = '<i class="fa fa-download mr-2"></i> 下載圖片';
+      alert(`操作失敗：${error.message}\n請刷新頁面後重試`);
+    }
+  }
+
+  // 保存圖片到相冊（兼容多設備）
+  function saveToGallery(blob, fileName) {
+    return new Promise((resolve) => {
+      const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+      if (window.showSaveFilePicker && !isIOS) {
+        window.showSaveFilePicker({
+          suggestedName: fileName,
+          types: [{ description: '圖片文件', accept: { 'image/jpeg': ['.jpg'] } }]
+        })
+        .then(handle => handle.createWritable())
+        .then(writable => writable.write(blob).then(() => writable.close()))
+        .then(() => { alert('圖片已成功保存！'); resolve(true); })
+        .catch(() => saveWithAnchorTag(blob, fileName, resolve));
+      } else {
+        saveWithAnchorTag(blob, fileName, resolve);
+      }
+    });
+  }
+
+  // a標籤兼容下載
+  function saveWithAnchorTag(blob, fileName, resolve) {
+    const blobUrl = URL.createObjectURL(blob);
+    const downloadLink = document.createElement('a');
+    downloadLink.download = fileName;
+    downloadLink.href = blobUrl;
+    downloadLink.style.display = 'none';
+    if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) downloadLink.target = '_blank';
+
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+
+    setTimeout(() => {
+      document.body.removeChild(downloadLink);
+      URL.revokeObjectURL(blobUrl);
+      const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+      if (isIOS) alert(`圖片已存檔，請點擊「分享」圖標`);
+      else alert(`圖片已保存到「下載」文件夾，可在相冊的「下載」專輯中找到\n文件名：${localImageName}`);
+      resolve(true);
+    }, 1000);
+  }
+
+  // 顯示分享按鈕
+  function showSingleShareButton(userName, date) {
+    const existingShareBtn = document.getElementById('singleShareBtn');
+    if (existingShareBtn) document.body.removeChild(existingShareBtn);
+
+    const shareBtn = document.createElement('button');
+    shareBtn.id = 'singleShareBtn';
+    shareBtn.style.cssText = `
+      position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+      padding: 12px 28px; border-radius: 30px; background: #165DFF; color: white;
+      border: none; box-shadow: 0 4px 15px rgba(22, 93, 255, 0.3);
+      font-size: 16px; font-weight: bold; display: flex; align-items: center; gap: 8px;
+      z-index: 9999; cursor: pointer;
+    `;
+    shareBtn.innerHTML = '<i class="fa fa-share-alt"></i> 分享健康自檢表';
+    document.body.appendChild(shareBtn);
+
+    shareBtn.addEventListener('click', async () => {
+      try {
+        if (!localImageBlob || !imgbbImageUrl) {
+          alert('分享資源不完整，請重新生成圖片');
+          return;
+        }
+
+        const imageFile = new File([localImageBlob], localImageName, { type: 'image/jpeg' });
+        const shareText = `
+📋 『 ${userName} 』的健康自檢表
+🗓️ 自檢日期：${date}
+💡 包含：六大調理方向 + AI故事化評估
+🔗 圖片鏈接：${imgbbImageUrl}
+        `.trim();
+
+        if (navigator.share && navigator.canShare({ files: [imageFile] })) {
+          shareBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> 喚醒分享...';
+          await navigator.share({
+            title: `${userName}的健康自檢表`,
+            text: shareText,
+            files: [imageFile],
+            url: imgbbImageUrl
+          });
+          alert('分享成功！對方可直接查看圖片預覽');
+          shareBtn.innerHTML = '<i class="fa fa-share-alt"></i> 分享健康自檢表';
+        } else {
+          await navigator.clipboard.writeText(shareText);
+          alert(`
+您的瀏覽器不支持圖片分享，已複製分享內容：
+${shareText}\n
+操作提示：
+1. 打開聊天窗口
+2. 長按輸入框粘貼
+3. 對方可點擊imgbb鏈接查看圖片
+        `.trim());
+        }
+      } catch (shareError) {
+        console.error('分享失敗:', shareError);
+        shareBtn.innerHTML = '<i class="fa fa-share-alt"></i> 分享健康自檢表';
+        if (shareError.name !== 'AbortError') {
+          alert(`
+分享失敗，請手動使用imgbb鏈接：
+🔗 ${imgbbImageUrl}
+\n提示：將鏈接粘貼到聊天窗口，對方可直接查看圖片
+        `.trim());
+        } else {
+          alert('分享已取消');
+        }
+      }
+    });
+  }
+
+  // 綁定下載按鈕事件
+  if (downloadReportBtn) {
+    downloadReportBtn.addEventListener('click', handleImageDownload);
+  }
+
+  // 頁面初始化
   updateFormSteps();
   updateGenderBasedUI();
 });
