@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>健康自檢表 - 您的個人健康評估工具</title>
+  <title>🧬彥彬 健康自檢表 - 您的個人健康評估工具</title>
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
@@ -2312,7 +2312,7 @@ async function handleImageDownload() {
     const userName = document.getElementById('name').value.trim() || '未知用戶';
     const currentDate = new Date();
     const formattedDate = `${currentDate.getFullYear()}年${String(currentDate.getMonth() + 1).padStart(2, '0')}月${String(currentDate.getDate()).padStart(2, '0')}日`;
-    localImageName = `${userName}_健康評估報告_${formattedDate}.jpg`;
+    localImageName = `${userName}_健康自檢表_${formattedDate}.jpg`;
 
     // 生成Blob對象（核心：用於圖片文件分享、保存到相冊、imgbb上傳）
     const blob = await new Promise((resolve, reject) => {
@@ -2494,17 +2494,17 @@ function showSingleShareButton(userName, date) {
 
       // 分享文字（強制包含imgbb URL）
       const shareText = `
-📋 『 ${userName} 』的健康評估報告
-🗓️ 生成時間：${date}
+📋 『 ${userName} 』的健康自檢表
+🗓️ 自檢日期：${date}
 💡 包含：六大調理方向
-🖼️ 圖片預覽：🔗 圖片連結
+🔗 圖片連結：
       `.trim();
 
       // 場景1：支持原生文件分享（優先方案）
       if (navigator.share && navigator.canShare({ files: [imageFile] })) {
         shareBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> 喚醒分享...';
         await navigator.share({
-          title: `${userName}的健康評估報告`,
+          title: `${userName}的健康自檢表`,
           text: shareText,
           files: [imageFile],          // 保留：圖片文件（支持預覽）
           url: imgbbImageUrl           // 強制：用imgbb URL（而非頁面URL）
@@ -2579,9 +2579,9 @@ function shareImage(title, date) {
   // 分享文字（強制包含imgbb URL）
   const shareText = `
 📋 ${title}
-🗓️ 生成時間：${date}
+🗓️ 自檢日期：${date}
 💡 包含：六大調理方向
-🔗 圖片查看鏈接：${imgbbImageUrl}
+🔗 圖片查看連結：${imgbbImageUrl}
 🖼️ 點擊鏈接即可查看高清健康自檢表圖片
   `.trim();
 
