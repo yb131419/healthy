@@ -2258,15 +2258,15 @@ document.addEventListener('DOMContentLoaded', function() {
     };
   }
 
-// 13. 圖片下載（原生高質量存檔，單一按鈕分享：圖片文件+imgbb URL）
+// 13. 圖片下載（原生高質量存檔，單一按鈕分享：圖片文件+強制imgbb URL）
 // -------------------------- 全局變量：存儲本地圖片和imgbb鏈接 --------------------------
 let localImageBlob = null;   // 本地圖片Blob（核心：用於圖片文件分享）
 let localImageName = '';     // 本地圖片名稱
-let imgbbImageUrl = '';      // 新增：imgbb 雲端URL（同步傳遞，兼容特殊場景）
+let imgbbImageUrl = '';      // 強制使用：imgbb 雲端URL（所有分享場景統一用此URL）
 // imgbb API Key（生成公開可分享的圖片URL）
 const IMGBB_API_KEY = '60691c91e77a7ad5a7eabaf332fbdffe';
 
-// -------------------------- 1. 圖片處理：本地下載+imgbb上傳（URL準備） --------------------------
+// -------------------------- 1. 圖片處理：本地下載+imgbb上傳（強制生成URL） --------------------------
 async function handleImageDownload() {
   try {
     // 按鈕加載狀態（提升用戶感知）
@@ -2331,30 +2331,29 @@ async function handleImageDownload() {
       );
     });
 
-    // -------------------------- 新增：上傳圖片到imgbb，同步準備URL --------------------------
-    let isImgbbSuccess = false;
+    // -------------------------- 核心：強制上傳imgbb生成URL（無URL則中斷分享流程） --------------------------
+    downloadReportBtn.innerHTML = '<i class="fa fa-cloud-upload mr-2"></i> 生成分享鏈接...';
     try {
-      downloadReportBtn.innerHTML = '<i class="fa fa-cloud-upload mr-2"></i> 準備分享資源...';
       const formData = new FormData();
       formData.append('image', blob, localImageName); // 上傳Blob到imgbb
       
-      // 調用imgbb API上傳
+      // 調用imgbb API上傳（強制生成URL，超時時間延長至30秒）
       const response = await fetch(
         `https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}&name=${encodeURIComponent(localImageName)}`,
-        { method: 'POST', body: formData, timeout: 20000 } // 20秒超時保障
+        { method: 'POST', body: formData, timeout: 30000 } // 30秒超時保障上傳成功率
       );
 
       const result = await response.json();
       if (result.success) {
-        imgbbImageUrl = result.data.url; // 保存imgbb URL（同步傳遞）
-        isImgbbSuccess = true;
-        console.log('imgbb分享URL準備完成：', imgbbImageUrl);
+        imgbbImageUrl = result.data.url; // 強制賦值：所有分享場景用此URL
+        console.log('imgbb分享URL生成成功：', imgbbImageUrl);
       } else {
-        throw new Error(`imgbb錯誤：${result.error?.message || '未知錯誤'}`);
+        throw new Error(`imgbb生成失敗：${result.error?.message || '未知錯誤'}`);
       }
     } catch (uploadErr) {
-      console.warn('imgbb上傳失敗，不影響圖片文件分享:', uploadErr);
-      isImgbbSuccess = false; // URL準備失敗僅隱藏URL，不阻斷圖片分享
+      console.error('imgbb上傳異常:', uploadErr);
+      // 強制要求URL：無URL則提示用戶重試，不進入後續分享流程
+      throw new Error('分享鏈接生成失敗，請檢查網絡後重試（需同時生成圖片和分享鏈接）');
     }
 
     // -------------------------- 第一步：保存圖片到手機相冊（完全保留原功能） --------------------------
@@ -2365,22 +2364,24 @@ async function handleImageDownload() {
       throw new Error('圖片保存到相簿失敗，請手動保存');
     }
 
-    // -------------------------- 第二步：顯示單一分享按鈕（底部中央，圖片+URL同步傳遞） --------------------------
+    // -------------------------- 第二步：顯示單一分享按鈕（強制用imgbb URL） --------------------------
     downloadReportBtn.innerHTML = '<i class="fa fa-share-alt mr-2"></i> 準備分享...';
     setTimeout(() => {
       // 恢復按鈕狀態
       downloadReportBtn.disabled = false;
       downloadReportBtn.innerHTML = '<i class="fa fa-download mr-2"></i> 重新保存/分享';
       
-      // 提示用戶（明確分享內容：圖片+URL）
-      let shareTip = `圖片已成功保存到相簿！\n文件名：${localImageName}\n\n`;
-      shareTip += isImgbbSuccess 
-        ? '✅ 點擊下方按鈕分享，對方可直接查看圖片預覽\n🔗 同步攜帶imgbb鏈接，兼容所有應用' 
-        : '⚠️ imgbb鏈接生成失敗，仍可分享圖片文件';
+      // 提示用戶（明確：圖片+imgbb URL雙重分享）
+      const shareTip = `
+圖片已成功保存到相簿！
+文件名：${localImageName}
+✅ 分享將同步攜帶imgbb鏈接，對方可直接點擊查看圖片
+🔗 鏈接：${imgbbImageUrl}
+      `.trim();
       alert(shareTip);
       
-      // 顯示單一分享按鈕（底部中央，保留原功能+同步傳URL）
-      showSingleShareButton(userName, formattedDate, isImgbbSuccess);
+      // 顯示單一分享按鈕（強制傳遞imgbb URL）
+      showSingleShareButton(userName, formattedDate);
     }, 1000);
 
   } catch (error) {
@@ -2392,21 +2393,17 @@ async function handleImageDownload() {
   }
 }
 
-// -------------------------- 新增：保存圖片到手機相冊（適配安卓/iOS）【完全保留原功能】 --------------------------
+// -------------------------- 保留：保存圖片到手機相冊（適配安卓/iOS） --------------------------
 function saveToMobileGallery(blob, fileName) {
   return new Promise((resolve) => {
-    // 檢測移動設備類型
     const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
     const isAndroid = /Android/i.test(navigator.userAgent);
 
-    // 方案1：現代瀏覽器支持的FileSystemAccess API（優先使用，保存更直接）
-    if (window.showSaveFilePicker && !isIOS) { // iOS暫不支持該API，單獨處理
+    // 方案1：現代瀏覽器FileSystemAccess API
+    if (window.showSaveFilePicker && !isIOS) {
       const options = {
         suggestedName: fileName,
-        types: [{
-          description: '圖片文件',
-          accept: { 'image/jpeg': ['.jpg'] }
-        }]
+        types: [{ description: '圖片文件', accept: { 'image/jpeg': ['.jpg'] } }]
       };
 
       window.showSaveFilePicker(options)
@@ -2416,20 +2413,16 @@ function saveToMobileGallery(blob, fileName) {
           alert('圖片已成功保存到相簿！');
           resolve(true);
         })
-        .catch((err) => {
-          console.warn('FileSystemAPI保存失敗，切換兼容方案:', err);
-          // 降級到方案2（a標籤下載）
-          saveWithAnchorTag(blob, fileName, resolve);
-        });
+        .catch(() => saveWithAnchorTag(blob, fileName, resolve));
     } 
-    // 方案2：兼容所有手機瀏覽器的a標籤下載（適配iOS/舊安卓）
+    // 方案2：兼容所有瀏覽器的a標籤下載
     else {
       saveWithAnchorTag(blob, fileName, resolve);
     }
   });
 }
 
-// 輔助函數：用a標籤實現圖片下載（兼容方案）【完全保留原功能】
+// 保留：用a標籤實現圖片下載（兼容方案）
 function saveWithAnchorTag(blob, fileName, resolve) {
   const blobUrl = URL.createObjectURL(blob);
   const downloadLink = document.createElement('a');
@@ -2437,7 +2430,7 @@ function saveWithAnchorTag(blob, fileName, resolve) {
   downloadLink.href = blobUrl;
   downloadLink.style.display = 'none';
 
-  // iOS特殊處理：a標籤需target="_blank"才能觸發下載預覽
+  // iOS特殊處理：a標籤需target="_blank"
   if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
     downloadLink.target = '_blank';
   }
@@ -2445,138 +2438,120 @@ function saveWithAnchorTag(blob, fileName, resolve) {
   document.body.appendChild(downloadLink);
   downloadLink.click();
 
-  // 清理資源+提示用戶（區分iOS和安卓）
+  // 清理資源+提示用戶
   setTimeout(() => {
     document.body.removeChild(downloadLink);
     URL.revokeObjectURL(blobUrl);
 
     const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
     if (isIOS) {
-      // iOS下載後會打開圖片預覽，需提示用戶手動保存到相冊
       alert(`圖片已打開預覽，請點擊右上角「分享」圖標 → 選擇「保存圖片」，即可存入相簿`);
     } else {
-      // 安卓會直接保存到下載目錄，提示用戶在相冊中查找
       alert(`圖片已保存到「下載」文件夾，可在相簿的「下載」專輯中找到\n文件名：${localImageName}`);
     }
     resolve(true);
   }, 1000);
 }
 
-// -------------------------- 核心修改：單一分享按鈕（底部中央，圖片+URL同步傳遞） --------------------------
-function showSingleShareButton(userName, date, isImgbbSuccess) {
+// -------------------------- 核心修改：單一分享按鈕（強制用imgbb URL） --------------------------
+function showSingleShareButton(userName, date) {
   // 先移除已存在的分享按鈕（避免重復創建）
   const existingShareBtn = document.getElementById('singleShareBtn');
   if (existingShareBtn) {
     document.body.removeChild(existingShareBtn);
   }
 
-  // 1. 創建單一分享按鈕（固定在底部中央，保留原圖分享的藍色風格）
+  // 1. 創建單一分享按鈕（底部中央，保留原藍色風格）
   const shareBtn = document.createElement('button');
   shareBtn.id = 'singleShareBtn';
   shareBtn.style.cssText = `
     position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
     padding: 12px 28px; border-radius: 30px;
-    background: #165DFF; color: white; border: none; /* 保留原圖分享的藍色，保持用戶習慣 */
+    background: #165DFF; color: white; border: none;
     box-shadow: 0 4px 15px rgba(22, 93, 255, 0.3);
     font-size: 16px; font-weight: bold;
     display: flex; align-items: center; gap: 8px;
     z-index: 9999; cursor: pointer;
   `;
-  shareBtn.innerHTML = '<i class="fa fa-share-alt"></i> 分享健康報告'; // 通用文案，覆蓋兩種分享內容
+  shareBtn.innerHTML = '<i class="fa fa-share-alt"></i> 分享健康報告';
   document.body.appendChild(shareBtn);
 
-  // 2. 綁定分享事件（核心：同步傳遞「圖片文件+imgbb URL」，保留原功能）
+  // 2. 綁定分享事件（強制：圖片文件+imgbb URL雙傳遞）
   shareBtn.addEventListener('click', async () => {
     try {
-      // 校驗圖片數據（核心：保留原圖分享的前置判斷）
-      if (!localImageBlob) {
-        alert('圖片數據丟失，請重新生成圖片');
+      // 校驗必要數據（圖片Blob+imgbb URL）
+      if (!localImageBlob || !imgbbImageUrl) {
+        alert('分享資源不完整，請重新生成圖片');
         return;
       }
 
-      // Blob轉File（保留原邏輯，確保圖片文件可分享）
+      // Blob轉File（用於圖片文件分享）
       const imageFile = new File(
         [localImageBlob], 
         localImageName, 
         { type: 'image/jpeg' }
       );
 
-      // 校驗瀏覽器是否支持原生文件分享（保留原兼容判斷）
-      if (navigator.share && navigator.canShare({ files: [imageFile] })) {
-        shareBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> 喚醒分享...';
-        
-        // 優化分享文字（同步包含圖片提示和URL，結構化排版）
-        let shareText = `
+      // 分享文字（強制包含imgbb URL）
+      const shareText = `
 📋 ${userName}的健康評估報告
 🗓️ 生成時間：${date}
 💡 包含：六大調理方向+健康建議
-🖼️ 可直接查看圖片預覽，無需額外跳轉
-        `.trim();
-        
-        // 若imgbb成功，同步添加URL（兼容特殊場景）
-        if (isImgbbSuccess && imgbbImageUrl) {
-          shareText += `\n🔗 備用查看鏈接：${imgbbImageUrl}`;
-        }
+🖼️ 圖片預覽：直接查看下方圖片
+🔗 備用鏈接：${imgbbImageUrl}（點擊可查看高清圖片）
+      `.trim();
 
-        // 觸發原生分享（核心：同時傳遞「圖片文件+URL」，保留原參數）
+      // 場景1：支持原生文件分享（優先方案）
+      if (navigator.share && navigator.canShare({ files: [imageFile] })) {
+        shareBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> 喚醒分享...';
         await navigator.share({
-          title: `${userName}的健康評估報告`, // 保留原標題
-          text: shareText,                     // 同步包含圖片提示和URL
-          files: [imageFile],                  // 核心1：保留圖片文件，確保預覽
-          url: isImgbbSuccess ? imgbbImageUrl : window.location.href // 核心2：imgbb成功則傳URL，否則傳頁面URL（保留原邏輯）
+          title: `${userName}的健康評估報告`,
+          text: shareText,
+          files: [imageFile],          // 保留：圖片文件（支持預覽）
+          url: imgbbImageUrl           // 強制：用imgbb URL（而非頁面URL）
         });
-
-        // 分享成功提示（覆蓋兩種場景）
-        const successMsg = isImgbbSuccess 
-          ? '圖片+imgbb鏈接分享成功！對方可直接查看預覽或點擊鏈接' 
-          : '圖片文件分享成功！對方可直接查看預覽';
-        alert(successMsg);
+        alert('分享成功！對方可直接查看圖片預覽或點擊imgbb鏈接');
         shareBtn.innerHTML = '<i class="fa fa-share-alt"></i> 分享健康報告';
 
+      // 場景2：不支持文件分享（降級用imgbb URL）
       } else {
-        // 不支持文件分享時，降級處理（保留原手動指引邏輯）
-        throw new Error('您的瀏覽器不支持直接分享圖片文件');
+        // 複製包含imgbb URL的文字到剪貼板
+        await navigator.clipboard.writeText(shareText);
+        alert(`
+您的瀏覽器不支持圖片分享，已複製分享內容：
+${shareText}\n
+操作提示：
+1. 打開聊天窗口
+2. 長按輸入框粘貼
+3. 對方可點擊imgbb鏈接查看圖片
+        `.trim());
       }
+
     } catch (shareError) {
       console.error('分享失敗:', shareError);
       shareBtn.innerHTML = '<i class="fa fa-share-alt"></i> 分享健康報告';
       
-      // 分享取消的友好提示（保留原邏輯）
+      // 分享取消提示
       if (shareError.name === 'AbortError') {
         alert('分享已取消');
       } else {
-        // 降級處理：若有imgbb URL則複製，否則提示從相冊分享（新增兼容）
-        if (isImgbbSuccess && imgbbImageUrl) {
-          // 複製包含URL的文字，供手動分享
-          const copyText = `
-📋 ${userName}的健康評估報告
-🗓️ 生成時間：${date}
-💡 包含：六大調理方向+健康建議
-🔗 圖片查看鏈接：${imgbbImageUrl}
-\n操作提示：粘貼到聊天窗口，點擊鏈接查看圖片
-          `.trim();
-          await navigator.clipboard.writeText(copyText);
-          alert(`
-瀏覽器不支持圖片分享，已複製鏈接：
-${imgbbImageUrl}\n
-請手動粘貼到聊天窗口，點擊鏈接查看圖片
-          `.trim());
-        } else {
-          // 無URL時，保留原手動分享指引
-          showManualShareGuide();
-        }
+        // 極端情況：剪貼板也失敗，手動提示imgbb URL
+        alert(`
+分享失敗，請手動使用imgbb鏈接：
+🔗 ${imgbbImageUrl}
+\n提示：將鏈接粘貼到聊天窗口，對方可直接查看圖片
+        `.trim());
       }
     }
   });
 }
 
-// -------------------------- 新增：手動分享指引（適配安卓/iOS相冊）【完全保留原功能】 --------------------------
+// -------------------------- 保留：手動分享指引（僅在無URL時用，現已強制URL故少用） --------------------------
 function showManualShareGuide() {
   const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
   const isAndroid = /Android/i.test(navigator.userAgent);
   let guideText = `圖片已保存到相簿（文件名：${localImageName}）\n\n`;
 
-  // 區分iOS和安卓的操作步驟（符合用戶習慣）
   if (isIOS) {
     guideText += `手動分享步驟：
 1. 打開手機「照片」APP
@@ -2594,15 +2569,21 @@ function showManualShareGuide() {
   alert(guideText);
 }
 
-// -------------------------- 14. 原生分享功能（同步優化：單一按鈕+圖片+URL） --------------------------
-function shareImage(imageUrl, title, date) {
-  // 優化分享文字（同步包含圖片提示風格，保持統一）
+// -------------------------- 14. 原生分享功能（強制用imgbb URL） --------------------------
+function shareImage(title, date) {
+  // 強制：用全局imgbbImageUrl，不接受外部傳入的其他URL
+  if (!imgbbImageUrl) {
+    alert('分享鏈接未生成，請先完成圖片生成');
+    return;
+  }
+
+  // 分享文字（強制包含imgbb URL）
   const shareText = `
 📋 ${title}
 🗓️ 生成時間：${date}
 💡 包含：六大調理方向+健康建議
-🔗 圖片查看鏈接：${imageUrl}
-🖼️ 若無法直接查看，點擊鏈接即可瀏覽
+🔗 圖片查看鏈接：${imgbbImageUrl}
+🖼️ 點擊鏈接即可查看高清健康報告圖片
   `.trim();
 
   if (navigator.share) {
@@ -2625,18 +2606,18 @@ function shareImage(imageUrl, title, date) {
         await navigator.share({
           title: title,
           text: shareText,
-          url: imageUrl
+          url: imgbbImageUrl  // 強制：用imgbb URL
         });
-        alert('報告鏈接分享成功！對方可點擊鏈接查看圖片');
+        alert('imgbb鏈接分享成功！對方可點擊鏈接查看圖片');
       } catch (shareError) {
         console.error('分享失敗:', shareError);
         if (shareError.name !== 'AbortError') {
-          // 複製優化後的文字到剪貼板
+          // 複製包含imgbb URL的文字
           await navigator.clipboard.writeText(shareText);
           alert(`
-📋 已複製分享內容：
+已複製imgbb分享鏈接：
 ${shareText}\n
-提示：可手動粘貼到聊天窗口分享
+提示：手動粘貼到聊天窗口即可分享
           `.trim());
         } else {
           alert('分享已取消');
@@ -2646,22 +2627,24 @@ ${shareText}\n
       }
     });
 
-    alert('已生成報告分享鏈接，點擊下方按鈕分享');
+    alert(`已生成imgbb分享鏈接：${imgbbImageUrl}\n點擊下方按鈕分享`);
   } else {
-    // 不支持原生分享，複製優化後的文字
+    // 不支持原生分享，複製imgbb URL
     navigator.clipboard.writeText(shareText).then(() => {
       alert(`
-📋 已複製分享內容：
+已複製imgbb分享內容：
 ${shareText}\n
 操作步驟：
 1. 打開聊天窗口
 2. 長按輸入框粘貼
 3. 發送後點擊鏈接查看圖片
-      `.trim());
+      `.trim());    
     }).catch(err => {
       console.error('剪貼板複製失敗:', err);
       alert(`
-📋 請手動複製分享內容：
+請手動複製imgbb鏈接：
+🔗 ${imgbbImageUrl}\n
+分享文字：
 ${shareText}
       `.trim());
     });
