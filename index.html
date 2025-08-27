@@ -2453,7 +2453,7 @@ function saveWithAnchorTag(blob, fileName, resolve) {
     const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
     if (isIOS) {
       // iOS下載後會打開圖片預覽，需提示用戶手動保存到相冊
-      alert(`圖片已打開預覽，請點擊右上角「分享」圖標 → 選擇「保存圖片」，即可存入相簿`);
+      alert(`圖片已打開預覽，請點擊下方「分享」圖標 `);
     } else {
       // 安卓會直接保存到下載目錄，提示用戶在相冊中查找
       alert(`圖片已保存到「下載」文件夾，可在相簿的「下載」專輯中找到\n文件名：${localImageName}`);
@@ -2510,13 +2510,10 @@ function showSingleShareButton(userName, date, isImgbbSuccess) {
 📋 ${userName}的健康評估報告
 🗓️ 生成時間：${date}
 💡 包含：六大調理方向+健康建議
-🖼️ 可直接查看圖片預覽，無需額外跳轉
+🖼️ 可直接查看圖片預覽
         `.trim();
         
-        // 若imgbb成功，同步添加URL（兼容特殊場景）
-        if (isImgbbSuccess && imgbbImageUrl) {
-          shareText += `\n🔗 備用查看鏈接：${imgbbImageUrl}`;
-        }
+
 
         // 觸發原生分享（核心：同時傳遞「圖片文件+URL」，保留原參數）
         await navigator.share({
