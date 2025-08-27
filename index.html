@@ -1673,7 +1673,7 @@
           </div>
           
           <div>
-            <h3 class="text-xl font-semibold mb-4 pb-2 border-b">改善建議</h3>
+            <h3 class="text-xl font-semibold mb-4 pb-2 border-b">🟢 六大調理方向：找到健康的根本邏輯</h3>
             <div id="healthRecommendations" class="space-y-4">
               <!-- 建議將在這裡動態顯示 -->
             </div>
@@ -2991,86 +2991,151 @@ ${shareText}
     const recommendationsContainer = document.getElementById('healthRecommendations');
     if (recommendationsContainer) {
       recommendationsContainer.innerHTML = `
-        <div class="bg-neutral p-4 rounded-lg mb-3">
-          <h4 class="font-medium text-primary mb-2">一、氣血不足調理：<p>順時蓄養“生命能量”</p></h4>
-          <p class="text-sm text-neutral-dark/80">對應症狀：<p>記憶力下降、思維斷電、頭髮稀少、等</p></p>
-          <p class="text-sm text-neutral-dark/80 italic">《黃帝內經》<p>言“人以氣血為本，氣血隨時辰消長”</p></p>
-          <ul class="mt-2 text-sm text-neutral-dark/80 space-y-2 list-disc pl-5">
-            <li><strong>辰時（7:00-9:00，胃經當令）</strong>：<p>保持環境安靜，避免邊用餐邊處理事務。餐後留5分鐘靜息，不立即投入忙碌，提升氣血轉化效率。</p></li>
-            <li><strong>巳時（9:00-11:00，脾經當令）</strong>：<p>每小時暫停工作，閉眼靜息30秒。減少過度勞累導致的氣血瘀滯，促進氣血在全身順暢流轉。</p></li>
-            <li><strong>丑時前（23:00前，肝經當令預備期）</strong>：<p>營造昏暗、安靜的休息環境，減少電子屏幕使用。提前進入休息狀態以減少氣血消耗，避免熬夜致氣血虧虛。</p></li>
-          </ul>
-        </div>
 
-        <div class="bg-neutral p-4 rounded-lg mb-3">
-          <h4 class="font-medium text-primary mb-2">二、微循環不通改善：<p>按時疏通“氣血通道”</p></h4>
-          <p class="text-sm text-neutral-dark/80">對應症狀：<p>頭暈、頭麻、手足麻木、等</p></p>
-          <p class="text-sm text-neutral-dark/80 italic">《黃帝內經》<p>曰“經脈者，所以行血氣而營陰陽”</p></p>
-          <ul class="mt-2 text-sm text-neutral-dark/80 space-y-2 list-disc pl-5">
-            <li><strong>午時（11:00-13:00，心經當令）</strong>：<p>找安靜處靜坐，不思考複雜問題、不看電子設備。減少身心負擔，讓血液充分流向頭部緩解不適。</p></li>
-            <li><strong>戌時（19:00-21:00，心包經當令）</strong>：<p>保持身體自然舒展，避免彎腰駝背或久坐狹小空間。減少氣血阻滯，降低手腳發麻概率。</p></li>
-            <li><strong>酉時（17:00-19:00，腎經當令）</strong>：<p>到通風處停留10分鐘，避免長期處於密閉空調環境。借新鮮空氣促進經脈通暢，改善末梢循環不暢。</p></li>
-          </ul>
-        </div>
+<div class="bg-neutral p-4 rounded-lg mb-3">
+  <h4 class="font-semibold text-primary mb-3 text-base">① 體質 —— 決定你是否容易生病</h4>
+  <div class="mb-4">
+    <p class="text-sm font-medium text-neutral-dark mb-2">📖 故事1：老舊衣櫃的故事</p>
+    <ul class="mt-1 text-sm text-neutral-dark/80 space-y-2 list-disc pl-5">
+      <li>
+        南方梅雨季，同樣的衣櫃，有的總是潮氣重、衣服發霉，有的卻乾爽整潔。原來發霉的衣櫃長年靠牆、通風差，潮氣散不出去；而乾爽的衣櫃擺在通風處，還墊了防潮墊。
+        <p class="mt-1 text-neutral-dark/90">👉 寓意：體質就像衣櫃的「基礎環境」！若體內寒濕重、循環差（像不通風的衣櫃），即使暫時緩解了炎症、痘痘，只要寒濕根源沒改，問題遲早反覆；調好體質，才是擺脫反覆不適的根本。</p>
+      </li>
+    </ul>
+  </div>
 
-        <div class="bg-neutral p-4 rounded-lg mb-3">
-          <h4 class="font-medium text-primary mb-2">三、毒素排毒調理：<p>順時暢通“排濁通道”</p></h4>
-          <p class="text-sm text-neutral-dark/80">對應症狀：<p>頭面油膩、眼屎多、耳屎多、等</p></p>
-          <p class="text-sm text-neutral-dark/80 italic">《黃帝內經》<p>強調“濁邪出下竅，清陽實四肢”</p></p>
-          <ul class="mt-2 text-sm text-neutral-dark/80 space-y-2 list-disc pl-5">
-            <li><strong>卯時（5:00-7:00，大腸經當令）</strong>：<p>營造輕鬆排便環境，不匆忙、不憋便。借大腸經排毒時段促進毒素隨糞便排出，減少堆積。</p></li>
-            <li><strong>申時（15:00-17:00，膀胱經當令）</strong>：<p>保持環境通透，避免憋尿。助力膀胱經水液代謝功能，減少毒素在體內停留時間。</p></li>
-            <li><strong>戌時（19:00-21:00，三焦經當令）</strong>：<p>減少接觸油煙、粉塵環境，保持呼吸順暢。減少外源性毒素侵入，助力內毒素代謝。</p></li>
-          </ul>
-        </div>
+  <div>
+    <p class="text-sm font-medium text-neutral-dark mb-2">📖 故事2：花盆土壤的故事</p>
+    <ul class="mt-1 text-sm text-neutral-dark/80 space-y-2 list-disc pl-5">
+      <li>
+        兩盆同款多肉，一盆總爛根、長黑腐，一盆飽滿健壯。原來爛根的花盆沒底孔、土壤板結，澆水後積水排不出去；健壯的花盆透氣性好，土壤酥鬆。
+        <p class="mt-1 text-neutral-dark/90">👉 寓意：體質是健康的「土壤」！寒濕體質好比板結的土壤，營養進不來、廢物排不出，自然容易長各種「毛病」；先調整體質（松土、通氣），身體才能像健康的多肉一樣「長得好」。</p>
+      </li>
+    </ul>
+  </div>
+</div>
 
-        <div class="bg-neutral p-4 rounded-lg mb-3">
-          <h4 class="font-medium text-primary mb-2">四、血脂黏稠調理：<p>順時清通“經脈瘀濁”</p></h4>
-          <p class="text-sm text-neutral-dark/80">對應症狀：<p>頭面油膩、痤瘡、脂肪瘤、等</p></p>
-          <p class="text-sm text-neutral-dark/80 italic">《黃帝內經》<p>曰“經脈流通，何病之有”</p></p>
-          <ul class="mt-2 text-sm text-neutral-dark/80 space-y-2 list-disc pl-5">
-            <li><strong>卯時（5:00-7:00，大腸經當令）</strong>：<p>晨起慢飲溫開水，喚醒身體代謝功能。溫和啓動排毒機制，稀釋血液雜質。</p></li>
-            <li><strong>申時（15:00-17:00，膀胱經當令）</strong>：<p>開窗通風，保持環境空氣清新，遠離油煙、悶熱環境。借膀胱經排濁功能減少油脂沈積。</p></li>
-            <li><strong>戌時（19:00-21:00，晚餐後1小時）</strong>：<p>保持坐姿放鬆，不立即躺臥或劇烈活動。讓身體專注代謝清理，減少經脈濁物堆積。</p></li>
-          </ul>
-        </div>
+<div class="bg-neutral p-4 rounded-lg mb-3">
+  <h4 class="font-semibold text-primary mb-3 text-base">② 免疫 —— 身體自帶的保護傘</h4>
+  <div class="mb-4">
+    <p class="text-sm font-medium text-neutral-dark mb-2">📖 故事1：小區保安的故事</p>
+    <ul class="mt-1 text-sm text-neutral-dark/80 space-y-2 list-disc pl-5">
+      <li>
+        有兩個小區，A區保安認真登記來訪者、定期巡邏，陌生閒雜人等很少進來；B區保安經常缺席，門口隨意進出，結果經常丟東西、出現閒散人員騷擾。
+        <p class="mt-1 text-neutral-dark/90">👉 寓意：免疫力就像小區的「保安隊」！抗生素好比臨時請的「外來幫手」，若過度依賴（濫用），反而會讓自家保安（自身免疫力）變得懶惰、能力下降；真正的健康防護，是養好自身免疫力，讓它能主動抵擋「外來威脅」。</p>
+      </li>
+    </ul>
+  </div>
+  
+  <div>
+    <p class="text-sm font-medium text-neutral-dark mb-2">📖 故事2：雨傘的故事</p>
+    <ul class="mt-1 text-sm text-neutral-dark/80 space-y-2 list-disc pl-5">
+      <li>
+        下雨天，有人總靠別人撐傘躲雨，一旦沒人幫忙就會淋濕；有人自己帶著結實的雨傘，無論風雨多大都能保護自己。後來常借傘的人，因為總淋濕，反而容易感冒；帶傘的人從來沒被大雨困擾。
+        <p class="mt-1 text-neutral-dark/90">👉 寓意：免疫力是身體的「自帶雨傘」！藥物好比「別人借的傘」，能暫時擋雨（緩解症狀），但不能替代自己的雨傘（免疫力）；只有把免疫力養強，才能在病毒、細菌的「風雨」中，真正保護自己。</p>
+      </li>
+    </ul>
+  </div>
+</div>
 
-        <div class="bg-neutral p-4 rounded-lg mb-3">
-          <h4 class="font-medium text-primary mb-2">五、寒涼濕症調理：<br>按時避寒“溫養陽氣”</h4>
-          <p class="text-sm text-neutral-dark/80">對應症狀：<p>鼻塞、關節痛、大便不成形、等</p></p>
-          <p class="text-sm text-neutral-dark/80 italic">《黃帝內經》<p>指出“寒邪客於經脈之中，則血泣而不通”</p></p>
-          <ul class="mt-2 text-sm text-neutral-dark/80 space-y-2 list-disc pl-5">
-            <li><strong>卯時（5:00-7:00，大腸經當令）</strong>：<p>穿好長袖衣物和襪子，避免腳部、腹部接觸涼地板或冷風。阻斷寒氣入侵，減少鼻塞流涕。</p></li>
-            <li><strong>午時（11:00-13:00，陽氣最盛時）</strong>：<p>到戶外曬後背10分鐘（避開強光時段）。借自然陽氣溫通經脈，增強驅寒能力。</p></li>
-            <li><strong>亥時（21:00-23:00，三焦經當令）</strong>：<p>用溫水洗漱，避免接觸冷水，減少空調直吹。保持身體溫潤，減少濕氣停留堆積。</p></li>
-          </ul>
-        </div>
+<div class="bg-neutral p-4 rounded-lg mb-3">
+  <h4 class="font-semibold text-primary mb-3 text-base">③ 毒素 —— 為什麼病會反覆？</h4>
+  <div class="mb-4">
+    <p class="text-sm font-medium text-neutral-dark mb-2">📖 故事1：廚房水槽的故事</p>
+    <ul class="mt-1 text-sm text-neutral-dark/80 space-y-2 list-disc pl-5">
+      <li>
+        廚房水槽的排水管堵了，水越積越多，還飄著食物殘渣。有人只把表面的髒水舀掉，沒通排水管，結果過一會兒又積滿了髒水；有人先拆開管道清走堵塞物，再用水沖洗，水槽從此暢通。
+        <p class="mt-1 text-neutral-dark/90">👉 寓意：毒素就像水槽里的「堵塞物」！若只針對囊腫、炎症等「表面髒水」做處理，沒打通體內的排毒通道（腸道、膀胱、皮膚等），毒素遲早再次堆積，問題反覆出現；先通排毒通道，才能從根本上減少毒素堆積。</p>
+      </li>
+    </ul>
+  </div>
+  
+  <div>
+    <p class="text-sm font-medium text-neutral-dark mb-2">📖 故事2：冰箱保鮮層的故事</p>
+    <ul class="mt-1 text-sm text-neutral-dark/80 space-y-2 list-disc pl-5">
+      <li>
+        冰箱保鮮層里，壞掉的水果、剩菜沒及時清理，時間長了不僅發臭，還把旁邊新買的蔬菜也熏壞了。有人只把壞蔬菜扔掉，沒清潔冰箱、沒扔壞水果，結果新放的食物還是很快變質；有人徹底清理壞東西、擦淨冰箱，後來食物保鮮時間明顯變長。
+        <p class="mt-1 text-neutral-dark/90">👉 寓意：體內毒素好比冰箱里的「壞食物」！若不及時排出，不僅會引發局部問題（如口臭、皮膚油膩），還會「污染」全身環境，導致更多健康問題；定期清毒素，就像清理冰箱，才能讓身體的「保鮮環境」維持健康。</p>
+      </li>
+    </ul>
+  </div>
+</div>
 
-        <div class="bg-neutral p-4 rounded-lg mb-3">
-          <h4 class="font-medium text-primary mb-2">六、免疫系統調理：<p>順時培補“正氣屏障”</p></h4>
-          <p class="text-sm text-neutral-dark/80">對應症狀：<p>感冒時間長、各種過敏、等</p></p>
-          <p class="text-sm text-neutral-dark/80 italic">《黃帝內經》<p>提出“正氣存內，邪不可乾”</p></p>
-          <ul class="mt-2 text-sm text-neutral-dark/80 space-y-2 list-disc pl-5">
-            <li><strong>寅時（3:00-5:00，肺經當令）</strong>：<p>保持睡眠環境溫暖安靜，不熬夜。借深睡增強肺經衛氣功能，減少外邪入侵。</p></li>
-            <li><strong>辰時（7:00-9:00，胃經當令）</strong>：<p>用餐時細嚼慢嚥，不急躁。提升脾胃功能以充養正氣，增強免疫基礎。</p></li>
-            <li><strong>申時（15:00-17:00，膀胱經當令）</strong>：<p>到戶外接觸自然光10分鐘，避免長期待在陰暗環境。激發陽氣升發，降低過敏感冒頻率。</p></li>
-          </ul>
-        </div>
+<div class="bg-neutral p-4 rounded-lg mb-3">
+  <h4 class="font-semibold text-primary mb-3 text-base">④ 營養 —— 吃進去的不一定吸收</h4>
+  <div class="mb-4">
+    <p class="text-sm font-medium text-neutral-dark mb-2">📖 故事1：花園澆水的故事</p>
+    <ul class="mt-1 text-sm text-neutral-dark/80 space-y-2 list-disc pl-5">
+      <li>
+        有人種花時，總是猛澆水、猛施肥，以為「給得多就長得好」，結果花根被澆爛、葉子被肥料燒枯；另一人先觀察土壤乾濕度，只在土壤微乾時澆水，還定期松土，讓根能呼吸，即使施肥不多，花也開得艷麗。
+        <p class="mt-1 text-neutral-dark/90">👉 寓意：營養吸收的關鍵在「根」！脾胃就像花的「根系」，若脾胃虛弱（根壞了），即使吃再多補品、營養餐，也無法吸收，反而增加身體負擔；先調好脾胃功能（松土、護根），才能讓吃進去的營養真正被利用，而不是浪費或變成「負擔」。</p>
+      </li>
+    </ul>
+  </div>
+  
+  <div>
+    <p class="text-sm font-medium text-neutral-dark mb-2">📖 故事2：自來水過濾器的故事</p>
+    <ul class="mt-1 text-sm text-neutral-dark/80 space-y-2 list-disc pl-5">
+      <li>
+        兩戶人家用同一個水廠的水，A戶直接接自來水燒開喝，水里總有雜質、水垢，燒水壺經常要清理；B戶裝了過濾器，先過濾掉雜質、異味，燒出來的水乾淨無水垢，喝著也放心。
+        <p class="mt-1 text-neutral-dark/90">👉 寓意：營養吸收需要「好通道」！腸道就像身體的「過濾器」，若腸道菌群失衡、腸壁不通透（過濾器堵了），即使吃的食物再營養，也會被雜質（毒素、壞菌）干擾，無法有效吸收；先改善腸道環境（清理過濾器），營養才能順暢進入身體，補到「點上」。</p>
+      </li>
+    </ul>
+  </div>
+</div>
 
-        <div class="bg-neutral p-4 rounded-lg">
-          <h4 class="font-medium text-primary mb-2">七、情緒調理：<p>順時疏解“情志郁結”</p></h4>
-          <p class="text-sm text-neutral-dark/80">對應症狀：<p>多夢、常嘆氣、經期頭痛、等</p></p>
-          <p class="text-sm text-neutral-dark/80 italic">《黃帝內經》<p>曰“怒則氣上，喜則氣緩，悲則氣消”</p></p>
-          <ul class="mt-2 text-sm text-neutral-dark/80 space-y-2 list-disc pl-5">
-            <li><strong>未時（13:00-15:00，小腸經當令）</strong>：<p>暫停工作，到窗邊望向開闊處，不鑽牛角尖。借開闊視野疏解情緒郁結，減少煩躁嘆氣。</p></li>
-            <li><strong>戌時（19:00-21:00，心包經當令）</strong>：<p>不討論煩心事，做簡單放鬆活動（如聽舒緩聲音）。保持平和狀態讓氣血平穩，減少情緒性頭痛。</p></li>
-            <li><strong>亥時（21:00-23:00，三焦經當令）</strong>：<p>整理當日思緒，寫下未完成事項（避免睡前思慮），營造安靜氛圍。助力情緒疏洩，減少多夢失眠。</p></li>
-          </ul>
-        </div>
+<div class="bg-neutral p-4 rounded-lg mb-3">
+  <h4 class="font-semibold text-primary mb-3 text-base">⑤ 循環 —— 通則不痛，痛則不通</h4>
+  <div class="mb-4">
+    <p class="text-sm font-medium text-neutral-dark mb-2">📖 故事1：小區水管的故事</p>
+    <ul class="mt-1 text-sm text-neutral-dark/80 space-y-2 list-disc pl-5">
+      <li>
+        老舊小區的自來水管，一開始只是個別用戶家水壓小、水流細，大家以為是「暫時問題」沒在意；後來水管里的水垢越積越多，不僅水壓越來越小，還經常堵塞，最後整棟樓都沒水用，只能花大錢換整條水管。
+        <p class="mt-1 text-neutral-dark/90">👉 寓意：循環暢通是健康的「水管系統」！微循環好比家裡的「細小水管」，一開始的「小堵」（如手足麻木、頭暈）若不重視，水垢（毒素、血脂）會慢慢堆積，最後變成「大堵」（腦梗、心梗、腎衰）；早期疏通循環，比後期「換水管」（治療大病）容易得多。</p>
+      </li>
+    </ul>
+  </div>
+  
+  <div>
+    <p class="text-sm font-medium text-neutral-dark mb-2">📖 故事2：自行車鏈條的故事</p>
+    <ul class="mt-1 text-sm text-neutral-dark/80 space-y-2 list-disc pl-5">
+      <li>
+        自行車鏈條若長時間不清理、不加油，一開始只是騎起來有點沈、有異響，後來鏈條生鏽、卡殼，甚至磨損齒輪，最後自行車根本騎不動，只能換鏈條、修齒輪。
+        <p class="mt-1 text-neutral-dark/90">👉 寓意：循環就像自行車的「鏈條」！身體的血液、氣機流動靠循環推動，若循環不暢（鏈條生鏽），一開始只是局部不適（騎著沈），若不管不顧，會慢慢損傷五臟六腑（磨損齒輪）；定期「潤滑」（調理循環），才能讓身體的「運轉」一直暢通。</p>
+      </li>
+    </ul>
+  </div>
+</div>
 
-        <div class="mt-4 text-sm text-neutral-dark/70 text-center">
-          按以上時辰規律調理，能順應身體氣血運行節奏，<p>慢慢改善相關症狀～</p>若症狀持續不緩解，建議及時咨詢專業醫生。
-        </div>
+<div class="bg-neutral p-4 rounded-lg mb-3">
+  <h4 class="font-semibold text-primary mb-3 text-base">⑥ 內分泌 —— 身體的總開關</h4>
+  <div class="mb-4">
+    <p class="text-sm font-medium text-neutral-dark mb-2">📖 故事1：家庭電路的故事</p>
+    <ul class="mt-1 text-sm text-neutral-dark/80 space-y-2 list-disc pl-5">
+      <li>
+        家裡的燈忽明忽暗、電視經常斷電，有人以為是燈泡壞了，換了好幾個燈泡還是沒用；後來電工檢查發現，是總電閘的線路接觸不良，導致全屋電壓不穩。修好總電閘後，所有家電都恢復正常。
+        <p class="mt-1 text-neutral-dark/90">👉 寓意：內分泌是身體的「總電閘」！月經不調、失眠、皮膚差等問題，好比「個別家電故障」，若只針對單一問題調理（換燈泡），沒解決內分泌失調的「總開關問題」，症狀遲早反覆；調整內分泌平衡，才能讓身體的「所有系統」都正常運轉。</p>
+      </li>
+    </ul>
+  </div>
+  
+  <div>
+    <p class="text-sm font-medium text-neutral-dark mb-2">📖 故事2：樂隊指揮的故事</p>
+    <ul class="mt-1 text-sm text-neutral-dark/80 space-y-2 list-disc pl-5">
+      <li>
+          一個樂隊沒有指揮，小提琴、鋼琴、鼓手各奏各的，聲音雜亂無章；有了指揮後，大家按節奏配合，才能奏出和諧動聽的音樂。若指揮節奏亂了，即使每個樂手技術再好，音樂也會難聽。
+        <p class="mt-1 text-neutral-dark/90">👉 寓意：內分泌就像身體的「樂隊指揮」！五臟六腑（樂手）的運轉需要內分泌（指揮）協調，若內分泌失調（指揮亂節奏），肝膽、脾胃、腎臟等就會「各自為政」，導致情緒差、月經亂、睡眠糟；只有讓內分泌回到「正常節奏」，五臟六腑才能協同工作，身體才會和諧健康。</p>
+      </li>
+    </ul>
+  </div>
+</div>
+
+
+<div class="mt-4 text-sm text-neutral-dark/70 text-center">
+  理解六大調理核心邏輯：先調體質根基，再清毒素、暢循環、強免疫，<br>
+  搭配均衡營養與規律作息，健康改善更高效～<br>
+  如出現持續疼痛、異常出血等癥狀，請盡快就醫檢查。
+</div>
       `;
     } else {
       console.error('健康建議容器元素未找到，無法渲染調理建議');
