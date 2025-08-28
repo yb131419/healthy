@@ -2793,9 +2793,10 @@ async function handleImageDownload() {
 
 // 保存圖片到相冊（兼容多設備）
 function saveToGallery(blob, fileName) {
+  // 新增iOS设备检测
+  const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+  
   return new Promise((resolve) => {
-    const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-
     // 現代瀏覽器支持文件保存API
     if (window.showSaveFilePicker && !isIOS) {
       window.showSaveFilePicker({
@@ -2805,15 +2806,15 @@ function saveToGallery(blob, fileName) {
       .then(handle => handle.createWritable())
       .then(writable => writable.write(blob).then(() => writable.close()))
       .then(() => { alert('圖片已成功保存！'); resolve(true); })
-      .catch(() => saveWithAnchorTag(blob, fileName, resolve)); // 降級為a標籤下載
+      .catch(() => saveWithAnchorTag(blob, fileName, resolve, isIOS)); // 传递isIOS参数
     } else {
-      saveWithAnchorTag(blob, fileName, resolve);
+      saveWithAnchorTag(blob, fileName, resolve, isIOS); // 传递isIOS参数
     }
   });
 }
 
 // a標籤兼容下載（適配舊瀏覽器與IOS）
-function saveWithAnchorTag(blob, fileName, resolve) {
+function saveWithAnchorTag(blob, fileName, resolve, isIOS) { // 接收isIOS参数
   const blobUrl = URL.createObjectURL(blob);
   const downloadLink = document.createElement('a');
   downloadLink.download = fileName;
@@ -2830,7 +2831,7 @@ function saveWithAnchorTag(blob, fileName, resolve) {
     URL.revokeObjectURL(blobUrl);
     // 提示IOS用戶手動保存
     if (isIOS) alert(`圖片已存檔，請點擊「分享」圖標保存到相冊`);
-    else alert(`圖片已保存到「下載」文件夾，可在相冊的「下載」專輯中找到\n文件名：${localImageName}`);
+    else alert(`圖片已保存到「下載」文件夾，可在相冊的「下載」專輯中找到\n文件名：${fileName}`);
     resolve(true);
   }, 1000);
 }
