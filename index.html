@@ -2827,15 +2827,17 @@ async function handleImageDownload() {
 
     // 檢查依賴庫與DOM元素
     if (typeof html2canvas === 'undefined') throw new Error('圖片處理庫未加載，請刷新頁面重試');
-    const reportElement = document.querySelector('#result .bg-white.rounded-2xl.shadow-md.p-6');
-    if (!reportElement) throw new Error('未找到評估結果，請先完成評估');
+    // 關鍵修改：僅選擇「健康自檢表AI評估區域」的DOM元素（需確保頁面中此元素ID唯一）
+    // 若頁面中AI評估區域的類名/ID不同，請根據實際DOM結構調整選擇器（例如：.ai-evaluation-area）
+    const reportElement = document.querySelector('#ai-evaluation-container'); 
+    if (!reportElement) throw new Error('未找到AI評估區域，請先完成評估');
 
-    // 臨時調整樣式（避免截圖包含多餘陰影）
+    // 臨時調整樣式（避免截圖包含多餘陰影，不影響六大調理方向）
     const originalStyle = { padding: reportElement.style.padding, boxShadow: reportElement.style.boxShadow };
     reportElement.style.padding = '24px';
     reportElement.style.boxShadow = 'none';
 
-    // 生成結果頁截圖
+    // 生成AI評估區域截圖（僅截取目標區域）
     const canvas = await html2canvas(reportElement, {
       useCORS: true,
       allowTaint: false,
@@ -2850,11 +2852,11 @@ async function handleImageDownload() {
     reportElement.style.padding = originalStyle.padding;
     reportElement.style.boxShadow = originalStyle.boxShadow;
 
-    // 生成文件名與Blob
+    // 生成文件名與Blob（文件名保留AI評估標識，便於識別）
     const userName = document.getElementById('name').value.trim() || '未知用戶';
     const currentDate = new Date();
     const formattedDate = `${currentDate.getFullYear()}年${String(currentDate.getMonth() + 1).padStart(2, '0')}月${String(currentDate.getDate()).padStart(2, '0')}日`;
-    localImageName = `${userName}_健康自檢表_${formattedDate}.jpg`;
+    localImageName = `${userName}_健康自檢表AI評估_${formattedDate}.jpg`; // 文件名增加AI標識
     
     // 轉換Canvas為Blob（JPG格式，90%質量）
     localImageBlob = await new Promise((resolve, reject) => {
@@ -2897,14 +2899,14 @@ async function handleImageDownload() {
     downloadReportBtn.innerHTML = '<i class="fa fa-image mr-2"></i> 保存到相冊...';
     await saveToGallery(localImageBlob, localImageName);
 
-    // 完成處理，提示用戶
+    // 完成處理，提示用戶（明確告知是AI評估截圖）
     setTimeout(() => {
       downloadReportBtn.disabled = false;
       downloadReportBtn.innerHTML = '<i class="fa fa-download mr-2"></i> 重新轉檔操作';
       alert(`
 圖片已成功保存！
 文件名：${localImageName}
-✅ 分享將同步分享圖片與鏈接
+✅ 分享將同步分享AI評估圖片與鏈接
 🔗 圖片鏈接：${imgbbImageUrl}
       `.trim());
       showSingleShareButton(userName, formattedDate);
@@ -2913,12 +2915,12 @@ async function handleImageDownload() {
   } catch (error) {
     console.error('圖片處理失敗：', error);
     downloadReportBtn.disabled = false;
-    downloadReportBtn.innerHTML = '<i class="fa fa-download mr-2"></i> 下載圖片';
+    downloadReportBtn.innerHTML = '<i class="fa fa-download mr-2"></i> 下載AI評估圖片'; // 按鈕文字更新
     alert(`操作失敗：${error.message}\n請刷新頁面後重試`);
   }
 }
 
-// 保存圖片到相冊（兼容多設備）
+// 保存圖片到相冊（兼容多設備，邏輯不變）
 function saveToGallery(blob, fileName) {
   // 新增iOS设备检测
   const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
@@ -2932,7 +2934,7 @@ function saveToGallery(blob, fileName) {
       })
       .then(handle => handle.createWritable())
       .then(writable => writable.write(blob).then(() => writable.close()))
-      .then(() => { alert('圖片已成功保存！'); resolve(true); })
+      .then(() => { alert('AI評估圖片已成功保存！'); resolve(true); }) // 提示文字更新
       .catch(() => saveWithAnchorTag(blob, fileName, resolve, isIOS)); // 传递isIOS参数
     } else {
       saveWithAnchorTag(blob, fileName, resolve, isIOS); // 传递isIOS参数
@@ -2940,7 +2942,7 @@ function saveToGallery(blob, fileName) {
   });
 }
 
-// a標籤兼容下載（適配舊瀏覽器與IOS）
+// a標籤兼容下載（適配舊瀏覽器與IOS，邏輯不變）
 function saveWithAnchorTag(blob, fileName, resolve, isIOS) { // 接收isIOS参数
   const blobUrl = URL.createObjectURL(blob);
   const downloadLink = document.createElement('a');
@@ -2956,20 +2958,20 @@ function saveWithAnchorTag(blob, fileName, resolve, isIOS) { // 接收isIOS参�
   setTimeout(() => {
     document.body.removeChild(downloadLink);
     URL.revokeObjectURL(blobUrl);
-    // 提示IOS用戶手動保存
-    if (isIOS) alert(`圖片已轉檔完成，請下方點擊「分享健康自檢表」圖標`);
-    else alert(`圖片已保存到「下載」文件夾，可在相冊的「下載」專輯中找到\n文件名：${fileName}`);
+    // 提示IOS用戶手動保存（文字更新）
+    if (isIOS) alert(`AI評估圖片已轉檔完成，請下方點擊「分享健康自檢表AI評估」圖標`);
+    else alert(`AI評估圖片已保存到「下載」文件夾，可在相冊的「下載」專輯中找到\n文件名：${fileName}`); // 提示文字更新
     resolve(true);
   }, 1000);
 }
 
-// 顯示分享按鈕（固定在頁面底部）
+// 顯示分享按鈕（固定在頁面底部，文字與分享內容更新）
 function showSingleShareButton(userName, date) {
   // 移除舊的分享按鈕
   const existingShareBtn = document.getElementById('singleShareBtn');
   if (existingShareBtn) document.body.removeChild(existingShareBtn);
 
-  // 創建新的分享按鈕
+  // 創建新的分享按鈕（按鈕文字更新為AI評估）
   const shareBtn = document.createElement('button');
   shareBtn.id = 'singleShareBtn';
   shareBtn.style.cssText = `
@@ -2979,23 +2981,23 @@ function showSingleShareButton(userName, date) {
     font-size: 16px; font-weight: bold; display: flex; align-items: center; gap: 8px;
     z-index: 9999; cursor: pointer;
   `;
-  shareBtn.innerHTML = '<i class="fa fa-share-alt"></i> 分享健康自檢表';
+  shareBtn.innerHTML = '<i class="fa fa-share-alt"></i> 分享健康自檢表AI評估'; // 按鈕文字更新
   document.body.appendChild(shareBtn);
 
-  // 綁定分享事件
+  // 綁定分享事件（分享內容強調AI評估）
   shareBtn.addEventListener('click', async () => {
     try {
       if (!localImageBlob || !imgbbImageUrl) {
-        alert('分享資源不完整，請重新生成圖片');
+        alert('分享資源不完整，請重新生成AI評估圖片'); // 提示文字更新
         return;
       }
 
-      // 構建分享內容
+      // 構建分享內容（明確標注AI評估）
       const imageFile = new File([localImageBlob], localImageName, { type: 'image/jpeg' });
       const shareText = `
-📋 『 ${userName} 』的健康自檢表
+📋 『 ${userName} 』的健康自檢表AI評估
 🗓️ 自檢日期：${date}
-💡 包含：調理方向 + AI評估
+💡 內容：AI評估結果
 🔗 圖片鏈接：\n${imgbbImageUrl}
       `.trim();
 
@@ -3003,36 +3005,36 @@ function showSingleShareButton(userName, date) {
       if (navigator.share && navigator.canShare({ files: [imageFile] })) {
         shareBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> 喚醒分享...';
         await navigator.share({
-          title: `${userName}的健康自檢表`,
+          title: `${userName}的健康自檢表AI評估`, // 分享標題更新
           text: shareText,
           files: [imageFile],
           url: imgbbImageUrl
         });
-        alert('分享成功！可直接查看圖片預覽');
-        shareBtn.innerHTML = '<i class="fa fa-share-alt"></i> 分享健康自檢表';
+        alert('AI評估圖片分享成功！可直接查看圖片預覽'); // 提示文字更新
+        shareBtn.innerHTML = '<i class="fa fa-share-alt"></i> 分享健康自檢表AI評估'; // 按鈕文字恢復
       } else {
-        // 降級為複製鏈接
+        // 降級為複製鏈接（文字更新）
         await navigator.clipboard.writeText(shareText);
         alert(`
-您的瀏覽器不支持圖片分享，已複製分享內容：
+您的瀏覽器不支持圖片分享，已複製AI評估分享內容：
 ${shareText}\n
 操作提示：
 1. 打開聊天窗口
 2. 長按輸入框粘貼
-3. 對方可點擊imgbb鏈接查看圖片
+3. 對方可點擊imgbb鏈接查看AI評估圖片
         `.trim());
       }
     } catch (shareError) {
-      console.error('分享失敗:', shareError);
-      shareBtn.innerHTML = '<i class="fa fa-share-alt"></i> 分享健康自檢表';
+      console.error('AI評估分享失敗:', shareError); // 日誌文字更新
+      shareBtn.innerHTML = '<i class="fa fa-share-alt"></i> 分享健康自檢表AI評估'; // 按鈕文字恢復
       if (shareError.name !== 'AbortError') {
         alert(`
-分享失敗，請手動使用imgbb鏈接：
+AI評估分享失敗，請手動使用imgbb鏈接：
 🔗 ${imgbbImageUrl}
-\n提示：將鏈接粘貼到聊天窗口，對方可直接查看圖片
-        `.trim());
+\n提示：將鏈接粘貼到聊天窗口，對方可直接查看AI評估圖片
+        `.trim()); // 提示文字更新
       } else {
-        alert('分享已取消');
+        alert('AI評估分享已取消'); // 提示文字更新
       }
     }
   });
