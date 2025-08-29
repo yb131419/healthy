@@ -2356,7 +2356,7 @@ function submitToGoogleSheets() {
 
 // -------------------------- 16. 生成評估結果（含雷達圖與健康建議）
 function generateResult() {
-  // 1. 加載基本信息
+  // 1. 加載基本信息（已修改為雙行顯示）
   const name = document.getElementById('name').value || '未填寫';
   const age = document.getElementById('age').value || '未填寫';
   const selectedGender = document.querySelector('input[name="gender"]:checked');
@@ -2370,13 +2370,13 @@ function generateResult() {
   const occupation = document.getElementById('occupation').value || '未填寫';
   const bmi = calculateBMI();
 
-  // 2. 渲染基本信息卡片 - 修復顯示位置問題
+  // 2. 渲染基本信息卡片 - 雙行顯示格式
   const basicInfoContainer = document.getElementById('basicInfo');
   if (basicInfoContainer) {
     // 確保容器可見
     basicInfoContainer.style.display = 'block';
     basicInfoContainer.innerHTML = `
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+      <div class="grid grid-cols-2 gap-2">
         <div class="p-3 border border-gray-100 rounded-lg">
           <p class="text-sm"><strong>姓名：</strong> ${name}</p>
         </div>
@@ -2407,7 +2407,7 @@ function generateResult() {
         <div class="p-3 border border-gray-100 rounded-lg">
           <p class="text-sm"><strong>血糖：</strong> ${bloodSugar}</p>
         </div>
-        <div class="p-3 border border-gray-100 rounded-lg md:col-span-2">
+        <div class="p-3 border border-gray-100 rounded-lg col-span-2">
           <p class="text-sm"><strong>職業：</strong> ${occupation}</p>
         </div>
       </div>
@@ -2419,7 +2419,7 @@ function generateResult() {
     newBasicInfo.className = 'basic-info-container mt-6';
     newBasicInfo.innerHTML = `
       <h3 class="text-lg font-semibold mb-4">基本資料</h3>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+      <div class="grid grid-cols-2 gap-2">
         <div class="p-3 border border-gray-100 rounded-lg">
           <p class="text-sm"><strong>姓名：</strong> ${name}</p>
         </div>
@@ -2581,7 +2581,7 @@ function generateResult() {
   document.getElementById('symptomScoreBar').style.width = `${symptomPercent}%`;
   document.getElementById('habitScoreBar').style.width = `${habitPercent}%`;
 
-  // 7. 渲染主要健康問題（含症狀分類）- 修復顯示問題
+  // 7. 渲染主要健康問題（含症狀分類）
   const mainIssuesContainer = document.getElementById('mainHealthIssues');
   let mainConcern = document.getElementById('mainConcern').value.trim();
   // 未填主要問題時，從選中症狀中提取高頻分類
@@ -2636,7 +2636,7 @@ function generateResult() {
     }
   });
 
-  // 渲染主要健康問題區域 - 修復顯示位置和格式
+  // 渲染主要健康問題區域
   if (mainIssuesContainer) {
     // 確保容器可見
     mainIssuesContainer.style.display = 'block';
@@ -2783,7 +2783,7 @@ function generateResult() {
   }
 }
 
-// -------------------------- 17. 圖片下載與分享（前端直接集成ImgBB API解決存檔問題）
+// -------------------------- 17. 圖片下載與分享（調整範圍到AI評估為止）
 async function handleImageDownload() {
   try {
     downloadReportBtn.disabled = true;
@@ -2791,7 +2791,17 @@ async function handleImageDownload() {
 
     // 檢查依賴庫與DOM元素
     if (typeof html2canvas === 'undefined') throw new Error('圖片處理庫未加載，請刷新頁面重試');
-    const reportElement = document.querySelector('#result .bg-white.rounded-2xl.shadow-md.p-6');
+    // 調整截圖範圍：只包含到AI評估部分
+    const aiContainer = document.getElementById('aiEvaluationContainer');
+    if (!aiContainer) throw new Error('未找到AI評估結果，請先完成評估');
+    
+    // 找到包含從頂部到AI評估的完整容器
+    let reportElement = aiContainer;
+    // 向上查找合適的父容器，確保包含基本資料到AI評估
+    while (reportElement.parentElement && !reportElement.id.includes('result')) {
+      reportElement = reportElement.parentElement;
+    }
+
     if (!reportElement) throw new Error('未找到評估結果，請先完成評估');
 
     // 臨時調整樣式（避免截圖包含多餘陰影）
@@ -2799,7 +2809,7 @@ async function handleImageDownload() {
     reportElement.style.padding = '24px';
     reportElement.style.boxShadow = 'none';
 
-    // 生成結果頁截圖
+    // 生成結果頁截圖（僅包含到AI評估部分）
     const canvas = await html2canvas(reportElement, {
       useCORS: true,
       allowTaint: false,
@@ -2807,7 +2817,7 @@ async function handleImageDownload() {
       logging: false,
       scrollY: -window.scrollY,
       windowWidth: reportElement.offsetWidth,
-      windowHeight: reportElement.offsetHeight
+      windowHeight: aiContainer.getBoundingClientRect().bottom - reportElement.getBoundingClientRect().top + 40 // 只截取到AI評估底部
     });
 
     // 恢復原樣式
