@@ -2661,89 +2661,155 @@ function generateResult() {
     }
 
     recommendationsHtml += `
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>健康六大核心調理方向</title>
+    <style>
+        /* 基礎樣式優化：提升可讀性與適配性 */
+        body {
+            font-family: "Microsoft YaHei", Arial, sans-serif;
+            line-height: 1.6;
+            padding: 20px;
+            background-color: #f9fafb;
+        }
+        /* 卡片容器：獨立分區+柔和視覺 */
+        .health-card {
+            background-color: #ffffff;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        /* 標題樣式：突出層級+視覺引導 */
+        .card-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #2563eb; /* 主色調：藍色，清晰醒目 */
+            margin-top: 0;
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #eff6ff;
+        }
+        /* 故事標題：區分內容模塊 */
+        .story-heading {
+            font-size: 15px;
+            font-weight: 500;
+            color: #1e293b;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+        }
+        .story-heading::before {
+            content: "📖";
+            margin-right: 8px;
+        }
+        /* 列表樣式：優化間距與符號 */
+        .card-list {
+            font-size: 14px;
+            color: #475569;
+            margin: 0;
+            padding-left: 22px;
+            list-style-type: disc;
+        }
+        .card-list li {
+            margin-bottom: 15px;
+            line-height: 1.7;
+        }
+        /* 寓意文本：突出核心啓示 */
+        .moral-text {
+            font-size: 14px;
+            color: #1e293b;
+            margin-top: 10px;
+            padding-left: 5px;
+            border-left: 3px solid #bfdbfe; /* 左側線條：強化視覺層次 */
+        }
+    </style>
+</head>
+<body>
+
 <!-- ① 體質——健康的「基礎土壤」 -->
-<div class="bg-neutral p-4 rounded-lg mb-3">
-  <h4 class="font-semibold text-primary mb-3 text-base">① 體質 —— 健康的「基礎土壤」</h4>
-  <div>
-    <p class="text-sm font-medium text-neutral-dark mb-2">📖 故事：木耳的故事（身體受寒長腫瘤木耳）</p>
-    <ul class="mt-1 text-sm text-neutral-dark/80 space-y-2 list-disc pl-5">
-      <li>
-        👉 木頭放陰暗潮濕的地方就會長木耳，就算把木耳摘掉，過一陣子還是會長；但如果把木頭拿到太陽下曬乾，木耳就會縮水掉下来。潮濕的木頭就等於體內的寒濕氣，木耳就是腫瘤或囊腫，曬太陽就是幫身體排寒、提高體溫。
-        <p class="mt-1 text-neutral-dark/90">👉 寓意：體質就像健康的「土壤」！寒濕氣不除掉，就像潮濕環境一直養著木耳，身體的問題也會反覆冒出來；調體質的重點，就是先排寒除濕、提升身體溫度，從根源斷掉「問題生長的溫床」。</p>
-      </li>
+<div class="health-card">
+    <h3 class="card-title">① 體質 —— 健康的「基礎土壤」</h3>
+    <p class="story-heading">故事：木耳的故事（身體受寒長腫瘤木耳）</p>
+    <ul class="card-list">
+        <li>
+            木頭放在陰暗潮濕的地方就會長木耳，就算把木耳摘掉，過一陣子還是會再長；但如果把木頭拿到太陽下曬乾，木耳就會縮水掉下來。<br>
+            其中，潮濕的木頭等同於體內的寒濕氣，木耳對應腫瘤或囊腫，曬太陽則是幫身體排寒、提高體溫。
+            <p class="moral-text">寓意：體質就像健康的「土壤」！寒濕氣不除掉，就像潮濕環境一直養著木耳，身體的問題也會反復冒出來；調體質的重點，就是先排寒除濕、提升身體溫度，從根源斷掉「問題生長的溫床」。</p>
+        </li>
     </ul>
-  </div>
 </div>
 
 <!-- ② 免疫——身體的「常駐軍隊」 -->
-<div class="bg-neutral p-4 rounded-lg mb-3">
-  <h4 class="font-semibold text-primary mb-3 text-base">② 免疫 —— 身體的「常駐軍隊」</h4>
-  <div>
-    <p class="text-sm font-medium text-neutral-dark mb-2">📖 故事：軍隊打仗的故事（免疫力與營養）</p>
-    <ul class="mt-1 text-sm text-neutral-dark/80 space-y-2 list-disc pl-5">
-      <li>
-        👉 把疾病當成敵人，免疫力就是保護身體的軍隊。如果只靠扔炸彈（吃藥），雖然能暫時打退敵人，卻也會炸死自己的士兵（降低免疫力）；但如果給軍隊足夠的糧食（補充營養），讓士兵變強，不僅能主動打贏敵人，還能建立長期的防線（產生抗體）。
-        <p class="mt-1 text-neutral-dark/90">👉 寓意：藥物只是「臨時外援」，免疫力才是「常駐防線」！很多人靠藥物控制指標，卻忽略了免疫力這個根本；真正的健康，是靠營養喂飽免疫力，讓它能自己抵擋病毒、細菌，而不是一直靠「外援」撐著。</p>
-      </li>
+<div class="health-card">
+    <h3 class="card-title">② 免疫 —— 身體的「常駐軍隊」</h3>
+    <p class="story-heading">故事：軍隊打仗的故事（免疫力與營養）</p>
+    <ul class="card-list">
+        <li>
+            把疾病當成敵人，免疫力就是保護身體的軍隊。如果只靠扔炸彈（吃藥），雖然能暫時打退敵人，卻也會炸死自己的士兵（降低免疫力）；<br>
+            但如果給軍隊足夠的糧食（補充營養），讓士兵變強，不僅能主動打贏敵人，還能建立長期的防線（產生抗體）。
+            <p class="moral-text">寓意：藥物只是「臨時外援」，免疫力才是「常駐防線」！很多人靠藥物控制指標，卻忽略了免疫力這個根本；真正的健康，是靠營養餵飽免疫力，讓它能自己抵擋病毒、細菌，而不是一直靠「外援」撐著。</p>
+        </li>
     </ul>
-  </div>
 </div>
 
-<!-- ③ 毒素——疾病反覆的「隱形根源」 -->
-<div class="bg-neutral p-4 rounded-lg mb-3">
-  <h4 class="font-semibold text-primary mb-3 text-base">③ 毒素 —— 疾病反覆的「隱形根源」</h4>
-  <div>
-    <p class="text-sm font-medium text-neutral-dark mb-2">📖 故事：垃圾的故事（疾病為什麼會反覆）</p>
-    <ul class="mt-1 text-sm text-neutral-dark/80 space-y-2 list-disc pl-5">
-      <li>
-        👉 一堆垃圾放在那，一定會吸引蒼蠅。如果只拿蒼蠅拍打蒼蠅（吃消炎藥），永遠打不完；只有把垃圾徹底清走（排毒素），蒼蠅才會自然不見。更麻煩的是，垃圾不清，還會散到其他地方（疾病蔓延）。
-        <p class="mt-1 text-neutral-dark/90">👉 寓意：體內的毒素就像「那堆垃圾」，發炎、潰瘍這些問題就是「蒼蠅」。很多人只治症狀不排毒，毒素越堆越多，問題當然會反覆，甚至從局部擴散到全身（比如從喉嚨痛變成肺炎）。調健康的第一步，就是先給身體「掃垃圾」——打通腸道、皮膚這些排毒通道。</p>
-      </li>
+<!-- ③ 毒素——疾病反復的「隱形根源」 -->
+<div class="health-card">
+    <h3 class="card-title">③ 毒素 —— 疾病反復的「隱形根源」</h3>
+    <p class="story-heading">故事：垃圾的故事（疾病為什麼會反復）</p>
+    <ul class="card-list">
+        <li>
+            一堆垃圾放在那裡，一定會吸引蒼蠅。如果只拿蒼蠅拍打蒼蠅（吃消炎藥），永遠打不完；只有把垃圾徹底清走（排毒素），蒼蠅才會自然不見。<br>
+            更麻煩的是，垃圾不清，還會擴散到其他地方（疾病蔓延）。
+            <p class="moral-text">寓意：體內的毒素就像「那堆垃圾」，發炎、潰瘍這些問題就是「蒼蠅」。很多人只治症狀不排毒，毒素越堆越多，問題當然會反復，甚至從局部擴散到全身（比如從喉嚨痛變成肺炎）。調健康的第一步，就是先給身體「掃垃圾」——打通腸道、皮膚這些排毒通道。</p>
+        </li>
     </ul>
-  </div>
 </div>
 
 <!-- ④ 營養——身體吸收的「原料密碼」 -->
-<div class="bg-neutral p-4 rounded-lg mb-3">
-  <h4 class="font-semibold text-primary mb-3 text-base">④ 營養 —— 身體吸收的「原料密碼」</h4>
-  <div>
-    <p class="text-sm font-medium text-neutral-dark mb-2">📖 故事：牛吃草擠奶的故事（營養能調好病？）</p>
-    <ul class="mt-1 text-sm text-neutral-dark/80 space-y-2 list-disc pl-5">
-      <li>
-        👉 牛吃進去的是草，擠出來的是奶。就算有最頂尖的實驗室和預算，也做不出一台能「把草變成奶」的機器；但農夫只要給牛喂新鮮的草（補對營養），牛就能靠自己的本能產出奶。
-        <p class="mt-1 text-neutral-dark/90">👉 寓意：人體和牛一樣，需要「對的原料」（七大營養素）才能運轉。很多人吃了一堆補品卻沒效果，不是營養沒用，而是脾胃虛弱（像生病的牛）沒辦法吸收，反而增加身體負擔。補營養的重點，是先讓脾胃「有能力轉化」，再給對的食物，才能讓營養變成身體需要的「能量」。</p>
-      </li>
+<div class="health-card">
+    <h3 class="card-title">④ 營養 —— 身體吸收的「原料密碼」</h3>
+    <p class="story-heading">故事：牛吃草擠奶的故事（營養能調好病？）</p>
+    <ul class="card-list">
+        <li>
+            牛吃進去的是草，擠出來的是奶。就算有最頂尖的實驗室和預算，也做不出一台能「把草變成奶」的機器；<br>
+            但農夫只要給牛餵新鮮的草（補對營養），牛就能靠自己的本能產出奶。
+            <p class="moral-text">寓意：人體和牛一樣，需要「對的原料」（七大營養素）才能運轉。很多人吃了一堆補品卻沒效果，不是營養沒用，而是脾胃虛弱（像生病的牛）沒辦法吸收，反而增加身體負擔。補營養的重點，是先讓脾胃「有能力轉化」，再給對的食物，才能讓營養變成身體需要的「能量」。</p>
+        </li>
     </ul>
-  </div>
 </div>
 
 <!-- ⑤ 循環——健康的「暢通管道」 -->
-<div class="bg-neutral p-4 rounded-lg mb-3">
-  <h4 class="font-semibold text-primary mb-3 text-base">⑤ 循環 —— 健康的「暢通管道」</h4>
-  <div>
-    <p class="text-sm font-medium text-neutral-dark mb-2">📖 故事：水溝除草的故事（高血壓與降壓藥）</p>
-    <ul class="mt-1 text-sm text-neutral-dark/80 space-y-2 list-disc pl-5">
-      <li>
-        👉 流水的水溝長滿雜草，水流就會變慢、壓力變大。有人不想除草，反而把水溝加寬（吃降壓藥擴張血管），但雜草還在，過一陣子水流還是會堵、壓力還是會升；更糟的是，反覆加寬水溝（長期吃降壓藥），水溝壁會變脆，很容易破裂（血管破裂引發腦溢血）。
-        <p class="mt-1 text-neutral-dark/90">👉 寓意：血管循環就像「水溝」，血脂、垃圾是「雜草」，高血壓就是「水流壓力大」。降壓藥只能暫時「加寬管道」，沒清掉血管裡的垃圾，問題遲早反覆。調循環的關鍵，是清理血管垃圾（除草），讓血液順暢流動，而不是一直靠「擴管」硬撐。</p>
-      </li>
+<div class="health-card">
+    <h3 class="card-title">⑤ 循環 —— 健康的「暢通管道」</h3>
+    <p class="story-heading">故事：水溝除草的故事（高血壓與降壓藥）</p>
+    <ul class="card-list">
+        <li>
+            流水的水溝長滿雜草，水流就會變慢、壓力變大。有人不想除草，反而把水溝加寬（吃降壓藥擴張血管），但雜草還在，過一陣子水流還是會堵、壓力還是會升；<br>
+            更糟的是，反復加寬水溝（長期吃降壓藥），水溝壁會變脆，很容易破裂（血管破裂引發腦溢血）。
+            <p class="moral-text">寓意：血管循環就像「水溝」，血脂、垃圾是「雜草」，高血壓就是「水流壓力大」。降壓藥只能暫時「加寬管道」，沒清掉血管里的垃圾，問題遲早反復。調循環的關鍵，是清理血管垃圾（除草），讓血液順暢流動，而不是一直靠「擴管」硬撐。</p>
+        </li>
     </ul>
-  </div>
 </div>
 
 <!-- ⑥ 內分泌——身體的「總調度中心」 -->
-<div class="bg-neutral p-4 rounded-lg mb-3">
-  <h4 class="font-semibold text-primary mb-3 text-base">⑥ 內分泌 —— 身體的「總調度中心」</h4>
-  <div>
-    <p class="text-sm font-medium text-neutral-dark mb-2">📖 故事：家庭電路的故事（內分泌與身體系統）</p>
-    <ul class="mt-1 text-sm text-neutral-dark/80 space-y-2 list-disc pl-5">
-      <li>
-        👉 家裡的燈忽明忽暗、電視常常斷電，有人以為是燈泡壞了，換了好幾個燈泡還是沒用；後來電工檢查才發現，是總電閘的線路接觸不良，導致全屋電壓不穩。修好總電閘後，所有家電都恢復正常了。
-        <p class="mt-1 text-neutral-dark/90">👉 寓意：內分泌就是身體的「總電閘」！月經不調、失眠、皮膚差這些問題，就像「個別家電故障」，如果只針對單一問題調理（換燈泡），沒解決內分泌失調的「總開關問題」，症狀遲早會反覆。只有調整內分泌平衡，身體的「所有系統」才能正常運轉。</p>
-      </li>
+<div class="health-card">
+    <h3 class="card-title">⑥ 內分泌 —— 身體的「總調度中心」</h3>
+    <p class="story-heading">故事：家庭電路的故事（內分泌與身體系統）</p>
+    <ul class="card-list">
+        <li>
+            家裡的燈忽明忽暗、電視常常斷電，有人以為是燈泡壞了，換了好幾個燈泡還是沒用；<br>
+            後來電工檢查才發現，是總電閘的線路接觸不良，導致全屋電壓不穩。修好總電閘後，所有家電都恢復正常了。
+            <p class="moral-text">寓意：內分泌就是身體的「總電閘」！月經不調、失眠、皮膚差這些問題，就像「個別家電故障」，如果只針對單一問題調理（換燈泡），沒解決內分泌失調的「總開關問題」，症狀遲早會反復。只有調整內分泌平衡，身體的「所有系統」才能正常運轉。</p>
+        </li>
     </ul>
-  </div>
 </div>
+
+</body>
+</html>
       <div class="mt-4 text-sm text-neutral-dark/70 text-center">
         六大調理邏輯：<br>體質是根基，循環是動力，<br>毒素要清除，免疫要增強，<br>營養要均衡，內分泌要穩定，<br>才能長久健康！
       </div>
@@ -2796,7 +2862,7 @@ async function handleImageDownload() {
     });
 
     // 前端直接上傳到ImgBB（解決存檔分享問題）
-    downloadReportBtn.innerHTML = '<i class="fa fa-cloud-upload mr-2"></i> 上傳圖片...';
+    downloadReportBtn.innerHTML = '<i class="fa fa-cloud-upload mr-2"></i> 等待中...';
     
     // 將Blob轉換為Base64
     const base64Image = await new Promise((resolve) => {
@@ -2834,7 +2900,7 @@ async function handleImageDownload() {
     // 完成處理，提示用戶
     setTimeout(() => {
       downloadReportBtn.disabled = false;
-      downloadReportBtn.innerHTML = '<i class="fa fa-download mr-2"></i> 重新保存/分享';
+      downloadReportBtn.innerHTML = '<i class="fa fa-download mr-2"></i> 重新轉檔操作';
       alert(`
 圖片已成功保存！
 文件名：${localImageName}
@@ -2891,7 +2957,7 @@ function saveWithAnchorTag(blob, fileName, resolve, isIOS) { // 接收isIOS参�
     document.body.removeChild(downloadLink);
     URL.revokeObjectURL(blobUrl);
     // 提示IOS用戶手動保存
-    if (isIOS) alert(`圖片已存檔，請點擊「分享」圖標保存到相冊`);
+    if (isIOS) alert(`圖片已轉檔完成，請下方點擊「分享健康自檢表」圖標`);
     else alert(`圖片已保存到「下載」文件夾，可在相冊的「下載」專輯中找到\n文件名：${fileName}`);
     resolve(true);
   }, 1000);
@@ -2942,7 +3008,7 @@ function showSingleShareButton(userName, date) {
           files: [imageFile],
           url: imgbbImageUrl
         });
-        alert('分享成功！對方可直接查看圖片預覽');
+        alert('分享成功！可直接查看圖片預覽');
         shareBtn.innerHTML = '<i class="fa fa-share-alt"></i> 分享健康自檢表';
       } else {
         // 降級為複製鏈接
