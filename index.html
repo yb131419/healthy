@@ -1758,7 +1758,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const IMGBB_UPLOAD_URL = 'https://api.imgbb.com/1/upload';
   let globalAiComment = '';
 
-  // 2. DOM元素獲取（含新增AI評估獨立區域）
+  // 2. DOM元素獲取（含AI評估容器）
   const menuToggle = document.getElementById('menuToggle');
   const mobileMenu = document.getElementById('mobileMenu');
   const prevBtn = document.getElementById('prevBtn');
@@ -1771,10 +1771,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const resultSection = document.getElementById('result');
   const healthDeclaration = document.getElementById('healthDeclaration');
   const formContainer = document.getElementById('form');
-  // 新增：AI評估獨立區域（優先從DOM獲取，無則創建）
   const aiEvaluationContainer = document.getElementById('aiEvaluationContainer') || createAiContainer();
-  // 新增：健康自檢表核心區域（用於截圖範圍控制）
-  const healthCheckFormCore = document.getElementById('healthCheckFormCore') || createHealthCheckCoreContainer();
 
   // 3. 性別相關元素
   const genderRadios = document.querySelectorAll('input[name="gender"]');
@@ -1791,40 +1788,18 @@ document.addEventListener('DOMContentLoaded', function() {
   let imgbbImageUrl = '';   // ImgBB上傳後的公開URL（用於分享）
   let imgbbDeleteUrl = '';  // ImgBB圖片刪除URL（用於資源清理）
 
-  // 5. 動態創建AI評估獨立容器（確保獨立顯示）
+  // 5. 動態創建AI評估容器（避免DOM缺失）
   function createAiContainer() {
     const container = document.createElement('div');
     container.id = 'aiEvaluationContainer';
-    container.className = 'ai-evaluation-container mt-6 p-4 border border-gray-200 rounded-lg bg-white';
-    // 新增：AI評估區域標題
-    container.innerHTML = '<h3 class="font-semibold text-lg text-primary mb-3">健康自檢表AI評估</h3>';
-    // 插入到結果區域頂部（確保獨立可見）
-    if (resultSection) {
-      resultSection.prepend(container);
-    } else if (document.body) {
+    container.className = 'ai-evaluation-container';
+    const mainIssuesContainer = document.getElementById('mainHealthIssues');
+    if (mainIssuesContainer) {
+      mainIssuesContainer.parentNode.insertBefore(container, mainIssuesContainer.nextSibling);
+    } else if (document.getElementById('result')) {
+      document.getElementById('result').appendChild(container);
+    } else {
       document.body.appendChild(container);
-    }
-    return container;
-  }
-
-  // 新增：創建健康自檢表核心容器（用於截圖範圍控制）
-  function createHealthCheckCoreContainer() {
-    const container = document.createElement('div');
-    container.id = 'healthCheckFormCore';
-    container.className = 'health-check-core';
-    // 將核心內容（基本信息、症狀統計、主要健康問題、AI評估）移入此容器
-    const coreElements = [
-      document.getElementById('basicInfo'),
-      document.getElementById('symptomHabitStats'),
-      document.getElementById('mainHealthIssues'),
-      document.getElementById('aiEvaluationContainer')
-    ];
-    coreElements.forEach(el => {
-      if (el) container.appendChild(el);
-    });
-    // 插入到結果區域內
-    if (resultSection) {
-      resultSection.prepend(container);
     }
     return container;
   }
@@ -1964,10 +1939,9 @@ document.addEventListener('DOMContentLoaded', function() {
   // -------------------------- 6. 調用後端生成AI評語（通過Google Apps Script）
   async function callOpenAIByBackend(healthData) {
     try {
-      // 顯示加載狀態（在獨立AI評估區域內）
+      // 顯示加載狀態
       aiEvaluationContainer.innerHTML = `
-        <h3 class="font-semibold text-lg text-primary mb-3">健康自檢表AI評估</h3>
-        <div class="bg-blue-50 p-4 rounded-lg border border-blue-100 mt-2">
+        <div class="bg-blue-50 p-4 rounded-lg border border-blue-100 mt-4">
           <h4 class="font-semibold text-primary mb-2 flex items-center">
             <i class="fa fa-spinner fa-spin mr-2"></i> AI正在分析您的健康數據...
           </h4>
@@ -2036,10 +2010,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     } catch (error) {
       console.error('AI評語生成失敗（後端轉發）：', error);
-      // 顯示錯誤+重試按鈕（在獨立AI評估區域內）
+      // 顯示錯誤+重試按鈕
       aiEvaluationContainer.innerHTML = `
-        <h3 class="font-semibold text-lg text-primary mb-3">健康自檢表AI評估</h3>
-        <div class="bg-red-50 p-4 rounded-lg border border-red-100 mt-2">
+        <div class="bg-red-50 p-4 rounded-lg border border-red-100 mt-4">
           <h4 class="font-semibold text-red-600 mb-2">AI評估生成失敗</h4>
           <p class="text-sm text-gray-600 mb-3">原因：${error.message || '網絡異常，請檢查網絡後重試'}</p>
           <button id="aiRetryBtn" class="px-3 py-1 bg-primary text-white rounded text-sm hover:bg-primary/90">
@@ -2056,7 +2029,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
-  // -------------------------- 7. 渲染AI評估結果（在獨立區域內格式化顯示）
+  // -------------------------- 7. 渲染AI評估結果（格式化後端返回的評語）
   function renderAiEvaluation() {
     if (!aiEvaluationContainer || !globalAiComment) return;
 
@@ -2067,10 +2040,12 @@ document.addEventListener('DOMContentLoaded', function() {
       .map(para => `<p class="text-sm mb-2">${para}</p>`)
       .join('');
 
-    // 渲染AI評估獨立卡片
+    // 渲染AI評估卡片
     aiEvaluationContainer.innerHTML = `
-      <h3 class="font-semibold text-lg text-primary mb-3">健康自檢表AI評估</h3>
-      <div class="bg-white p-4 rounded-lg border border-gray-200 shadow-sm mt-2">
+      <div class="bg-white p-4 rounded-lg border border-gray-200 shadow-sm mt-4">
+        <h3 class="font-semibold text-lg text-primary mb-3 flex items-center">
+          <i class="fa fa-robot mr-2"></i>🟢 健康自檢表 AI評估
+        </h3>
         <div class="text-gray-700">${formattedComment}</div>
         <p class="text-xs text-gray-500 mt-3">
           提示：此評語基於自檢表數據生成，僅供參考，不能替代醫生診斷
@@ -2079,33 +2054,33 @@ document.addEventListener('DOMContentLoaded', function() {
     `;
   }
 
-// -------------------------- 8. 表單提交（全量數據提交到後端Google Sheets）
-submitBtn.addEventListener('click', async () => {
-  updateGlobalSymptomData(); // 提交前更新最新的症狀/習慣數據
-  if (!validateStep(4)) return; // 驗證第四步合法性
+  // -------------------------- 8. 表單提交（全量數據提交到後端Google Sheets）
+  submitBtn.addEventListener('click', async () => {
+    updateGlobalSymptomData(); // 提交前更新最新的症狀/習慣數據
+    if (!validateStep(4)) return; // 驗證第四步合法性
 
-  successModal.classList.remove('hidden'); // 顯示提交中彈窗
-  try {
-    // 步驟1：收集健康數據，調用後端生成AI評語
-    const healthData = collectHealthData();
-    const aiSuccess = await callOpenAIByBackend(healthData);
-    
-    // 步驟2：提交全量數據到Google Sheets（即使AI失敗也嘗試提交基礎數據）
-    const submitSuccess = await submitToGoogleSheets();
-    if (submitSuccess) {
-      generateResult(); // 生成結果頁（含AI評估）
-    } else {
-      alert('數據提交失敗，請檢查網絡後重試');
+    successModal.classList.remove('hidden'); // 顯示提交中彈窗
+    try {
+      // 步驟1：收集健康數據，調用後端生成AI評語
+      const healthData = collectHealthData();
+      const aiSuccess = await callOpenAIByBackend(healthData);
+      
+      // 步驟2：提交全量數據到Google Sheets（即使AI失敗也嘗試提交基礎數據）
+      const submitSuccess = await submitToGoogleSheets();
+      if (submitSuccess) {
+        generateResult(); // 生成結果頁（含AI評估）
+      } else {
+        alert('數據提交失敗，請檢查網絡後重試');
+        successModal.classList.add('hidden');
+      }
+    } catch (error) {
+      console.error('提交異常：', error);
+      alert(`提交失敗：${error.message}`);
       successModal.classList.add('hidden');
     }
-  } catch (error) {
-    console.error('提交異常：', error);
-    alert(`提交失敗：${error.message}`);
-    successModal.classList.add('hidden');
-  }
-});
+  });
 
-// -------------------------- 9. 查看結果/重新評估按鈕事件
+ // -------------------------- 9. 查看結果/重新評估按鈕事件
 viewResultBtn.addEventListener('click', () => {
   successModal.classList.add('hidden');
   resultSection.classList.remove('hidden');
@@ -2134,7 +2109,7 @@ restartBtn.addEventListener('click', () => {
   }
 
   // 重置AI評估容器
-  aiEvaluationContainer.innerHTML = '<h3 class="font-semibold text-lg text-primary mb-3">健康自檢表AI評估</h3>';
+  aiEvaluationContainer.innerHTML = '';
 
   // 重置表單元素
   document.querySelectorAll('input, textarea, select').forEach(el => {
@@ -2381,7 +2356,7 @@ function submitToGoogleSheets() {
 
 // -------------------------- 16. 生成評估結果（含雷達圖與健康建議）
 function generateResult() {
-  // 1. 加載基本信息（改為兩列佈局顯示）
+  // 1. 加載基本信息
   const name = document.getElementById('name').value || '未填寫';
   const age = document.getElementById('age').value || '未填寫';
   const selectedGender = document.querySelector('input[name="gender"]:checked');
@@ -2395,14 +2370,9 @@ function generateResult() {
   const occupation = document.getElementById('occupation').value || '未填寫';
   const bmi = calculateBMI();
 
-  // 2. 渲染基本信息卡片（兩列佈局）
+  // 2. 渲染基本信息卡片
   const basicInfoContainer = document.getElementById('basicInfo');
   if (basicInfoContainer) {
-    // 使用CSS Grid實現兩列佈局
-    basicInfoContainer.style.display = 'grid';
-    basicInfoContainer.style.gridTemplateColumns = 'repeat(2, 1fr)';
-    basicInfoContainer.style.gap = '10px';
-    
     basicInfoContainer.innerHTML = `
       <div class="p-3 border border-gray-100 rounded-lg">
         <p class="text-sm"><strong>姓名：</strong> ${name}</p>
@@ -2659,8 +2629,7 @@ function generateResult() {
     renderAiEvaluation();
   } else {
     aiEvaluationContainer.innerHTML = `
-      <h3 class="font-semibold text-lg text-primary mb-3">健康自檢表AI評估</h3>
-      <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-100 mt-2">
+      <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-100 mt-4">
         <h4 class="font-semibold text-yellow-600 mb-2 flex items-center">
           <i class="fa fa-info-circle mr-2"></i> AI評估提示
         </h4>
@@ -2677,7 +2646,7 @@ function generateResult() {
     });
   }
 
-  // 9. 渲染健康調理建議（六大調理方向文字居中顯示）
+  // 9. 渲染健康調理建議（固定內容）
   const recommendationsContainer = document.getElementById('healthRecommendations');
   if (recommendationsContainer) {
     const lowScoreDirections = Object.entries(adjustmentScores)
@@ -2688,99 +2657,185 @@ function generateResult() {
     let recommendationsHtml = '';
     // 顯示需重點調理的方向
     if (lowScoreDirections.length > 0) {
-      recommendationsHtml += `<p class="text-sm font-medium text-primary mb-3 text-center">🔴 需重點調理方向：${lowScoreDirections.join('、')}</p>`;
+      recommendationsHtml += `<p class="text-sm font-medium text-primary mb-3">🔴 需重點調理方向：${lowScoreDirections.join('、')}</p>`;
     }
 
     recommendationsHtml += `
-<div style="text-align: center; margin: 20px 0;">
-  <h3 style="color: #2563eb; margin-bottom: 15px;">健康六大核心調理方向</h3>
-  
-  <div style="background: white; border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
-    <h4 style="color: #1e293b; margin-top: 0; margin-bottom: 10px;">① 體質 —— 健康的「基礎土壤」</h4>
-    <p style="font-size: 14px; color: #475569; line-height: 1.7; margin: 0;">
-      體質就像健康的「土壤」！寒濕氣不除掉，就像潮濕環境一直養著木耳，身體的問題也會反復冒出來；<br>
-      調體質的重點，就是先排寒除濕、提升身體溫度，從根源斷掉「問題生長的溫床」。
-    </p>
-  </div>
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>健康六大核心調理方向</title>
+    <style>
+        /* 基礎樣式優化：提升可讀性與適配性 */
+        body {
+            font-family: "Microsoft YaHei", Arial, sans-serif;
+            line-height: 1.6;
+            padding: 20px;
+            background-color: #f9fafb;
+        }
+        /* 卡片容器：獨立分區+柔和視覺 */
+        .health-card {
+            background-color: #ffffff;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        /* 標題樣式：突出層級+視覺引導 */
+        .card-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #2563eb; /* 主色調：藍色，清晰醒目 */
+            margin-top: 0;
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #eff6ff;
+        }
+        /* 故事標題：區分內容模塊 */
+        .story-heading {
+            font-size: 15px;
+            font-weight: 500;
+            color: #1e293b;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+        }
+        .story-heading::before {
+            content: "📖";
+            margin-right: 8px;
+        }
+        /* 列表樣式：優化間距與符號 */
+        .card-list {
+            font-size: 14px;
+            color: #475569;
+            margin: 0;
+            padding-left: 22px;
+            list-style-type: disc;
+        }
+        .card-list li {
+            margin-bottom: 15px;
+            line-height: 1.7;
+        }
+        /* 寓意文本：突出核心啓示 */
+        .moral-text {
+            font-size: 14px;
+            color: #1e293b;
+            margin-top: 10px;
+            padding-left: 5px;
+            border-left: 3px solid #bfdbfe; /* 左側線條：強化視覺層次 */
+        }
+    </style>
+</head>
+<body>
 
-  <div style="background: white; border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
-    <h4 style="color: #1e293b; margin-top: 0; margin-bottom: 10px;">② 免疫 —— 身體的「常駐軍隊」</h4>
-    <p style="font-size: 14px; color: #475569; line-height: 1.7; margin: 0;">
-      藥物只是「臨時外援」，免疫力才是「常駐防線」！很多人靠藥物控制指標，卻忽略了免疫力這個根本；<br>
-      真正的健康，是靠營養餵飽免疫力，讓它能自己抵擋病毒、細菌，而不是一直靠「外援」撐著。
-    </p>
-  </div>
-
-  <div style="background: white; border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
-    <h4 style="color: #1e293b; margin-top: 0; margin-bottom: 10px;">③ 毒素 —— 疾病反復的「隱形根源」</h4>
-    <p style="font-size: 14px; color: #475569; line-height: 1.7; margin: 0;">
-      體內的毒素就像「那堆垃圾」，發炎、潰瘍這些問題就是「蒼蠅」。很多人只治症狀不排毒，毒素越堆越多，<br>
-      問題當然會反復，甚至從局部擴散到全身。調健康的第一步，就是先給身體「掃垃圾」——打通排毒通道。
-    </p>
-  </div>
-
-  <div style="background: white; border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
-    <h4 style="color: #1e293b; margin-top: 0; margin-bottom: 10px;">④ 營養 —— 身體吸收的「原料密碼」</h4>
-    <p style="font-size: 14px; color: #475569; line-height: 1.7; margin: 0;">
-      人體需要「對的原料」（七大營養素）才能運轉。很多人吃了一堆補品卻沒效果，不是營養沒用，<br>
-      而是脾胃虛弱沒辦法吸收，反而增加身體負擔。補營養的重點，是先讓脾胃「有能力轉化」，再給對的食物。
-    </p>
-  </div>
-
-  <div style="background: white; border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
-    <h4 style="color: #1e293b; margin-top: 0; margin-bottom: 10px;">⑤ 循環 —— 健康的「暢通管道」</h4>
-    <p style="font-size: 14px; color: #475569; line-height: 1.7; margin: 0;">
-      血管循環就像「水溝」，血脂、垃圾是「雜草」，高血壓就是「水流壓力大」。降壓藥只能暫時「加寬管道」，<br>
-      沒清掉血管里的垃圾，問題遲早反復。調循環的關鍵，是清理血管垃圾，讓血液順暢流動。
-    </p>
-  </div>
-
-  <div style="background: white; border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
-    <h4 style="color: #1e293b; margin-top: 0; margin-bottom: 10px;">⑥ 內分泌 —— 身體的「總調度中心」</h4>
-    <p style="font-size: 14px; color: #475569; line-height: 1.7; margin: 0;">
-      內分泌就是身體的「總電閘」！月經不調、失眠、皮膚差這些問題，就像「個別家電故障」，<br>
-      如果只針對單一問題調理，沒解決內分泌失調的「總開關問題」，症狀遲早會反復。
-    </p>
-  </div>
-
-  <div style="margin-top: 30px; font-size: 14px; color: #475569; line-height: 1.6;">
-    六大調理邏輯：<br>
-    體質是根基，循環是動力，<br>
-    毒素要清除，免疫要增強，<br>
-    營養要均衡，內分泌要穩定，<br>
-    才能長久健康！
-  </div>
+<!-- ① 體質——健康的「基礎土壤」 -->
+<div class="health-card">
+    <h3 class="card-title">① 體質 —— 健康的「基礎土壤」</h3>
+    <p class="story-heading">故事：木耳的故事（身體受寒長腫瘤木耳）</p>
+    <ul class="card-list">
+        <li>
+            木頭放在陰暗潮濕的地方就會長木耳，就算把木耳摘掉，過一陣子還是會再長；但如果把木頭拿到太陽下曬乾，木耳就會縮水掉下來。<br>
+            其中，潮濕的木頭等同於體內的寒濕氣，木耳對應腫瘤或囊腫，曬太陽則是幫身體排寒、提高體溫。
+            <p class="moral-text">寓意：體質就像健康的「土壤」！寒濕氣不除掉，就像潮濕環境一直養著木耳，身體的問題也會反復冒出來；調體質的重點，就是先排寒除濕、提升身體溫度，從根源斷掉「問題生長的溫床」。</p>
+        </li>
+    </ul>
 </div>
+
+<!-- ② 免疫——身體的「常駐軍隊」 -->
+<div class="health-card">
+    <h3 class="card-title">② 免疫 —— 身體的「常駐軍隊」</h3>
+    <p class="story-heading">故事：軍隊打仗的故事（免疫力與營養）</p>
+    <ul class="card-list">
+        <li>
+            把疾病當成敵人，免疫力就是保護身體的軍隊。如果只靠扔炸彈（吃藥），雖然能暫時打退敵人，卻也會炸死自己的士兵（降低免疫力）；<br>
+            但如果給軍隊足夠的糧食（補充營養），讓士兵變強，不僅能主動打贏敵人，還能建立長期的防線（產生抗體）。
+            <p class="moral-text">寓意：藥物只是「臨時外援」，免疫力才是「常駐防線」！很多人靠藥物控制指標，卻忽略了免疫力這個根本；真正的健康，是靠營養餵飽免疫力，讓它能自己抵擋病毒、細菌，而不是一直靠「外援」撐著。</p>
+        </li>
+    </ul>
+</div>
+
+<!-- ③ 毒素——疾病反復的「隱形根源」 -->
+<div class="health-card">
+    <h3 class="card-title">③ 毒素 —— 疾病反復的「隱形根源」</h3>
+    <p class="story-heading">故事：垃圾的故事（疾病為什麼會反復）</p>
+    <ul class="card-list">
+        <li>
+            一堆垃圾放在那裡，一定會吸引蒼蠅。如果只拿蒼蠅拍打蒼蠅（吃消炎藥），永遠打不完；只有把垃圾徹底清走（排毒素），蒼蠅才會自然不見。<br>
+            更麻煩的是，垃圾不清，還會擴散到其他地方（疾病蔓延）。
+            <p class="moral-text">寓意：體內的毒素就像「那堆垃圾」，發炎、潰瘍這些問題就是「蒼蠅」。很多人只治症狀不排毒，毒素越堆越多，問題當然會反復，甚至從局部擴散到全身（比如從喉嚨痛變成肺炎）。調健康的第一步，就是先給身體「掃垃圾」——打通腸道、皮膚這些排毒通道。</p>
+        </li>
+    </ul>
+</div>
+
+<!-- ④ 營養——身體吸收的「原料密碼」 -->
+<div class="health-card">
+    <h3 class="card-title">④ 營養 —— 身體吸收的「原料密碼」</h3>
+    <p class="story-heading">故事：牛吃草擠奶的故事（營養能調好病？）</p>
+    <ul class="card-list">
+        <li>
+            牛吃進去的是草，擠出來的是奶。就算有最頂尖的實驗室和預算，也做不出一台能「把草變成奶」的機器；<br>
+            但農夫只要給牛餵新鮮的草（補對營養），牛就能靠自己的本能產出奶。
+            <p class="moral-text">寓意：人體和牛一樣，需要「對的原料」（七大營養素）才能運轉。很多人吃了一堆補品卻沒效果，不是營養沒用，而是脾胃虛弱（像生病的牛）沒辦法吸收，反而增加身體負擔。補營養的重點，是先讓脾胃「有能力轉化」，再給對的食物，才能讓營養變成身體需要的「能量」。</p>
+        </li>
+    </ul>
+</div>
+
+<!-- ⑤ 循環——健康的「暢通管道」 -->
+<div class="health-card">
+    <h3 class="card-title">⑤ 循環 —— 健康的「暢通管道」</h3>
+    <p class="story-heading">故事：水溝除草的故事（高血壓與降壓藥）</p>
+    <ul class="card-list">
+        <li>
+            流水的水溝長滿雜草，水流就會變慢、壓力變大。有人不想除草，反而把水溝加寬（吃降壓藥擴張血管），但雜草還在，過一陣子水流還是會堵、壓力還是會升；<br>
+            更糟的是，反復加寬水溝（長期吃降壓藥），水溝壁會變脆，很容易破裂（血管破裂引發腦溢血）。
+            <p class="moral-text">寓意：血管循環就像「水溝」，血脂、垃圾是「雜草」，高血壓就是「水流壓力大」。降壓藥只能暫時「加寬管道」，沒清掉血管里的垃圾，問題遲早反復。調循環的關鍵，是清理血管垃圾（除草），讓血液順暢流動，而不是一直靠「擴管」硬撐。</p>
+        </li>
+    </ul>
+</div>
+
+<!-- ⑥ 內分泌——身體的「總調度中心」 -->
+<div class="health-card">
+    <h3 class="card-title">⑥ 內分泌 —— 身體的「總調度中心」</h3>
+    <p class="story-heading">故事：家庭電路的故事（內分泌與身體系統）</p>
+    <ul class="card-list">
+        <li>
+            家裡的燈忽明忽暗、電視常常斷電，有人以為是燈泡壞了，換了好幾個燈泡還是沒用；<br>
+            後來電工檢查才發現，是總電閘的線路接觸不良，導致全屋電壓不穩。修好總電閘後，所有家電都恢復正常了。
+            <p class="moral-text">寓意：內分泌就是身體的「總電閘」！月經不調、失眠、皮膚差這些問題，就像「個別家電故障」，如果只針對單一問題調理（換燈泡），沒解決內分泌失調的「總開關問題」，症狀遲早會反復。只有調整內分泌平衡，身體的「所有系統」才能正常運轉。</p>
+        </li>
+    </ul>
+</div>
+
+</body>
+</html>
+      <div class="mt-4 text-sm text-neutral-dark/70 text-center">
+        六大調理邏輯：<br>體質是根基，循環是動力，<br>毒素要清除，免疫要增強，<br>營養要均衡，內分泌要穩定，<br>才能長久健康！
+      </div>
     `;
 
     recommendationsContainer.innerHTML = recommendationsHtml;
   }
 }
 
-// -------------------------- 17. 圖片下載與分享（限制截圖範圍為健康自檢表核心內容）
+// -------------------------- 17. 圖片下載與分享（前端直接集成ImgBB API解決存檔問題）
 async function handleImageDownload() {
   try {
     downloadReportBtn.disabled = true;
     downloadReportBtn.innerHTML = '<i class="fa fa-spinner fa-spin mr-2"></i> 處理中...';
 
-    // 檢查依賴庫與DOM元素（只截圖健康自檢表核心區域）
+    // 檢查依賴庫與DOM元素
     if (typeof html2canvas === 'undefined') throw new Error('圖片處理庫未加載，請刷新頁面重試');
-    
-    // 關鍵修改：僅選擇健康自檢表核心容器進行截圖
-    const reportElement = document.getElementById('healthCheckFormCore');
-    if (!reportElement) throw new Error('未找到健康自檢表核心內容，無法生成截圖');
+    const reportElement = document.querySelector('#result .bg-white.rounded-2xl.shadow-md.p-6');
+    if (!reportElement) throw new Error('未找到評估結果，請先完成評估');
 
-    // 臨時調整樣式（確保截圖美觀）
-    const originalStyle = { 
-      padding: reportElement.style.padding, 
-      boxShadow: reportElement.style.boxShadow,
-      border: reportElement.style.border
-    };
+    // 臨時調整樣式（避免截圖包含多餘陰影）
+    const originalStyle = { padding: reportElement.style.padding, boxShadow: reportElement.style.boxShadow };
     reportElement.style.padding = '24px';
-    reportElement.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
-    reportElement.style.border = '1px solid #e5e7eb';
+    reportElement.style.boxShadow = 'none';
 
-    // 生成健康自檢表核心區域截圖
+    // 生成結果頁截圖
     const canvas = await html2canvas(reportElement, {
       useCORS: true,
       allowTaint: false,
@@ -2794,7 +2849,6 @@ async function handleImageDownload() {
     // 恢復原樣式
     reportElement.style.padding = originalStyle.padding;
     reportElement.style.boxShadow = originalStyle.boxShadow;
-    reportElement.style.border = originalStyle.border;
 
     // 生成文件名與Blob
     const userName = document.getElementById('name').value.trim() || '未知用戶';
@@ -2807,7 +2861,7 @@ async function handleImageDownload() {
       canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('圖片Blob生成失敗')), 'image/jpeg', 0.9);
     });
 
-    // 前端直接上傳到ImgBB
+    // 前端直接上傳到ImgBB（解決存檔分享問題）
     downloadReportBtn.innerHTML = '<i class="fa fa-cloud-upload mr-2"></i> 等待中...';
     
     // 將Blob轉換為Base64
@@ -2850,7 +2904,7 @@ async function handleImageDownload() {
       alert(`
 圖片已成功保存！
 文件名：${localImageName}
-✅ 分享將同步分享健康自檢表與鏈接
+✅ 分享將同步分享圖片與鏈接
 🔗 圖片鏈接：${imgbbImageUrl}
       `.trim());
       showSingleShareButton(userName, formattedDate);
@@ -2859,14 +2913,14 @@ async function handleImageDownload() {
   } catch (error) {
     console.error('圖片處理失敗：', error);
     downloadReportBtn.disabled = false;
-    downloadReportBtn.innerHTML = '<i class="fa fa-download mr-2"></i> 下載健康自檢表';
+    downloadReportBtn.innerHTML = '<i class="fa fa-download mr-2"></i> 下載圖片';
     alert(`操作失敗：${error.message}\n請刷新頁面後重試`);
   }
 }
 
 // 保存圖片到相冊（兼容多設備）
 function saveToGallery(blob, fileName) {
-  // iOS設備檢測
+  // 新增iOS设备检测
   const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
   
   return new Promise((resolve) => {
@@ -2878,16 +2932,16 @@ function saveToGallery(blob, fileName) {
       })
       .then(handle => handle.createWritable())
       .then(writable => writable.write(blob).then(() => writable.close()))
-      .then(() => { alert('健康自檢表圖片已成功保存！'); resolve(true); })
-      .catch(() => saveWithAnchorTag(blob, fileName, resolve, isIOS));
+      .then(() => { alert('圖片已成功保存！'); resolve(true); })
+      .catch(() => saveWithAnchorTag(blob, fileName, resolve, isIOS)); // 传递isIOS参数
     } else {
-      saveWithAnchorTag(blob, fileName, resolve, isIOS);
+      saveWithAnchorTag(blob, fileName, resolve, isIOS); // 传递isIOS参数
     }
   });
 }
 
 // a標籤兼容下載（適配舊瀏覽器與IOS）
-function saveWithAnchorTag(blob, fileName, resolve, isIOS) {
+function saveWithAnchorTag(blob, fileName, resolve, isIOS) { // 接收isIOS参数
   const blobUrl = URL.createObjectURL(blob);
   const downloadLink = document.createElement('a');
   downloadLink.download = fileName;
@@ -2903,8 +2957,8 @@ function saveWithAnchorTag(blob, fileName, resolve, isIOS) {
     document.body.removeChild(downloadLink);
     URL.revokeObjectURL(blobUrl);
     // 提示IOS用戶手動保存
-    if (isIOS) alert(`健康自檢表圖片已轉檔完成，請下方點擊「分享健康自檢表」圖標`);
-    else alert(`健康自檢表圖片已保存到「下載」文件夾，可在相冊的「下載」專輯中找到\n文件名：${fileName}`);
+    if (isIOS) alert(`圖片已轉檔完成，請下方點擊「分享健康自檢表」圖標`);
+    else alert(`圖片已保存到「下載」文件夾，可在相冊的「下載」專輯中找到\n文件名：${fileName}`);
     resolve(true);
   }, 1000);
 }
@@ -2932,7 +2986,7 @@ function showSingleShareButton(userName, date) {
   shareBtn.addEventListener('click', async () => {
     try {
       if (!localImageBlob || !imgbbImageUrl) {
-        alert('分享資源不完整，請重新生成健康自檢表圖片');
+        alert('分享資源不完整，請重新生成圖片');
         return;
       }
 
@@ -2941,7 +2995,7 @@ function showSingleShareButton(userName, date) {
       const shareText = `
 📋 『 ${userName} 』的健康自檢表
 🗓️ 自檢日期：${date}
-💡 內容：健康狀況與AI評估結果
+💡 包含：調理方向 + AI評估
 🔗 圖片鏈接：\n${imgbbImageUrl}
       `.trim();
 
@@ -2954,31 +3008,31 @@ function showSingleShareButton(userName, date) {
           files: [imageFile],
           url: imgbbImageUrl
         });
-        alert('健康自檢表圖片分享成功！可直接查看圖片預覽');
+        alert('分享成功！可直接查看圖片預覽');
         shareBtn.innerHTML = '<i class="fa fa-share-alt"></i> 分享健康自檢表';
       } else {
         // 降級為複製鏈接
         await navigator.clipboard.writeText(shareText);
         alert(`
-您的瀏覽器不支持圖片分享，已複製健康自檢表分享內容：
+您的瀏覽器不支持圖片分享，已複製分享內容：
 ${shareText}\n
 操作提示：
 1. 打開聊天窗口
 2. 長按輸入框粘貼
-3. 對方可點擊imgbb鏈接查看健康自檢表圖片
+3. 對方可點擊imgbb鏈接查看圖片
         `.trim());
       }
     } catch (shareError) {
-      console.error('健康自檢表分享失敗:', shareError);
+      console.error('分享失敗:', shareError);
       shareBtn.innerHTML = '<i class="fa fa-share-alt"></i> 分享健康自檢表';
       if (shareError.name !== 'AbortError') {
         alert(`
-健康自檢表分享失敗，請手動使用imgbb鏈接：
+分享失敗，請手動使用imgbb鏈接：
 🔗 ${imgbbImageUrl}
-\n提示：將鏈接粘貼到聊天窗口，對方可直接查看健康自檢表圖片
+\n提示：將鏈接粘貼到聊天窗口，對方可直接查看圖片
         `.trim());
       } else {
-        alert('健康自檢表分享已取消');
+        alert('分享已取消');
       }
     }
   });
