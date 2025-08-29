@@ -2820,310 +2820,248 @@ function generateResult() {
 }
 
 // -------------------------- 17. 圖片下載與分享（前端直接集成ImgBB API解決存檔問題）
-// 全局变量：存储图片Blob、名称及ImgBB上传结果（确保跨函数访问）
+// 全局變量定義，確保跨函數訪問
 let localImageBlob, localImageName, imgbbImageUrl, imgbbDeleteUrl;
 
-/**
- * 处理图片下载（截取到六大调理方向前的区域）
- */
 async function handleImageDownload() {
   try {
-    // 按钮状态更新：禁用+加载中
-    const downloadReportBtn = document.getElementById('downloadReportBtn'); // 显式获取按钮（避免变量未定义）
-    if (!downloadReportBtn) throw new Error('未找到下载按钮，请检查页面DOM结构');
+    // 獲取下載按鈕並設置狀態
+    const downloadReportBtn = document.getElementById('downloadReportBtn');
+    if (!downloadReportBtn) throw new Error('未找到下載按鈕');
     
     downloadReportBtn.disabled = true;
     downloadReportBtn.innerHTML = '<i class="fa fa-spinner fa-spin mr-2"></i> 處理中...';
 
-    // 1. 检查依赖库与核心DOM元素（关键：选择"六大调理方向前"的容器）
+    // 檢查依賴庫與DOM元素
     if (typeof html2canvas === 'undefined') throw new Error('圖片處理庫未加載，請刷新頁面重試');
     
-    // 核心修改：选择"六大调理方向之前"的目标容器（需根据实际页面DOM调整选择器）
-    // 示例场景：假设页面结构为 #result > .report-header（基础信息） + .ai-evaluation（AI评估） + .six-directions（六大调理）
-    // 则选择 #result 下排除 .six-directions 的父容器，或直接选择包含前两部分的容器
-    const targetContainer = document.querySelector('#result .before-six-directions-container'); 
-    // 若上述选择器不匹配，可尝试备选方案（根据实际DOM调整，例如包含AI评估的父容器但排除六大调理）
-    // const targetContainer = document.querySelector('#result > div:not(.six-directions)'); 
+    // 關鍵修改：獲取結果容器並定位到六大調理方向前的區域
+    const resultContainer = document.querySelector('#result .bg-white.rounded-2xl.shadow-md.p-6');
+    if (!resultContainer) throw new Error('未找到評估結果，請先完成評估');
     
-    if (!targetContainer) throw new Error('未找到目標區域（六大調理前），請先完成評估並檢查頁面結構');
+    // 查找六大調理方向元素，用於確定截取範圍
+    const sixDirectionsElement = resultContainer.querySelector('.six-directions'); // 假設六大調理方向元素有此類名
+    if (!sixDirectionsElement) throw new Error('未找到六大調理方向區域，無法確定截取範圍');
 
-    // 2. 临时调整样式（避免截图多余阴影，不影响原页面显示）
-    const originalStyle = {
-      padding: targetContainer.style.padding,
-      boxShadow: targetContainer.style.boxShadow,
-      backgroundColor: targetContainer.style.backgroundColor
+    // 創建一個臨時容器，僅包含六大調理方向前的內容
+    const tempContainer = document.createElement('div');
+    tempContainer.style.cssText = 'width: 100%; background: white;';
+    
+    // 複製六大調理方向前的所有元素
+    let currentElement = resultContainer.firstElementChild;
+    while (currentElement && currentElement !== sixDirectionsElement) {
+      const clone = currentElement.cloneNode(true);
+      tempContainer.appendChild(clone);
+      currentElement = currentElement.nextElementSibling;
+    }
+    
+    // 將臨時容器添加到頁面（用於截圖）
+    document.body.appendChild(tempContainer);
+
+    // 臨時調整樣式（避免截圖包含多餘陰影）
+    const originalStyle = { 
+      padding: tempContainer.style.padding, 
+      boxShadow: tempContainer.style.boxShadow 
     };
-    // 确保截图背景为白色（避免透明或深色背景导致内容不清晰）
-    targetContainer.style.padding = '24px';
-    targetContainer.style.boxShadow = 'none';
-    targetContainer.style.backgroundColor = '#ffffff'; // 强制白色背景（防止截图透明）
+    tempContainer.style.padding = '24px';
+    tempContainer.style.boxShadow = 'none';
 
-    // 3. 生成目标区域截图（仅截取六大调理前的内容）
-    const canvas = await html2canvas(targetContainer, {
-      useCORS: true,          // 支持跨域图片（如AI评估中的图表）
-      allowTaint: false,      // 禁止污染画布
-      scale: 2,               // 2倍分辨率，保证截图清晰度
-      logging: false,         // 关闭控制台日志
-      scrollY: -window.scrollY, // 解决滚动后截图偏移问题
-      windowWidth: targetContainer.offsetWidth,  // 截图宽度=目标容器宽度
-      windowHeight: targetContainer.offsetHeight, // 截图高度=目标容器高度
-      ignoreElements: (el) => {
-        // 额外保险：强制忽略"六大调理方向"相关元素（防止误包含）
-        return el.classList.contains('six-directions') || el.id === 'six-directions';
-      }
+    // 生成結果頁截圖（僅包含六大調理前的內容）
+    const canvas = await html2canvas(tempContainer, {
+      useCORS: true,
+      allowTaint: false,
+      scale: 2, // 2倍分辨率，保證清晰度
+      logging: false,
+      scrollY: -window.scrollY,
+      windowWidth: tempContainer.offsetWidth,
+      windowHeight: tempContainer.offsetHeight
     });
 
-    // 4. 恢复目标容器原样式（避免影响页面后续显示）
-    targetContainer.style.padding = originalStyle.padding;
-    targetContainer.style.boxShadow = originalStyle.boxShadow;
-    targetContainer.style.backgroundColor = originalStyle.backgroundColor;
+    // 移除臨時容器
+    document.body.removeChild(tempContainer);
 
-    // 5. 生成文件名与Blob（明确标识“六大调理前”）
+    // 生成文件名與Blob
     const userName = document.getElementById('name').value.trim() || '未知用戶';
     const currentDate = new Date();
     const formattedDate = `${currentDate.getFullYear()}年${String(currentDate.getMonth() + 1).padStart(2, '0')}月${String(currentDate.getDate()).padStart(2, '0')}日`;
-    localImageName = `${userName}_健康自檢表（六大調理前）_${formattedDate}.jpg`; // 文件名明确标识
-
-    // 6. 将Canvas转为JPG Blob（90%质量，平衡清晰度与文件大小）
+    localImageName = `${userName}_健康自檢表（六大調理前）_${formattedDate}.jpg`;
+    
+    // 轉換Canvas為Blob（JPG格式，90%質量）
     localImageBlob = await new Promise((resolve, reject) => {
-      canvas.toBlob(
-        (blob) => blob ? resolve(blob) : reject(new Error('圖片Blob生成失敗')),
-        'image/jpeg', // 格式：JPG
-        0.9           // 质量：90%
-      );
+      canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('圖片Blob生成失敗')), 'image/jpeg', 0.9);
     });
 
-    // 7. 上传图片到ImgBB（解决存档与分享问题）
-    downloadReportBtn.innerHTML = '<i class="fa fa-cloud-upload mr-2"></i> 上傳圖片...';
+    // 前端直接上傳到ImgBB（解決存檔分享問題）
+    downloadReportBtn.innerHTML = '<i class="fa fa-cloud-upload mr-2"></i> 等待中...';
     
-    // Blob转Base64（ImgBB支持Base64上传）
+    // 將Blob轉換為Base64
     const base64Image = await new Promise((resolve) => {
       const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result.split(',')[1]); // 移除"data:image/jpeg;base64,"前缀
+      reader.onloadend = () => resolve(reader.result.split(',')[1]); // 移除data URL前綴
       reader.readAsDataURL(localImageBlob);
     });
 
-    // 构建ImgBB上传请求（需确保IMGBB_API_KEY和IMGBB_UPLOAD_URL已定义）
-    if (!window.IMGBB_API_KEY || !window.IMGBB_UPLOAD_URL) throw new Error('ImgBB配置未完善，請檢查API_KEY與上傳地址');
-    
+    // 構建ImgBB上傳請求
     const formData = new FormData();
-    formData.append('key', window.IMGBB_API_KEY);    // ImgBB API密钥
-    formData.append('image', base64Image);           // Base64图片数据
-    formData.append('name', localImageName);         // 图片名称
-    formData.append('expiration', '31536000');       // 可选：设置图片有效期1年（365天）
+    formData.append('key', IMGBB_API_KEY);
+    formData.append('image', base64Image);
+    formData.append('name', localImageName);
 
-    // 发送上传请求（30秒超时）
-    const response = await fetch(window.IMGBB_UPLOAD_URL, {
+    // 上傳到ImgBB
+    const response = await fetch(IMGBB_UPLOAD_URL, {
       method: 'POST',
       body: formData,
-      signal: AbortSignal.timeout(30000), // 超时保护：30秒未响应则中断
-      headers: {
-        'Accept': 'application/json' // 指定接收JSON格式响应
-      }
+      signal: AbortSignal.timeout(30000) // 30秒超時
     });
 
-    const uploadResult = await response.json();
-    if (!response.ok || !uploadResult.success) {
-      throw new Error(`圖片上傳失敗：${uploadResult?.error?.message || '未知錯誤（請檢查ImgBB API密鑰）'}`);
+    const result = await response.json();
+    if (!response.ok || !result.success) {
+      throw new Error(`圖片上傳失敗：${result?.error?.message || '未知錯誤'}`);
     }
 
-    // 保存上传结果（用于分享）
-    imgbbImageUrl = uploadResult.data.url;         // 图片访问链接
-    imgbbDeleteUrl = uploadResult.data.delete_url; // 图片删除链接（可选：用于后续清理）
+    // 保存上傳結果
+    imgbbImageUrl = result.data.url;
+    imgbbDeleteUrl = result.data.delete_url;
 
-    // 8. 保存图片到本地相册（兼容多设备）
+    // 保存圖片到本地相冊
     downloadReportBtn.innerHTML = '<i class="fa fa-image mr-2"></i> 保存到相冊...';
     await saveToGallery(localImageBlob, localImageName);
 
-    // 9. 处理完成：恢复按钮状态+提示用户
+    // 完成處理，提示用戶
     setTimeout(() => {
       downloadReportBtn.disabled = false;
       downloadReportBtn.innerHTML = '<i class="fa fa-download mr-2"></i> 重新轉檔操作';
-      
-      // 提示内容：明确告知截取范围与链接
       alert(`
 圖片已成功保存！
-📁 文件名：${localImageName}
-📌 截取範圍：健康自檢表（六大調理方向前）
-✅ 分享將同步圖片與鏈接
+文件名：${localImageName}
+✅ 分享將同步分享圖片與鏈接
 🔗 圖片鏈接：${imgbbImageUrl}
       `.trim());
-
-      // 显示分享按钮（固定在页面底部）
       showSingleShareButton(userName, formattedDate);
     }, 1000);
 
   } catch (error) {
-    // 异常处理：恢复按钮状态+提示错误
+    console.error('圖片處理失敗：', error);
+    // 確保按鈕狀態恢復
     const downloadReportBtn = document.getElementById('downloadReportBtn');
     if (downloadReportBtn) {
       downloadReportBtn.disabled = false;
       downloadReportBtn.innerHTML = '<i class="fa fa-download mr-2"></i> 下載圖片';
     }
-    
-    console.error('圖片處理失敗：', error);
-    alert(`操作失敗：${error.message}\n請檢查頁面結構後刷新重試`);
+    alert(`操作失敗：${error.message}\n請刷新頁面後重試`);
   }
 }
 
-/**
- * 保存图片到本地相册（兼容iOS/Android/PC多设备）
- * @param {Blob} blob - 图片Blob对象
- * @param {string} fileName - 保存的文件名
- * @returns {Promise<boolean>} - 保存成功/失败
- */
+// 保存圖片到相冊（兼容多設備）
 function saveToGallery(blob, fileName) {
-  const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent); // iOS设备检测
-  const isAndroid = /Android/i.test(navigator.userAgent);     // Android设备检测
-
+  // 新增iOS設備檢測
+  const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+  
   return new Promise((resolve) => {
-    // 方案1：现代浏览器支持的File System API（优先使用，体验更好）
+    // 現代瀏覽器支持文件保存API
     if (window.showSaveFilePicker && !isIOS) {
       window.showSaveFilePicker({
         suggestedName: fileName,
-        types: [{
-          description: 'JPG圖片文件',
-          accept: { 'image/jpeg': ['.jpg', '.jpeg'] }
-        }],
-        excludeAcceptAllOption: true // 不显示"所有文件"选项
+        types: [{ description: '圖片文件', accept: { 'image/jpeg': ['.jpg'] } }]
       })
-      .then((fileHandle) => fileHandle.createWritable())
-      .then((writable) => {
-        return writable.write(blob).then(() => writable.close());
-      })
-      .then(() => {
-        alert('圖片已成功保存到本地！');
-        resolve(true);
-      })
-      .catch(() => {
-        // 若File System API失败，降级为a标签下载
-        saveWithAnchorTag(blob, fileName, resolve, isIOS, isAndroid);
-      });
-    } 
-    // 方案2：a标签下载（兼容旧浏览器、iOS、Android）
-    else {
-      saveWithAnchorTag(blob, fileName, resolve, isIOS, isAndroid);
+      .then(handle => handle.createWritable())
+      .then(writable => writable.write(blob).then(() => writable.close()))
+      .then(() => { alert('圖片已成功保存！'); resolve(true); })
+      .catch(() => saveWithAnchorTag(blob, fileName, resolve, isIOS)); // 傳遞isIOS參數
+    } else {
+      saveWithAnchorTag(blob, fileName, resolve, isIOS); // 傳遞isIOS參數
     }
   });
 }
 
-/**
- * a标签兼容下载（降级方案：适配iOS/Android/旧浏览器）
- * @param {Blob} blob - 图片Blob对象
- * @param {string} fileName - 保存的文件名
- * @param {Function} resolve - Promise.resolve回调
- * @param {boolean} isIOS - 是否为iOS设备
- * @param {boolean} isAndroid - 是否为Android设备
- */
-function saveWithAnchorTag(blob, fileName, resolve, isIOS, isAndroid) {
-  // 创建临时Blob URL
+// a標籤兼容下載（適配舊瀏覽器與IOS）
+function saveWithAnchorTag(blob, fileName, resolve, isIOS) { // 接收isIOS參數
   const blobUrl = URL.createObjectURL(blob);
-  
-  // 创建隐藏的a标签
   const downloadLink = document.createElement('a');
-  downloadLink.download = fileName; // 文件名
-  downloadLink.href = blobUrl;      // 链接指向Blob URL
+  downloadLink.download = fileName;
+  downloadLink.href = blobUrl;
   downloadLink.style.display = 'none';
-  
-  // iOS特殊处理：需新窗口打开（否则无法触发下载）
-  if (isIOS) downloadLink.target = '_blank';
+  if (isIOS) downloadLink.target = '_blank'; // IOS需新窗口打開
 
-  // 添加到页面并触发点击
   document.body.appendChild(downloadLink);
   downloadLink.click();
 
-  // 清理临时资源+提示用户（延迟1秒确保下载触发）
+  // 清理臨時資源
   setTimeout(() => {
     document.body.removeChild(downloadLink);
-    URL.revokeObjectURL(blobUrl); // 释放Blob URL内存
-
-    // 设备差异化提示（提升用户体验）
-    if (isIOS) {
-      alert(`圖片已打開，請點擊右上角「分享」→「保存圖片」\n文件名：${fileName}`);
-    } else if (isAndroid) {
-      alert(`圖片已保存到「下載」文件夾，可在相冊中查看\n文件名：${fileName}`);
-    } else {
-      alert(`圖片已保存到「下載」文件夾，可在文件管理器中查找\n文件名：${fileName}`);
-    }
-
+    URL.revokeObjectURL(blobUrl);
+    // 提示IOS用戶手動保存
+    if (isIOS) alert(`圖片已轉檔完成，請下方點擊「分享健康自檢表」圖標`);
+    else alert(`圖片已保存到「下載」文件夾，可在相冊的「下載」專輯中找到\n文件名：${fileName}`);
     resolve(true);
   }, 1000);
 }
 
-/**
- * 显示分享按钮（固定在页面底部，支持分享图片与链接）
- * @param {string} userName - 用户名（用于分享文案）
- * @param {string} date - 日期（用于分享文案）
- */
+// 顯示分享按鈕（固定在頁面底部）
 function showSingleShareButton(userName, date) {
-  // 移除旧的分享按钮（避免重复创建）
+  // 移除舊的分享按鈕
   const existingShareBtn = document.getElementById('singleShareBtn');
   if (existingShareBtn) document.body.removeChild(existingShareBtn);
 
-  // 1. 创建新的分享按钮（样式固定在底部居中）
+  // 創建新的分享按鈕
   const shareBtn = document.createElement('button');
   shareBtn.id = 'singleShareBtn';
   shareBtn.style.cssText = `
     position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
-    padding: 12px 28px; border-radius: 30px; background: #165DFF; color: #ffffff;
+    padding: 12px 28px; border-radius: 30px; background: #165DFF; color: white;
     border: none; box-shadow: 0 4px 15px rgba(22, 93, 255, 0.3);
-    font-size: 16px; font-weight: 600; display: flex; align-items: center; gap: 8px;
-    z-index: 9999; cursor: pointer; transition: opacity 0.3s;
+    font-size: 16px; font-weight: bold; display: flex; align-items: center; gap: 8px;
+    z-index: 9999; cursor: pointer;
   `;
   shareBtn.innerHTML = '<i class="fa fa-share-alt"></i> 分享健康自檢表';
   document.body.appendChild(shareBtn);
 
-  // 2. 绑定分享事件（支持原生分享+降级复制链接）
+  // 綁定分享事件
   shareBtn.addEventListener('click', async () => {
     try {
-      // 检查分享资源是否完整
       if (!localImageBlob || !imgbbImageUrl) {
         alert('分享資源不完整，請重新生成圖片');
         return;
       }
 
-      // 构建分享内容（明确截取范围）
+      // 構建分享內容，明確標注是六大調理前的內容
       const imageFile = new File([localImageBlob], localImageName, { type: 'image/jpeg' });
       const shareText = `
 📋 『 ${userName} 』的健康自檢表
 🗓️ 自檢日期：${date}
-📌 內容範圍：六大調理方向前（含AI評估）
+💡 包含：六大調理方向前的內容 + AI評估
 🔗 圖片鏈接：\n${imgbbImageUrl}
       `.trim();
 
-      // 方案1：现代浏览器原生分享（支持直接分享图片）
-      if (navigator.share && navigator.canShare && navigator.canShare({ files: [imageFile] })) {
+      // 現代瀏覽器支持原生分享API
+      if (navigator.share && navigator.canShare({ files: [imageFile] })) {
         shareBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> 喚醒分享...';
         await navigator.share({
-          title: `${userName}的健康自檢表（六大調理前）`, // 分享标题
-          text: shareText,                                 // 分享文案
-          files: [imageFile],                              // 分享图片
-          url: imgbbImageUrl                               // 分享链接（备用）
+          title: `${userName}的健康自檢表（六大調理前）`,
+          text: shareText,
+          files: [imageFile],
+          url: imgbbImageUrl
         });
-
-        alert('分享成功！對方可直接查看圖片預覽');
+        alert('分享成功！可直接查看圖片預覽');
         shareBtn.innerHTML = '<i class="fa fa-share-alt"></i> 分享健康自檢表';
-
-      // 方案2：降级为复制链接（旧浏览器、不支持原生分享的设备）
       } else {
+        // 降級為複製鏈接
         await navigator.clipboard.writeText(shareText);
         alert(`
-您的設備/瀏覽器不支持圖片分享，已複製分享內容：
+您的瀏覽器不支持圖片分享，已複製分享內容：
 ${shareText}\n
 操作提示：
 1. 打開聊天窗口
 2. 長按輸入框粘貼
-3. 對方可點擊鏈接查看圖片
+3. 對方可點擊imgbb鏈接查看圖片
         `.trim());
       }
-
     } catch (shareError) {
-      // 分享异常处理（用户取消分享不提示错误）
+      console.error('分享失敗:', shareError);
       shareBtn.innerHTML = '<i class="fa fa-share-alt"></i> 分享健康自檢表';
       if (shareError.name !== 'AbortError') {
-        console.error('分享失敗：', shareError);
         alert(`
-分享失敗，請手動使用圖片鏈接：
+分享失敗，請手動使用imgbb鏈接：
 🔗 ${imgbbImageUrl}
 \n提示：將鏈接粘貼到聊天窗口，對方可直接查看圖片
         `.trim());
@@ -3134,13 +3072,6 @@ ${shareText}\n
   });
 }
 
-// 初始化：页面加载完成后绑定下载按钮事件（需确保按钮ID匹配）
-document.addEventListener('DOMContentLoaded', () => {
-  const downloadReportBtn = document.getElementById('downloadReportBtn');
-  if (downloadReportBtn) {
-    downloadReportBtn.addEventListener('click', handleImageDownload);
-  }
-});
 
 // -------------------------- 18. 綁定事件與初始化
 // 綁定下載按鈕事件
