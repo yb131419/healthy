@@ -2847,7 +2847,7 @@ async function handleImageDownload() {
       canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('圖片Blob生成失敗')), 'image/jpeg', 0.85);
     });
 
-    updateProgress(progressIndicator, 75, '上傳圖片...');
+    updateProgress(progressIndicator, 75, '轉檔中...');
 
     // 6. ImgBB上傳（分享用）
     const base64Image = await new Promise((resolve) => {
@@ -3078,7 +3078,7 @@ function showSingleShareButton(userName, date) {
 
       // 構建分享內容
       const imageFile = new File([localImageBlob], localImageName, { type: 'image/jpeg' });
-      const shareText = `📋 『 ${userName} 』的健康自檢表\n🗓️ 自檢日期：${date}\n💡 包含：調理方向 + AI評估\n🔗 圖片鏈接：\n${imgbbImageUrl}`;
+      const shareText = `📋 『 ${userName} 』的健康自檢表\n🗓️ 自檢日期：${date}\n💡 包含：調理方向 + AI評估\n🔗 圖片鏈接：\n`;
 
       // 現代瀏覽器支持原生分享API
       if (navigator.share && navigator.canShare({ files: [imageFile] })) {
