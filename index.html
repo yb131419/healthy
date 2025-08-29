@@ -2783,7 +2783,7 @@ function generateResult() {
   }
 }
 
-// -------------------------- 17. 圖片下載與分享（調整範圍到AI評估為止）
+// -------------------------- 17. 圖片下載與分享（調整範圍到「六大調理方向：找到健康的根本邏輯」）
 async function handleImageDownload() {
   try {
     downloadReportBtn.disabled = true;
@@ -2791,25 +2791,35 @@ async function handleImageDownload() {
 
     // 檢查依賴庫與DOM元素
     if (typeof html2canvas === 'undefined') throw new Error('圖片處理庫未加載，請刷新頁面重試');
-    // 調整截圖範圍：只包含到AI評估部分
+    // 調整截圖範圍：包含到「六大調理方向：找到健康的根本邏輯」文本處
     const aiContainer = document.getElementById('aiEvaluationContainer');
-    if (!aiContainer) throw new Error('未找到AI評估結果，請先完成評估');
+    const recommendationsContainer = document.getElementById('healthRecommendations');
+    if (!aiContainer || !recommendationsContainer) throw new Error('未找到評估結果或調理方向內容，請先完成評估');
     
-    // 找到包含從頂部到AI評估的完整容器
+    // 找到「六大調理方向：找到健康的根本邏輯」文本元素（定位截圖結束點）
+    const targetTextElement = Array.from(recommendationsContainer.querySelectorAll('div, p'))
+      .find(el => el.textContent?.includes('六大調理邏輯：') && el.textContent?.includes('才能長久健康！'));
+    if (!targetTextElement) throw new Error('未找到「六大調理方向」核心文本，無法確定截圖範圍');
+    
+    // 確定截圖的頂部容器（包含基本資料到目標文本的完整區域）
     let reportElement = aiContainer;
-    // 向上查找合適的父容器，確保包含基本資料到AI評估
     while (reportElement.parentElement && !reportElement.id.includes('result')) {
       reportElement = reportElement.parentElement;
     }
 
-    if (!reportElement) throw new Error('未找到評估結果，請先完成評估');
+    if (!reportElement) throw new Error('未找到評估結果容器，請先完成評估');
 
-    // 臨時調整樣式（避免截圖包含多餘陰影）
+    // 臨時調整樣式（避免截圖包含多餘陰影，保證內容完整）
     const originalStyle = { padding: reportElement.style.padding, boxShadow: reportElement.style.boxShadow };
     reportElement.style.padding = '24px';
     reportElement.style.boxShadow = 'none';
 
-    // 生成結果頁截圖（僅包含到AI評估部分）
+    // 計算截圖高度：從報告容器頂部到目標文本元素底部（包含目標文本）
+    const reportRect = reportElement.getBoundingClientRect();
+    const targetRect = targetTextElement.getBoundingClientRect();
+    const screenshotHeight = targetRect.bottom - reportRect.top + 40; // 增加40px底部間距，避免內容被切斷
+
+    // 生成結果頁截圖（包含到「六大調理方向：找到健康的根本邏輯」）
     const canvas = await html2canvas(reportElement, {
       useCORS: true,
       allowTaint: false,
@@ -2817,7 +2827,8 @@ async function handleImageDownload() {
       logging: false,
       scrollY: -window.scrollY,
       windowWidth: reportElement.offsetWidth,
-      windowHeight: aiContainer.getBoundingClientRect().bottom - reportElement.getBoundingClientRect().top + 40 // 只截取到AI評估底部
+      windowHeight: screenshotHeight, // 設定截圖高度為「到目標文本底部」
+      height: screenshotHeight // 明確設定canvas高度，確保截圖完整
     });
 
     // 恢復原樣式
