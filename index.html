@@ -2773,63 +2773,86 @@ function generateResult() {
 // -------------------------- 17. 圖片下載與分享
 async function handleImageDownload() {
   try {
+    // 禁用按鈕並顯示初始加載狀態
     downloadReportBtn.disabled = true;
-    downloadReportBtn.innerHTML = '<i class="fa fa-spinner fa-spin mr-2"></i> 處理中...';
+    downloadReportBtn.innerHTML = '<i class="fa fa-spinner fa-spin mr-2"></i> 準備中...';
+    
+    // 創建並顯示動態等待提示
+    const progressIndicator = createProgressIndicator();
+    document.body.appendChild(progressIndicator);
 
     // 1. 核心依賴與關鍵元素檢查
     if (typeof html2canvas === 'undefined') throw new Error('圖片處理庫未加載，請刷新頁面重試');
-    const resultSection = document.getElementById('result'); // 整個結果頁容器（包含你圖片裡的內容）
+    const resultSection = document.getElementById('result');
     if (!resultSection) throw new Error('未找到健康評估結果頁容器，請先提交評估');
 
-    // 2. 臨時調整樣式（避免截圖邊框/陰影影響，確保內容完整顯示）
+    updateProgress(progressIndicator, 20, '調整頁面樣式...');
+
+    // 2. 臨時調整樣式（避免截圖邊框/陰影影響）
     const originalStyles = {
       resultPadding: resultSection.style.padding,
       resultMargin: resultSection.style.margin,
-      resultBoxShadow: resultSection.style.boxShadow
+      resultBoxShadow: resultSection.style.boxShadow,
+      position: resultSection.style.position,
+      top: resultSection.style.top,
+      left: resultSection.style.left,
+      zIndex: resultSection.style.zIndex
     };
+    
     // 增加內邊距避免內容被截斷，移除多餘陰影
     resultSection.style.padding = '20px';
     resultSection.style.margin = '0 auto';
     resultSection.style.boxShadow = 'none';
+    
+    // 臨時固定元素位置，避免滾動影響但不強制頁面滾動
+    const rect = resultSection.getBoundingClientRect();
+    resultSection.style.position = 'relative';
+    resultSection.style.top = `-${rect.top}px`;
+    resultSection.style.left = `-${rect.left}px`;
+    resultSection.style.zIndex = '1000';
 
-    // 3. 強制滾動到結果頁頂部（避免因滾動位置導致截圖漏內容）
-    resultSection.scrollIntoView({ behavior: 'auto', block: 'start' });
-    await new Promise(resolve => setTimeout(resolve, 500)); // 等待滾動完成
+    updateProgress(progressIndicator, 40, '準備截圖...');
 
-    // 4. 執行截圖（截取整個resultSection內容，即你圖片的範圍）
+    // 3. 執行截圖（使用更高效的配置）
     const canvas = await html2canvas(resultSection, {
       useCORS: true,
       allowTaint: false,
-      scale: 2, // 2倍分辨率保證清晰度
+      scale: window.devicePixelRatio || 2, // 根據設備像素比調整，避免不必要的高分辨率
       logging: false,
-      scrollY: -window.scrollY, // 抵消頁面滾動影響
+      scrollX: 0,
+      scrollY: 0,
+      windowWidth: resultSection.scrollWidth,
+      windowHeight: resultSection.scrollHeight,
       ignoreElements: (el) => {
-        // 排除截圖範圍外的元素（如下載按鈕、分享按鈕等）
-        return el.id === 'downloadReportBtn' || el.id === 'singleShareBtn' || el.id === 'restartBtn';
+        // 排除不需要的元素
+        return el.id === 'downloadReportBtn' || el.id === 'singleShareBtn' || el.id === 'restartBtn' || el === progressIndicator;
       }
     });
 
-    // 5. 恢復原始樣式（避免影響頁面正常顯示）
-    resultSection.style.padding = originalStyles.resultPadding;
-    resultSection.style.margin = originalStyles.resultMargin;
-    resultSection.style.boxShadow = originalStyles.resultBoxShadow;
+    updateProgress(progressIndicator, 60, '處理圖片...');
 
-    // 6. 後續圖片處理
+    // 4. 恢復原始樣式
+    Object.keys(originalStyles).forEach(key => {
+      resultSection.style[key] = originalStyles[key];
+    });
+
+    // 5. 圖片處理（使用更高效的轉換方式）
     const userName = document.getElementById('name').value.trim() || '未知用戶';
     const currentDate = new Date();
     const formattedDate = `${currentDate.getFullYear()}年${String(currentDate.getMonth() + 1).padStart(2, '0')}月${String(currentDate.getDate()).padStart(2, '0')}日`;
     localImageName = `${userName}_健康評估結果_${formattedDate}.jpg`;
     
-    // 轉換Canvas為JPG Blob（90%質量保證清晰度與體積平衡）
+    // 轉換Canvas為JPG Blob（平衡質量和體積）
     localImageBlob = await new Promise((resolve, reject) => {
-      canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('圖片Blob生成失敗')), 'image/jpeg', 0.9);
+      canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('圖片Blob生成失敗')), 'image/jpeg', 0.85);
     });
 
-    // 7. ImgBB上傳（分享用）
-    downloadReportBtn.innerHTML = '<i class="fa fa-cloud-upload mr-2"></i> 等待中...';
+    updateProgress(progressIndicator, 75, '上傳圖片...');
+
+    // 6. ImgBB上傳（分享用）
     const base64Image = await new Promise((resolve) => {
       const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result.split(',')[1]); // 移除dataURL前綴
+      reader.onloadend = () => resolve(reader.result.split(',')[1]);
       reader.readAsDataURL(localImageBlob);
     });
 
@@ -2838,11 +2861,17 @@ async function handleImageDownload() {
     formData.append('image', base64Image);
     formData.append('name', localImageName);
 
+    // 使用AbortController控制請求超時
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
+    
     const uploadResponse = await fetch(IMGBB_UPLOAD_URL, {
       method: 'POST',
       body: formData,
-      signal: AbortSignal.timeout(30000) // 30秒超時保護
+      signal: controller.signal
     });
+    
+    clearTimeout(timeoutId);
 
     const uploadResult = await uploadResponse.json();
     if (!uploadResponse.ok || !uploadResult.success) {
@@ -2852,33 +2881,122 @@ async function handleImageDownload() {
     imgbbImageUrl = uploadResult.data.url;
     imgbbDeleteUrl = uploadResult.data.delete_url;
 
-    // 8. 本地保存與用戶提示
-    downloadReportBtn.innerHTML = '<i class="fa fa-image mr-2"></i> 保存到相冊...';
+    updateProgress(progressIndicator, 90, '保存圖片...');
+
+    // 7. 本地保存與用戶提示
     await saveToGallery(localImageBlob, localImageName);
 
-    setTimeout(() => {
-      downloadReportBtn.disabled = false;
-      downloadReportBtn.innerHTML = '<i class="fa fa-download mr-2"></i> 重新轉檔操作';
-      alert(`
-圖片已成功保存！
-✅ 截圖範圍：健康評估結果頁面內容
-📄 文件名：${localImageName}
-🔗 分享鏈接：${imgbbImageUrl}
-      `.trim());
-      showSingleShareButton(userName, formattedDate);
-    }, 1000);
+    // 完成處理，清理並顯示結果
+    document.body.removeChild(progressIndicator);
+    downloadReportBtn.disabled = false;
+    downloadReportBtn.innerHTML = '<i class="fa fa-download mr-2"></i> 重新轉檔操作';
+    
+    // 使用toast替代alert，提供更好的用戶體驗
+    showToast(`圖片已成功保存！\n文件名：${localImageName}`);
+    showSingleShareButton(userName, formattedDate);
 
   } catch (error) {
     console.error('圖片處理失敗：', error);
+    // 移除進度指示器
+    const progressIndicator = document.getElementById('progressIndicator');
+    if (progressIndicator) document.body.removeChild(progressIndicator);
+    
     downloadReportBtn.disabled = false;
     downloadReportBtn.innerHTML = '<i class="fa fa-download mr-2"></i> 下載圖片';
-    alert(`操作失敗：${error.message}\n提示：請確保健康評估結果頁面已完整加載後重試`);
+    showToast(`操作失敗：${error.message}`, 'error');
   }
+}
+
+// 創建進度指示器
+function createProgressIndicator() {
+  const indicator = document.createElement('div');
+  indicator.id = 'progressIndicator';
+  indicator.style.cssText = `
+    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    background: rgba(255, 255, 255, 0.95); padding: 25px; border-radius: 12px;
+    box-shadow: 0 5px 25px rgba(0, 0, 0, 0.15); z-index: 99999;
+    display: flex; flex-direction: column; align-items: center; min-width: 280px;
+  `;
+  
+  // 進度條容器
+  const progressContainer = document.createElement('div');
+  progressContainer.style.cssText = `
+    width: 100%; height: 6px; background: #f0f0f0; border-radius: 3px; margin: 15px 0;
+    overflow: hidden;
+  `;
+  
+  // 進度條
+  const progressBar = document.createElement('div');
+  progressBar.id = 'progressBar';
+  progressBar.style.cssText = `
+    height: 100%; background: #165DFF; width: 0%; transition: width 0.3s ease;
+  `;
+  
+  progressContainer.appendChild(progressBar);
+  
+  // 狀態文本
+  const statusText = document.createElement('div');
+  statusText.id = 'progressStatus';
+  statusText.style.cssText = `
+    color: #333; font-size: 15px; text-align: center; margin-top: 10px;
+  `;
+  statusText.textContent = '準備中...';
+  
+  // 加載動畫
+  const spinner = document.createElement('i');
+  spinner.className = 'fa fa-circle-o-notch fa-spin';
+  spinner.style.cssText = 'font-size: 30px; color: #165DFF;';
+  
+  indicator.appendChild(spinner);
+  indicator.appendChild(progressContainer);
+  indicator.appendChild(statusText);
+  
+  return indicator;
+}
+
+// 更新進度
+function updateProgress(indicator, percent, text) {
+  indicator.querySelector('#progressBar').style.width = `${percent}%`;
+  indicator.querySelector('#progressStatus').textContent = text;
+}
+
+// 顯示輕量級提示
+function showToast(message, type = 'success') {
+  // 移除現有的toast
+  const existingToast = document.querySelector('.custom-toast');
+  if (existingToast) document.body.removeChild(existingToast);
+  
+  const toast = document.createElement('div');
+  toast.className = 'custom-toast';
+  toast.style.cssText = `
+    position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+    padding: 12px 20px; border-radius: 6px; color: white; z-index: 99999;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2); transition: opacity 0.3s ease;
+  `;
+  
+  // 設置不同類型的樣式
+  if (type === 'error') {
+    toast.style.background = '#ff4d4f';
+  } else {
+    toast.style.background = '#52c41a';
+  }
+  
+  toast.textContent = message;
+  document.body.appendChild(toast);
+  
+  // 3秒後自動消失
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    setTimeout(() => {
+      if (document.body.contains(toast)) {
+        document.body.removeChild(toast);
+      }
+    }, 300);
+  }, 3000);
 }
 
 // 保存圖片到相冊（兼容多設備）
 function saveToGallery(blob, fileName) {
-  // 新增iOS設備檢測
   const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
   
   return new Promise((resolve) => {
@@ -2890,35 +3008,36 @@ function saveToGallery(blob, fileName) {
       })
       .then(handle => handle.createWritable())
       .then(writable => writable.write(blob).then(() => writable.close()))
-      .then(() => { alert('圖片已成功保存！'); resolve(true); })
-      .catch(() => saveWithAnchorTag(blob, fileName, resolve, isIOS)); // 傳遞isIOS參數
+      .then(() => resolve(true))
+      .catch(() => saveWithAnchorTag(blob, fileName, resolve, isIOS));
     } else {
-      saveWithAnchorTag(blob, fileName, resolve, isIOS); // 傳遞isIOS參數
+      saveWithAnchorTag(blob, fileName, resolve, isIOS);
     }
   });
 }
 
 // a標籤兼容下載（適配舊瀏覽器與IOS）
-function saveWithAnchorTag(blob, fileName, resolve, isIOS) { // 接收isIOS參數
+function saveWithAnchorTag(blob, fileName, resolve, isIOS) {
   const blobUrl = URL.createObjectURL(blob);
   const downloadLink = document.createElement('a');
   downloadLink.download = fileName;
   downloadLink.href = blobUrl;
   downloadLink.style.display = 'none';
-  if (isIOS) downloadLink.target = '_blank'; // IOS需新窗口打開
+  if (isIOS) downloadLink.target = '_blank';
 
   document.body.appendChild(downloadLink);
-  downloadLink.click();
-
-  // 清理臨時資源
-  setTimeout(() => {
-    document.body.removeChild(downloadLink);
-    URL.revokeObjectURL(blobUrl);
-    // 提示IOS用戶手動保存
-    if (isIOS) alert(`圖片已轉檔完成，請下方點擊「分享健康自檢表」圖標`);
-    else alert(`圖片已保存到「下載」文件夾，可在相冊的「下載」專輯中找到\n文件名：${fileName}`);
-    resolve(true);
-  }, 1000);
+  
+  // 使用requestAnimationFrame確保點擊事件被正確觸發
+  requestAnimationFrame(() => {
+    downloadLink.click();
+    
+    // 清理臨時資源
+    setTimeout(() => {
+      document.body.removeChild(downloadLink);
+      URL.revokeObjectURL(blobUrl);
+      resolve(true);
+    }, 1000);
+  });
 }
 
 // 顯示分享按鈕（固定在頁面底部）
@@ -2935,27 +3054,31 @@ function showSingleShareButton(userName, date) {
     padding: 12px 28px; border-radius: 30px; background: #165DFF; color: white;
     border: none; box-shadow: 0 4px 15px rgba(22, 93, 255, 0.3);
     font-size: 16px; font-weight: bold; display: flex; align-items: center; gap: 8px;
-    z-index: 9999; cursor: pointer;
+    z-index: 9999; cursor: pointer; transition: background 0.2s ease;
   `;
   shareBtn.innerHTML = '<i class="fa fa-share-alt"></i> 分享健康自檢表';
   document.body.appendChild(shareBtn);
+  
+  // 添加懸停效果
+  shareBtn.addEventListener('mouseover', () => {
+    shareBtn.style.background = '#0E42D2';
+  });
+  
+  shareBtn.addEventListener('mouseout', () => {
+    shareBtn.style.background = '#165DFF';
+  });
 
   // 綁定分享事件
   shareBtn.addEventListener('click', async () => {
     try {
       if (!localImageBlob || !imgbbImageUrl) {
-        alert('分享資源不完整，請重新生成圖片');
+        showToast('分享資源不完整，請重新生成圖片', 'error');
         return;
       }
 
       // 構建分享內容
       const imageFile = new File([localImageBlob], localImageName, { type: 'image/jpeg' });
-      const shareText = `
-📋 『 ${userName} 』的健康自檢表
-🗓️ 自檢日期：${date}
-💡 包含：調理方向 + AI評估
-🔗 圖片鏈接：\n
-      `.trim();
+      const shareText = `📋 『 ${userName} 』的健康自檢表\n🗓️ 自檢日期：${date}\n💡 包含：調理方向 + AI評估\n🔗 圖片鏈接：\n${imgbbImageUrl}`;
 
       // 現代瀏覽器支持原生分享API
       if (navigator.share && navigator.canShare({ files: [imageFile] })) {
@@ -2966,31 +3089,20 @@ function showSingleShareButton(userName, date) {
           files: [imageFile],
           url: imgbbImageUrl
         });
-        alert('分享成功！可直接查看圖片預覽');
+        showToast('分享成功！');
         shareBtn.innerHTML = '<i class="fa fa-share-alt"></i> 分享健康自檢表';
       } else {
         // 降級為複製鏈接
         await navigator.clipboard.writeText(shareText);
-        alert(`
-您的瀏覽器不支持圖片分享，已複製分享內容：
-${shareText}\n
-操作提示：
-1. 打開聊天窗口
-2. 長按輸入框粘貼
-3. 對方可點擊imgbb鏈接查看圖片
-        `.trim());
+        showToast('分享內容已複製到剪貼板');
       }
     } catch (shareError) {
       console.error('分享失敗:', shareError);
       shareBtn.innerHTML = '<i class="fa fa-share-alt"></i> 分享健康自檢表';
       if (shareError.name !== 'AbortError') {
-        alert(`
-分享失敗，請手動使用imgbb鏈接：
-🔗 ${imgbbImageUrl}
-\n提示：將鏈接粘貼到聊天窗口，對方可直接查看圖片
-        `.trim());
+        showToast(`分享失敗，請手動使用鏈接：${imgbbImageUrl}`, 'error');
       } else {
-        alert('分享已取消');
+        showToast('分享已取消');
       }
     }
   });
