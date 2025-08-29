@@ -2080,7 +2080,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
 
- // -------------------------- 9. 查看結果/重新評估按鈕事件
+// -------------------------- 9. 查看結果/重新評估按鈕事件
 viewResultBtn.addEventListener('click', () => {
   successModal.classList.add('hidden');
   resultSection.classList.remove('hidden');
@@ -2370,44 +2370,69 @@ function generateResult() {
   const occupation = document.getElementById('occupation').value || '未填寫';
   const bmi = calculateBMI();
 
-  // 2. 渲染基本信息卡片
+  // 2. 渲染基本信息卡片 - 修復顯示位置問題
   const basicInfoContainer = document.getElementById('basicInfo');
   if (basicInfoContainer) {
+    // 確保容器可見
+    basicInfoContainer.style.display = 'block';
     basicInfoContainer.innerHTML = `
-      <div class="p-3 border border-gray-100 rounded-lg">
-        <p class="text-sm"><strong>姓名：</strong> ${name}</p>
-      </div>
-      <div class="p-3 border border-gray-100 rounded-lg">
-        <p class="text-sm"><strong>年齡：</strong> ${age} 歲</p>
-      </div>
-      <div class="p-3 border border-gray-100 rounded-lg">
-        <p class="text-sm"><strong>性別：</strong> ${gender}</p>
-      </div>
-      <div class="p-3 border border-gray-100 rounded-lg">
-        <p class="text-sm"><strong>電話：</strong> ${phone}</p>
-      </div>
-      <div class="p-3 border border-gray-100 rounded-lg">
-        <p class="text-sm"><strong>身高：</strong> ${height}</p>
-      </div>
-      <div class="p-3 border border-gray-100 rounded-lg">
-        <p class="text-sm"><strong>體重：</strong> ${weight}</p>
-      </div>
-      <div class="p-3 border border-gray-100 rounded-lg">
-        <p class="text-sm"><strong>BMI：</strong> ${bmi}</p>
-      </div>
-      <div class="p-3 border border-gray-100 rounded-lg">
-        <p class="text-sm"><strong>腰圍：</strong> ${waist}</p>
-      </div>
-      <div class="p-3 border border-gray-100 rounded-lg">
-        <p class="text-sm"><strong>血壓：</strong> ${bloodPressure}</p>
-      </div>
-      <div class="p-3 border border-gray-100 rounded-lg">
-        <p class="text-sm"><strong>血糖：</strong> ${bloodSugar}</p>
-      </div>
-      <div class="p-3 border border-gray-100 rounded-lg md:col-span-2">
-        <p class="text-sm"><strong>職業：</strong> ${occupation}</p>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+        <div class="p-3 border border-gray-100 rounded-lg">
+          <p class="text-sm"><strong>姓名：</strong> ${name}</p>
+        </div>
+        <div class="p-3 border border-gray-100 rounded-lg">
+          <p class="text-sm"><strong>年齡：</strong> ${age} 歲</p>
+        </div>
+        <div class="p-3 border border-gray-100 rounded-lg">
+          <p class="text-sm"><strong>性別：</strong> ${gender}</p>
+        </div>
+        <div class="p-3 border border-gray-100 rounded-lg">
+          <p class="text-sm"><strong>電話：</strong> ${phone}</p>
+        </div>
+        <div class="p-3 border border-gray-100 rounded-lg">
+          <p class="text-sm"><strong>身高：</strong> ${height}</p>
+        </div>
+        <div class="p-3 border border-gray-100 rounded-lg">
+          <p class="text-sm"><strong>體重：</strong> ${weight}</p>
+        </div>
+        <div class="p-3 border border-gray-100 rounded-lg">
+          <p class="text-sm"><strong>BMI：</strong> ${bmi}</p>
+        </div>
+        <div class="p-3 border border-gray-100 rounded-lg">
+          <p class="text-sm"><strong>腰圍：</strong> ${waist}</p>
+        </div>
+        <div class="p-3 border border-gray-100 rounded-lg">
+          <p class="text-sm"><strong>血壓：</strong> ${bloodPressure}</p>
+        </div>
+        <div class="p-3 border border-gray-100 rounded-lg">
+          <p class="text-sm"><strong>血糖：</strong> ${bloodSugar}</p>
+        </div>
+        <div class="p-3 border border-gray-100 rounded-lg md:col-span-2">
+          <p class="text-sm"><strong>職業：</strong> ${occupation}</p>
+        </div>
       </div>
     `;
+  } else {
+    // 如果容器不存在，創建一個
+    const newBasicInfo = document.createElement('div');
+    newBasicInfo.id = 'basicInfo';
+    newBasicInfo.className = 'basic-info-container mt-6';
+    newBasicInfo.innerHTML = `
+      <h3 class="text-lg font-semibold mb-4">基本資料</h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+        <div class="p-3 border border-gray-100 rounded-lg">
+          <p class="text-sm"><strong>姓名：</strong> ${name}</p>
+        </div>
+        <div class="p-3 border border-gray-100 rounded-lg">
+          <p class="text-sm"><strong>年齡：</strong> ${age} 歲</p>
+        </div>
+        <!-- 其他基本信息項 -->
+      </div>
+    `;
+    
+    // 插入到結果區域的開頭
+    const resultHeader = resultSection.querySelector('h2') || resultSection.firstChild;
+    resultSection.insertBefore(newBasicInfo, resultHeader.nextSibling);
   }
 
   // 3. 加載症狀/習慣統計數據
@@ -2556,7 +2581,7 @@ function generateResult() {
   document.getElementById('symptomScoreBar').style.width = `${symptomPercent}%`;
   document.getElementById('habitScoreBar').style.width = `${habitPercent}%`;
 
-  // 7. 渲染主要健康問題（含症狀分類）
+  // 7. 渲染主要健康問題（含症狀分類）- 修復顯示問題
   const mainIssuesContainer = document.getElementById('mainHealthIssues');
   let mainConcern = document.getElementById('mainConcern').value.trim();
   // 未填主要問題時，從選中症狀中提取高頻分類
@@ -2611,17 +2636,47 @@ function generateResult() {
     }
   });
 
-  // 渲染主要健康問題區域
+  // 渲染主要健康問題區域 - 修復顯示位置和格式
   if (mainIssuesContainer) {
+    // 確保容器可見
+    mainIssuesContainer.style.display = 'block';
     mainIssuesContainer.innerHTML = `
-      <p class="mb-3"><strong>主要關注問題：</strong> ${mainConcern}</p>
-      <p class="mb-3"><strong>症狀持續時間：</strong> ${symptomDuration}</p>
-      <p class="mb-3"><strong>可能原因：</strong> ${possibleCauses}</p>
-      ${totalSymptomCount > 0 ? 
-        `<div class="mt-3"><strong>詳細症狀：</strong>${symptomsHtml}</div>` : 
-        `<div class="mt-3 text-gray-500"><strong>詳細症狀：</strong>未選擇任何症狀</div>`
-      }
+      <div class="bg-white p-4 rounded-lg border border-gray-100 shadow-sm">
+        <h3 class="text-lg font-semibold mb-4 text-primary">主要健康問題</h3>
+        <p class="mb-3"><strong>主要關注問題：</strong> ${mainConcern}</p>
+        <p class="mb-3"><strong>症狀持續時間：</strong> ${symptomDuration}</p>
+        <p class="mb-3"><strong>可能原因：</strong> ${possibleCauses}</p>
+        ${totalSymptomCount > 0 ? 
+          `<div class="mt-3"><strong>詳細症狀：</strong>${symptomsHtml}</div>` : 
+          `<div class="mt-3 text-gray-500"><strong>詳細症狀：</strong>未選擇任何症狀</div>`
+        }
+      </div>
     `;
+  } else {
+    // 如果容器不存在，創建一個
+    const newMainIssues = document.createElement('div');
+    newMainIssues.id = 'mainHealthIssues';
+    newMainIssues.className = 'main-health-issues mt-6';
+    newMainIssues.innerHTML = `
+      <div class="bg-white p-4 rounded-lg border border-gray-100 shadow-sm">
+        <h3 class="text-lg font-semibold mb-4 text-primary">主要健康問題</h3>
+        <p class="mb-3"><strong>主要關注問題：</strong> ${mainConcern}</p>
+        <p class="mb-3"><strong>症狀持續時間：</strong> ${symptomDuration}</p>
+        <p class="mb-3"><strong>可能原因：</strong> ${possibleCauses}</p>
+        ${totalSymptomCount > 0 ? 
+          `<div class="mt-3"><strong>詳細症狀：</strong>${symptomsHtml}</div>` : 
+          `<div class="mt-3 text-gray-500"><strong>詳細症狀：</strong>未選擇任何症狀</div>`
+        }
+      </div>
+    `;
+    
+    // 插入到結果區域的合適位置
+    const radarChartContainer = document.getElementById('healthBarChart')?.parentNode;
+    if (radarChartContainer) {
+      radarChartContainer.parentNode.insertBefore(newMainIssues, radarChartContainer.nextSibling);
+    } else {
+      resultSection.appendChild(newMainIssues);
+    }
   }
 
   // 8. 渲染AI評估（若未生成則顯示提示）
@@ -2661,158 +2716,67 @@ function generateResult() {
     }
 
     recommendationsHtml += `
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>健康六大核心調理方向</title>
-    <style>
-        /* 基礎樣式優化：提升可讀性與適配性 */
-        body {
-            font-family: "Microsoft YaHei", Arial, sans-serif;
-            line-height: 1.6;
-            padding: 20px;
-            background-color: #f9fafb;
-        }
-        /* 卡片容器：獨立分區+柔和視覺 */
-        .health-card {
-            background-color: #ffffff;
-            border-radius: 12px;
-            padding: 25px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-        }
-        /* 標題樣式：突出層級+視覺引導 */
-        .card-title {
-            font-size: 18px;
-            font-weight: 600;
-            color: #2563eb; /* 主色調：藍色，清晰醒目 */
-            margin-top: 0;
-            margin-bottom: 15px;
-            padding-bottom: 8px;
-            border-bottom: 1px solid #eff6ff;
-        }
-        /* 故事標題：區分內容模塊 */
-        .story-heading {
-            font-size: 15px;
-            font-weight: 500;
-            color: #1e293b;
-            margin-bottom: 12px;
-            display: flex;
-            align-items: center;
-        }
-        .story-heading::before {
-            content: "📖";
-            margin-right: 8px;
-        }
-        /* 列表樣式：優化間距與符號 */
-        .card-list {
-            font-size: 14px;
-            color: #475569;
-            margin: 0;
-            padding-left: 22px;
-            list-style-type: disc;
-        }
-        .card-list li {
-            margin-bottom: 15px;
-            line-height: 1.7;
-        }
-        /* 寓意文本：突出核心啓示 */
-        .moral-text {
-            font-size: 14px;
-            color: #1e293b;
-            margin-top: 10px;
-            padding-left: 5px;
-            border-left: 3px solid #bfdbfe; /* 左側線條：強化視覺層次 */
-        }
-    </style>
-</head>
-<body>
+<div class="health-guidance mt-4">
+  <h3 class="text-lg font-semibold mb-4 text-primary">健康六大核心調理方向</h3>
+  
+  <!-- ① 體質——健康的「基礎土壤」 -->
+  <div class="bg-white p-4 rounded-lg border border-gray-100 shadow-sm mb-4">
+    <h4 class="font-semibold text-blue-600 mb-2">① 體質 —— 健康的「基礎土壤」</h4>
+    <p class="text-sm font-medium mb-2">故事：木耳的故事（身體受寒長腫瘤木耳）</p>
+    <p class="text-sm mb-2">木頭放在陰暗潮濕的地方就會長木耳，就算把木耳摘掉，過一陣子還是會再長；但如果把木頭拿到太陽下曬乾，木耳就會縮水掉下來。</p>
+    <p class="text-sm mb-2">其中，潮濕的木頭等同於體內的寒濕氣，木耳對應腫瘤或囊腫，曬太陽則是幫身體排寒、提高體溫。</p>
+    <p class="text-sm text-gray-700 italic">寓意：體質就像健康的「土壤」！寒濕氣不除掉，就像潮濕環境一直養著木耳，身體的問題也會反復冒出來；調體質的重點，就是先排寒除濕、提升身體溫度，從根源斷掉「問題生長的溫床」。</p>
+  </div>
 
-<!-- ① 體質——健康的「基礎土壤」 -->
-<div class="health-card">
-    <h3 class="card-title">① 體質 —— 健康的「基礎土壤」</h3>
-    <p class="story-heading">故事：木耳的故事（身體受寒長腫瘤木耳）</p>
-    <ul class="card-list">
-        <li>
-            木頭放在陰暗潮濕的地方就會長木耳，就算把木耳摘掉，過一陣子還是會再長；但如果把木頭拿到太陽下曬乾，木耳就會縮水掉下來。<br>
-            其中，潮濕的木頭等同於體內的寒濕氣，木耳對應腫瘤或囊腫，曬太陽則是幫身體排寒、提高體溫。
-            <p class="moral-text">寓意：體質就像健康的「土壤」！寒濕氣不除掉，就像潮濕環境一直養著木耳，身體的問題也會反復冒出來；調體質的重點，就是先排寒除濕、提升身體溫度，從根源斷掉「問題生長的溫床」。</p>
-        </li>
-    </ul>
+  <!-- ② 免疫——身體的「常駐軍隊」 -->
+  <div class="bg-white p-4 rounded-lg border border-gray-100 shadow-sm mb-4">
+    <h4 class="font-semibold text-blue-600 mb-2">② 免疫 —— 身體的「常駐軍隊」</h4>
+    <p class="text-sm font-medium mb-2">故事：軍隊打仗的故事（免疫力與營養）</p>
+    <p class="text-sm mb-2">把疾病當成敵人，免疫力就是保護身體的軍隊。如果只靠扔炸彈（吃藥），雖然能暫時打退敵人，卻也會炸死自己的士兵（降低免疫力）；</p>
+    <p class="text-sm mb-2">但如果給軍隊足夠的糧食（補充營養），讓士兵變強，不僅能主動打贏敵人，還能建立長期的防線（產生抗體）。</p>
+    <p class="text-sm text-gray-700 italic">寓意：藥物只是「臨時外援」，免疫力才是「常駐防線」！很多人靠藥物控制指標，卻忽略了免疫力這個根本；真正的健康，是靠營養餵飽免疫力，讓它能自己抵擋病毒、細菌，而不是一直靠「外援」撐著。</p>
+  </div>
+
+  <!-- ③ 毒素——疾病反復的「隱形根源」 -->
+  <div class="bg-white p-4 rounded-lg border border-gray-100 shadow-sm mb-4">
+    <h4 class="font-semibold text-blue-600 mb-2">③ 毒素 —— 疾病反復的「隱形根源」</h4>
+    <p class="text-sm font-medium mb-2">故事：垃圾的故事（疾病為什麼會反復）</p>
+    <p class="text-sm mb-2">一堆垃圾放在那裡，一定會吸引蒼蠅。如果只拿蒼蠅拍打蒼蠅（吃消炎藥），永遠打不完；只有把垃圾徹底清走（排毒素），蒼蠅才會自然不見。</p>
+    <p class="text-sm mb-2">更麻煩的是，垃圾不清，還會擴散到其他地方（疾病蔓延）。</p>
+    <p class="text-sm text-gray-700 italic">寓意：體內的毒素就像「那堆垃圾」，發炎、潰瘍這些問題就是「蒼蠅」。很多人只治症狀不排毒，毒素越堆越多，問題當然會反復，甚至從局部擴散到全身（比如從喉嚨痛變成肺炎）。調健康的第一步，就是先給身體「掃垃圾」——打通腸道、皮膚這些排毒通道。</p>
+  </div>
+
+  <!-- ④ 營養——身體吸收的「原料密碼」 -->
+  <div class="bg-white p-4 rounded-lg border border-gray-100 shadow-sm mb-4">
+    <h4 class="font-semibold text-blue-600 mb-2">④ 營養 —— 身體吸收的「原料密碼」</h4>
+    <p class="text-sm font-medium mb-2">故事：牛吃草擠奶的故事（營養能調好病？）</p>
+    <p class="text-sm mb-2">牛吃進去的是草，擠出來的是奶。就算有最頂尖的實驗室和預算，也做不出一台能「把草變成奶」的機器；</p>
+    <p class="text-sm mb-2">但農夫只要給牛餵新鮮的草（補對營養），牛就能靠自己的本能產出奶。</p>
+    <p class="text-sm text-gray-700 italic">寓意：人體和牛一樣，需要「對的原料」（七大營養素）才能運轉。很多人吃了一堆補品卻沒效果，不是營養沒用，而是脾胃虛弱（像生病的牛）沒辦法吸收，反而增加身體負擔。補營養的重點，是先讓脾胃「有能力轉化」，再給對的食物，才能讓營養變成身體需要的「能量」。</p>
+  </div>
+
+  <!-- ⑤ 循環——健康的「暢通管道」 -->
+  <div class="bg-white p-4 rounded-lg border border-gray-100 shadow-sm mb-4">
+    <h4 class="font-semibold text-blue-600 mb-2">⑤ 循環 —— 健康的「暢通管道」</h4>
+    <p class="text-sm font-medium mb-2">故事：水溝除草的故事（高血壓與降壓藥）</p>
+    <p class="text-sm mb-2">流水的水溝長滿雜草，水流就會變慢、壓力變大。有人不想除草，反而把水溝加寬（吃降壓藥擴張血管），但雜草還在，過一陣子水流還是會堵、壓力還是會升；</p>
+    <p class="text-sm mb-2">更糟的是，反復加寬水溝（長期吃降壓藥），水溝壁會變脆，很容易破裂（血管破裂引發腦溢血）。</p>
+    <p class="text-sm text-gray-700 italic">寓意：血管循環就像「水溝」，血脂、垃圾是「雜草」，高血壓就是「水流壓力大」。降壓藥只能暫時「加寬管道」，沒清掉血管里的垃圾，問題遲早反復。調循環的關鍵，是清理血管垃圾（除草），讓血液順暢流動，而不是一直靠「擴管」硬撐。</p>
+  </div>
+
+  <!-- ⑥ 內分泌——身體的「總調度中心」 -->
+  <div class="bg-white p-4 rounded-lg border border-gray-100 shadow-sm mb-4">
+    <h4 class="font-semibold text-blue-600 mb-2">⑥ 內分泌 —— 身體的「總調度中心」</h4>
+    <p class="text-sm font-medium mb-2">故事：家庭電路的故事（內分泌與身體系統）</p>
+    <p class="text-sm mb-2">家裡的燈忽明忽暗、電視常常斷電，有人以為是燈泡壞了，換了好幾個燈泡還是沒用；</p>
+    <p class="text-sm mb-2">後來電工檢查才發現，是總電閘的線路接觸不良，導致全屋電壓不穩。修好總電閘後，所有家電都恢復正常了。</p>
+    <p class="text-sm text-gray-700 italic">寓意：內分泌就是身體的「總電閘」！月經不調、失眠、皮膚差這些問題，就像「個別家電故障」，如果只針對單一問題調理（換燈泡），沒解決內分泌失調的「總開關問題」，症狀遲早會反復。只有調整內分泌平衡，身體的「所有系統」才能正常運轉。</p>
+  </div>
+
+  <div class="mt-4 text-sm text-neutral-dark/70 text-center p-3 bg-blue-50 rounded-lg">
+    六大調理邏輯：<br>體質是根基，循環是動力，<br>毒素要清除，免疫要增強，<br>營養要均衡，內分泌要穩定，<br>才能長久健康！
+  </div>
 </div>
-
-<!-- ② 免疫——身體的「常駐軍隊」 -->
-<div class="health-card">
-    <h3 class="card-title">② 免疫 —— 身體的「常駐軍隊」</h3>
-    <p class="story-heading">故事：軍隊打仗的故事（免疫力與營養）</p>
-    <ul class="card-list">
-        <li>
-            把疾病當成敵人，免疫力就是保護身體的軍隊。如果只靠扔炸彈（吃藥），雖然能暫時打退敵人，卻也會炸死自己的士兵（降低免疫力）；<br>
-            但如果給軍隊足夠的糧食（補充營養），讓士兵變強，不僅能主動打贏敵人，還能建立長期的防線（產生抗體）。
-            <p class="moral-text">寓意：藥物只是「臨時外援」，免疫力才是「常駐防線」！很多人靠藥物控制指標，卻忽略了免疫力這個根本；真正的健康，是靠營養餵飽免疫力，讓它能自己抵擋病毒、細菌，而不是一直靠「外援」撐著。</p>
-        </li>
-    </ul>
-</div>
-
-<!-- ③ 毒素——疾病反復的「隱形根源」 -->
-<div class="health-card">
-    <h3 class="card-title">③ 毒素 —— 疾病反復的「隱形根源」</h3>
-    <p class="story-heading">故事：垃圾的故事（疾病為什麼會反復）</p>
-    <ul class="card-list">
-        <li>
-            一堆垃圾放在那裡，一定會吸引蒼蠅。如果只拿蒼蠅拍打蒼蠅（吃消炎藥），永遠打不完；只有把垃圾徹底清走（排毒素），蒼蠅才會自然不見。<br>
-            更麻煩的是，垃圾不清，還會擴散到其他地方（疾病蔓延）。
-            <p class="moral-text">寓意：體內的毒素就像「那堆垃圾」，發炎、潰瘍這些問題就是「蒼蠅」。很多人只治症狀不排毒，毒素越堆越多，問題當然會反復，甚至從局部擴散到全身（比如從喉嚨痛變成肺炎）。調健康的第一步，就是先給身體「掃垃圾」——打通腸道、皮膚這些排毒通道。</p>
-        </li>
-    </ul>
-</div>
-
-<!-- ④ 營養——身體吸收的「原料密碼」 -->
-<div class="health-card">
-    <h3 class="card-title">④ 營養 —— 身體吸收的「原料密碼」</h3>
-    <p class="story-heading">故事：牛吃草擠奶的故事（營養能調好病？）</p>
-    <ul class="card-list">
-        <li>
-            牛吃進去的是草，擠出來的是奶。就算有最頂尖的實驗室和預算，也做不出一台能「把草變成奶」的機器；<br>
-            但農夫只要給牛餵新鮮的草（補對營養），牛就能靠自己的本能產出奶。
-            <p class="moral-text">寓意：人體和牛一樣，需要「對的原料」（七大營養素）才能運轉。很多人吃了一堆補品卻沒效果，不是營養沒用，而是脾胃虛弱（像生病的牛）沒辦法吸收，反而增加身體負擔。補營養的重點，是先讓脾胃「有能力轉化」，再給對的食物，才能讓營養變成身體需要的「能量」。</p>
-        </li>
-    </ul>
-</div>
-
-<!-- ⑤ 循環——健康的「暢通管道」 -->
-<div class="health-card">
-    <h3 class="card-title">⑤ 循環 —— 健康的「暢通管道」</h3>
-    <p class="story-heading">故事：水溝除草的故事（高血壓與降壓藥）</p>
-    <ul class="card-list">
-        <li>
-            流水的水溝長滿雜草，水流就會變慢、壓力變大。有人不想除草，反而把水溝加寬（吃降壓藥擴張血管），但雜草還在，過一陣子水流還是會堵、壓力還是會升；<br>
-            更糟的是，反復加寬水溝（長期吃降壓藥），水溝壁會變脆，很容易破裂（血管破裂引發腦溢血）。
-            <p class="moral-text">寓意：血管循環就像「水溝」，血脂、垃圾是「雜草」，高血壓就是「水流壓力大」。降壓藥只能暫時「加寬管道」，沒清掉血管里的垃圾，問題遲早反復。調循環的關鍵，是清理血管垃圾（除草），讓血液順暢流動，而不是一直靠「擴管」硬撐。</p>
-        </li>
-    </ul>
-</div>
-
-<!-- ⑥ 內分泌——身體的「總調度中心」 -->
-<div class="health-card">
-    <h3 class="card-title">⑥ 內分泌 —— 身體的「總調度中心」</h3>
-    <p class="story-heading">故事：家庭電路的故事（內分泌與身體系統）</p>
-    <ul class="card-list">
-        <li>
-            家裡的燈忽明忽暗、電視常常斷電，有人以為是燈泡壞了，換了好幾個燈泡還是沒用；<br>
-            後來電工檢查才發現，是總電閘的線路接觸不良，導致全屋電壓不穩。修好總電閘後，所有家電都恢復正常了。
-            <p class="moral-text">寓意：內分泌就是身體的「總電閘」！月經不調、失眠、皮膚差這些問題，就像「個別家電故障」，如果只針對單一問題調理（換燈泡），沒解決內分泌失調的「總開關問題」，症狀遲早會反復。只有調整內分泌平衡，身體的「所有系統」才能正常運轉。</p>
-        </li>
-    </ul>
-</div>
-
-</body>
-</html>
-      <div class="mt-4 text-sm text-neutral-dark/70 text-center">
-        六大調理邏輯：<br>體質是根基，循環是動力，<br>毒素要清除，免疫要增強，<br>營養要均衡，內分泌要穩定，<br>才能長久健康！
-      </div>
     `;
 
     recommendationsContainer.innerHTML = recommendationsHtml;
@@ -2920,7 +2884,7 @@ async function handleImageDownload() {
 
 // 保存圖片到相冊（兼容多設備）
 function saveToGallery(blob, fileName) {
-  // 新增iOS设备检测
+  // 新增iOS設備檢測
   const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
   
   return new Promise((resolve) => {
@@ -2933,15 +2897,15 @@ function saveToGallery(blob, fileName) {
       .then(handle => handle.createWritable())
       .then(writable => writable.write(blob).then(() => writable.close()))
       .then(() => { alert('圖片已成功保存！'); resolve(true); })
-      .catch(() => saveWithAnchorTag(blob, fileName, resolve, isIOS)); // 传递isIOS参数
+      .catch(() => saveWithAnchorTag(blob, fileName, resolve, isIOS)); // 傳遞isIOS參數
     } else {
-      saveWithAnchorTag(blob, fileName, resolve, isIOS); // 传递isIOS参数
+      saveWithAnchorTag(blob, fileName, resolve, isIOS); // 傳遞isIOS參數
     }
   });
 }
 
 // a標籤兼容下載（適配舊瀏覽器與IOS）
-function saveWithAnchorTag(blob, fileName, resolve, isIOS) { // 接收isIOS参数
+function saveWithAnchorTag(blob, fileName, resolve, isIOS) { // 接收isIOS參數
   const blobUrl = URL.createObjectURL(blob);
   const downloadLink = document.createElement('a');
   downloadLink.download = fileName;
@@ -3050,6 +3014,7 @@ updateGenderBasedUI();
 });
 
 </script>
+
 
     
 </body>
