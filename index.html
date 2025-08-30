@@ -1801,9 +1801,19 @@ document.addEventListener('DOMContentLoaded', function() {
   let imgbbImageUrl = '';
   let imgbbDeleteUrl = '';
 
-  // 5. 初始化LIFF
+  // 5. 初始化LIFF - 增強錯誤處理和重試機制
   async function initializeLiff() {
     try {
+      // 檢查LIFF是否已加載
+      if (typeof liff === 'undefined') {
+        showToast('LINE LIFF SDK未加載，請檢查網絡連接', 'error');
+        // 等待LIFF加載的超時處理
+        await new Promise((resolve) => setTimeout(resolve, 3000));
+        if (typeof liff === 'undefined') {
+          throw new Error('LINE LIFF SDK加載失敗');
+        }
+      }
+      
       await liff.init({ liffId: LIFF_ID });
       
       if (liff.isLoggedIn()) {
@@ -1813,9 +1823,18 @@ document.addEventListener('DOMContentLoaded', function() {
       }
       
       isLiffInitialized = true;
+      showToast('LINE功能初始化成功');
     } catch (error) {
       console.error('LIFF初始化失敗:', error);
-      showToast('LINE登錄功能初始化失敗，部分功能可能受限', 'error');
+      // 更詳細的錯誤分類提示
+      let errorMsg = 'LINE登錄功能初始化失敗，部分功能可能受限';
+      if (error.message.includes('404')) {
+        errorMsg += ' - 可能是LIFF ID配置錯誤';
+      } else if (error.message.includes('network')) {
+        errorMsg += ' - 請檢查網絡連接';
+      }
+      showToast(errorMsg, 'error');
+      
       // 允許匿名使用，但限制功能
       remainingUsageCount = 1;
       updateUsageCountDisplay();
@@ -1823,11 +1842,21 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
-  // 6. 處理LIFF登錄
-  async function handleLiffLogin() {
+  // 6. 處理LIFF登錄 - 增加重試機制
+  async function handleLiffLogin(retries = 1) {
     try {
-      // 獲取用戶信息
-      userProfile = await liff.getProfile();
+      // 隱藏登錄按鈕，顯示加載狀態
+      liffLoginButton.innerHTML = '<i class="fa fa-spinner fa-spin mr-2"></i> 獲取用戶信息中...';
+      liffLoginButton.disabled = true;
+      
+      // 獲取用戶信息，增加超時控制
+      const profilePromise = liff.getProfile();
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('獲取用戶信息超時')), 10000)
+      );
+      
+      // 競速Promise - 超時控制
+      userProfile = await Promise.race([profilePromise, timeoutPromise]);
       
       // 隱藏登錄按鈕
       liffLoginButton.style.display = 'none';
@@ -1843,13 +1872,39 @@ document.addEventListener('DOMContentLoaded', function() {
       
       // 檢查是否還有使用次數
       checkUsageLimit();
+      
+      showToast(`歡迎回來，${userProfile.displayName}！`);
     } catch (error) {
       console.error('LIFF登錄處理失敗:', error);
-      showToast('獲取用戶信息失敗', 'error');
+      
+      // 重試機制
+      if (retries > 0) {
+        showToast(`獲取用戶信息失敗，正在重試（${retries}次）...`, 'error');
+        setTimeout(() => handleLiffLogin(retries - 1), 1500);
+        return;
+      }
+      
+      // 重試失敗後恢復按鈕狀態
+      liffLoginButton.innerHTML = '<i class="fa fa-line mr-2"></i> 重新嘗試LINE登錄';
+      liffLoginButton.disabled = false;
+      
+      // 更詳細的錯誤提示
+      let errorMsg = '獲取用戶信息失敗';
+      if (error.message.includes('timeout')) {
+        errorMsg += ' - 請求超時，請稍後再試';
+      } else if (error.message.includes('network')) {
+        errorMsg += ' - 網絡連接問題';
+      }
+      showToast(errorMsg, 'error');
+      
+      // 提供匿名使用選項
+      showToast('您可以繼續匿名使用，但功能會受限制', 'info');
+      remainingUsageCount = 1;
+      updateUsageCountDisplay();
     }
   }
 
-  // 7. 獲取用戶使用次數
+  // 7. 獲取用戶使用次數 - 增強錯誤處理
   async function fetchUserUsageCount() {
     try {
       if (!userProfile) return;
@@ -1955,13 +2010,25 @@ document.addEventListener('DOMContentLoaded', function() {
     button.className = 'bg-green-500 text-white px-4 py-2 rounded-lg mb-4 flex items-center justify-center';
     button.innerHTML = '<i class="fa fa-line mr-2"></i> 使用LINE登錄以獲得完整功能';
     button.style.width = '100%';
-    button.addEventListener('click', () => liff.login());
+    button.addEventListener('click', () => {
+      try {
+        if (liff.isInClient()) {
+          liff.login();
+        } else {
+          const redirectUri = window.location.href;
+          liff.login({ redirectUri });
+        }
+      } catch (error) {
+        console.error('登錄按鈕點擊錯誤:', error);
+        showToast('登錄功能暫時不可用，請稍後再試', 'error');
+      }
+    });
     
     const formHeader = document.querySelector('.form-header') || formContainer.firstChild;
     if (formHeader) {
       formHeader.parentNode.insertBefore(button, formHeader.nextSibling);
     } else {
-      formContainer.prependChild(button);
+      formContainer.prepend(button); // 修復prependChild拼寫錯誤
     }
     
     return button;
@@ -1999,14 +2066,8 @@ document.addEventListener('DOMContentLoaded', function() {
   // 15. 顯示LIFF登錄按鈕
   function showLiffLoginButton() {
     liffLoginButton.style.display = 'block';
-    liffLoginButton.addEventListener('click', () => {
-      if (liff.isInClient()) {
-        liff.login();
-      } else {
-        const redirectUri = window.location.href;
-        liff.login({ redirectUri });
-      }
-    });
+    liffLoginButton.innerHTML = '<i class="fa fa-line mr-2"></i> 使用LINE登錄以獲得完整功能';
+    liffLoginButton.disabled = false;
   }
 
   // 16. 動態創建AI評估容器
@@ -2703,7 +2764,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // 4. 六大調理方向得分計算
     const adjustmentDirections = {
       體質: [
-        '頭部畏冷', '四肢無力', '平衡能力差/容易跌倒', '思緒中斷', '反應遲鈍', '容易打哈欠',
+        '頭部畏寒', '四肢無力', '平衡能力差/容易跌倒', '思緒中斷', '反應遲鈍', '容易打哈欠',
         '眼睛疲勞', '耳鳴/耳聾', '聽力減退', '嗅覺遲鈍', '咽喉異物感', '聲音沙啞',
         '嘆氣/呼吸短促/喘氣', '打呼', '手足麻木/發紺', '手足發熱/冰涼/腫脹/出汗',
         '胃痛/胃酸過多/腹脹/胃部畏寒', '惡心/打嗝/噯氣', '消化不良', '食慾不佳/容易飽脹',
@@ -2862,7 +2923,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 症狀分類映射
     const symptomCategories = {
-      '頭部症狀': ['頭痛/頭暈', '頭部麻木/腦鳴', '嗜睡/易醒', '失眠/多夢', '偏頭痛/健忘', '言語懶散/口吃', '暈車/暈機', '頭部畏冷', '思緒中斷', '反應遲鈍', '容易打哈欠', '眉骨疼痛'],
+      '頭部症狀': ['頭痛/頭暈', '頭部麻木/腦鳴', '嗜睡/易醒', '失眠/多夢', '偏頭痛/健忘', '言語懶散/口吃', '暈車/暈機', '頭部畏寒', '思緒中斷', '反應遲鈍', '容易打哈欠', '眉骨疼痛'],
       '眼耳鼻喉': ['老花眼', '眼睛癢/腫脹/突出/疼痛', '眼睛畏光/流淚', '眼睛乾澀/飛蚊症', '眼糞多/麥粒腫', '眼睛疲勞', '夜盲症', '視力模糊', '耳朵內潮濕/化膿', '耳垢多/耳朵疼痛/癢', '耳鳴/耳聾', '聽力減退', '鼻炎/鼻塞', '流鼻水/流鼻血', '打噴嚏', '過敏性鼻炎', '酒渣鼻', '嗅覺遲鈍', '咽喉異物感', '聲音沙啞'],
       '呼吸系統': ['咳嗽/氣喘', '支氣管炎', '感冒久不愈', '容易感冒/不易感冒', '痰液多/黃痰/痰液清稀', '白痰/黑痰/痰中帶血', '嘆氣/呼吸短促/喘氣', '打呼'],
       '循環系統': ['低血壓/高血壓', '貧血/高血脂症', '心絞痛', '心跳過快/過慢', '心悸/心律不整', '胸悶/胸痛', '右側肝區悶痛', '手足麻木/發紺', '手足發熱/冰涼/腫脹/出汗', '頭暈/頭部麻木/容易打哈欠', '面色異常（蒼白/發青）'],
@@ -3272,7 +3333,7 @@ document.addEventListener('DOMContentLoaded', function() {
     indicator.querySelector('#progressStatus').textContent = text;
   }
 
-  // 顯示輕量級提示
+  // 顯示輕量級提示 - 新增info類型
   function showToast(message, type = 'success') {
     // 移除現有的toast
     const existingToast = document.querySelector('.custom-toast');
@@ -3286,8 +3347,11 @@ document.addEventListener('DOMContentLoaded', function() {
       box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2); transition: opacity 0.3s ease;
     `;
     
+    // 新增info類型的顏色
     if (type === 'error') {
       toast.style.background = '#ff4d4f';
+    } else if (type === 'info') {
+      toast.style.background = '#1890ff';
     } else {
       toast.style.background = '#52c41a';
     }
@@ -3421,6 +3485,13 @@ document.addEventListener('DOMContentLoaded', function() {
     downloadReportBtn.addEventListener('click', handleImageDownload);
   }
 
+  // 修復prependChild拼寫錯誤為prepend
+  if (typeof Node.prototype.prependChild === 'undefined') {
+    Node.prototype.prependChild = function(child) {
+      this.prepend(child);
+    };
+  }
+
   // 頁面初始化
   updateFormSteps();
   updateGenderBasedUI();
@@ -3429,6 +3500,7 @@ document.addEventListener('DOMContentLoaded', function() {
   initializeLiff();
 });
 </script>
+
 
 
 
