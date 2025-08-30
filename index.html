@@ -1737,7 +1737,7 @@
         </div>
         <h3 class="text-xl font-bold mb-2">提交成功！</h3>
         <p class="text-neutral-dark/70 mb-6">
-          您的健康評估已完成，<p>正在生成評估報告...
+          您的健康評估已完成，正在生成評估報告...
         </p>
         <button id="viewResultBtn" class="w-full py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors">
           查看評估結果
@@ -1798,6 +1798,7 @@ function initApp() {
     // 新增：網絡請求配置
     const REQUEST_TIMEOUT = 15000; // 15秒超時
     const MAX_RETRIES = 2; // 最大重試次數
+    const MAX_URL_LENGTH = 2000; // 避免URL過長導致400錯誤的最大長度
 
     // 2. DOM元素獲取（含AI評估容器）
     const menuToggle = document.getElementById('menuToggle');
@@ -1847,9 +1848,11 @@ function initApp() {
     }
 
     // -------------------------- 1. 導航菜單切換（移動端）
-    menuToggle.addEventListener('click', () => {
-      mobileMenu.classList.toggle('hidden');
-    });
+    if (menuToggle && mobileMenu) {
+      menuToggle.addEventListener('click', () => {
+        mobileMenu.classList.toggle('hidden');
+      });
+    }
 
     // -------------------------- 2. 性別選擇驅動UI變化
     genderRadios.forEach(radio => {
@@ -1892,24 +1895,28 @@ function initApp() {
     }
 
     // -------------------------- 4. 表單步驟導航
-    prevBtn.addEventListener('click', () => {
-      if (currentStep > 1) {
-        currentStep--;
-        updateFormSteps();
-        if (currentStep === 1) updateGenderBasedUI();
-      }
-    });
-
-    nextBtn.addEventListener('click', () => {
-      if (validateStep(currentStep)) {
-        if (currentStep === 2) updateGlobalSymptomData();
-        if (currentStep < totalSteps) {
-          currentStep++;
+    if (prevBtn) {
+      prevBtn.addEventListener('click', () => {
+        if (currentStep > 1) {
+          currentStep--;
           updateFormSteps();
-          if (currentStep === 2) updateGenderBasedUI();
+          if (currentStep === 1) updateGenderBasedUI();
         }
-      }
-    });
+      });
+    }
+
+    if (nextBtn) {
+      nextBtn.addEventListener('click', () => {
+        if (validateStep(currentStep)) {
+          if (currentStep === 2) updateGlobalSymptomData();
+          if (currentStep < totalSteps) {
+            currentStep++;
+            updateFormSteps();
+            if (currentStep === 2) updateGenderBasedUI();
+          }
+        }
+      });
+    }
 
     // -------------------------- 5. 表單驗證邏輯
     function validateStep(step) {
@@ -1978,6 +1985,11 @@ function initApp() {
 
     // -------------------------- 6. 通用JSONP請求函數（帶重試機制）
     function jsonpRequest(url, callbackName, timeout = REQUEST_TIMEOUT) {
+      // 檢查URL長度，避免414錯誤
+      if (url.length > MAX_URL_LENGTH) {
+        console.warn(`URL長度超過${MAX_URL_LENGTH}字符，可能導致請求失敗:`, url.substring(0, 100) + '...');
+      }
+      
       return new Promise((resolve, reject) => {
         const script = document.createElement('script');
         script.src = url;
@@ -1999,7 +2011,7 @@ function initApp() {
         // 錯誤處理
         script.onerror = function() {
           cleanup();
-          reject(new Error('網絡錯誤'));
+          reject(new Error('網絡錯誤或服務器拒絕請求'));
         };
         
         // 清理函數
@@ -2021,6 +2033,7 @@ function initApp() {
         return await requestFn();
       } catch (error) {
         if (retries > 0) {
+          console.log(`請求失敗，將重試${retries}次:`, error.message);
           await new Promise(resolve => setTimeout(resolve, delay));
           return requestWithRetry(requestFn, retries - 1, delay * 2); // 指數退避
         }
@@ -2041,7 +2054,7 @@ function initApp() {
           </div>
         `;
 
-        // 構建完整請求數據（精簡數據傳輸）
+        // 構建完整請求數據（精簡數據傳輸，解決400錯誤）
         const formData = {
           basicInfo: healthData.basicInfo,
           symptoms: healthData.symptoms,
@@ -2051,19 +2064,32 @@ function initApp() {
           healthIssues: healthData.healthIssues
         };
 
+        // 檢查數據大小，如果過大則進一步精簡
+        const dataStr = JSON.stringify(formData);
+        if (dataStr.length > 1000) {
+          console.log(`數據過大(${dataStr.length}字符)，嘗試精簡`);
+          // 精簡症狀和習慣列表
+          if (formData.symptoms.length > 200) {
+            formData.symptoms = formData.symptoms.substring(0, 200) + '...';
+          }
+          if (formData.habits.length > 200) {
+            formData.habits = formData.habits.substring(0, 200) + '...';
+          }
+        }
+
         // 使用帶重試的JSONP請求
         const callbackName = `jsonpAiCallback_${Date.now()}`;
+        // 關鍵修復：使用encodeURIComponent正確編碼JSON數據
         const params = new URLSearchParams({
-          data: JSON.stringify(formData),
+          data: encodeURIComponent(JSON.stringify(formData)),
           callback: callbackName,
           action: 'generateAiComment',
           timestamp: Date.now() // 防止緩存
         });
         
-        const requestFn = () => jsonpRequest(
-          `${BACKEND_GOOGLE_SCRIPT_URL}?${params.toString()}`,
-          callbackName
-        );
+        // 構建完整URL並檢查長度
+        const fullUrl = `${BACKEND_GOOGLE_SCRIPT_URL}?${params.toString()}`;
+        const requestFn = () => jsonpRequest(fullUrl, callbackName);
         
         const response = await requestWithRetry(requestFn);
 
@@ -2121,87 +2147,100 @@ function initApp() {
     }
 
     // -------------------------- 9. 表單提交
-    submitBtn.addEventListener('click', async () => {
-      updateGlobalSymptomData();
-      if (!validateStep(4)) return;
+    if (submitBtn) {
+      submitBtn.addEventListener('click', async () => {
+        updateGlobalSymptomData();
+        if (!validateStep(4)) return;
 
-      successModal.classList.remove('hidden');
-      try {
-        // 並行執行AI評估和數據提交，提高速度
-        const healthData = collectHealthData();
-        
-        // 使用Promise.allSettled確保兩個操作都完成
-        const [aiResult, submitResult] = await Promise.allSettled([
-          callOpenAIByBackend(healthData),
-          submitToGoogleSheets()
-        ]);
-        
-        // 檢查是否有一個操作成功
-        const aiSuccess = aiResult.status === 'fulfilled' && aiResult.value;
-        const submitSuccess = submitResult.status === 'fulfilled' && submitResult.value;
-        
-        if (aiSuccess || submitSuccess) {
-          generateResult();
-        } else {
-          // 顯示具體錯誤信息
-          const errorMsg = [];
-          if (aiResult.status === 'rejected') errorMsg.push(`AI評估: ${aiResult.reason.message}`);
-          if (submitResult.status === 'rejected') errorMsg.push(`數據提交: ${submitResult.reason.message}`);
-          
-          alert(`操作失敗：\n${errorMsg.join('\n')}\n請稍後重試`);
-          successModal.classList.add('hidden');
+        if (successModal) {
+          successModal.classList.remove('hidden');
         }
-      } catch (error) {
-        console.error('提交異常：', error);
-        alert(`提交失敗：${error.message}`);
-        successModal.classList.add('hidden');
-      }
-    });
+        
+        try {
+          // 並行執行AI評估和數據提交，提高速度
+          const healthData = collectHealthData();
+          
+          // 使用Promise.allSettled確保兩個操作都完成
+          const [aiResult, submitResult] = await Promise.allSettled([
+            callOpenAIByBackend(healthData),
+            submitToGoogleSheets()
+          ]);
+          
+          // 檢查是否有一個操作成功
+          const aiSuccess = aiResult.status === 'fulfilled' && aiResult.value;
+          const submitSuccess = submitResult.status === 'fulfilled' && submitResult.value;
+          
+          if (aiSuccess || submitSuccess) {
+            generateResult();
+          } else {
+            // 顯示具體錯誤信息
+            const errorMsg = [];
+            if (aiResult.status === 'rejected') errorMsg.push(`AI評估: ${aiResult.reason.message}`);
+            if (submitResult.status === 'rejected') errorMsg.push(`數據提交: ${submitResult.reason.message}`);
+            
+            alert(`操作失敗：\n${errorMsg.join('\n')}\n請稍後重試`);
+            if (successModal) successModal.classList.add('hidden');
+          }
+        } catch (error) {
+          console.error('提交異常：', error);
+          alert(`提交失敗：${error.message}`);
+          if (successModal) successModal.classList.add('hidden');
+        }
+      });
+    }
 
     // -------------------------- 10. 查看結果/重新評估按鈕事件
-    viewResultBtn.addEventListener('click', () => {
-      successModal.classList.add('hidden');
-      resultSection.classList.remove('hidden');
-      resultSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      if (globalAiComment) {
-        renderAiEvaluation();
-      }
-    });
-
-    restartBtn.addEventListener('click', () => {
-      // 重置全局數據
-      globalUniqueSymptoms = [];
-      globalUniqueHabits = [];
-      globalAiComment = '';
-      localImageBlob = null;
-      localImageName = '';
-      imgbbImageUrl = '';
-      imgbbDeleteUrl = '';
-      currentStep = 1;
-
-      // 重置雷達圖
-      if (windowHealthChart) {
-        windowHealthChart.destroy();
-        windowHealthChart = null;
-      }
-
-      // 重置AI評估容器
-      aiEvaluationContainer.innerHTML = '';
-
-      // 重置表單元素
-      document.querySelectorAll('input, textarea, select').forEach(el => {
-        if (el.type === 'checkbox' || el.type === 'radio') el.checked = false;
-        else el.value = '';
-        el.classList.remove('error-input');
+    if (viewResultBtn) {
+      viewResultBtn.addEventListener('click', () => {
+        if (successModal) successModal.classList.add('hidden');
+        if (resultSection) {
+          resultSection.classList.remove('hidden');
+          resultSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+        if (globalAiComment) {
+          renderAiEvaluation();
+        }
       });
+    }
 
-      // 重置UI狀態
-      clearAllErrors();
-      updateFormSteps();
-      updateGenderBasedUI();
-      resultSection.classList.add('hidden');
-      formContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    });
+    if (restartBtn) {
+      restartBtn.addEventListener('click', () => {
+        // 重置全局數據
+        globalUniqueSymptoms = [];
+        globalUniqueHabits = [];
+        globalAiComment = '';
+        localImageBlob = null;
+        localImageName = '';
+        imgbbImageUrl = '';
+        imgbbDeleteUrl = '';
+        currentStep = 1;
+
+        // 重置雷達圖
+        if (windowHealthChart) {
+          windowHealthChart.destroy();
+          windowHealthChart = null;
+        }
+
+        // 重置AI評估容器
+        aiEvaluationContainer.innerHTML = '';
+
+        // 重置表單元素
+        document.querySelectorAll('input, textarea, select').forEach(el => {
+          if (el.type === 'checkbox' || el.type === 'radio') el.checked = false;
+          else el.value = '';
+          el.classList.remove('error-input');
+        });
+
+        // 重置UI狀態
+        clearAllErrors();
+        updateFormSteps();
+        updateGenderBasedUI();
+        if (resultSection) resultSection.classList.add('hidden');
+        if (formContainer) {
+          formContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      });
+    }
 
     // -------------------------- 11. 症狀/習慣分類篩選
     document.querySelectorAll('.symptom-tab').forEach(tab => {
@@ -2290,12 +2329,14 @@ function initApp() {
       });
 
       // 控制按鈕顯隱
-      prevBtn.classList.toggle('hidden', currentStep === 1);
-      nextBtn.classList.toggle('hidden', currentStep === totalSteps);
-      submitBtn.classList.toggle('hidden', currentStep !== totalSteps);
+      if (prevBtn) prevBtn.classList.toggle('hidden', currentStep === 1);
+      if (nextBtn) nextBtn.classList.toggle('hidden', currentStep === totalSteps);
+      if (submitBtn) submitBtn.classList.toggle('hidden', currentStep !== totalSteps);
 
       // 滾動到當前表單區域
-      formContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      if (formContainer) {
+        formContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
     }
 
     // -------------------------- 13. 工具函數：收集AI所需精簡健康數據
@@ -2384,23 +2425,46 @@ function initApp() {
       return requestWithRetry(() => {
         const formData = collectFullFormData();
         const callbackName = `jsonpSubmitCallback_${Date.now()}`;
+        
+        // 關鍵優化：檢查並精簡數據大小
+        let dataToSend = { ...formData };
+        const dataStr = JSON.stringify(dataToSend);
+        
+        // 如果數據過大，進行精簡
+        if (dataStr.length > 1500) {
+          console.log(`提交數據過大(${dataStr.length}字符)，進行精簡`);
+          // 精簡症狀和習慣列表
+          if (dataToSend.symptoms.length > 300) {
+            dataToSend.symptoms = dataToSend.symptoms.substring(0, 300) + '...';
+          }
+          if (dataToSend.habits.length > 200) {
+            dataToSend.habits = dataToSend.habits.substring(0, 200) + '...';
+          }
+          // 精簡AI評語
+          if (dataToSend.aiComment.length > 500) {
+            dataToSend.aiComment = dataToSend.aiComment.substring(0, 500) + '...';
+          }
+        }
+        
+        // 使用encodeURIComponent正確編碼JSON數據
         const params = new URLSearchParams({
-          data: JSON.stringify(formData),
+          data: encodeURIComponent(JSON.stringify(dataToSend)),
           callback: callbackName,
           action: 'saveToSheets',
           timestamp: Date.now() // 防止緩存
         });
-
-        return jsonpRequest(
-          `${BACKEND_GOOGLE_SCRIPT_URL}?${params.toString()}`,
-          callbackName
-        ).then(response => {
-          if (response?.status === 'success') {
-            return true;
-          } else {
-            throw new Error(response?.message || '數據提交失敗，後端未確認保存');
-          }
-        });
+        
+        // 構建完整URL並檢查長度
+        const fullUrl = `${BACKEND_GOOGLE_SCRIPT_URL}?${params.toString()}`;
+        
+        return jsonpRequest(fullUrl, callbackName)
+          .then(response => {
+            if (response?.status === 'success') {
+              return true;
+            } else {
+              throw new Error(response?.message || '數據提交失敗，後端未確認保存');
+            }
+          });
       });
     }
 
@@ -2478,7 +2542,9 @@ function initApp() {
         `;
         
         const resultHeader = resultSection.querySelector('h2') || resultSection.firstChild;
-        resultSection.insertBefore(newBasicInfo, resultHeader.nextSibling);
+        if (resultHeader) {
+          resultSection.insertBefore(newBasicInfo, resultHeader.nextSibling);
+        }
       }
 
       // 3. 加載症狀/習慣統計數據
@@ -2621,14 +2687,24 @@ function initApp() {
       }
 
       // 6. 渲染症狀/習慣統計
-      document.getElementById('symptomCount').textContent = `${totalSymptomCount} 項症狀`;
-      document.getElementById('habitCount').textContent = `${habitCount} 項不良習慣`;
+      const symptomCountEl = document.getElementById('symptomCount');
+      if (symptomCountEl) symptomCountEl.textContent = `${totalSymptomCount} 項症狀`;
+      
+      const habitCountEl = document.getElementById('habitCount');
+      if (habitCountEl) habitCountEl.textContent = `${habitCount} 項不良習慣`;
 
       // 進度條寬度計算
-      const symptomPercent = Math.min(100, (totalSymptomCount / 50) * 100);
-      const habitPercent = Math.min(100, (habitCount / 20) * 100);
-      document.getElementById('symptomScoreBar').style.width = `${symptomPercent}%`;
-      document.getElementById('habitScoreBar').style.width = `${habitPercent}%`;
+      const symptomScoreBar = document.getElementById('symptomScoreBar');
+      if (symptomScoreBar) {
+        const symptomPercent = Math.min(100, (totalSymptomCount / 50) * 100);
+        symptomScoreBar.style.width = `${symptomPercent}%`;
+      }
+      
+      const habitScoreBar = document.getElementById('habitScoreBar');
+      if (habitScoreBar) {
+        const habitPercent = Math.min(100, (habitCount / 20) * 100);
+        habitScoreBar.style.width = `${habitPercent}%`;
+      }
 
       // 7. 渲染主要健康問題
       const mainIssuesContainer = document.getElementById('mainHealthIssues');
@@ -2699,7 +2775,7 @@ function initApp() {
             }
           </div>
         `;
-      } else {
+      } else if (resultSection) {
         const newMainIssues = document.createElement('div');
         newMainIssues.id = 'mainHealthIssues';
         newMainIssues.className = 'main-health-issues mt-6';
@@ -2746,8 +2822,7 @@ function initApp() {
       }
 
       // 9. 渲染健康調理建議
-      const recommendationsContainer = document.getElementById('healthRecommendations');
-      if (recommendationsContainer) {
+      if (healthRecommendations) {
         const lowScoreDirections = Object.entries(adjustmentScores)
           .filter(([_, score]) => score < 60)
           .sort((a,b) => a[1]-b[1])
@@ -2793,8 +2868,8 @@ function initApp() {
     <!-- ⑤ 循環——健康的「暢通管道」 -->
     <div class="bg-white p-4 rounded-lg border border-gray-100 shadow-sm mb-4">
       <h4 class="font-semibold text-blue-600 mb-2">⑤ 循環 —— 健康的「暢通管道」</h4>
-      <p class="text-sm mb-2">血管循環似水溝，血脂、垃圾是「雜草」，高血壓是「水流壓力大」。降壓藥僅暫時「加寬管道」，沒清垃圾問題遲早反復。</p>
-      <p class="text-sm text-gray-700 italic">寓意：調循環關鍵是清理血管垃圾，讓血液順暢流動。</p>
+      <p class="text-sm mb-2">👉血管循環似水溝，血脂、垃圾是「雜草」，高血壓是「水流壓力大」。降壓藥僅暫時「加寬管道」，沒清垃圾問題遲早反復。</p>
+      <p class="text-sm text-gray-700 italic">👉寓意：調循環關鍵是清理血管垃圾，讓血液順暢流動。</p>
     </div>
 
     <!-- ⑥ 內分泌——身體的「總調度中心」 -->
@@ -2810,7 +2885,7 @@ function initApp() {
   </div>
         `;
 
-        recommendationsContainer.innerHTML = recommendationsHtml;
+        healthRecommendations.innerHTML = recommendationsHtml;
       }
     }
 
@@ -2818,8 +2893,10 @@ function initApp() {
     async function handleImageDownload() {
       try {
         // 禁用按鈕並顯示加載狀態
-        downloadReportBtn.disabled = true;
-        downloadReportBtn.innerHTML = '<i class="fa fa-spinner fa-spin mr-2"></i> 準備中...';
+        if (downloadReportBtn) {
+          downloadReportBtn.disabled = true;
+          downloadReportBtn.innerHTML = '<i class="fa fa-spinner fa-spin mr-2"></i> 準備中...';
+        }
         
         // 創建進度提示
         const progressIndicator = createProgressIndicator();
@@ -2941,8 +3018,10 @@ function initApp() {
 
         // 7. 完成處理
         document.body.removeChild(progressIndicator);
-        downloadReportBtn.disabled = false;
-        downloadReportBtn.innerHTML = '<i class="fa fa-download mr-2"></i> 重新轉檔操作';
+        if (downloadReportBtn) {
+          downloadReportBtn.disabled = false;
+          downloadReportBtn.innerHTML = '<i class="fa fa-download mr-2"></i> 重新轉檔操作';
+        }
         
         showToast(`圖片已成功保存！\n文件名：${localImageName}`);
         showSingleShareButton(userName, formattedDate);
@@ -2952,8 +3031,10 @@ function initApp() {
         const progressIndicator = document.getElementById('progressIndicator');
         if (progressIndicator) document.body.removeChild(progressIndicator);
         
-        downloadReportBtn.disabled = false;
-        downloadReportBtn.innerHTML = '<i class="fa fa-download mr-2"></i> 下載圖片';
+        if (downloadReportBtn) {
+          downloadReportBtn.disabled = false;
+          downloadReportBtn.innerHTML = '<i class="fa fa-download mr-2"></i> 下載圖片';
+        }
         showToast(`操作失敗：${error.message}`, 'error');
       }
     }
@@ -3232,6 +3313,8 @@ function initApp() {
 document.addEventListener('DOMContentLoaded', initLiffAndApp);
 
 </script>
+
+
 
 
 
