@@ -1748,28 +1748,28 @@
 
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 
-<script>
+<script>// 健康自檢表應用程式核心邏輯
+
 document.addEventListener('DOMContentLoaded', function() {
-  // 1. 全局狀態與配置 - 增加超時設置和LIFF配置
-  let currentStep = 1;
-  const totalSteps = 4;
-  const OPENAI_MODEL = 'gpt-3.5-turbo';
+  // 配置常數
   const BACKEND_GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwQH5XE3u9vgedphUCOnXpYl9WG4-3ScF29SYoSb3MGLMQX28qBeY3tqt56PiIFsAtw4w/exec';
   const IMGBB_API_KEY = '60691c91e77a7ad5a7eabaf332fbdffe';
   const IMGBB_UPLOAD_URL = 'https://api.imgbb.com/1/upload';
   let globalAiComment = '';
-  const LIFF_ID = '2007488640-Kl4XPVyR'; // 請替換為您的LIFF ID
+  const LIFF_ID = '2007488640-Kl4XPVyR'; // 替換為您的LIFF ID
   
-  // 新增：網絡請求配置和使用次數限制
+  // 網絡請求配置和使用次數限制
   const REQUEST_TIMEOUT = 15000; // 15秒超時
-  const MAX_RETRIES = 3; // 增加最大重試次數
-  const MAX_USAGE_COUNT = 3; // 最大使用次數
+  const MAX_RETRIES = 3; // 最大重試次數
+  const MAX_USAGE_COUNT = 3; // 普通用戶最大使用次數
   let userProfile = null;
   let remainingUsageCount = 0;
   let isLiffInitialized = false;
-  let isAnonymousMode = false; // 新增：標記是否為匿名模式
+  let isAnonymousMode = false;
+  let isAdmin = false;
+  let adminExpiryDate = null;
 
-  // 2. DOM元素獲取（含AI評估容器和使用次數顯示）
+  // DOM元素獲取
   const menuToggle = document.getElementById('menuToggle');
   const mobileMenu = document.getElementById('mobileMenu');
   const prevBtn = document.getElementById('prevBtn');
@@ -1786,14 +1786,15 @@ document.addEventListener('DOMContentLoaded', function() {
   const healthRecommendations = document.getElementById('healthRecommendations');
   const usageCountDisplay = document.getElementById('usageCountDisplay') || createUsageCountDisplay();
   const liffLoginButton = document.getElementById('liffLoginButton') || createLiffLoginButton();
+  const adminStatusDisplay = document.getElementById('adminStatusDisplay') || createAdminStatusDisplay();
 
-  // 3. 性別相關元素
+  // 性別相關元素
   const genderRadios = document.querySelectorAll('input[name="gender"]');
   const femaleSymptomTab = document.querySelector('.symptom-tab[data-category="female"]');
   const femaleSymptomItems = document.querySelectorAll('.symptom-item[data-category="female"]');
   const postpartumSymptoms = document.querySelectorAll('.symptom-item[data-special="postpartum"]');
 
-  // 4. 核心全局數據
+  // 核心全局數據
   let globalUniqueSymptoms = [];
   let globalUniqueHabits = [];
   let windowHealthChart = null;
@@ -1801,8 +1802,10 @@ document.addEventListener('DOMContentLoaded', function() {
   let localImageName = '';
   let imgbbImageUrl = '';
   let imgbbDeleteUrl = '';
+  let currentStep = 1;
+  const totalSteps = 4;
 
-  // 5. 初始化LIFF - 增強錯誤處理和重試機制
+  // 初始化LIFF - 增強錯誤處理和重試機制
   async function initializeLiff() {
     try {
       // 檢查LIFF是否已加載
@@ -1873,7 +1876,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
-  // 6. 處理LIFF登錄 - 增強重試機制
+  // 處理LIFF登錄 - 增強重試機制
   async function handleLiffLogin(retries = MAX_RETRIES) {
     try {
       // 隱藏登錄按鈕，顯示加載狀態
@@ -1890,9 +1893,12 @@ document.addEventListener('DOMContentLoaded', function() {
       userProfile = await Promise.race([profilePromise, timeoutPromise]);
       
       // 驗證用戶信息完整性
-      if (!userProfile || !userProfile.userId || !userProfile.displayName) {
-        throw new Error('獲取的用戶信息不完整');
+      if (!userProfile || !userProfile.userId) {
+        throw new Error('獲取的用戶信息不完整，缺少User ID');
       }
+      
+      // 先檢查是否為管理員
+      await checkAdminStatus(userProfile.userId);
       
       // 隱藏登錄按鈕
       liffLoginButton.style.display = 'none';
@@ -1906,10 +1912,16 @@ document.addEventListener('DOMContentLoaded', function() {
       // 更新使用次數顯示
       updateUsageCountDisplay();
       
+      // 顯示管理員狀態（如果是管理員）
+      if (isAdmin) {
+        showAdminStatus();
+      }
+      
       // 檢查是否還有使用次數
       checkUsageLimit();
       
-      showToast(`歡迎回來，${userProfile.displayName}！`);
+      const displayName = userProfile.displayName || '用戶';
+      showToast(`歡迎回來，${displayName}！`);
     } catch (error) {
       console.error('LIFF登錄處理失敗:', error);
       
@@ -1940,9 +1952,81 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
-  // 7. 獲取用戶使用次數 - 增強錯誤處理
+  // 檢查管理員狀態（基於LINE User ID和使用期限）
+  async function checkAdminStatus(userId) {
+    try {
+      const callbackName = `jsonpCheckAdminCallback_${Date.now()}`;
+      const params = new URLSearchParams({
+        userId: userId,
+        callback: callbackName,
+        action: 'checkAdminStatus',
+        timestamp: Date.now()
+      });
+      
+      const response = await jsonpRequest(
+        `${BACKEND_GOOGLE_SCRIPT_URL}?${params.toString()}`,
+        callbackName
+      );
+      
+      if (response?.status === 'success' && response.isAdmin) {
+        isAdmin = true;
+        adminExpiryDate = response.expiryDate;
+        return true;
+      } else {
+        isAdmin = false;
+        adminExpiryDate = null;
+        return false;
+      }
+    } catch (error) {
+      console.error('檢查管理員狀態失敗:', error);
+      isAdmin = false;
+      adminExpiryDate = null;
+      return false;
+    }
+  }
+
+  // 顯示管理員狀態
+  function showAdminStatus() {
+    if (!adminStatusDisplay || !isAdmin || !adminExpiryDate) return;
+    
+    // 格式化日期顯示
+    const formattedDate = new Date(adminExpiryDate).toLocaleDateString('zh-CN');
+    
+    adminStatusDisplay.innerHTML = `
+      <div class="bg-green-50 p-2 rounded-lg text-sm text-green-800 flex items-center">
+        <i class="fa fa-shield mr-2"></i>
+        <span>管理員權限 (有效期至: ${formattedDate})</span>
+      </div>
+    `;
+    adminStatusDisplay.style.display = 'block';
+  }
+
+  // 創建管理員狀態顯示元素
+  function createAdminStatusDisplay() {
+    const container = document.createElement('div');
+    container.id = 'adminStatusDisplay';
+    container.className = 'admin-status-display mt-2';
+    container.style.display = 'none';
+    
+    const userInfoContainer = document.getElementById('userInfoContainer');
+    if (userInfoContainer) {
+      userInfoContainer.parentNode.insertBefore(container, userInfoContainer.nextSibling);
+    } else {
+      formContainer.appendChild(container);
+    }
+    
+    return container;
+  }
+
+  // 獲取用戶使用次數 - 增強錯誤處理
   async function fetchUserUsageCount() {
     try {
+      // 管理員不受使用次數限制
+      if (isAdmin) {
+        remainingUsageCount = -1; // -1表示無限制
+        return remainingUsageCount;
+      }
+      
       if (!userProfile) return;
       
       const callbackName = `jsonpUsageCountCallback_${Date.now()}`;
@@ -1972,9 +2056,12 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
-  // 8. 增加用戶使用次數
+  // 增加用戶使用次數
   async function incrementUsageCount() {
     try {
+      // 管理員不受使用次數限制，不需要增加計數
+      if (isAdmin) return true;
+      
       if (!userProfile && isAnonymousMode) {
         // 匿名模式下本地減少次數
         remainingUsageCount = Math.max(0, remainingUsageCount - 1);
@@ -1987,7 +2074,7 @@ document.addEventListener('DOMContentLoaded', function() {
       const callbackName = `jsonpIncrementCountCallback_${Date.now()}`;
       const params = new URLSearchParams({
         userId: userProfile.userId,
-        userName: userProfile.displayName,
+        userName: userProfile.displayName || '未知用戶',
         callback: callbackName,
         action: 'incrementUsageCount',
         timestamp: Date.now()
@@ -2016,8 +2103,16 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
-  // 9. 檢查使用次數限制
+  // 檢查使用次數限制
   function checkUsageLimit() {
+    // 管理員不受使用次數限制
+    if (isAdmin) {
+      submitBtn.disabled = false;
+      submitBtn.title = '';
+      usageCountDisplay.classList.remove('text-red-500');
+      return;
+    }
+    
     if (remainingUsageCount <= 0) {
       submitBtn.disabled = true;
       submitBtn.title = '您已用完所有使用次數';
@@ -2028,12 +2123,19 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
-  // 10. 更新使用次數顯示
+  // 更新使用次數顯示
   function updateUsageCountDisplay() {
-    usageCountDisplay.textContent = `剩餘使用次數: ${remainingUsageCount}/${MAX_USAGE_COUNT}`;
+    // 管理員顯示無限制
+    if (isAdmin) {
+      usageCountDisplay.textContent = '使用次數: 管理員-無限制';
+      usageCountDisplay.classList.add('text-green-600');
+    } else {
+      usageCountDisplay.textContent = `剩餘使用次數: ${remainingUsageCount}/${MAX_USAGE_COUNT}`;
+      usageCountDisplay.classList.remove('text-green-600');
+    }
   }
 
-  // 11. 創建使用次數顯示元素
+  // 創建使用次數顯示元素
   function createUsageCountDisplay() {
     const container = document.createElement('div');
     container.id = 'usageCountDisplay';
@@ -2051,7 +2153,7 @@ document.addEventListener('DOMContentLoaded', function() {
     return container;
   }
 
-  // 12. 創建LIFF登錄按鈕
+  // 創建LIFF登錄按鈕
   function createLiffLoginButton() {
     const button = document.createElement('button');
     button.id = 'liffLoginButton';
@@ -2082,20 +2184,23 @@ document.addEventListener('DOMContentLoaded', function() {
     return button;
   }
 
-  // 13. 顯示用戶信息
+  // 顯示用戶信息
   function showUserInfo() {
     if (!userProfile) return;
     
     const userInfoContainer = document.getElementById('userInfoContainer') || createUserInfoContainer();
     userInfoContainer.innerHTML = `
       <div class="flex items-center text-sm text-gray-700">
-        <img src="${userProfile.pictureUrl}" alt="${userProfile.displayName}" class="w-6 h-6 rounded-full mr-2">
-        <span>登錄用戶: ${userProfile.displayName}</span>
+        <img src="${userProfile.pictureUrl || 'https://via.placeholder.com/24'}" alt="${userProfile.displayName || '用戶'}" class="w-6 h-6 rounded-full mr-2">
+        <span>登錄用戶: ${userProfile.displayName || '未知用戶'}</span>
+        <span class="ml-2 text-xs bg-gray-100 px-1.5 py-0.5 rounded">
+          ID: ${userProfile.userId.substring(0, 6)}...${userProfile.userId.substring(userProfile.userId.length - 4)}
+        </span>
       </div>
     `;
   }
 
-  // 14. 創建用戶信息容器
+  // 創建用戶信息容器
   function createUserInfoContainer() {
     const container = document.createElement('div');
     container.id = 'userInfoContainer';
@@ -2111,14 +2216,14 @@ document.addEventListener('DOMContentLoaded', function() {
     return container;
   }
 
-  // 15. 顯示LIFF登錄按鈕
+  // 顯示LIFF登錄按鈕
   function showLiffLoginButton() {
     liffLoginButton.style.display = 'block';
     liffLoginButton.innerHTML = '<i class="fa fa-line mr-2"></i> 使用LINE登錄以獲得完整功能';
     liffLoginButton.disabled = false;
   }
 
-  // 16. 動態創建AI評估容器
+  // 動態創建AI評估容器
   function createAiContainer() {
     const container = document.createElement('div');
     container.id = 'aiEvaluationContainer';
@@ -2134,12 +2239,12 @@ document.addEventListener('DOMContentLoaded', function() {
     return container;
   }
 
-  // -------------------------- 1. 導航菜單切換（移動端）
+  // 導航菜單切換（移動端）
   menuToggle.addEventListener('click', () => {
     mobileMenu.classList.toggle('hidden');
   });
 
-  // -------------------------- 2. 性別選擇驅動UI變化
+  // 性別選擇驅動UI變化
   genderRadios.forEach(radio => {
     radio.addEventListener('change', updateGenderBasedUI);
   });
@@ -2168,7 +2273,7 @@ document.addEventListener('DOMContentLoaded', function() {
     updateGlobalSymptomData();
   }
 
-  // -------------------------- 3. 全局症狀/習慣數據更新
+  // 全局症狀/習慣數據更新
   function updateGlobalSymptomData() {
     // 症狀去重
     const symptomElements = document.querySelectorAll('input[name="symptoms"]:checked');
@@ -2179,7 +2284,7 @@ document.addEventListener('DOMContentLoaded', function() {
     globalUniqueHabits = [...new Set(Array.from(habitElements).map(checkbox => checkbox.value))];
   }
 
-  // -------------------------- 4. 表單步驟導航
+  // 表單步驟導航
   prevBtn.addEventListener('click', () => {
     if (currentStep > 1) {
       currentStep--;
@@ -2199,7 +2304,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
 
-  // -------------------------- 5. 表單驗證邏輯
+  // 表單驗證邏輯
   function validateStep(step) {
     let isValid = true;
     clearAllErrors();
@@ -2264,7 +2369,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
-  // -------------------------- 6. 通用JSONP請求函數（帶重試機制，解決400錯誤）
+  // 通用JSONP請求函數（帶重試機制）
   function jsonpRequest(url, callbackName, timeout = REQUEST_TIMEOUT) {
     return new Promise((resolve, reject) => {
       // 清除可能存在的同名回調
@@ -2336,7 +2441,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
-  // -------------------------- 7. 調用後端生成AI評語
+  // 調用後端生成AI評語
   async function callOpenAIByBackend(healthData) {
     try {
       // 顯示加載狀態
@@ -2405,7 +2510,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
-  // -------------------------- 8. 渲染AI評估結果
+  // 渲染AI評估結果
   function renderAiEvaluation() {
     if (!aiEvaluationContainer || !globalAiComment) return;
 
@@ -2429,10 +2534,10 @@ document.addEventListener('DOMContentLoaded', function() {
     `;
   }
 
-  // -------------------------- 9. 表單提交
+  // 表單提交
   submitBtn.addEventListener('click', async () => {
-    // 檢查使用次數
-    if (remainingUsageCount <= 0) {
+    // 檢查使用次數（管理員不受限制）
+    if (!isAdmin && remainingUsageCount <= 0) {
       showToast(`您已用完${MAX_USAGE_COUNT}次使用次數`, 'error');
       return;
     }
@@ -2442,10 +2547,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
     successModal.classList.remove('hidden');
     try {
-      // 增加使用次數
-      const countUpdated = await incrementUsageCount();
-      if (!countUpdated && userProfile && !isAnonymousMode) {
-        throw new Error('更新使用次數失敗，請稍後重試');
+      // 增加使用次數（管理員不需要）
+      let countUpdated = true;
+      if (!isAdmin) {
+        countUpdated = await incrementUsageCount();
+        if (!countUpdated && userProfile && !isAnonymousMode) {
+          throw new Error('更新使用次數失敗，請稍後重試');
+        }
       }
       
       // 並行執行AI評估和數據提交，提高速度
@@ -2480,7 +2588,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
 
-  // -------------------------- 10. 查看結果/重新評估按鈕事件
+  // 查看結果/重新評估按鈕事件
   viewResultBtn.addEventListener('click', () => {
     successModal.classList.add('hidden');
     resultSection.classList.remove('hidden');
@@ -2525,7 +2633,7 @@ document.addEventListener('DOMContentLoaded', function() {
     formContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
 
-  // -------------------------- 11. 症狀/習慣分類篩選
+  // 症狀/習慣分類篩選
   document.querySelectorAll('.symptom-tab').forEach(tab => {
     tab.addEventListener('click', () => {
       // 更新標籤樣式
@@ -2579,7 +2687,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   });
 
-  // -------------------------- 12. 表單步驟更新
+  // 表單步驟更新
   function updateFormSteps() {
     // 切換步驟顯示狀態
     document.querySelectorAll('.form-step').forEach(step => {
@@ -2620,7 +2728,7 @@ document.addEventListener('DOMContentLoaded', function() {
     formContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
-  // -------------------------- 13. 工具函數：收集AI所需精簡健康數據
+  // 工具函數：收集AI所需精簡健康數據
   function collectHealthData() {
     const selectedGender = document.querySelector('input[name="gender"]:checked');
     return {
@@ -2642,7 +2750,7 @@ document.addEventListener('DOMContentLoaded', function() {
     };
   }
 
-  // -------------------------- 14. 工具函數：收集全量表單數據
+  // 工具函數：收集全量表單數據
   function collectFullFormData() {
     const selectedGender = document.querySelector('input[name="gender"]:checked');
     return {
@@ -2652,6 +2760,8 @@ document.addEventListener('DOMContentLoaded', function() {
       }),
       userId: userProfile?.userId || 'anonymous',
       userName: userProfile?.displayName || document.getElementById('name').value || '未知用戶',
+      isAdmin: isAdmin,
+      adminExpiryDate: adminExpiryDate || 'N/A',
       basicInfo: {
         name: document.getElementById('name').value || '未填寫',
         age: document.getElementById('age').value || '未填寫',
@@ -2684,7 +2794,7 @@ document.addEventListener('DOMContentLoaded', function() {
     };
   }
 
-  // -------------------------- 15. 工具函數：BMI計算
+  // 工具函數：BMI計算
   function calculateBMI() {
     const height = document.getElementById('height').value;
     const weight = document.getElementById('weight').value;
@@ -2703,7 +2813,7 @@ document.addEventListener('DOMContentLoaded', function() {
     return `${bmiValue} ${bmiStatus}`;
   }
 
-  // -------------------------- 16. 提交數據到Google Sheets
+  // 提交數據到Google Sheets
   function submitToGoogleSheets() {
     return requestWithRetry(() => {
       const formData = collectFullFormData();
@@ -2728,7 +2838,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 
-  // -------------------------- 17. 生成評估結果
+  // 生成評估結果
   function generateResult() {
     // 1. 加載基本信息
     const name = document.getElementById('name').value || '未填寫';
@@ -2783,6 +2893,11 @@ document.addEventListener('DOMContentLoaded', function() {
           <div class="p-3 border border-gray-100 rounded-lg col-span-2">
             <p class="text-sm"><strong>職業：</strong> ${occupation}</p>
           </div>
+          ${isAdmin ? `
+          <div class="p-3 border border-green-200 bg-green-50 rounded-lg col-span-2">
+            <p class="text-sm text-green-800"><strong>管理員狀態：</strong> 有效至 ${new Date(adminExpiryDate).toLocaleDateString('zh-CN')}</p>
+          </div>
+          ` : ''}
         </div>
       `;
     } else {
@@ -3528,7 +3643,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 
-  // -------------------------- 19. 綁定事件與初始化
+  // 綁定事件與初始化
   if (downloadReportBtn) {
     downloadReportBtn.addEventListener('click', handleImageDownload);
   }
@@ -3547,10 +3662,8 @@ document.addEventListener('DOMContentLoaded', function() {
   // 初始化LIFF
   initializeLiff();
 });
+
 </script>
-
-
-
 
     
 </body>
