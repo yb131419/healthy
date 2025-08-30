@@ -1748,15 +1748,19 @@
 
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 
-<script>// 健康自檢表應用程式核心邏輯
+<script>/// 健康自檢表應用程式核心邏輯
 
 document.addEventListener('DOMContentLoaded', function() {
-  // 配置常數
-  const BACKEND_GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwQH5XE3u9vgedphUCOnXpYl9WG4-3ScF29SYoSb3MGLMQX28qBeY3tqt56PiIFsAtw4w/exec';
-  const IMGBB_API_KEY = '60691c91e77a7ad5a7eabaf332fbdffe';
-  const IMGBB_UPLOAD_URL = 'https://api.imgbb.com/1/upload';
-  let globalAiComment = '';
-  const LIFF_ID = '2007488640-Kl4XPVyR'; // 替換為您的LIFF ID
+  // 配置常數 - 确保管理员表格信息完整
+  const CONFIG = {
+    BACKEND_GOOGLE_SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbwQH5XE3u9vgedphUCOnXpYl9WG4-3ScF29SYoSb3MGLMQX28qBeY3tqt56PiIFsAtw4w/exec',
+    IMGBB_API_KEY: '60691c91e77a7ad5a7eabaf332fbdffe',
+    IMGBB_UPLOAD_URL: 'https://api.imgbb.com/1/upload',
+    LIFF_ID: '2007488640-Kl4XPVyR', // 替換為您的LIFF ID
+    ADMIN_SETTINGS_SHEET: '管理員設置', // 存储管理员信息的工作表名称
+    ADMIN_SHEET_ID: '1MxnhJlr7Q5zdmMxjeoKZ5r7s8DZATRewbneiG3eDRgM', // 管理员信息表格ID
+    DATA_SHEET_ID: '1v1uJfdFfD6KHHXv-E0duki4KH1a6n-jIyZUx0mZFJ2o' // 数据存储表格ID
+  };
   
   // 網絡請求配置和使用次數限制
   const REQUEST_TIMEOUT = 15000; // 15秒超時
@@ -1768,6 +1772,7 @@ document.addEventListener('DOMContentLoaded', function() {
   let isAnonymousMode = false;
   let isAdmin = false;
   let adminExpiryDate = null;
+  let globalAiComment = '';
 
   // DOM元素獲取
   const menuToggle = document.getElementById('menuToggle');
@@ -1820,7 +1825,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
       }
       
-      await liff.init({ liffId: LIFF_ID });
+      await liff.init({ liffId: CONFIG.LIFF_ID });
       
       if (liff.isLoggedIn()) {
         handleLiffLogin();
@@ -1897,7 +1902,7 @@ document.addEventListener('DOMContentLoaded', function() {
         throw new Error('獲取的用戶信息不完整，缺少User ID');
       }
       
-      // 先檢查是否為管理員
+      // 先檢查是否為管理員（使用修正後的函數）
       await checkAdminStatus(userProfile.userId);
       
       // 隱藏登錄按鈕
@@ -1944,6 +1949,8 @@ document.addEventListener('DOMContentLoaded', function() {
         errorMsg += ' - 網絡連接問題';
       } else if (error.message.includes('不完整')) {
         errorMsg += ' - 數據格式錯誤';
+      } else if (error.message.includes('管理员表格')) {
+        errorMsg += ' - 管理员表格访问失败，请联系系统管理员';
       }
       showToast(errorMsg, 'error');
       
@@ -1952,25 +1959,56 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
-  // 檢查管理員狀態（基於LINE User ID和使用期限）
+  // 修正後的检查管理员状态函数（从专门的管理员表格读取）
   async function checkAdminStatus(userId) {
+    // 验证用户ID格式
+    const USER_ID_PATTERN = /^[0-9A-Za-z_-]{5,}$/;
+    if (!userId || !USER_ID_PATTERN.test(userId)) {
+      console.error('无效的LINE User ID格式:', userId);
+      showToast('用户ID格式错误', 'error');
+      return false;
+    }
+
     try {
+      // 显示加载状态
+      showToast('正在验证管理员权限...', 'info');
+      
       const callbackName = `jsonpCheckAdminCallback_${Date.now()}`;
       const params = new URLSearchParams({
         userId: userId,
         callback: callbackName,
         action: 'checkAdminStatus',
-        timestamp: Date.now()
+        timestamp: Date.now(),
+        adminSheetId: CONFIG.ADMIN_SHEET_ID, // 明确传递管理员表格ID
+        adminSettingsSheet: CONFIG.ADMIN_SETTINGS_SHEET // 传递工作表名称
       });
       
-      const response = await jsonpRequest(
-        `${BACKEND_GOOGLE_SCRIPT_URL}?${params.toString()}`,
-        callbackName
+      // 增加超时设置，防止无限等待
+      const requestFn = () => jsonpRequest(
+        `${CONFIG.BACKEND_GOOGLE_SCRIPT_URL}?${params.toString()}`,
+        callbackName,
+        15000 // 15秒超时
       );
       
-      if (response?.status === 'success' && response.isAdmin) {
+      // 使用带重试的请求
+      const response = await requestWithRetry(requestFn, 2, 2000);
+      
+      if (!response) {
+        throw new Error('未收到有效响应数据');
+      }
+      
+      if (response.status === 'error') {
+        console.error('管理员验证失败:', response.message);
+        // 不显示错误提示，普通用户也会走到这里
+        isAdmin = false;
+        adminExpiryDate = null;
+        return false;
+      }
+      
+      if (response.isAdmin) {
         isAdmin = true;
         adminExpiryDate = response.expiryDate;
+        showToast('管理员权限验证成功', 'success');
         return true;
       } else {
         isAdmin = false;
@@ -1978,7 +2016,11 @@ document.addEventListener('DOMContentLoaded', function() {
         return false;
       }
     } catch (error) {
-      console.error('檢查管理員狀態失敗:', error);
+      console.error('检查管理员状态失败:', error);
+      // 仅在明确是管理员表格错误时显示提示
+      if (error.message.includes('管理员表格') || error.message.includes('权限')) {
+        showToast(`管理员验证失败: ${error.message}`, 'error');
+      }
       isAdmin = false;
       adminExpiryDate = null;
       return false;
@@ -2034,11 +2076,12 @@ document.addEventListener('DOMContentLoaded', function() {
         userId: userProfile.userId,
         callback: callbackName,
         action: 'getUsageCount',
-        timestamp: Date.now()
+        timestamp: Date.now(),
+        dataSheetId: CONFIG.DATA_SHEET_ID // 使用数据存储表格ID
       });
       
       const response = await jsonpRequest(
-        `${BACKEND_GOOGLE_SCRIPT_URL}?${params.toString()}`,
+        `${CONFIG.BACKEND_GOOGLE_SCRIPT_URL}?${params.toString()}`,
         callbackName
       );
       
@@ -2077,11 +2120,12 @@ document.addEventListener('DOMContentLoaded', function() {
         userName: userProfile.displayName || '未知用戶',
         callback: callbackName,
         action: 'incrementUsageCount',
-        timestamp: Date.now()
+        timestamp: Date.now(),
+        dataSheetId: CONFIG.DATA_SHEET_ID // 使用数据存储表格ID
       });
       
       const response = await jsonpRequest(
-        `${BACKEND_GOOGLE_SCRIPT_URL}?${params.toString()}`,
+        `${CONFIG.BACKEND_GOOGLE_SCRIPT_URL}?${params.toString()}`,
         callbackName
       );
       
@@ -2369,10 +2413,10 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
-  // 通用JSONP請求函數（帶重試機制）
+  // 修正JSONP请求函数，增加更详细的错误处理
   function jsonpRequest(url, callbackName, timeout = REQUEST_TIMEOUT) {
     return new Promise((resolve, reject) => {
-      // 清除可能存在的同名回調
+      // 清除可能存在的同名回调
       if (window[callbackName]) {
         delete window[callbackName];
       }
@@ -2382,31 +2426,36 @@ document.addEventListener('DOMContentLoaded', function() {
       script.type = 'text/javascript';
       script.async = true;
       
-      // 超時處理
+      // 超时处理
       const timeoutId = setTimeout(() => {
         cleanup();
-        reject(new Error('請求超時'));
+        reject(new Error(`请求超时: ${url}`));
       }, timeout);
       
-      // 成功回調
+      // 成功回调
       window[callbackName] = function(response) {
         cleanup();
         
-        // 處理可能的錯誤響應
+        // 处理可能的错误响应
         if (response?.status === 'error') {
-          reject(new Error(response.message || '請求處理失敗'));
+          // 特别处理管理员表格相关错误
+          if (response.errorCode && response.errorCode.includes('ADMIN_SHEET')) {
+            reject(new Error(`管理员表格错误: ${response.message}`));
+          } else {
+            reject(new Error(response.message || '请求处理失败'));
+          }
         } else {
           resolve(response);
         }
       };
       
-      // 錯誤處理
+      // 错误处理
       script.onerror = function() {
         cleanup();
-        reject(new Error('網絡錯誤或無效請求'));
+        reject(new Error(`网络错误或无效请求: ${url}`));
       };
       
-      // 清理函數
+      // 清理函数
       function cleanup() {
         clearTimeout(timeoutId);
         if (window[callbackName]) {
@@ -2417,7 +2466,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
       }
       
-      // 添加防緩存隨機參數
+      // 添加防缓存随机参数
       if (script.src.indexOf('?') === -1) {
         script.src += `?cb=${Math.random().toString(36).substring(2, 15)}`;
       } else {
@@ -2475,7 +2524,7 @@ document.addEventListener('DOMContentLoaded', function() {
       });
       
       const requestFn = () => jsonpRequest(
-        `${BACKEND_GOOGLE_SCRIPT_URL}?${params.toString()}`,
+        `${CONFIG.BACKEND_GOOGLE_SCRIPT_URL}?${params.toString()}`,
         callbackName
       );
       
@@ -2822,11 +2871,12 @@ document.addEventListener('DOMContentLoaded', function() {
         data: JSON.stringify(formData),
         callback: callbackName,
         action: 'saveToSheets',
-        timestamp: Date.now() // 防止緩存
+        timestamp: Date.now(), // 防止緩存
+        dataSheetId: CONFIG.DATA_SHEET_ID // 使用数据存储表格ID
       });
 
       return jsonpRequest(
-        `${BACKEND_GOOGLE_SCRIPT_URL}?${params.toString()}`,
+        `${CONFIG.BACKEND_GOOGLE_SCRIPT_URL}?${params.toString()}`,
         callbackName
       ).then(response => {
         if (response?.status === 'success') {
@@ -3407,7 +3457,7 @@ document.addEventListener('DOMContentLoaded', function() {
       });
 
       const formData = new FormData();
-      formData.append('key', IMGBB_API_KEY);
+      formData.append('key', CONFIG.IMGBB_API_KEY);
       formData.append('image', base64Image);
       formData.append('name', fileName);
 
@@ -3415,7 +3465,7 @@ document.addEventListener('DOMContentLoaded', function() {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
       
-      const uploadResponse = await fetch(IMGBB_UPLOAD_URL, {
+      const uploadResponse = await fetch(CONFIG.IMGBB_UPLOAD_URL, {
         method: 'POST',
         body: formData,
         signal: controller.signal
