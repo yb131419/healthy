@@ -1748,18 +1748,19 @@
 
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 
-<script>/// 健康自檢表應用程式核心邏輯
+<script>
+/// 健康自檢表應用程式核心邏輯
 
 document.addEventListener('DOMContentLoaded', function() {
-  // 配置常數 - 确保管理员表格信息完整
+  // 配置常數 - 確保管理員表格信息完整
   const CONFIG = {
     BACKEND_GOOGLE_SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbwQH5XE3u9vgedphUCOnXpYl9WG4-3ScF29SYoSb3MGLMQX28qBeY3tqt56PiIFsAtw4w/exec',
     IMGBB_API_KEY: '60691c91e77a7ad5a7eabaf332fbdffe',
     IMGBB_UPLOAD_URL: 'https://api.imgbb.com/1/upload',
     LIFF_ID: '2007488640-Kl4XPVyR', // 替換為您的LIFF ID
-    ADMIN_SETTINGS_SHEET: '管理員設置', // 存储管理员信息的工作表名称
-    ADMIN_SHEET_ID: '1MxnhJlr7Q5zdmMxjeoKZ5r7s8DZATRewbneiG3eDRgM', // 管理员信息表格ID
-    DATA_SHEET_ID: '1v1uJfdFfD6KHHXv-E0duki4KH1a6n-jIyZUx0mZFJ2o' // 数据存储表格ID
+    ADMIN_SETTINGS_SHEET: '管理員設置', // 存儲管理員信息的工作表名稱
+    ADMIN_SHEET_ID: '1MxnhJlr7Q5zdmMxjeoKZ5r7s8DZATRewbneiG3eDRgM', // 管理員信息表格ID
+    DATA_SHEET_ID: '1v1uJfdFfD6KHHXv-E0duki4KH1a6n-jIyZUx0mZFJ2o' // 數據存儲表格ID
   };
   
   // 網絡請求配置和使用次數限制
@@ -1831,6 +1832,8 @@ document.addEventListener('DOMContentLoaded', function() {
         handleLiffLogin();
       } else {
         showLiffLoginButton();
+        // 未登錄時默認啓用匿名模式，但保留登錄選項
+        enableAnonymousMode();
       }
       
       isLiffInitialized = true;
@@ -1838,7 +1841,7 @@ document.addEventListener('DOMContentLoaded', function() {
     } catch (error) {
       console.error('LIFF初始化失敗:', error);
       // 更詳細的錯誤分類提示
-      let errorMsg = 'LINE登錄功能初始化失敗，部分功能可能受限';
+      let errorMsg = 'LINE登錄功能初始化失敗，已切換到匿名模式';
       if (error.message.includes('404')) {
         errorMsg += ' - 可能是LIFF ID配置錯誤';
       } else if (error.message.includes('network')) {
@@ -1846,7 +1849,7 @@ document.addEventListener('DOMContentLoaded', function() {
       }
       showToast(errorMsg, 'error');
       
-      // 允許匿名使用，但限制功能
+      // 確保在初始化失敗時啓用匿名模式
       enableAnonymousMode();
       isLiffInitialized = true;
     }
@@ -1863,10 +1866,10 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 
-  // 啓用匿名模式
+  // 啓用匿名模式 - 確保匿名用戶有1次使用機會
   function enableAnonymousMode() {
     isAnonymousMode = true;
-    remainingUsageCount = 1;
+    remainingUsageCount = 1; // 匿名用戶固定1次使用機會
     updateUsageCountDisplay();
     showToast('已切換到匿名模式，您有1次使用機會', 'info');
     
@@ -1877,11 +1880,18 @@ document.addEventListener('DOMContentLoaded', function() {
     
     const loginButton = document.getElementById('liffLoginButton');
     if (loginButton && loginButton.parentNode) {
-      loginButton.parentNode.insertBefore(anonymousInfo, loginButton.nextSibling);
+      // 檢查是否已存在匿名提示，避免重復添加
+      const existingInfo = loginButton.parentNode.querySelector('.bg-yellow-50');
+      if (!existingInfo) {
+        loginButton.parentNode.insertBefore(anonymousInfo, loginButton.nextSibling);
+      }
     }
+    
+    // 確保提交按鈕在匿名模式下可用（只要還有次數）
+    checkUsageLimit();
   }
 
-  // 處理LIFF登錄 - 增強重試機制
+  // 處理LIFF登錄 - 增強重試機制和錯誤處理
   async function handleLiffLogin(retries = MAX_RETRIES) {
     try {
       // 隱藏登錄按鈕，顯示加載狀態
@@ -1902,7 +1912,7 @@ document.addEventListener('DOMContentLoaded', function() {
         throw new Error('獲取的用戶信息不完整，缺少User ID');
       }
       
-      // 先檢查是否為管理員（使用修正後的函數）
+      // 先檢查是否為管理員
       await checkAdminStatus(userProfile.userId);
       
       // 隱藏登錄按鈕
@@ -1927,6 +1937,9 @@ document.addEventListener('DOMContentLoaded', function() {
       
       const displayName = userProfile.displayName || '用戶';
       showToast(`歡迎回來，${displayName}！`);
+      
+      // 退出匿名模式
+      isAnonymousMode = false;
     } catch (error) {
       console.error('LIFF登錄處理失敗:', error);
       
@@ -1942,36 +1955,34 @@ document.addEventListener('DOMContentLoaded', function() {
       liffLoginButton.disabled = false;
       
       // 更詳細的錯誤提示
-      let errorMsg = '獲取用戶信息失敗';
+      let errorMsg = '獲取用戶信息失敗，已切換到匿名模式';
       if (error.message.includes('timeout')) {
-        errorMsg += ' - 請求超時，請稍後再試';
+        errorMsg += ' - 請求超時';
       } else if (error.message.includes('network')) {
         errorMsg += ' - 網絡連接問題';
       } else if (error.message.includes('不完整')) {
         errorMsg += ' - 數據格式錯誤';
-      } else if (error.message.includes('管理员表格')) {
-        errorMsg += ' - 管理员表格访问失败，请联系系统管理员';
       }
       showToast(errorMsg, 'error');
       
-      // 提供匿名使用選項
+      // 確保在登錄失敗時啓用匿名模式
       enableAnonymousMode();
     }
   }
 
-  // 修正後的检查管理员状态函数（从专门的管理员表格读取）
+  // 檢查管理員狀態函數（從專門的管理員表格讀取）
   async function checkAdminStatus(userId) {
-    // 验证用户ID格式
+    // 驗證用戶ID格式
     const USER_ID_PATTERN = /^[0-9A-Za-z_-]{5,}$/;
     if (!userId || !USER_ID_PATTERN.test(userId)) {
-      console.error('无效的LINE User ID格式:', userId);
-      showToast('用户ID格式错误', 'error');
+      console.error('無效的LINE User ID格式:', userId);
+      showToast('用戶ID格式錯誤', 'error');
       return false;
     }
 
     try {
-      // 显示加载状态
-      showToast('正在验证管理员权限...', 'info');
+      // 顯示加載狀態
+      showToast('正在驗證管理員權限...', 'info');
       
       const callbackName = `jsonpCheckAdminCallback_${Date.now()}`;
       const params = new URLSearchParams({
@@ -1979,27 +1990,27 @@ document.addEventListener('DOMContentLoaded', function() {
         callback: callbackName,
         action: 'checkAdminStatus',
         timestamp: Date.now(),
-        adminSheetId: CONFIG.ADMIN_SHEET_ID, // 明确传递管理员表格ID
-        adminSettingsSheet: CONFIG.ADMIN_SETTINGS_SHEET // 传递工作表名称
+        adminSheetId: CONFIG.ADMIN_SHEET_ID, // 明確傳遞管理員表格ID
+        adminSettingsSheet: CONFIG.ADMIN_SETTINGS_SHEET // 傳遞工作表名稱
       });
       
-      // 增加超时设置，防止无限等待
+      // 增加超時設置，防止無限等待
       const requestFn = () => jsonpRequest(
         `${CONFIG.BACKEND_GOOGLE_SCRIPT_URL}?${params.toString()}`,
         callbackName,
-        15000 // 15秒超时
+        15000 // 15秒超時
       );
       
-      // 使用带重试的请求
+      // 使用帶重試的請求
       const response = await requestWithRetry(requestFn, 2, 2000);
       
       if (!response) {
-        throw new Error('未收到有效响应数据');
+        throw new Error('未收到有效響應數據');
       }
       
       if (response.status === 'error') {
-        console.error('管理员验证失败:', response.message);
-        // 不显示错误提示，普通用户也会走到这里
+        console.error('管理員驗證失敗:', response.message);
+        // 不顯示錯誤提示，普通用戶也會走到這裡
         isAdmin = false;
         adminExpiryDate = null;
         return false;
@@ -2008,7 +2019,7 @@ document.addEventListener('DOMContentLoaded', function() {
       if (response.isAdmin) {
         isAdmin = true;
         adminExpiryDate = response.expiryDate;
-        showToast('管理员权限验证成功', 'success');
+        showToast('管理員權限驗證成功', 'success');
         return true;
       } else {
         isAdmin = false;
@@ -2016,10 +2027,10 @@ document.addEventListener('DOMContentLoaded', function() {
         return false;
       }
     } catch (error) {
-      console.error('检查管理员状态失败:', error);
-      // 仅在明确是管理员表格错误时显示提示
-      if (error.message.includes('管理员表格') || error.message.includes('权限')) {
-        showToast(`管理员验证失败: ${error.message}`, 'error');
+      console.error('檢查管理員狀態失敗:', error);
+      // 僅在明確是管理員表格錯誤時顯示提示
+      if (error.message.includes('管理員表格') || error.message.includes('權限')) {
+        showToast(`管理員驗證失敗: ${error.message}`, 'error');
       }
       isAdmin = false;
       adminExpiryDate = null;
@@ -2077,7 +2088,7 @@ document.addEventListener('DOMContentLoaded', function() {
         callback: callbackName,
         action: 'getUsageCount',
         timestamp: Date.now(),
-        dataSheetId: CONFIG.DATA_SHEET_ID // 使用数据存储表格ID
+        dataSheetId: CONFIG.DATA_SHEET_ID // 使用數據存儲表格ID
       });
       
       const response = await jsonpRequest(
@@ -2121,7 +2132,7 @@ document.addEventListener('DOMContentLoaded', function() {
         callback: callbackName,
         action: 'incrementUsageCount',
         timestamp: Date.now(),
-        dataSheetId: CONFIG.DATA_SHEET_ID // 使用数据存储表格ID
+        dataSheetId: CONFIG.DATA_SHEET_ID // 使用數據存儲表格ID
       });
       
       const response = await jsonpRequest(
@@ -2157,6 +2168,19 @@ document.addEventListener('DOMContentLoaded', function() {
       return;
     }
     
+    // 匿名用戶特殊處理
+    if (isAnonymousMode) {
+      if (remainingUsageCount <= 0) {
+        submitBtn.disabled = true;
+        submitBtn.title = '匿名用戶只能使用1次，請登錄LINE獲取更多次數';
+        showToast('匿名用戶只能使用1次，請登錄LINE獲取更多次數', 'error');
+        usageCountDisplay.classList.add('text-red-500');
+      } else {
+        submitBtn.disabled = false;
+      }
+      return;
+    }
+    
     if (remainingUsageCount <= 0) {
       submitBtn.disabled = true;
       submitBtn.title = '您已用完所有使用次數';
@@ -2173,6 +2197,9 @@ document.addEventListener('DOMContentLoaded', function() {
     if (isAdmin) {
       usageCountDisplay.textContent = '使用次數: 管理員-無限制';
       usageCountDisplay.classList.add('text-green-600');
+    } else if (isAnonymousMode) {
+      usageCountDisplay.textContent = `匿名用戶 - 剩餘使用次數: ${remainingUsageCount}/1`;
+      usageCountDisplay.classList.remove('text-green-600');
     } else {
       usageCountDisplay.textContent = `剩餘使用次數: ${remainingUsageCount}/${MAX_USAGE_COUNT}`;
       usageCountDisplay.classList.remove('text-green-600');
@@ -2413,10 +2440,10 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
-  // 修正JSONP请求函数，增加更详细的错误处理
+  // 修正JSONP請求函數，增加更詳細的錯誤處理
   function jsonpRequest(url, callbackName, timeout = REQUEST_TIMEOUT) {
     return new Promise((resolve, reject) => {
-      // 清除可能存在的同名回调
+      // 清除可能存在的同名回調
       if (window[callbackName]) {
         delete window[callbackName];
       }
@@ -2426,36 +2453,36 @@ document.addEventListener('DOMContentLoaded', function() {
       script.type = 'text/javascript';
       script.async = true;
       
-      // 超时处理
+      // 超時處理
       const timeoutId = setTimeout(() => {
         cleanup();
-        reject(new Error(`请求超时: ${url}`));
+        reject(new Error(`請求超時: ${url}`));
       }, timeout);
       
-      // 成功回调
+      // 成功回調
       window[callbackName] = function(response) {
         cleanup();
         
-        // 处理可能的错误响应
+        // 處理可能的錯誤響應
         if (response?.status === 'error') {
-          // 特别处理管理员表格相关错误
+          // 特別處理管理員表格相關錯誤
           if (response.errorCode && response.errorCode.includes('ADMIN_SHEET')) {
-            reject(new Error(`管理员表格错误: ${response.message}`));
+            reject(new Error(`管理員表格錯誤: ${response.message}`));
           } else {
-            reject(new Error(response.message || '请求处理失败'));
+            reject(new Error(response.message || '請求處理失敗'));
           }
         } else {
           resolve(response);
         }
       };
       
-      // 错误处理
+      // 錯誤處理
       script.onerror = function() {
         cleanup();
-        reject(new Error(`网络错误或无效请求: ${url}`));
+        reject(new Error(`網絡錯誤或無效請求: ${url}`));
       };
       
-      // 清理函数
+      // 清理函數
       function cleanup() {
         clearTimeout(timeoutId);
         if (window[callbackName]) {
@@ -2466,7 +2493,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
       }
       
-      // 添加防缓存随机参数
+      // 添加防緩存隨機參數
       if (script.src.indexOf('?') === -1) {
         script.src += `?cb=${Math.random().toString(36).substring(2, 15)}`;
       } else {
@@ -2587,7 +2614,7 @@ document.addEventListener('DOMContentLoaded', function() {
   submitBtn.addEventListener('click', async () => {
     // 檢查使用次數（管理員不受限制）
     if (!isAdmin && remainingUsageCount <= 0) {
-      showToast(`您已用完${MAX_USAGE_COUNT}次使用次數`, 'error');
+      showToast(isAnonymousMode ? '匿名用戶只能使用1次，請登錄LINE獲取更多次數' : `您已用完${MAX_USAGE_COUNT}次使用次數`, 'error');
       return;
     }
     
@@ -2872,7 +2899,7 @@ document.addEventListener('DOMContentLoaded', function() {
         callback: callbackName,
         action: 'saveToSheets',
         timestamp: Date.now(), // 防止緩存
-        dataSheetId: CONFIG.DATA_SHEET_ID // 使用数据存储表格ID
+        dataSheetId: CONFIG.DATA_SHEET_ID // 使用數據存儲表格ID
       });
 
       return jsonpRequest(
@@ -3712,8 +3739,8 @@ document.addEventListener('DOMContentLoaded', function() {
   // 初始化LIFF
   initializeLiff();
 });
-
 </script>
+    
 
     
 </body>
