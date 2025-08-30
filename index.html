@@ -1737,7 +1737,7 @@
         </div>
         <h3 class="text-xl font-bold mb-2">提交成功！</h3>
         <p class="text-neutral-dark/70 mb-6">
-          您的健康評估已完成，正在生成評估報告...
+          您的健康評估已完成，<p>正在生成評估報告...
         </p>
         <button id="viewResultBtn" class="w-full py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors">
           查看評估結果
@@ -2777,132 +2777,150 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
-  // -------------------------- 18. 圖片下載與分享優化
-  async function handleImageDownload() {
-    try {
-      // 禁用按鈕並顯示加載狀態
-      downloadReportBtn.disabled = true;
-      downloadReportBtn.innerHTML = '<i class="fa fa-spinner fa-spin mr-2"></i> 準備中...';
-      
-      // 創建進度提示
-      const progressIndicator = createProgressIndicator();
-      document.body.appendChild(progressIndicator);
+  // 修正截圖處理函數，確保不包含六大調理方向
+async function handleImageDownload() {
+  try {
+    // 禁用按鈕並顯示加載狀態
+    downloadReportBtn.disabled = true;
+    downloadReportBtn.innerHTML = '<i class="fa fa-spinner fa-spin mr-2"></i> 準備中...';
+    
+    // 創建進度提示
+    const progressIndicator = createProgressIndicator();
+    document.body.appendChild(progressIndicator);
 
-      // 1. 依賴檢查
-      if (typeof html2canvas === 'undefined') throw new Error('圖片處理庫未加載，請刷新頁面重試');
-      const resultSection = document.getElementById('result');
-      if (!resultSection) throw new Error('未找到健康評估結果頁容器，請先提交評估');
+    // 1. 依賴檢查
+    if (typeof html2canvas === 'undefined') throw new Error('圖片處理庫未加載，請刷新頁面重試');
+    const resultSection = document.getElementById('result');
+    if (!resultSection) throw new Error('未找到健康評估結果頁容器，請先提交評估');
 
-      updateProgress(progressIndicator, 20, '調整頁面樣式...');
+    updateProgress(progressIndicator, 20, '調整頁面樣式...');
 
-      // 2. 臨時調整樣式
-      const originalStyles = {
-        resultPadding: resultSection.style.padding,
-        resultMargin: resultSection.style.margin,
-        resultBoxShadow: resultSection.style.boxShadow,
-        position: resultSection.style.position,
-        top: resultSection.style.top,
-        left: resultSection.style.left,
-        zIndex: resultSection.style.zIndex
-      };
-      
-      resultSection.style.padding = '20px';
-      resultSection.style.margin = '0 auto';
-      resultSection.style.boxShadow = 'none';
-      
-      const rect = resultSection.getBoundingClientRect();
-      resultSection.style.position = 'relative';
-      resultSection.style.top = `-${rect.top}px`;
-      resultSection.style.left = `-${rect.left}px`;
-      resultSection.style.zIndex = '1000';
+    // 2. 臨時調整樣式
+    const originalStyles = {
+      resultPadding: resultSection.style.padding,
+      resultMargin: resultSection.style.margin,
+      resultBoxShadow: resultSection.style.boxShadow,
+      position: resultSection.style.position,
+      top: resultSection.style.top,
+      left: resultSection.style.left,
+      zIndex: resultSection.style.zIndex
+    };
+    
+    resultSection.style.padding = '20px';
+    resultSection.style.margin = '0 auto';
+    resultSection.style.boxShadow = 'none';
+    
+    const rect = resultSection.getBoundingClientRect();
+    resultSection.style.position = 'relative';
+    resultSection.style.top = `-${rect.top}px`;
+    resultSection.style.left = `-${rect.left}px`;
+    resultSection.style.zIndex = '1000';
 
-      // 臨時隱藏六大調理方向
-      const originalHealthRecommendationsDisplay = healthRecommendations ? healthRecommendations.style.display : 'block';
-      if (healthRecommendations) {
-        healthRecommendations.style.display = 'none';
-      }
-
-      updateProgress(progressIndicator, 40, '準備截圖...');
-
-      // 3. 執行截圖（優化配置）
-      const canvas = await html2canvas(resultSection, {
-        useCORS: true,
-        allowTaint: false,
-        scale: Math.min(window.devicePixelRatio || 2, 2), // 限制最大縮放比例
-        logging: false,
-        scrollX: 0,
-        scrollY: 0,
-        windowWidth: resultSection.scrollWidth,
-        windowHeight: resultSection.scrollHeight,
-        ignoreElements: (el) => {
-          return el.id === 'downloadReportBtn' || el.id === 'singleShareBtn' || el.id === 'restartBtn' || 
-                 el === progressIndicator || el.id === 'healthRecommendations';
-        }
-      });
-
-      updateProgress(progressIndicator, 60, '處理圖片...');
-
-      // 4. 恢復原始樣式
-      Object.keys(originalStyles).forEach(key => {
-        resultSection.style[key] = originalStyles[key];
-      });
-      
-      if (healthRecommendations) {
-        healthRecommendations.style.display = originalHealthRecommendationsDisplay;
-      }
-
-      // 5. 圖片處理
-      const userName = document.getElementById('name').value.trim() || '未知用戶';
-      const currentDate = new Date();
-      const formattedDate = `${currentDate.getFullYear()}年${String(currentDate.getMonth() + 1).padStart(2, '0')}月${String(currentDate.getDate()).padStart(2, '0')}日`;
-      localImageName = `${userName}_健康評估結果_${formattedDate}.jpg`;
-      
-      // 轉換Canvas為JPG Blob（平衡質量和體積）
-      localImageBlob = await new Promise((resolve, reject) => {
-        canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('圖片Blob生成失敗')), 'image/jpeg', 0.8);
-      });
-
-      updateProgress(progressIndicator, 75, '轉檔中...');
-
-      // 6. 並行處理本地保存和ImgBB上傳
-      const [saveResult, uploadResult] = await Promise.allSettled([
-        saveToGallery(localImageBlob, localImageName),
-        uploadToImgBB(localImageBlob, localImageName)
-      ]);
-      
-      // 處理上傳結果
-      if (uploadResult.status === 'fulfilled' && uploadResult.value) {
-        imgbbImageUrl = uploadResult.value.url;
-        imgbbDeleteUrl = uploadResult.value.deleteUrl;
-        // 異步更新Google Sheets，不阻塞主流程
-        submitToGoogleSheets().catch(err => console.log('更新圖片URL失敗:', err));
-      }
-      
-      // 檢查保存結果
-      if (saveResult.status === 'rejected') {
-        throw new Error(`保存圖片失敗: ${saveResult.reason.message}`);
-      }
-
-      updateProgress(progressIndicator, 90, '保存圖片...');
-
-      // 7. 完成處理
-      document.body.removeChild(progressIndicator);
-      downloadReportBtn.disabled = false;
-      downloadReportBtn.innerHTML = '<i class="fa fa-download mr-2"></i> 重新轉檔操作';
-      
-      showToast(`圖片已成功保存！\n文件名：${localImageName}`);
-      showSingleShareButton(userName, formattedDate);
-
-    } catch (error) {
-      console.error('圖片處理失敗：', error);
-      const progressIndicator = document.getElementById('progressIndicator');
-      if (progressIndicator) document.body.removeChild(progressIndicator);
-      
-      downloadReportBtn.disabled = false;
-      downloadReportBtn.innerHTML = '<i class="fa fa-download mr-2"></i> 下載圖片';
-      showToast(`操作失敗：${error.message}`, 'error');
+    // 臨時隱藏六大調理方向（重點修正部分）
+    const healthRecommendations = document.getElementById('healthRecommendations');
+    const originalHealthRecommendationsDisplay = healthRecommendations ? healthRecommendations.style.display : 'block';
+    if (healthRecommendations) {
+      healthRecommendations.style.display = 'none';
     }
+    
+    // 額外隱藏可能包含六大調理方向的其他元素
+    const healthGuidance = document.querySelector('.health-guidance');
+    const originalHealthGuidanceDisplay = healthGuidance ? healthGuidance.style.display : 'block';
+    if (healthGuidance) {
+      healthGuidance.style.display = 'none';
+    }
+
+    updateProgress(progressIndicator, 40, '準備截圖...');
+
+    // 3. 執行截圖（優化配置，確保排除不需要的元素）
+    const canvas = await html2canvas(resultSection, {
+      useCORS: true,
+      allowTaint: false,
+      scale: Math.min(window.devicePixelRatio || 2, 2),
+      logging: false,
+      scrollX: 0,
+      scrollY: 0,
+      windowWidth: resultSection.scrollWidth,
+      windowHeight: resultSection.scrollHeight,
+      ignoreElements: (el) => {
+        // 明確排除六大調理方向相關元素
+        return el.id === 'downloadReportBtn' || 
+               el.id === 'singleShareBtn' || 
+               el.id === 'restartBtn' || 
+               el === progressIndicator || 
+               el.id === 'healthRecommendations' ||
+               el.classList.contains('health-guidance');
+      }
+    });
+
+    updateProgress(progressIndicator, 60, '處理圖片...');
+
+    // 4. 恢復原始樣式
+    Object.keys(originalStyles).forEach(key => {
+      resultSection.style[key] = originalStyles[key];
+    });
+    
+    // 恢復六大調理方向顯示
+    if (healthRecommendations) {
+      healthRecommendations.style.display = originalHealthRecommendationsDisplay;
+    }
+    if (healthGuidance) {
+      healthGuidance.style.display = originalHealthGuidanceDisplay;
+    }
+
+    // 5. 圖片處理
+    const userName = document.getElementById('name').value.trim() || '未知用戶';
+    const currentDate = new Date();
+    const formattedDate = `${currentDate.getFullYear()}年${String(currentDate.getMonth() + 1).padStart(2, '0')}月${String(currentDate.getDate()).padStart(2, '0')}日`;
+    localImageName = `${userName}_健康評估結果_${formattedDate}.jpg`;
+    
+    // 轉換Canvas為JPG Blob
+    localImageBlob = await new Promise((resolve, reject) => {
+      canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('圖片Blob生成失敗')), 'image/jpeg', 0.8);
+    });
+
+    updateProgress(progressIndicator, 75, '轉檔中...');
+
+    // 6. 並行處理本地保存和ImgBB上傳
+    const [saveResult, uploadResult] = await Promise.allSettled([
+      saveToGallery(localImageBlob, localImageName),
+      uploadToImgBB(localImageBlob, localImageName)
+    ]);
+    
+    // 處理上傳結果
+    if (uploadResult.status === 'fulfilled' && uploadResult.value) {
+      imgbbImageUrl = uploadResult.value.url;
+      imgbbDeleteUrl = uploadResult.value.deleteUrl;
+      // 異步更新Google Sheets
+      submitToGoogleSheets().catch(err => console.log('更新圖片URL失敗:', err));
+    }
+    
+    // 檢查保存結果
+    if (saveResult.status === 'rejected') {
+      throw new Error(`保存圖片失敗: ${saveResult.reason.message}`);
+    }
+
+    updateProgress(progressIndicator, 90, '保存圖片...');
+
+    // 7. 完成處理
+    document.body.removeChild(progressIndicator);
+    downloadReportBtn.disabled = false;
+    downloadReportBtn.innerHTML = '<i class="fa fa-download mr-2"></i> 重新轉檔操作';
+    
+    showToast(`圖片已成功保存！\n文件名：${localImageName}`);
+    showSingleShareButton(userName, formattedDate);
+
+  } catch (error) {
+    console.error('圖片處理失敗：', error);
+    const progressIndicator = document.getElementById('progressIndicator');
+    if (progressIndicator) document.body.removeChild(progressIndicator);
+    
+    downloadReportBtn.disabled = false;
+    downloadReportBtn.innerHTML = '<i class="fa fa-download mr-2"></i> 下載圖片';
+    showToast(`操作失敗：${error.message}`, 'error');
   }
+}
+
   
   // 單獨的ImgBB上傳函數
   async function uploadToImgBB(blob, fileName) {
