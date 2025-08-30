@@ -1737,7 +1737,7 @@
         </div>
         <h3 class="text-xl font-bold mb-2">提交成功！</h3>
         <p class="text-neutral-dark/70 mb-6">
-          您的健康評估已完成，<p>正在生成評估報告...
+          您的健康評估已完成，正在生成評估報告...<p>
         </p>
         <button id="viewResultBtn" class="w-full py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors">
           查看評估結果
@@ -1747,22 +1747,28 @@
   </div>
 
 <script>
-
+  
 document.addEventListener('DOMContentLoaded', function() {
-  // 1. 全局狀態與配置 - 增加超時設置
+  // 1. 全局狀態與配置 - 更新LINE相關配置為LIFF
   let currentStep = 1;
   const totalSteps = 4;
   const OPENAI_MODEL = 'gpt-3.5-turbo';
-  const BACKEND_GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwQH5XE3u9vgedphUCOnXpYl9WG4-3ScF29SYoSb3MGLMQX28qBeY3tqt56PiIFsAtw4w/exec';
+  // 更新為新的後端腳本URL
+  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwQH5XE3u9vgedphUCOnXpYl9WG4-3ScF29SYoSb3MGLMQX28qBeY3tqt56PiIFsAtw4w/exec";
   const IMGBB_API_KEY = '60691c91e77a7ad5a7eabaf332fbdffe';
   const IMGBB_UPLOAD_URL = 'https://api.imgbb.com/1/upload';
   let globalAiComment = '';
+  
+  // LINE LIFF配置
+  const LIFF_ID = "2007488640-Kl4XPVyR"; // LIFF應用ID
+  let lineUserId = null;
+  let liff = null; // LIFF實例
   
   // 新增：網絡請求配置
   const REQUEST_TIMEOUT = 15000; // 15秒超時
   const MAX_RETRIES = 2; // 最大重試次數
 
-  // 2. DOM元素獲取（含AI評估容器）
+  // 2. DOM元素獲取（含AI評估容器和LINE登錄按鈕）
   const menuToggle = document.getElementById('menuToggle');
   const mobileMenu = document.getElementById('mobileMenu');
   const prevBtn = document.getElementById('prevBtn');
@@ -1777,6 +1783,8 @@ document.addEventListener('DOMContentLoaded', function() {
   const formContainer = document.getElementById('form');
   const aiEvaluationContainer = document.getElementById('aiEvaluationContainer') || createAiContainer();
   const healthRecommendations = document.getElementById('healthRecommendations');
+  const lineLoginBtn = document.getElementById('lineLoginBtn') || createLineLoginButton();
+  const lineUserIdDisplay = document.getElementById('lineUserIdDisplay') || createLineUserIdDisplay();
 
   // 3. 性別相關元素
   const genderRadios = document.querySelectorAll('input[name="gender"]');
@@ -1792,6 +1800,55 @@ document.addEventListener('DOMContentLoaded', function() {
   let localImageName = '';
   let imgbbImageUrl = '';
   let imgbbDeleteUrl = '';
+
+  // 新增：創建LINE登錄按鈕
+  function createLineLoginButton() {
+    const button = document.createElement('button');
+    button.id = 'lineLoginBtn';
+    button.className = 'line-login-btn bg-green-500 text-white py-2 px-4 rounded-md flex items-center justify-center gap-2 mt-3';
+    button.innerHTML = '<i class="fa fa-comment"></i> 使用LINE賬號登錄';
+    button.style.cssText = `
+      background-color: #00C300;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: bold;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 10px;
+    `;
+    
+    // 將按鈕添加到基本信息表單中
+    const nameField = document.getElementById('name');
+    if (nameField && nameField.parentNode) {
+      nameField.parentNode.appendChild(button);
+    } else if (document.getElementById('step1')) {
+      document.getElementById('step1').appendChild(button);
+    }
+    
+    return button;
+  }
+
+  // 新增：創建LINE用戶ID顯示區域
+  function createLineUserIdDisplay() {
+    const display = document.createElement('div');
+    display.id = 'lineUserIdDisplay';
+    display.className = 'line-user-id-display mt-2 text-sm hidden';
+    display.innerHTML = '<strong>LINE用戶ID：</strong><span id="lineUserIdValue"></span>';
+    
+    // 將顯示區域添加到基本信息表單中
+    const lineLoginBtn = document.getElementById('lineLoginBtn');
+    if (lineLoginBtn && lineLoginBtn.parentNode) {
+      lineLoginBtn.parentNode.appendChild(display);
+    } else if (document.getElementById('step1')) {
+      document.getElementById('step1').appendChild(display);
+    }
+    
+    return display;
+  }
 
   // 5. 動態創建AI評估容器
   function createAiContainer() {
@@ -1813,6 +1870,122 @@ document.addEventListener('DOMContentLoaded', function() {
   menuToggle.addEventListener('click', () => {
     mobileMenu.classList.toggle('hidden');
   });
+
+  // 新增：LINE LIFF登錄相關功能
+  async function initializeLineLogin() {
+    try {
+      // 加載LIFF SDK
+      const script = document.createElement('script');
+      script.src = 'https://static.line-scdn.net/liff/edge/2.1/sdk.js';
+      script.onload = async () => {
+        try {
+          // 初始化LIFF
+          await liff.init({ liffId: LIFF_ID });
+          
+          // 檢查是否已登錄
+          if (liff.isLoggedIn()) {
+            // 已登錄，獲取用戶信息
+            await getUserProfile();
+          } else {
+            // 未登錄，顯示登錄按鈕
+            updateLineLoginUI();
+          }
+          
+          // 綁定LINE登錄按鈕事件
+          lineLoginBtn.addEventListener('click', async () => {
+            if (!liff.isLoggedIn()) {
+              // 未登錄狀態，執行登錄
+              lineLoginBtn.innerHTML = '<i class="fa fa-spinner fa-spin mr-2"></i> 登錄中...';
+              lineLoginBtn.disabled = true;
+              
+              try {
+                await liff.login();
+                // 登錄成功後獲取用戶信息
+                await getUserProfile();
+              } catch (error) {
+                console.error('LINE登錄失敗:', error);
+                showToast('LINE登錄失敗，請重試', 'error');
+                updateLineLoginUI();
+              }
+            } else {
+              // 已登錄狀態，執行登出
+              if (confirm('確定要退出LINE登錄嗎？')) {
+                await liff.logout();
+                lineUserId = null;
+                localStorage.removeItem('lineUserId');
+                updateLineLoginUI();
+                showToast('已退出LINE登錄');
+              }
+            }
+          });
+        } catch (error) {
+          console.error('LIFF初始化失敗:', error);
+          showToast('LINE登錄功能初始化失敗，請刷新頁面重試', 'error');
+          lineLoginBtn.innerHTML = '<i class="fa fa-comment"></i> 重試LINE登錄';
+        }
+      };
+      document.body.appendChild(script);
+    } catch (error) {
+      console.error('初始化LINE登錄失敗:', error);
+      showToast('LINE登錄功能加載失敗', 'error');
+    }
+  }
+
+  // 獲取LINE用戶信息
+  async function getUserProfile() {
+    try {
+      if (!liff.isLoggedIn()) {
+        return;
+      }
+      
+      // 獲取用戶信息
+      const profile = await liff.getProfile();
+      lineUserId = profile.userId;
+      
+      // 保存用戶ID到本地存儲
+      localStorage.setItem('lineUserId', lineUserId);
+      
+      // 更新UI
+      updateLineLoginUI();
+      showToast('LINE登錄成功');
+      
+      // 如果有用戶名信息，自動填充
+      if (profile.displayName && document.getElementById('name')) {
+        const nameInput = document.getElementById('name');
+        if (!nameInput.value) {
+          nameInput.value = profile.displayName;
+        }
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('獲取LINE用戶信息失敗:', error);
+      showToast('獲取用戶信息出錯', 'error');
+      return false;
+    }
+  }
+
+  // 更新LINE登錄狀態UI
+  function updateLineLoginUI() {
+    if (lineUserId) {
+      lineLoginBtn.innerHTML = '<i class="fa fa-check"></i> 已通過LINE登錄';
+      lineLoginBtn.disabled = false;
+      lineLoginBtn.style.backgroundColor = '#666';
+      
+      // 顯示用戶ID（可以只顯示部分以保護隱私）
+      const displayId = lineUserId.length > 8 
+        ? lineUserId.substring(0, 4) + '****' + lineUserId.substring(lineUserId.length - 4)
+        : lineUserId;
+      
+      document.getElementById('lineUserIdValue').textContent = displayId;
+      lineUserIdDisplay.classList.remove('hidden');
+    } else {
+      lineLoginBtn.innerHTML = '<i class="fa fa-comment"></i> 使用LINE賬號登錄';
+      lineLoginBtn.disabled = false;
+      lineLoginBtn.style.backgroundColor = '#00C300';
+      lineUserIdDisplay.classList.add('hidden');
+    }
+  }
 
   // -------------------------- 2. 性別選擇驅動UI變化
   genderRadios.forEach(radio => {
@@ -1874,16 +2047,22 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
 
-  // -------------------------- 5. 表單驗證邏輯
+  // -------------------------- 5. 表單驗證邏輯 - 添加LINE用戶ID驗證
   function validateStep(step) {
     let isValid = true;
     clearAllErrors();
 
-    // 步驟1：基本信息驗證
+    // 步驟1：基本信息驗證 - 檢查LINE登錄狀態
     if (step === 1) {
       const name = document.getElementById('name').value.trim();
       const age = document.getElementById('age').value.trim();
       const genderSelected = document.querySelector('input[name="gender"]:checked');
+      
+      // 檢查是否已通過LINE登錄
+      if (!lineUserId) {
+        showError('lineLogin', '請先使用LINE賬號登錄');
+        isValid = false;
+      }
 
       if (!name) { showError('name', '請輸入您的姓名'); isValid = false; }
       if (!age || isNaN(age) || age < 1 || age > 120) { showError('age', '請輸入有效的年齡（1-120歲）'); isValid = false; }
@@ -1918,10 +2097,29 @@ document.addEventListener('DOMContentLoaded', function() {
   function clearAllErrors() {
     document.querySelectorAll('.error-message').forEach(el => el.classList.add('hidden'));
     document.querySelectorAll('input, select, textarea').forEach(el => el.classList.remove('error-input'));
+    
+    // 清除LINE登錄相關錯誤
+    const lineError = document.getElementById('lineLoginError');
+    if (lineError) lineError.classList.add('hidden');
   }
 
-  // 顯示單個錯誤提示
+  // 顯示單個錯誤提示 - 支持LINE登錄錯誤
   function showError(fieldId, message) {
+    // 處理LINE登錄錯誤
+    if (fieldId === 'lineLogin') {
+      let errorElement = document.getElementById('lineLoginError');
+      if (!errorElement) {
+        errorElement = document.createElement('div');
+        errorElement.id = 'lineLoginError';
+        errorElement.className = 'error-message text-red-500 text-sm mt-1 hidden';
+        lineLoginBtn.parentNode.appendChild(errorElement);
+      }
+      errorElement.textContent = message;
+      errorElement.classList.remove('hidden');
+      lineLoginBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+
     const errorElement = document.getElementById(`${fieldId}Error`);
     if (errorElement) {
       errorElement.textContent = message;
@@ -1991,7 +2189,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
-  // -------------------------- 7. 調用後端生成AI評語
+  // -------------------------- 7. 調用後端生成AI評語 - 包含LINE用戶ID
   async function callOpenAIByBackend(healthData) {
     try {
       // 顯示加載狀態
@@ -2004,8 +2202,9 @@ document.addEventListener('DOMContentLoaded', function() {
         </div>
       `;
 
-      // 構建完整請求數據（精簡數據傳輸）
+      // 構建完整請求數據（包含LINE用戶ID）
       const formData = {
+        lineUserId: lineUserId, // 添加LINE用戶ID
         basicInfo: healthData.basicInfo,
         symptoms: healthData.symptoms,
         symptomCount: healthData.symptomCount,
@@ -2024,7 +2223,7 @@ document.addEventListener('DOMContentLoaded', function() {
       });
       
       const requestFn = () => jsonpRequest(
-        `${BACKEND_GOOGLE_SCRIPT_URL}?${params.toString()}`,
+        `${SCRIPT_URL}?${params.toString()}`,
         callbackName
       );
       
@@ -2083,7 +2282,7 @@ document.addEventListener('DOMContentLoaded', function() {
     `;
   }
 
-  // -------------------------- 9. 表單提交
+  // -------------------------- 9. 表單提交 - 包含LINE用戶ID
   submitBtn.addEventListener('click', async () => {
     updateGlobalSymptomData();
     if (!validateStep(4)) return;
@@ -2132,7 +2331,7 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 
   restartBtn.addEventListener('click', () => {
-    // 重置全局數據
+    // 重置全局數據（保留LINE用戶ID）
     globalUniqueSymptoms = [];
     globalUniqueHabits = [];
     globalAiComment = '';
@@ -2151,8 +2350,13 @@ document.addEventListener('DOMContentLoaded', function() {
     // 重置AI評估容器
     aiEvaluationContainer.innerHTML = '';
 
-    // 重置表單元素
+    // 重置表單元素（保留LINE登錄狀態和用戶名）
+    const nameValue = document.getElementById('name').value;
     document.querySelectorAll('input, textarea, select').forEach(el => {
+      if (el.id === 'name') {
+        el.value = nameValue; // 保留用戶名
+        return;
+      }
       if (el.type === 'checkbox' || el.type === 'radio') el.checked = false;
       else el.value = '';
       el.classList.remove('error-input');
@@ -2261,10 +2465,11 @@ document.addEventListener('DOMContentLoaded', function() {
     formContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
-  // -------------------------- 13. 工具函數：收集AI所需精簡健康數據
+  // -------------------------- 13. 工具函數：收集AI所需精簡健康數據 - 包含LINE用戶ID
   function collectHealthData() {
     const selectedGender = document.querySelector('input[name="gender"]:checked');
     return {
+      lineUserId: lineUserId, // 添加LINE用戶ID
       basicInfo: {
         name: document.getElementById('name').value || '未填寫',
         age: document.getElementById('age').value || '未填寫',
@@ -2283,10 +2488,11 @@ document.addEventListener('DOMContentLoaded', function() {
     };
   }
 
-  // -------------------------- 14. 工具函數：收集全量表單數據
+  // -------------------------- 14. 工具函數：收集全量表單數據 - 包含LINE用戶ID
   function collectFullFormData() {
     const selectedGender = document.querySelector('input[name="gender"]:checked');
     return {
+      lineUserId: lineUserId, // 添加LINE用戶ID
       submitTime: new Date().toLocaleString('zh-CN', {
         year: 'numeric', month: '2-digit', day: '2-digit',
         hour: '2-digit', minute: '2-digit', second: '2-digit'
@@ -2342,7 +2548,7 @@ document.addEventListener('DOMContentLoaded', function() {
     return `${bmiValue} ${bmiStatus}`;
   }
 
-  // -------------------------- 16. 提交數據到Google Sheets
+  // -------------------------- 16. 提交數據到Google Sheets - 包含LINE用戶ID
   function submitToGoogleSheets() {
     return requestWithRetry(() => {
       const formData = collectFullFormData();
@@ -2355,7 +2561,7 @@ document.addEventListener('DOMContentLoaded', function() {
       });
 
       return jsonpRequest(
-        `${BACKEND_GOOGLE_SCRIPT_URL}?${params.toString()}`,
+        `${SCRIPT_URL}?${params.toString()}`,
         callbackName
       ).then(response => {
         if (response?.status === 'success') {
@@ -2367,9 +2573,9 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 
-  // -------------------------- 17. 生成評估結果
+  // -------------------------- 17. 生成評估結果 - 顯示LINE用戶ID
   function generateResult() {
-    // 1. 加載基本信息
+    // 1. 加載基本信息（包含LINE用戶ID）
     const name = document.getElementById('name').value || '未填寫';
     const age = document.getElementById('age').value || '未填寫';
     const selectedGender = document.querySelector('input[name="gender"]:checked');
@@ -2383,7 +2589,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const occupation = document.getElementById('occupation').value || '未填寫';
     const bmi = calculateBMI();
 
-    // 2. 渲染基本信息卡片
+    // 2. 渲染基本信息卡片（包含LINE用戶ID）
     const basicInfoContainer = document.getElementById('basicInfo');
     if (basicInfoContainer) {
       basicInfoContainer.style.display = 'block';
@@ -2397,6 +2603,9 @@ document.addEventListener('DOMContentLoaded', function() {
           </div>
           <div class="p-3 border border-gray-100 rounded-lg">
             <p class="text-sm"><strong>性別：</strong> ${gender}</p>
+          </div>
+          <div class="p-3 border border-gray-100 rounded-lg">
+            <p class="text-sm"><strong>LINE ID：</strong> ${lineUserId ? lineUserId.substring(0, 4) + '****' + lineUserId.substring(lineUserId.length - 4) : '未登錄'}</p>
           </div>
           <div class="p-3 border border-gray-100 rounded-lg">
             <p class="text-sm"><strong>電話：</strong> ${phone}</p>
@@ -2419,7 +2628,7 @@ document.addEventListener('DOMContentLoaded', function() {
           <div class="p-3 border border-gray-100 rounded-lg">
             <p class="text-sm"><strong>血糖：</strong> ${bloodSugar}</p>
           </div>
-          <div class="p-3 border border-gray-100 rounded-lg col-span-2">
+          <div class="p-3 border border-gray-100 rounded-lg">
             <p class="text-sm"><strong>職業：</strong> ${occupation}</p>
           </div>
         </div>
@@ -2435,7 +2644,7 @@ document.addEventListener('DOMContentLoaded', function() {
             <p class="text-sm"><strong>姓名：</strong> ${name}</p>
           </div>
           <div class="p-3 border border-gray-100 rounded-lg">
-            <p class="text-sm"><strong>年齡：</strong> ${age} 歲</p>
+            <p class="text-sm"><strong>LINE ID：</strong> ${lineUserId ? lineUserId.substring(0, 4) + '****' + lineUserId.substring(lineUserId.length - 4) : '未登錄'}</p>
           </div>
         </div>
       `;
@@ -3165,18 +3374,22 @@ async function handleImageDownload() {
     });
   }
 
-  // -------------------------- 19. 綁定事件與初始化
+  // -------------------------- 19. 綁定事件與初始化 - 初始化LINE登錄
   if (downloadReportBtn) {
     downloadReportBtn.addEventListener('click', handleImageDownload);
   }
+
+  // 初始化LINE LIFF登錄功能
+  initializeLineLogin();
 
   // 頁面初始化
   updateFormSteps();
   updateGenderBasedUI();
 });
-
-
 </script>
+
+    
+
 
 
     
