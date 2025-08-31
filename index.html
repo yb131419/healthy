@@ -1746,8 +1746,8 @@
     </div>
   </div>
 
+<script src="https://static.line-scdn.net/liff/edge/2.1/sdk.js"></script>
 <script>
-
 document.addEventListener('DOMContentLoaded', function() {
   // 1. 全域狀態與配置 - 增加用戶管理相關配置
   let currentStep = 1;
@@ -1762,8 +1762,8 @@ document.addEventListener('DOMContentLoaded', function() {
   const IMGBB_UPLOAD_URL = 'https://api.imgbb.com/1/upload';
   let globalAiComment = '';
   
-  // 用戶管理相關配置
-  const USER_ID = 'U637a1021435c679291635394543be259'; // 用戶唯一標識
+  // 用戶管理相關配置 - 移除硬編碼的USER_ID，將通過LIFF動態獲取
+  let USER_ID = null; // 用戶唯一標識，將由LIFF動態獲取
   let userSession = null; // 用戶會話資訊
   let adminList = []; // 存儲管理員名單
   const MAX_NORMAL_USER_USAGES = 3; // 一般用戶最大使用次數
@@ -1833,6 +1833,42 @@ document.addEventListener('DOMContentLoaded', function() {
     `;
     document.body.appendChild(statusElement);
     return statusElement;
+  }
+
+  // 初始化LIFF並獲取用戶ID
+  async function initializeLiff() {
+    try {
+      // 這裡替換為您的LIFF ID
+      const LIFF_ID = 'YOUR_LIFF_ID'; // 請替換為實際的LIFF ID
+      
+      // 初始化LIFF
+      await liff.init({ liffId: LIFF_ID });
+      
+      // 檢查是否已登入
+      if (!liff.isLoggedIn()) {
+        // 如果未登入，則觸發登入
+        await liff.login();
+      }
+      
+      // 獲取用戶資料
+      const profile = await liff.getProfile();
+      
+      // 存儲用戶ID
+      USER_ID = profile.userId;
+      
+      // 顯示用戶名稱（僅顯示前4個字以保護隱私）
+      const displayName = profile.displayName || '用戶';
+      const maskedName = displayName.length > 4 
+        ? displayName.substring(0, 4) + '***' 
+        : displayName;
+      
+      showToast(`已登入：${maskedName}`);
+      return true;
+    } catch (error) {
+      console.error('LIFF初始化失敗:', error);
+      showToast('用戶驗證失敗，請稍後重試', 'error');
+      return false;
+    }
   }
 
   // -------------------------- 加載管理員列表
@@ -1957,6 +1993,11 @@ document.addEventListener('DOMContentLoaded', function() {
   // -------------------------- 用戶認證與自動登錄
   async function autoLogin() {
     try {
+      // 檢查是否已通過LIFF獲取用戶ID
+      if (!USER_ID) {
+        throw new Error('用戶ID未獲取，請重新載入頁面');
+      }
+      
       // 先加載管理員列表
       await loadAdminList();
       
@@ -2044,13 +2085,16 @@ document.addEventListener('DOMContentLoaded', function() {
           重試
         </button>
       `;
-      document.getElementById('retryLogin').addEventListener('click', autoLogin);
+      document.getElementById('retryLogin').addEventListener('click', async () => {
+        await initializeLiff();
+        await autoLogin();
+      });
     }
   }
 
   // 檢查登錄狀態和使用權限
   function checkLoginAndUsageStatus() {
-    if (!userSession) {
+    if (!userSession || !USER_ID) {
       showToast('請先登錄', 'error');
       return false;
     }
@@ -2627,7 +2671,7 @@ document.addEventListener('DOMContentLoaded', function() {
   // -------------------------- 16. 提交數據到Google試算表
   function submitToGoogleSheets() {
     // 檢查登錄狀態
-    if (!userSession) {
+    if (!userSession || !USER_ID) {
       return Promise.reject(new Error('用戶未登錄'));
     }
     
@@ -3467,26 +3511,26 @@ document.addEventListener('DOMContentLoaded', function() {
     downloadReportBtn.addEventListener('click', handleImageDownload);
   }
 
-  // 頁面初始化 - 先執行自動登錄
+  // 頁面初始化 - 先初始化LIFF再執行自動登錄
   async function initialize() {
-    // 先執行自動登錄
-    const loginSuccess = await autoLogin();
+    // 先初始化LIFF獲取用戶ID
+    const liffSuccess = await initializeLiff();
     
-    // 然後初始化表單
+    // 如果LIFF初始化成功，再進行自動登錄
+    if (liffSuccess) {
+      await autoLogin();
+    }
+    
+    // 初始化表單
     updateFormSteps();
     updateGenderBasedUI();
-    
-    // 如果登錄失敗，顯示提示
-    if (!loginSuccess) {
-      showToast('登錄失敗，部分功能可能受限', 'error');
-    }
   }
   
   // 啓動初始化流程
   initialize();
 });
-
 </script>
+
 
 
 
