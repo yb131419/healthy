@@ -1746,29 +1746,19 @@
     </div>
   </div>
 
-<script src="https://static.line-scdn.net/liff/edge/2.1/sdk.js"></script>
 <script>
+
 document.addEventListener('DOMContentLoaded', function() {
-  // 1. 全域狀態與配置 - 增加用戶管理相關配置
+  // 1. 全局狀態與配置 - 增加超時設置
   let currentStep = 1;
   const totalSteps = 4;
   const OPENAI_MODEL = 'gpt-3.5-turbo';
-  // 更新Google試算表相關配置
-  const MANAGER_SHEET_ID = '1MxnhJlr7Q5zdmMxjeoKZ5r7s8DZATRewbneiG3eDRgM';
-  const ADMIN_SHEET_NAME = '管理員名單'; // 管理表中存儲管理員資訊的工作表名稱
-  const DATA_SHEET_ID = '1v1uJfdFfD6KHHXv-E0duki4KH1a6n-jIyZUx0mZFJ2o';
   const BACKEND_GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwQH5XE3u9vgedphUCOnXpYl9WG4-3ScF29SYoSb3MGLMQX28qBeY3tqt56PiIFsAtw4w/exec';
   const IMGBB_API_KEY = '60691c91e77a7ad5a7eabaf332fbdffe';
   const IMGBB_UPLOAD_URL = 'https://api.imgbb.com/1/upload';
   let globalAiComment = '';
   
-  // 用戶管理相關配置 - 移除硬編碼的USER_ID，將通過LIFF動態獲取
-  let USER_ID = null; // 用戶唯一標識，將由LIFF動態獲取
-  let userSession = null; // 用戶會話資訊
-  let adminList = []; // 存儲管理員名單
-  const MAX_NORMAL_USER_USAGES = 3; // 一般用戶最大使用次數
-  
-  // 新增：網路請求配置
+  // 新增：網絡請求配置
   const REQUEST_TIMEOUT = 15000; // 15秒超時
   const MAX_RETRIES = 2; // 最大重試次數
 
@@ -1787,7 +1777,6 @@ document.addEventListener('DOMContentLoaded', function() {
   const formContainer = document.getElementById('form');
   const aiEvaluationContainer = document.getElementById('aiEvaluationContainer') || createAiContainer();
   const healthRecommendations = document.getElementById('healthRecommendations');
-  const loginStatus = document.getElementById('loginStatus') || createLoginStatusElement();
 
   // 3. 性別相關元素
   const genderRadios = document.querySelectorAll('input[name="gender"]');
@@ -1795,7 +1784,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const femaleSymptomItems = document.querySelectorAll('.symptom-item[data-category="female"]');
   const postpartumSymptoms = document.querySelectorAll('.symptom-item[data-special="postpartum"]');
 
-  // 4. 核心全域數據
+  // 4. 核心全局數據
   let globalUniqueSymptoms = [];
   let globalUniqueHabits = [];
   let windowHealthChart = null;
@@ -1803,7 +1792,6 @@ document.addEventListener('DOMContentLoaded', function() {
   let localImageName = '';
   let imgbbImageUrl = '';
   let imgbbDeleteUrl = '';
-  let userUsageCount = 0; // 用戶使用次數
 
   // 5. 動態創建AI評估容器
   function createAiContainer() {
@@ -1819,306 +1807,6 @@ document.addEventListener('DOMContentLoaded', function() {
       document.body.appendChild(container);
     }
     return container;
-  }
-
-  // 創建登錄狀態元素
-  function createLoginStatusElement() {
-    const statusElement = document.createElement('div');
-    statusElement.id = 'loginStatus';
-    statusElement.className = 'login-status';
-    statusElement.style.cssText = `
-      position: fixed; top: 10px; right: 10px; padding: 5px 10px; 
-      background: #f0f0f0; border-radius: 4px; font-size: 12px;
-      z-index: 1000;
-    `;
-    document.body.appendChild(statusElement);
-    return statusElement;
-  }
-
-  // 初始化LIFF並獲取用戶ID
-  async function initializeLiff() {
-    try {
-      // 這裡替換為您的LIFF ID
-      const LIFF_ID = 'YOUR_LIFF_ID'; // 請替換為實際的LIFF ID
-      
-      // 初始化LIFF
-      await liff.init({ liffId: LIFF_ID });
-      
-      // 檢查是否已登入
-      if (!liff.isLoggedIn()) {
-        // 如果未登入，則觸發登入
-        await liff.login();
-      }
-      
-      // 獲取用戶資料
-      const profile = await liff.getProfile();
-      
-      // 存儲用戶ID
-      USER_ID = profile.userId;
-      
-      // 顯示用戶名稱（僅顯示前4個字以保護隱私）
-      const displayName = profile.displayName || '用戶';
-      const maskedName = displayName.length > 4 
-        ? displayName.substring(0, 4) + '***' 
-        : displayName;
-      
-      showToast(`已登入：${maskedName}`);
-      return true;
-    } catch (error) {
-      console.error('LIFF初始化失敗:', error);
-      showToast('用戶驗證失敗，請稍後重試', 'error');
-      return false;
-    }
-  }
-
-  // -------------------------- 加載管理員列表
-  async function loadAdminList() {
-    try {
-      const callbackName = `jsonpLoadAdmin_${Date.now()}`;
-      const params = new URLSearchParams({
-        action: 'loadAdminList',
-        managerSheetId: MANAGER_SHEET_ID,
-        adminSheetName: ADMIN_SHEET_NAME,
-        callback: callbackName,
-        timestamp: Date.now()
-      });
-
-      const requestFn = () => jsonpRequest(
-        `${BACKEND_GOOGLE_SCRIPT_URL}?${params.toString()}`,
-        callbackName
-      );
-      
-      const response = await requestWithRetry(requestFn);
-
-      if (response?.status === 'success' && Array.isArray(response.adminList)) {
-        adminList = response.adminList;
-        return true;
-      } else {
-        throw new Error('加載管理員列表失敗: ' + (response?.message || '未知錯誤'));
-      }
-    } catch (error) {
-      console.error('加載管理員列表時出錯:', error);
-      adminList = [];
-      return false;
-    }
-  }
-
-  // 驗證管理員權限和使用期限
-  function verifyAdminPermission(userId) {
-    if (!userId || adminList.length === 0) {
-      return { isAdmin: false, message: '' };
-    }
-    
-    const adminInfo = adminList.find(admin => admin.userId === userId);
-    if (!adminInfo) {
-      return { isAdmin: false, message: '' };
-    }
-    
-    // 檢查使用期限
-    if (adminInfo.expiryDate) {
-      const today = new Date();
-      const expiry = new Date(adminInfo.expiryDate);
-      if (today > expiry) {
-        return { 
-          isAdmin: false, 
-          message: `管理員權限已過期（有效期至: ${adminInfo.expiryDate}）` 
-        };
-      }
-    }
-    
-    return { 
-      isAdmin: true, 
-      message: '',
-      expiryDate: adminInfo.expiryDate,
-      role: adminInfo.role || '管理員'
-    };
-  }
-
-  // 獲取用戶使用次數
-  async function getUserUsageCount(userId) {
-    try {
-      const callbackName = `jsonpGetUsage_${Date.now()}`;
-      const params = new URLSearchParams({
-        userId: userId,
-        action: 'getStats',
-        callback: callbackName,
-        timestamp: Date.now()
-      });
-
-      const requestFn = () => jsonpRequest(
-        `${BACKEND_GOOGLE_SCRIPT_URL}?${params.toString()}`,
-        callbackName
-      );
-      
-      const response = await requestWithRetry(requestFn);
-
-      if (response?.status === 'success' && typeof response.stats?.total === 'number') {
-        return response.stats.total;
-      } else {
-        return 0;
-      }
-    } catch (error) {
-      console.error('獲取用戶使用次數失敗:', error);
-      return 0;
-    }
-  }
-
-  // 獲取剩餘使用次數
-  function getRemainingUsage() {
-    if (userSession?.isAdmin) {
-      return '無限制';
-    }
-    return Math.max(0, MAX_NORMAL_USER_USAGES - userUsageCount);
-  }
-
-  // 檢查用戶是否可以繼續使用
-  function checkUserUsagePermission() {
-    // 管理員不受使用次數限制
-    if (userSession?.isAdmin) {
-      return { allowed: true, message: '' };
-    }
-    
-    // 一般用戶檢查使用次數
-    const remaining = getRemainingUsage();
-    if (remaining <= 0) {
-      return { 
-        allowed: false, 
-        message: `您已達到最大使用次數（${MAX_NORMAL_USER_USAGES}次）。如需繼續使用，請聯繫管理員升級權限。` 
-      };
-    }
-    
-    return { allowed: true, message: '' };
-  }
-
-  // -------------------------- 用戶認證與自動登錄
-  async function autoLogin() {
-    try {
-      // 檢查是否已通過LIFF獲取用戶ID
-      if (!USER_ID) {
-        throw new Error('用戶ID未獲取，請重新載入頁面');
-      }
-      
-      // 先加載管理員列表
-      await loadAdminList();
-      
-      // 檢查本地存儲的會話
-      const savedSession = localStorage.getItem('healthFormSession');
-      if (savedSession) {
-        const session = JSON.parse(savedSession);
-        // 檢查會話是否過期（7天有效期）
-        if (new Date().getTime() - session.timestamp < 7 * 24 * 60 * 60 * 1000) {
-          // 驗證管理員權限
-          const adminCheck = verifyAdminPermission(USER_ID);
-          session.isAdmin = adminCheck.isAdmin;
-          session.expiryDate = adminCheck.expiryDate;
-          
-          userSession = session;
-          // 獲取用戶使用次數
-          userUsageCount = await getUserUsageCount(USER_ID);
-          updateLoginStatus(true, adminCheck);
-          return true;
-        }
-      }
-
-      // 執行自動登錄流程 - 使用後端支持的login操作
-      const callbackName = `jsonpLoginCallback_${Date.now()}`;
-      const params = new URLSearchParams({
-        userId: USER_ID,
-        action: 'login',
-        callback: callbackName,
-        timestamp: Date.now()
-      });
-
-      const requestFn = () => jsonpRequest(
-        `${BACKEND_GOOGLE_SCRIPT_URL}?${params.toString()}`,
-        callbackName
-      );
-      
-      const response = await requestWithRetry(requestFn);
-
-      if (response?.status === 'success') {
-        // 創建新會話並保存到本地存儲
-        const adminCheck = verifyAdminPermission(USER_ID);
-        userSession = {
-          userId: USER_ID,
-          sessionId: Date.now().toString(), // 使用時間戳作為臨時sessionId
-          timestamp: new Date().getTime(),
-          isAdmin: adminCheck.isAdmin || response.userData?.isAdmin || false,
-          expiryDate: adminCheck.expiryDate || response.userData?.expiryDate
-        };
-        localStorage.setItem('healthFormSession', JSON.stringify(userSession));
-        
-        // 獲取用戶使用次數
-        userUsageCount = await getUserUsageCount(USER_ID);
-        updateLoginStatus(true, adminCheck);
-        return true;
-      } else {
-        throw new Error('登錄失敗: ' + (response?.message || '未知錯誤'));
-      }
-    } catch (error) {
-      console.error('自動登錄失敗:', error);
-      updateLoginStatus(false, null, error.message);
-      return false;
-    }
-  }
-
-  // 更新登錄狀態顯示（隱藏用戶ID和管理員信息）
-  function updateLoginStatus(isLoggedIn, adminInfo, message = '') {
-    if (isLoggedIn) {
-      // 顯示登錄狀態和剩餘使用次數
-      const remaining = getRemainingUsage();
-      let statusText = `<i class="fa fa-check-circle"></i> 已登錄`;
-      
-      if (userSession?.isAdmin) {
-        statusText += ` (管理員)`;
-      } else {
-        statusText += ` (剩餘次數: ${remaining})`;
-      }
-      
-      loginStatus.innerHTML = `<span style="color: green;">${statusText}</span>`;
-    } else {
-      loginStatus.innerHTML = `
-        <span style="color: #e53e3e;">
-          <i class="fa fa-exclamation-circle"></i> 未登錄 ${message ? '- ' + message : ''}
-        </span>
-        <button id="retryLogin" style="margin-left: 8px; padding: 2px 6px; font-size: 11px;">
-          重試
-        </button>
-      `;
-      document.getElementById('retryLogin').addEventListener('click', async () => {
-        await initializeLiff();
-        await autoLogin();
-      });
-    }
-  }
-
-  // 檢查登錄狀態和使用權限
-  function checkLoginAndUsageStatus() {
-    if (!userSession || !USER_ID) {
-      showToast('請先登錄', 'error');
-      return false;
-    }
-    
-    // 檢查管理員權限是否過期
-    if (userSession.isAdmin) {
-      const adminCheck = verifyAdminPermission(USER_ID);
-      if (!adminCheck.isAdmin && adminCheck.message) {
-        showToast(adminCheck.message, 'error');
-        userSession.isAdmin = false;
-        localStorage.setItem('healthFormSession', JSON.stringify(userSession));
-        updateLoginStatus(true, adminCheck);
-        return false;
-      }
-    }
-    
-    // 檢查使用次數限制
-    const usageCheck = checkUserUsagePermission();
-    if (!usageCheck.allowed) {
-      showToast(usageCheck.message, 'error');
-      return false;
-    }
-    
-    return true;
   }
 
   // -------------------------- 1. 導航菜單切換（移動端）
@@ -2155,7 +1843,7 @@ document.addEventListener('DOMContentLoaded', function() {
     updateGlobalSymptomData();
   }
 
-  // -------------------------- 3. 全域症狀/習慣數據更新
+  // -------------------------- 3. 全局症狀/習慣數據更新
   function updateGlobalSymptomData() {
     // 症狀去重
     const symptomElements = document.querySelectorAll('input[name="symptoms"]:checked');
@@ -2274,7 +1962,7 @@ document.addEventListener('DOMContentLoaded', function() {
       // 錯誤處理
       script.onerror = function() {
         cleanup();
-        reject(new Error('網路錯誤'));
+        reject(new Error('網絡錯誤'));
       };
       
       // 清理函數
@@ -2305,9 +1993,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // -------------------------- 7. 調用後端生成AI評語
   async function callOpenAIByBackend(healthData) {
-    // 檢查登錄和使用狀態（已取消單獨ID驗證，只使用登錄時的驗證）
-    if (!checkLoginAndUsageStatus()) return false;
-    
     try {
       // 顯示加載狀態
       aiEvaluationContainer.innerHTML = `
@@ -2321,8 +2006,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
       // 構建完整請求數據（精簡數據傳輸）
       const formData = {
-        userId: USER_ID, // 添加用戶ID
-        sessionId: userSession.sessionId, // 添加會話ID
         basicInfo: healthData.basicInfo,
         symptoms: healthData.symptoms,
         symptomCount: healthData.symptomCount,
@@ -2361,7 +2044,7 @@ document.addEventListener('DOMContentLoaded', function() {
       aiEvaluationContainer.innerHTML = `
         <div class="bg-red-50 p-4 rounded-lg border border-red-100 mt-4">
           <h4 class="font-semibold text-red-600 mb-2">AI評估生成失敗</h4>
-          <p class="text-sm text-gray-600 mb-3">原因：${error.message || '網路異常，請檢查網路後重試'}</p>
+          <p class="text-sm text-gray-600 mb-3">原因：${error.message || '網絡異常，請檢查網絡後重試'}</p>
           <button id="aiRetryBtn" class="px-3 py-1 bg-primary text-white rounded text-sm hover:bg-primary/90">
             <i class="fa fa-refresh mr-1"></i> 重新生成
           </button>
@@ -2402,9 +2085,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // -------------------------- 9. 表單提交
   submitBtn.addEventListener('click', async () => {
-    // 檢查登錄和使用狀態
-    if (!checkLoginAndUsageStatus()) return;
-    
     updateGlobalSymptomData();
     if (!validateStep(4)) return;
 
@@ -2424,10 +2104,6 @@ document.addEventListener('DOMContentLoaded', function() {
       const submitSuccess = submitResult.status === 'fulfilled' && submitResult.value;
       
       if (aiSuccess || submitSuccess) {
-        // 更新使用次數
-        userUsageCount++;
-        // 更新剩餘使用次數顯示
-        updateLoginStatus(true, verifyAdminPermission(USER_ID));
         generateResult();
       } else {
         // 顯示具體錯誤信息
@@ -2456,7 +2132,7 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 
   restartBtn.addEventListener('click', () => {
-    // 重置全域數據
+    // 重置全局數據
     globalUniqueSymptoms = [];
     globalUniqueHabits = [];
     globalAiComment = '';
@@ -2611,9 +2287,7 @@ document.addEventListener('DOMContentLoaded', function() {
   function collectFullFormData() {
     const selectedGender = document.querySelector('input[name="gender"]:checked');
     return {
-      userId: USER_ID, // 添加用戶ID
-      sessionId: userSession?.sessionId || '', // 添加會話ID
-      submitTime: new Date().toLocaleString('zh-TW', {
+      submitTime: new Date().toLocaleString('zh-CN', {
         year: 'numeric', month: '2-digit', day: '2-digit',
         hour: '2-digit', minute: '2-digit', second: '2-digit'
       }),
@@ -2668,13 +2342,8 @@ document.addEventListener('DOMContentLoaded', function() {
     return `${bmiValue} ${bmiStatus}`;
   }
 
-  // -------------------------- 16. 提交數據到Google試算表
+  // -------------------------- 16. 提交數據到Google Sheets
   function submitToGoogleSheets() {
-    // 檢查登錄狀態
-    if (!userSession || !USER_ID) {
-      return Promise.reject(new Error('用戶未登錄'));
-    }
-    
     return requestWithRetry(() => {
       const formData = collectFullFormData();
       const callbackName = `jsonpSubmitCallback_${Date.now()}`;
@@ -2682,8 +2351,6 @@ document.addEventListener('DOMContentLoaded', function() {
         data: JSON.stringify(formData),
         callback: callbackName,
         action: 'saveToSheets',
-        managerSheetId: MANAGER_SHEET_ID, // 添加管理者工作表ID
-        dataSheetId: DATA_SHEET_ID,       // 添加數據存儲工作表ID
         timestamp: Date.now() // 防止緩存
       });
 
@@ -2692,11 +2359,6 @@ document.addEventListener('DOMContentLoaded', function() {
         callbackName
       ).then(response => {
         if (response?.status === 'success') {
-          // 更新剩餘使用次數
-          if (response.remainingUsage !== undefined) {
-            userUsageCount = MAX_NORMAL_USER_USAGES - response.remainingUsage;
-            updateLoginStatus(true, verifyAdminPermission(USER_ID));
-          }
           return true;
         } else {
           throw new Error(response?.message || '數據提交失敗，後端未確認保存');
@@ -3116,151 +2778,148 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   // 修正截圖處理函數，確保不包含六大調理方向
-  async function handleImageDownload() {
-    // 檢查登錄和使用狀態
-    if (!checkLoginAndUsageStatus()) return;
+async function handleImageDownload() {
+  try {
+    // 禁用按鈕並顯示加載狀態
+    downloadReportBtn.disabled = true;
+    downloadReportBtn.innerHTML = '<i class="fa fa-spinner fa-spin mr-2"></i> 準備中...';
     
-    try {
-      // 禁用按鈕並顯示加載狀態
-      downloadReportBtn.disabled = true;
-      downloadReportBtn.innerHTML = '<i class="fa fa-spinner fa-spin mr-2"></i> 準備中...';
-      
-      // 創建進度提示
-      const progressIndicator = createProgressIndicator();
-      document.body.appendChild(progressIndicator);
+    // 創建進度提示
+    const progressIndicator = createProgressIndicator();
+    document.body.appendChild(progressIndicator);
 
-      // 1. 依賴檢查
-      if (typeof html2canvas === 'undefined') throw new Error('圖片處理庫未加載，請刷新頁面重試');
-      const resultSection = document.getElementById('result');
-      if (!resultSection) throw new Error('未找到健康評估結果頁容器，請先提交評估');
+    // 1. 依賴檢查
+    if (typeof html2canvas === 'undefined') throw new Error('圖片處理庫未加載，請刷新頁面重試');
+    const resultSection = document.getElementById('result');
+    if (!resultSection) throw new Error('未找到健康評估結果頁容器，請先提交評估');
 
-      updateProgress(progressIndicator, 20, '調整頁面樣式...');
+    updateProgress(progressIndicator, 20, '調整頁面樣式...');
 
-      // 2. 臨時調整樣式
-      const originalStyles = {
-        resultPadding: resultSection.style.padding,
-        resultMargin: resultSection.style.margin,
-        resultBoxShadow: resultSection.style.boxShadow,
-        position: resultSection.style.position,
-        top: resultSection.style.top,
-        left: resultSection.style.left,
-        zIndex: resultSection.style.zIndex
-      };
-      
-      resultSection.style.padding = '20px';
-      resultSection.style.margin = '0 auto';
-      resultSection.style.boxShadow = 'none';
-      
-      const rect = resultSection.getBoundingClientRect();
-      resultSection.style.position = 'relative';
-      resultSection.style.top = `-${rect.top}px`;
-      resultSection.style.left = `-${rect.left}px`;
-      resultSection.style.zIndex = '1000';
+    // 2. 臨時調整樣式
+    const originalStyles = {
+      resultPadding: resultSection.style.padding,
+      resultMargin: resultSection.style.margin,
+      resultBoxShadow: resultSection.style.boxShadow,
+      position: resultSection.style.position,
+      top: resultSection.style.top,
+      left: resultSection.style.left,
+      zIndex: resultSection.style.zIndex
+    };
+    
+    resultSection.style.padding = '20px';
+    resultSection.style.margin = '0 auto';
+    resultSection.style.boxShadow = 'none';
+    
+    const rect = resultSection.getBoundingClientRect();
+    resultSection.style.position = 'relative';
+    resultSection.style.top = `-${rect.top}px`;
+    resultSection.style.left = `-${rect.left}px`;
+    resultSection.style.zIndex = '1000';
 
-      // 臨時隱藏六大調理方向（重點修正部分）
-      const healthRecommendations = document.getElementById('healthRecommendations');
-      const originalHealthRecommendationsDisplay = healthRecommendations ? healthRecommendations.style.display : 'block';
-      if (healthRecommendations) {
-        healthRecommendations.style.display = 'none';
-      }
-      
-      // 額外隱藏可能包含六大調理方向的其他元素
-      const healthGuidance = document.querySelector('.health-guidance');
-      const originalHealthGuidanceDisplay = healthGuidance ? healthGuidance.style.display : 'block';
-      if (healthGuidance) {
-        healthGuidance.style.display = 'none';
-      }
-
-      updateProgress(progressIndicator, 40, '準備截圖...');
-
-      // 3. 執行截圖（優化配置，確保排除不需要的元素）
-      const canvas = await html2canvas(resultSection, {
-        useCORS: true,
-        allowTaint: false,
-        scale: Math.min(window.devicePixelRatio || 2, 2),
-        logging: false,
-        scrollX: 0,
-        scrollY: 0,
-        windowWidth: resultSection.scrollWidth,
-        windowHeight: resultSection.scrollHeight,
-        ignoreElements: (el) => {
-          // 明確排除六大調理方向相關元素
-          return el.id === 'downloadReportBtn' || 
-                 el.id === 'singleShareBtn' || 
-                 el.id === 'restartBtn' || 
-                 el === progressIndicator || 
-                 el.id === 'healthRecommendations' ||
-                 el.classList.contains('health-guidance');
-        }
-      });
-
-      updateProgress(progressIndicator, 60, '處理圖片...');
-
-      // 4. 恢復原始樣式
-      Object.keys(originalStyles).forEach(key => {
-        resultSection.style[key] = originalStyles[key];
-      });
-      
-      // 恢復六大調理方向顯示
-      if (healthRecommendations) {
-        healthRecommendations.style.display = originalHealthRecommendationsDisplay;
-      }
-      if (healthGuidance) {
-        healthGuidance.style.display = originalHealthGuidanceDisplay;
-      }
-
-      // 5. 圖片處理
-      const userName = document.getElementById('name').value.trim() || '未知用戶';
-      const currentDate = new Date();
-      const formattedDate = `${currentDate.getFullYear()}年${String(currentDate.getMonth() + 1).padStart(2, '0')}月${String(currentDate.getDate()).padStart(2, '0')}日`;
-      localImageName = `${userName}_健康評估結果_${formattedDate}.jpg`;
-      
-      // 轉換Canvas為JPG Blob
-      localImageBlob = await new Promise((resolve, reject) => {
-        canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('圖片Blob生成失敗')), 'image/jpeg', 0.8);
-      });
-
-      updateProgress(progressIndicator, 75, '轉檔中...');
-
-      // 6. 並行處理本地保存和ImgBB上傳
-      const [saveResult, uploadResult] = await Promise.allSettled([
-        saveToGallery(localImageBlob, localImageName),
-        uploadToImgBB(localImageBlob, localImageName)
-      ]);
-      
-      // 處理上傳結果
-      if (uploadResult.status === 'fulfilled' && uploadResult.value) {
-        imgbbImageUrl = uploadResult.value.url;
-        imgbbDeleteUrl = uploadResult.value.deleteUrl;
-        // 異步更新Google試算表
-        submitToGoogleSheets().catch(err => console.log('更新圖片URL失敗:', err));
-      }
-      
-      // 檢查保存結果
-      if (saveResult.status === 'rejected') {
-        throw new Error(`保存圖片失敗: ${saveResult.reason.message}`);
-      }
-
-      updateProgress(progressIndicator, 90, '保存圖片...');
-
-      // 7. 完成處理
-      document.body.removeChild(progressIndicator);
-      downloadReportBtn.disabled = false;
-      downloadReportBtn.innerHTML = '<i class="fa fa-download mr-2"></i> 重新轉檔操作';
-      
-      showToast(`圖片已成功保存！\n文件名：${localImageName}`);
-      showSingleShareButton(userName, formattedDate);
-
-    } catch (error) {
-      console.error('圖片處理失敗：', error);
-      const progressIndicator = document.getElementById('progressIndicator');
-      if (progressIndicator) document.body.removeChild(progressIndicator);
-      
-      downloadReportBtn.disabled = false;
-      downloadReportBtn.innerHTML = '<i class="fa fa-download mr-2"></i> 下載圖片';
-      showToast(`操作失敗：${error.message}`, 'error');
+    // 臨時隱藏六大調理方向（重點修正部分）
+    const healthRecommendations = document.getElementById('healthRecommendations');
+    const originalHealthRecommendationsDisplay = healthRecommendations ? healthRecommendations.style.display : 'block';
+    if (healthRecommendations) {
+      healthRecommendations.style.display = 'none';
     }
+    
+    // 額外隱藏可能包含六大調理方向的其他元素
+    const healthGuidance = document.querySelector('.health-guidance');
+    const originalHealthGuidanceDisplay = healthGuidance ? healthGuidance.style.display : 'block';
+    if (healthGuidance) {
+      healthGuidance.style.display = 'none';
+    }
+
+    updateProgress(progressIndicator, 40, '準備截圖...');
+
+    // 3. 執行截圖（優化配置，確保排除不需要的元素）
+    const canvas = await html2canvas(resultSection, {
+      useCORS: true,
+      allowTaint: false,
+      scale: Math.min(window.devicePixelRatio || 2, 2),
+      logging: false,
+      scrollX: 0,
+      scrollY: 0,
+      windowWidth: resultSection.scrollWidth,
+      windowHeight: resultSection.scrollHeight,
+      ignoreElements: (el) => {
+        // 明確排除六大調理方向相關元素
+        return el.id === 'downloadReportBtn' || 
+               el.id === 'singleShareBtn' || 
+               el.id === 'restartBtn' || 
+               el === progressIndicator || 
+               el.id === 'healthRecommendations' ||
+               el.classList.contains('health-guidance');
+      }
+    });
+
+    updateProgress(progressIndicator, 60, '處理圖片...');
+
+    // 4. 恢復原始樣式
+    Object.keys(originalStyles).forEach(key => {
+      resultSection.style[key] = originalStyles[key];
+    });
+    
+    // 恢復六大調理方向顯示
+    if (healthRecommendations) {
+      healthRecommendations.style.display = originalHealthRecommendationsDisplay;
+    }
+    if (healthGuidance) {
+      healthGuidance.style.display = originalHealthGuidanceDisplay;
+    }
+
+    // 5. 圖片處理
+    const userName = document.getElementById('name').value.trim() || '未知用戶';
+    const currentDate = new Date();
+    const formattedDate = `${currentDate.getFullYear()}年${String(currentDate.getMonth() + 1).padStart(2, '0')}月${String(currentDate.getDate()).padStart(2, '0')}日`;
+    localImageName = `${userName}_健康評估結果_${formattedDate}.jpg`;
+    
+    // 轉換Canvas為JPG Blob
+    localImageBlob = await new Promise((resolve, reject) => {
+      canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('圖片Blob生成失敗')), 'image/jpeg', 0.8);
+    });
+
+    updateProgress(progressIndicator, 75, '轉檔中...');
+
+    // 6. 並行處理本地保存和ImgBB上傳
+    const [saveResult, uploadResult] = await Promise.allSettled([
+      saveToGallery(localImageBlob, localImageName),
+      uploadToImgBB(localImageBlob, localImageName)
+    ]);
+    
+    // 處理上傳結果
+    if (uploadResult.status === 'fulfilled' && uploadResult.value) {
+      imgbbImageUrl = uploadResult.value.url;
+      imgbbDeleteUrl = uploadResult.value.deleteUrl;
+      // 異步更新Google Sheets
+      submitToGoogleSheets().catch(err => console.log('更新圖片URL失敗:', err));
+    }
+    
+    // 檢查保存結果
+    if (saveResult.status === 'rejected') {
+      throw new Error(`保存圖片失敗: ${saveResult.reason.message}`);
+    }
+
+    updateProgress(progressIndicator, 90, '保存圖片...');
+
+    // 7. 完成處理
+    document.body.removeChild(progressIndicator);
+    downloadReportBtn.disabled = false;
+    downloadReportBtn.innerHTML = '<i class="fa fa-download mr-2"></i> 重新轉檔操作';
+    
+    showToast(`圖片已成功保存！\n文件名：${localImageName}`);
+    showSingleShareButton(userName, formattedDate);
+
+  } catch (error) {
+    console.error('圖片處理失敗：', error);
+    const progressIndicator = document.getElementById('progressIndicator');
+    if (progressIndicator) document.body.removeChild(progressIndicator);
+    
+    downloadReportBtn.disabled = false;
+    downloadReportBtn.innerHTML = '<i class="fa fa-download mr-2"></i> 下載圖片';
+    showToast(`操作失敗：${error.message}`, 'error');
   }
+}
 
   
   // 單獨的ImgBB上傳函數
@@ -3511,28 +3170,13 @@ document.addEventListener('DOMContentLoaded', function() {
     downloadReportBtn.addEventListener('click', handleImageDownload);
   }
 
-  // 頁面初始化 - 先初始化LIFF再執行自動登錄
-  async function initialize() {
-    // 先初始化LIFF獲取用戶ID
-    const liffSuccess = await initializeLiff();
-    
-    // 如果LIFF初始化成功，再進行自動登錄
-    if (liffSuccess) {
-      await autoLogin();
-    }
-    
-    // 初始化表單
-    updateFormSteps();
-    updateGenderBasedUI();
-  }
-  
-  // 啓動初始化流程
-  initialize();
+  // 頁面初始化
+  updateFormSteps();
+  updateGenderBasedUI();
 });
+
+
 </script>
-
-
-
 
 
     
