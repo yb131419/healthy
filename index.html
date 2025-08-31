@@ -1754,29 +1754,21 @@ document.addEventListener('DOMContentLoaded', function() {
   const OPENAI_MODEL = 'gpt-3.5-turbo';
   // 更新Google工作表相關配置
   const MANAGER_SHEET_ID = '1MxnhJlr7Q5zdmMxjeoKZ5r7s8DZATRewbneiG3eDRgM';
+  const ADMIN_SHEET_NAME = '管理员名单'; // 管理表中存儲管理员信息的工作表名稱
   const DATA_SHEET_ID = '1v1uJfdFfD6KHHXv-E0duki4KH1a6n-jIyZUx0mZFJ2o';
   const BACKEND_GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwQH5XE3u9vgedphUCOnXpYl9WG4-3ScF29SYoSb3MGLMQX28qBeY3tqt56PiIFsAtw4w/exec';
   const IMGBB_API_KEY = '60691c91e77a7ad5a7eabaf332fbdffe';
   const IMGBB_UPLOAD_URL = 'https://api.imgbb.com/1/upload';
   let globalAiComment = '';
   
-  // 用戶管理相關配置 - 修正：確保用戶ID正確獲取
-  let USER_ID = ''; // 初始化為空，將通過LIFF或其他方式獲取
+  // 用戶管理相關配置
+  const USER_ID = 'U637a1021435c679291635394543be259'; // 用戶唯一標識
   let userSession = null; // 用戶會話信息
+  let adminList = []; // 存儲管理员名单
   
   // 新增：網絡請求配置
   const REQUEST_TIMEOUT = 15000; // 15秒超時
-  const MAX_RETRIES = 3; // 增加重試次數為3次
-  const SESSION_EXPIRY = 7 * 24 * 60 * 60 * 1000; // 7天有效期，單獨定義便於維護
-  
-  // 基礎健康數據模板 - 確保完整性
-  const baseHealthData = {
-    appVersion: '1.0.2',
-    deviceType: detectDeviceType(),
-    browserInfo: navigator.userAgent,
-    lastLoginDate: null,
-    language: 'zh-CN'
-  };
+  const MAX_RETRIES = 2; // 最大重試次數
 
   // 2. DOM元素獲取（含AI評估容器）
   const menuToggle = document.getElementById('menuToggle');
@@ -1794,8 +1786,6 @@ document.addEventListener('DOMContentLoaded', function() {
   const aiEvaluationContainer = document.getElementById('aiEvaluationContainer') || createAiContainer();
   const healthRecommendations = document.getElementById('healthRecommendations');
   const loginStatus = document.getElementById('loginStatus') || createLoginStatusElement();
-  // 新增：添加LINE用戶ID輸入框引用（如果存在）
-  const lineUserIdInput = document.getElementById('lineUserId');
 
   // 3. 性別相關元素
   const genderRadios = document.querySelectorAll('input[name="gender"]');
@@ -1842,101 +1832,16 @@ document.addEventListener('DOMContentLoaded', function() {
     return statusElement;
   }
 
-  // 檢測設備類型
-  function detectDeviceType() {
-    const userAgent = navigator.userAgent;
-    if (/mobile/i.test(userAgent)) {
-      return 'mobile';
-    } else if (/tablet/i.test(userAgent) || /iPad|PlayBook/.test(userAgent)) {
-      return 'tablet';
-    }
-    return 'desktop';
-  }
-
-  // -------------------------- 新增：從LINE獲取用戶ID的函數
-  async function getLineUserId() {
-    // 檢查是否在LINE環境中
-    if (window.LINE_ENV) {
-      try {
-        // 嘗試通過LINE SDK獲取用戶ID
-        if (window.liff && typeof window.liff.getProfile === 'function') {
-          const profile = await window.liff.getProfile();
-          return profile.userId;
-        }
-      } catch (error) {
-        console.error('從LINE獲取用戶ID失敗:', error);
-      }
-    }
-    
-    // 從輸入框獲取（如果存在）
-    if (lineUserIdInput && lineUserIdInput.value) {
-      return lineUserIdInput.value;
-    }
-    
-    // 從本地存儲獲取
-    const storedUserId = localStorage.getItem('healthFormUserId');
-    if (storedUserId) {
-      return storedUserId;
-    }
-    
-    // 生成臨時用戶ID（作為最後的備選方案）
-    const tempUserId = 'TEMP_' + Math.random().toString(36).substr(2, 9) + '_' + new Date().getTime();
-    localStorage.setItem('healthFormUserId', tempUserId);
-    return tempUserId;
-  }
-
-  // -------------------------- 用戶認證與自動登錄 - 修正：確保正確獲取和使用USER_ID
-  async function autoLogin() {
+  // -------------------------- 加載管理員列表
+  async function loadAdminList() {
     try {
-      // 首先獲取用戶ID - 關鍵修復點
-      USER_ID = await getLineUserId();
-      if (!USER_ID) {
-        throw new Error('無法獲取用戶ID，請確保已登錄LINE或刷新頁面重試');
-      }
-      
-      // 檢查本地存儲的會話
-      const savedSession = localStorage.getItem('healthFormSession');
-      if (savedSession) {
-        try {
-          const session = JSON.parse(savedSession);
-          // 檢查會話是否過期
-          if (new Date().getTime() - session.timestamp < SESSION_EXPIRY) {
-            // 驗證會話有效性
-            if (await validateSession(session)) {
-              userSession = session;
-              updateLoginStatus(true);
-              return true;
-            } else {
-              console.log('會話無效，需要重新登錄');
-              localStorage.removeItem('healthFormSession');
-            }
-          } else {
-            console.log('會話已過期');
-            localStorage.removeItem('healthFormSession');
-          }
-        } catch (e) {
-          console.error('解析會話數據失敗:', e);
-          localStorage.removeItem('healthFormSession');
-        }
-      }
-
-      // 執行自動登錄流程 - 確保提供完整的基礎健康數據
-      const callbackName = `jsonpLoginCallback_${Date.now()}`;
-      
-      // 構建完整的登錄數據，包含所有必要的基礎健康信息
-      const loginData = {
-        ...baseHealthData,
-        userId: USER_ID,
-        authType: 'auto',
-        requestTime: new Date().toISOString()
-      };
-
+      const callbackName = `jsonpLoadAdmin_${Date.now()}`;
       const params = new URLSearchParams({
-        userId: USER_ID,
-        action: 'authenticateUser',
+        action: 'loadAdminList',
+        managerSheetId: MANAGER_SHEET_ID,
+        adminSheetName: ADMIN_SHEET_NAME,
         callback: callbackName,
-        timestamp: Date.now(),
-        data: JSON.stringify(loginData) // 發送完整數據
+        timestamp: Date.now()
       });
 
       const requestFn = () => jsonpRequest(
@@ -1946,77 +1851,128 @@ document.addEventListener('DOMContentLoaded', function() {
       
       const response = await requestWithRetry(requestFn);
 
-      if (response?.status === 'success' && response.sessionId) {
-        // 創建新會話並保存到本地存儲
-        userSession = {
-          userId: USER_ID,
-          sessionId: response.sessionId,
-          timestamp: new Date().getTime(),
-          userData: response.userData || {},
-          expiresIn: SESSION_EXPIRY
-        };
-        localStorage.setItem('healthFormSession', JSON.stringify(userSession));
-        updateLoginStatus(true);
+      if (response?.status === 'success' && Array.isArray(response.adminList)) {
+        adminList = response.adminList;
         return true;
       } else {
-        const errorMsg = response?.message || '未知錯誤';
-        console.error('登錄失敗:', errorMsg);
-        // 詳細錯誤分類處理
-        if (errorMsg.includes('數據不完整')) {
-          throw new Error('登錄失敗: 基礎健康數據不完整，請填寫必要信息');
-        } else if (errorMsg.includes('權限')) {
-          throw new Error('登錄失敗: 沒有訪問權限');
-        } else {
-          throw new Error('登錄失敗: ' + errorMsg);
-        }
+        throw new Error('加載管理員列表失敗: ' + (response?.message || '未知錯誤'));
       }
     } catch (error) {
-      console.error('自動登錄失敗:', error);
-      updateLoginStatus(false, error.message);
+      console.error('加載管理員列表時出錯:', error);
+      adminList = [];
       return false;
     }
   }
 
-  // 驗證會話有效性
-  async function validateSession(session) {
+  // 驗證管理員權限和使用期限
+  function verifyAdminPermission(userId) {
+    if (!userId || adminList.length === 0) {
+      return { isAdmin: false, message: '' };
+    }
+    
+    const adminInfo = adminList.find(admin => admin.userId === userId);
+    if (!adminInfo) {
+      return { isAdmin: false, message: '' };
+    }
+    
+    // 檢查使用期限
+    if (adminInfo.expiryDate) {
+      const today = new Date();
+      const expiry = new Date(adminInfo.expiryDate);
+      if (today > expiry) {
+        return { 
+          isAdmin: false, 
+          message: `管理員權限已過期（有效期至: ${adminInfo.expiryDate}）` 
+        };
+      }
+    }
+    
+    return { 
+      isAdmin: true, 
+      message: '',
+      expiryDate: adminInfo.expiryDate,
+      role: adminInfo.role || '管理員'
+    };
+  }
+
+  // -------------------------- 用戶認證與自動登錄
+  async function autoLogin() {
     try {
-      const callbackName = `jsonpValidateSession_${Date.now()}`;
+      // 先加載管理員列表
+      await loadAdminList();
+      
+      // 檢查本地存儲的會話
+      const savedSession = localStorage.getItem('healthFormSession');
+      if (savedSession) {
+        const session = JSON.parse(savedSession);
+        // 檢查會話是否過期（7天有效期）
+        if (new Date().getTime() - session.timestamp < 7 * 24 * 60 * 60 * 1000) {
+          // 驗證管理員權限
+          const adminCheck = verifyAdminPermission(USER_ID);
+          session.isAdmin = adminCheck.isAdmin;
+          session.expiryDate = adminCheck.expiryDate;
+          
+          userSession = session;
+          updateLoginStatus(true, adminCheck);
+          return true;
+        }
+      }
+
+      // 執行自動登錄流程 - 使用後端支持的login操作
+      const callbackName = `jsonpLoginCallback_${Date.now()}`;
       const params = new URLSearchParams({
         userId: USER_ID,
-        sessionId: session.sessionId,
-        action: 'validateSession',
+        action: 'login', // 修改為後端支持的login操作
         callback: callbackName,
         timestamp: Date.now()
       });
 
-      const response = await jsonpRequest(
+      const requestFn = () => jsonpRequest(
         `${BACKEND_GOOGLE_SCRIPT_URL}?${params.toString()}`,
         callbackName
       );
+      
+      const response = await requestWithRetry(requestFn);
 
-      return response?.status === 'success';
+      if (response?.status === 'success') {
+        // 創建新會話並保存到本地存儲
+        const adminCheck = verifyAdminPermission(USER_ID);
+        userSession = {
+          userId: USER_ID,
+          sessionId: Date.now().toString(), // 使用時間戳作為臨時sessionId
+          timestamp: new Date().getTime(),
+          isAdmin: adminCheck.isAdmin || response.userData?.isAdmin || false,
+          expiryDate: adminCheck.expiryDate || response.userData?.expiryDate
+        };
+        localStorage.setItem('healthFormSession', JSON.stringify(userSession));
+        updateLoginStatus(true, adminCheck);
+        return true;
+      } else {
+        throw new Error('登錄失敗: ' + (response?.message || '未知錯誤'));
+      }
     } catch (error) {
-      console.error('會話驗證失敗:', error);
+      console.error('自動登錄失敗:', error);
+      updateLoginStatus(false, null, error.message);
       return false;
     }
   }
 
-  // 更新登錄狀態顯示 - 修正：顯示用戶ID信息
-  function updateLoginStatus(isLoggedIn, message = '') {
-    if (isLoggedIn && userSession) {
-      const lastLogin = userSession.timestamp 
-        ? new Date(userSession.timestamp).toLocaleString()
-        : '未知';
-      // 顯示部分用戶ID以保護隱私
-      const displayUserId = USER_ID.length > 8 ? USER_ID.substring(0, 8) + '...' : USER_ID;
-      loginStatus.innerHTML = `
-        <span style="color: green;">
-          <i class="fa fa-check-circle"></i> 已登錄 (用戶ID: ${displayUserId})
-        </span>
-        <span style="margin-left: 8px; font-size: 11px; color: #666;">
-          上次登錄: ${lastLogin}
-        </span>
-      `;
+  // 更新登錄狀態顯示
+  function updateLoginStatus(isLoggedIn, adminInfo, message = '') {
+    if (isLoggedIn) {
+      const isAdmin = adminInfo?.isAdmin || userSession?.isAdmin;
+      const expiryDate = adminInfo?.expiryDate || userSession?.expiryDate;
+      const role = adminInfo?.role || '管理員';
+      
+      let statusText = `<i class="fa fa-check-circle"></i> 已登錄 (用戶ID: ${USER_ID.slice(0, 8)}...)`;
+      if (isAdmin) {
+        statusText += ` - ${role}`;
+        if (expiryDate) {
+          statusText += ` (有效期至: ${expiryDate})`;
+        }
+      }
+      
+      loginStatus.innerHTML = `<span style="color: green;">${statusText}</span>`;
     } else {
       loginStatus.innerHTML = `
         <span style="color: #e53e3e;">
@@ -2026,62 +1982,29 @@ document.addEventListener('DOMContentLoaded', function() {
           重試
         </button>
       `;
-      // 確保只綁定一次事件
-      const retryBtn = document.getElementById('retryLogin');
-      if (retryBtn) {
-        // 先移除可能存在的事件監聽
-        retryBtn.removeEventListener('click', autoLogin);
-        retryBtn.addEventListener('click', autoLogin);
-      }
+      document.getElementById('retryLogin').addEventListener('click', autoLogin);
     }
   }
 
-  // 檢查登錄狀態，帶重試機制
-  async function checkLoginStatus(showToastMsg = true) {
-    if (!userSession || !USER_ID) {
-      if (showToastMsg) showToast('請先登錄', 'error');
-      // 嘗試重新登錄
-      return await autoLogin();
+  // 檢查登錄狀態
+  function checkLoginStatus() {
+    if (!userSession) {
+      showToast('請先登錄', 'error');
+      return false;
     }
-    // 檢查會話是否即將過期（1小時內）
-    const timeLeft = userSession.timestamp + userSession.expiresIn - new Date().getTime();
-    if (timeLeft < 3600000) {
-      console.log('會話即將過期，嘗試刷新會話');
-      // 後台刷新會話
-      refreshSession();
-    }
-    return true;
-  }
-
-  // 刷新會話有效期
-  async function refreshSession() {
-    if (!userSession || !USER_ID) return false;
     
-    try {
-      const callbackName = `jsonpRefreshSession_${Date.now()}`;
-      const params = new URLSearchParams({
-        userId: USER_ID,
-        sessionId: userSession.sessionId,
-        action: 'refreshSession',
-        callback: callbackName,
-        timestamp: Date.now()
-      });
-
-      const response = await jsonpRequest(
-        `${BACKEND_GOOGLE_SCRIPT_URL}?${params.toString()}`,
-        callbackName
-      );
-
-      if (response?.status === 'success') {
-        // 更新會話時間戳
-        userSession.timestamp = new Date().getTime();
+    // 檢查管理員權限是否過期
+    if (userSession.isAdmin) {
+      const adminCheck = verifyAdminPermission(USER_ID);
+      if (!adminCheck.isAdmin && adminCheck.message) {
+        showToast(adminCheck.message, 'error');
+        userSession.isAdmin = false;
         localStorage.setItem('healthFormSession', JSON.stringify(userSession));
-        return true;
+        updateLoginStatus(true, adminCheck);
       }
-    } catch (error) {
-      console.error('會話刷新失敗:', error);
     }
-    return false;
+    
+    return true;
   }
 
   // -------------------------- 1. 導航菜單切換（移動端）
@@ -2259,7 +2182,6 @@ document.addEventListener('DOMContentLoaded', function() {
       return await requestFn();
     } catch (error) {
       if (retries > 0) {
-        console.log(`請求失敗，將在${delay}ms後重試，剩餘次數: ${retries}`);
         await new Promise(resolve => setTimeout(resolve, delay));
         return requestWithRetry(requestFn, retries - 1, delay * 2); // 指數退避
       }
@@ -2267,15 +2189,10 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
-  // -------------------------- 7. 調用後端生成AI評語 - 修正：確保正確傳遞用戶ID
+  // -------------------------- 7. 調用後端生成AI評語
   async function callOpenAIByBackend(healthData) {
-    // 檢查登錄狀態和用戶ID - 關鍵修復點
-    if (!USER_ID) {
-      showToast('用戶ID缺失，無法生成AI評估', 'error');
-      return false;
-    }
-    
-    if (!await checkLoginStatus()) return false;
+    // 檢查登錄狀態
+    if (!checkLoginStatus()) return false;
     
     try {
       // 顯示加載狀態
@@ -2290,7 +2207,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
       // 構建完整請求數據（精簡數據傳輸）
       const formData = {
-        userId: USER_ID, // 確保用戶ID被正確傳遞 - 關鍵修復點
+        userId: USER_ID, // 添加用戶ID
         sessionId: userSession.sessionId, // 添加會話ID
         basicInfo: healthData.basicInfo,
         symptoms: healthData.symptoms,
@@ -2300,18 +2217,12 @@ document.addEventListener('DOMContentLoaded', function() {
         healthIssues: healthData.healthIssues
       };
 
-      // 驗證用戶ID是否存在 - 關鍵修復點
-      if (!formData.userId) {
-        throw new Error('用戶ID為空，無法生成AI評估');
-      }
-
       // 使用帶重試的JSONP請求
       const callbackName = `jsonpAiCallback_${Date.now()}`;
       const params = new URLSearchParams({
         data: JSON.stringify(formData),
         callback: callbackName,
         action: 'generateAiComment',
-        userId: USER_ID, // 額外作為URL參數傳遞 - 關鍵修復點
         timestamp: Date.now() // 防止緩存
       });
       
@@ -2321,17 +2232,6 @@ document.addEventListener('DOMContentLoaded', function() {
       );
       
       const response = await requestWithRetry(requestFn);
-
-      // 處理後端可能返回的用戶ID錯誤 - 關鍵修復點
-      if (response?.status === 'error' && response.message.includes('缺少用戶ID')) {
-        // 嘗試重新獲取用戶ID並再次嘗試
-        USER_ID = await getLineUserId();
-        if (USER_ID) {
-          return callOpenAIByBackend(healthData);
-        } else {
-          throw new Error('無法獲取有效的用戶ID，無法生成AI評估');
-        }
-      }
 
       if (response?.status === 'success' && response.aiComment) {
         globalAiComment = response.aiComment;
@@ -2348,33 +2248,11 @@ document.addEventListener('DOMContentLoaded', function() {
         <div class="bg-red-50 p-4 rounded-lg border border-red-100 mt-4">
           <h4 class="font-semibold text-red-600 mb-2">AI評估生成失敗</h4>
           <p class="text-sm text-gray-600 mb-3">原因：${error.message || '網絡異常，請檢查網絡後重試'}</p>
-          ${error.message.includes('用戶ID') ? `
-            <p class="text-sm text-orange-600 mb-3">
-              <i class="fa fa-info-circle mr-1"></i> 請嘗試重新登錄以獲取用戶ID
-            </p>
-            <button id="reLoginBtn" class="px-3 py-1 bg-orange-500 text-white rounded text-sm hover:bg-orange-600 mr-2">
-              <i class="fa fa-user-circle mr-1"></i> 重新登錄
-            </button>
-          ` : ''}
           <button id="aiRetryBtn" class="px-3 py-1 bg-primary text-white rounded text-sm hover:bg-primary/90">
             <i class="fa fa-refresh mr-1"></i> 重新生成
           </button>
         </div>
       `;
-      // 綁定重新登錄事件 - 關鍵修復點
-      document.getElementById('reLoginBtn')?.addEventListener('click', async () => {
-        // 清除舊會話
-        localStorage.removeItem('healthFormSession');
-        userSession = null;
-        USER_ID = '';
-        
-        // 重新登錄
-        if (await autoLogin()) {
-          const healthData = collectHealthData();
-          await callOpenAIByBackend(healthData);
-        }
-      });
-      
       // 綁定重試事件
       document.getElementById('aiRetryBtn')?.addEventListener('click', async () => {
         const healthData = collectHealthData();
@@ -2408,18 +2286,10 @@ document.addEventListener('DOMContentLoaded', function() {
     `;
   }
 
-  // -------------------------- 9. 表單提交 - 修正：確保用戶ID存在
+  // -------------------------- 9. 表單提交
   submitBtn.addEventListener('click', async () => {
-    // 檢查用戶ID是否存在 - 關鍵修復點
-    if (!USER_ID) {
-      showToast('用戶ID缺失，請重新登錄', 'error');
-      // 嘗試重新獲取用戶ID
-      await autoLogin();
-      return;
-    }
-    
     // 檢查登錄狀態
-    if (!await checkLoginStatus()) return;
+    if (!checkLoginStatus()) return;
     
     updateGlobalSymptomData();
     if (!validateStep(4)) return;
@@ -2619,11 +2489,11 @@ document.addEventListener('DOMContentLoaded', function() {
     };
   }
 
-  // -------------------------- 14. 工具函數：收集全量表單數據 - 修正：確保包含用戶ID
+  // -------------------------- 14. 工具函數：收集全量表單數據
   function collectFullFormData() {
     const selectedGender = document.querySelector('input[name="gender"]:checked');
     return {
-      userId: USER_ID, // 確保包含用戶ID - 關鍵修復點
+      userId: USER_ID, // 添加用戶ID
       sessionId: userSession?.sessionId || '', // 添加會話ID
       submitTime: new Date().toLocaleString('zh-CN', {
         year: 'numeric', month: '2-digit', day: '2-digit',
@@ -2680,11 +2550,11 @@ document.addEventListener('DOMContentLoaded', function() {
     return `${bmiValue} ${bmiStatus}`;
   }
 
-  // -------------------------- 16. 提交數據到Google Sheets - 修正：確保傳遞用戶ID
+  // -------------------------- 16. 提交數據到Google Sheets
   function submitToGoogleSheets() {
-    // 檢查登錄狀態和用戶ID - 關鍵修復點
-    if (!userSession || !USER_ID) {
-      return Promise.reject(new Error('用戶未登錄或用戶ID缺失'));
+    // 檢查登錄狀態
+    if (!userSession) {
+      return Promise.reject(new Error('用戶未登錄'));
     }
     
     return requestWithRetry(() => {
@@ -2694,7 +2564,6 @@ document.addEventListener('DOMContentLoaded', function() {
         data: JSON.stringify(formData),
         callback: callbackName,
         action: 'saveToSheets',
-        userId: USER_ID, // 額外作為URL參數傳遞 - 關鍵修復點
         managerSheetId: MANAGER_SHEET_ID, // 添加管理者工作表ID
         dataSheetId: DATA_SHEET_ID,       // 添加數據存儲工作表ID
         timestamp: Date.now() // 防止緩存
@@ -3126,7 +2995,7 @@ document.addEventListener('DOMContentLoaded', function() {
   // 修正截圖處理函數，確保不包含六大調理方向
   async function handleImageDownload() {
     // 檢查登錄狀態
-    if (!await checkLoginStatus()) return;
+    if (!checkLoginStatus()) return;
     
     try {
       // 禁用按鈕並顯示加載狀態
@@ -3538,8 +3407,6 @@ document.addEventListener('DOMContentLoaded', function() {
   initialize();
 });
 </script>
-    
-
 
 
 
