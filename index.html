@@ -1746,36 +1746,29 @@
     </div>
   </div>
 
-<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-
 <script>
-/// 健康自檢表應用程式核心邏輯
-
 document.addEventListener('DOMContentLoaded', function() {
-  // 配置常數 - 確保管理員表格信息完整
-  const CONFIG = {
-    BACKEND_GOOGLE_SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbwQH5XE3u9vgedphUCOnXpYl9WG4-3ScF29SYoSb3MGLMQX28qBeY3tqt56PiIFsAtw4w/exec',
-    IMGBB_API_KEY: '60691c91e77a7ad5a7eabaf332fbdffe',
-    IMGBB_UPLOAD_URL: 'https://api.imgbb.com/1/upload',
-    LIFF_ID: '2007488640-Kl4XPVyR', // 替換為您的LIFF ID
-    ADMIN_SETTINGS_SHEET: '管理員設置', // 存儲管理員信息的工作表名稱
-    ADMIN_SHEET_ID: '1MxnhJlr7Q5zdmMxjeoKZ5r7s8DZATRewbneiG3eDRgM', // 管理員信息表格ID
-    DATA_SHEET_ID: '1v1uJfdFfD6KHHXv-E0duki4KH1a6n-jIyZUx0mZFJ2o' // 數據存儲表格ID
-  };
-  
-  // 網絡請求配置和使用次數限制
-  const REQUEST_TIMEOUT = 15000; // 15秒超時
-  const MAX_RETRIES = 3; // 最大重試次數
-  const MAX_USAGE_COUNT = 3; // 普通用戶最大使用次數
-  let userProfile = null;
-  let remainingUsageCount = 0;
-  let isLiffInitialized = false;
-  let isAnonymousMode = false;
-  let isAdmin = false;
-  let adminExpiryDate = null;
+  // 1. 全局狀態與配置 - 增加用戶管理相關配置
+  let currentStep = 1;
+  const totalSteps = 4;
+  const OPENAI_MODEL = 'gpt-3.5-turbo';
+  // 更新Google工作表相關配置
+  const MANAGER_SHEET_ID = '1MxnhJlr7Q5zdmMxjeoKZ5r7s8DZATRewbneiG3eDRgM';
+  const DATA_SHEET_ID = '1v1uJfdFfD6KHHXv-E0duki4KH1a6n-jIyZUx0mZFJ2o';
+  const BACKEND_GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwQH5XE3u9vgedphUCOnXpYl9WG4-3ScF29SYoSb3MGLMQX28qBeY3tqt56PiIFsAtw4w/exec';
+  const IMGBB_API_KEY = '60691c91e77a7ad5a7eabaf332fbdffe';
+  const IMGBB_UPLOAD_URL = 'https://api.imgbb.com/1/upload';
   let globalAiComment = '';
+  
+  // 用戶管理相關配置
+  const USER_ID = 'U637a1021435c679291635394543be259'; // 用戶唯一標識
+  let userSession = null; // 用戶會話信息
+  
+  // 新增：網絡請求配置
+  const REQUEST_TIMEOUT = 15000; // 15秒超時
+  const MAX_RETRIES = 2; // 最大重試次數
 
-  // DOM元素獲取
+  // 2. DOM元素獲取（含AI評估容器）
   const menuToggle = document.getElementById('menuToggle');
   const mobileMenu = document.getElementById('mobileMenu');
   const prevBtn = document.getElementById('prevBtn');
@@ -1790,17 +1783,15 @@ document.addEventListener('DOMContentLoaded', function() {
   const formContainer = document.getElementById('form');
   const aiEvaluationContainer = document.getElementById('aiEvaluationContainer') || createAiContainer();
   const healthRecommendations = document.getElementById('healthRecommendations');
-  const usageCountDisplay = document.getElementById('usageCountDisplay') || createUsageCountDisplay();
-  const liffLoginButton = document.getElementById('liffLoginButton') || createLiffLoginButton();
-  const adminStatusDisplay = document.getElementById('adminStatusDisplay') || createAdminStatusDisplay();
+  const loginStatus = document.getElementById('loginStatus') || createLoginStatusElement();
 
-  // 性別相關元素
+  // 3. 性別相關元素
   const genderRadios = document.querySelectorAll('input[name="gender"]');
   const femaleSymptomTab = document.querySelector('.symptom-tab[data-category="female"]');
   const femaleSymptomItems = document.querySelectorAll('.symptom-item[data-category="female"]');
   const postpartumSymptoms = document.querySelectorAll('.symptom-item[data-special="postpartum"]');
 
-  // 核心全局數據
+  // 4. 核心全局數據
   let globalUniqueSymptoms = [];
   let globalUniqueHabits = [];
   let windowHealthChart = null;
@@ -1808,493 +1799,8 @@ document.addEventListener('DOMContentLoaded', function() {
   let localImageName = '';
   let imgbbImageUrl = '';
   let imgbbDeleteUrl = '';
-  let currentStep = 1;
-  const totalSteps = 4;
 
-  // 初始化LIFF - 增強錯誤處理和重試機制
-  async function initializeLiff() {
-    try {
-      // 檢查LIFF是否已加載
-      if (typeof liff === 'undefined') {
-        showToast('LINE LIFF SDK未加載，正在嘗試重新加載...', 'info');
-        
-        // 嘗試動態加載LIFF SDK
-        await loadLiffSdk();
-        
-        if (typeof liff === 'undefined') {
-          throw new Error('LINE LIFF SDK加載失敗');
-        }
-      }
-      
-      await liff.init({ liffId: CONFIG.LIFF_ID });
-      
-      if (liff.isLoggedIn()) {
-        handleLiffLogin();
-      } else {
-        showLiffLoginButton();
-        // 未登錄時默認啓用匿名模式，但保留登錄選項
-        enableAnonymousMode();
-      }
-      
-      isLiffInitialized = true;
-      showToast('LINE功能初始化成功');
-    } catch (error) {
-      console.error('LIFF初始化失敗:', error);
-      // 更詳細的錯誤分類提示
-      let errorMsg = 'LINE登錄功能初始化失敗，已切換到匿名模式';
-      if (error.message.includes('404')) {
-        errorMsg += ' - 可能是LIFF ID配置錯誤';
-      } else if (error.message.includes('network')) {
-        errorMsg += ' - 請檢查網絡連接';
-      }
-      showToast(errorMsg, 'error');
-      
-      // 確保在初始化失敗時啓用匿名模式
-      enableAnonymousMode();
-      isLiffInitialized = true;
-    }
-  }
-
-  // 動態加載LIFF SDK
-  function loadLiffSdk() {
-    return new Promise((resolve, reject) => {
-      const script = document.createElement('script');
-      script.src = 'https://static.line-scdn.net/liff/edge/2/sdk.js';
-      script.onload = resolve;
-      script.onerror = () => reject(new Error('無法加載LIFF SDK'));
-      document.head.appendChild(script);
-    });
-  }
-
-  // 啓用匿名模式 - 確保匿名用戶有1次使用機會
-  function enableAnonymousMode() {
-    isAnonymousMode = true;
-    remainingUsageCount = 1; // 匿名用戶固定1次使用機會
-    updateUsageCountDisplay();
-    showToast('已切換到匿名模式，您有1次使用機會', 'info');
-    
-    // 顯示匿名模式提示
-    const anonymousInfo = document.createElement('div');
-    anonymousInfo.className = 'bg-yellow-50 p-3 rounded-lg text-sm text-yellow-800 mt-2';
-    anonymousInfo.innerHTML = '<i class="fa fa-info-circle mr-1"></i> 匿名模式下部分功能受限，登錄LINE可獲得更多使用次數';
-    
-    const loginButton = document.getElementById('liffLoginButton');
-    if (loginButton && loginButton.parentNode) {
-      // 檢查是否已存在匿名提示，避免重復添加
-      const existingInfo = loginButton.parentNode.querySelector('.bg-yellow-50');
-      if (!existingInfo) {
-        loginButton.parentNode.insertBefore(anonymousInfo, loginButton.nextSibling);
-      }
-    }
-    
-    // 確保提交按鈕在匿名模式下可用（只要還有次數）
-    checkUsageLimit();
-  }
-
-  // 處理LIFF登錄 - 增強重試機制和錯誤處理
-  async function handleLiffLogin(retries = MAX_RETRIES) {
-    try {
-      // 隱藏登錄按鈕，顯示加載狀態
-      liffLoginButton.innerHTML = '<i class="fa fa-spinner fa-spin mr-2"></i> 獲取用戶信息中...';
-      liffLoginButton.disabled = true;
-      
-      // 獲取用戶信息，增加超時控制
-      const profilePromise = liff.getProfile();
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('獲取用戶信息超時')), 10000)
-      );
-      
-      // 競速Promise - 超時控制
-      userProfile = await Promise.race([profilePromise, timeoutPromise]);
-      
-      // 驗證用戶信息完整性
-      if (!userProfile || !userProfile.userId) {
-        throw new Error('獲取的用戶信息不完整，缺少User ID');
-      }
-      
-      // 先檢查是否為管理員
-      await checkAdminStatus(userProfile.userId);
-      
-      // 隱藏登錄按鈕
-      liffLoginButton.style.display = 'none';
-      
-      // 獲取用戶剩餘使用次數
-      await fetchUserUsageCount();
-      
-      // 顯示用戶信息
-      showUserInfo();
-      
-      // 更新使用次數顯示
-      updateUsageCountDisplay();
-      
-      // 顯示管理員狀態（如果是管理員）
-      if (isAdmin) {
-        showAdminStatus();
-      }
-      
-      // 檢查是否還有使用次數
-      checkUsageLimit();
-      
-      const displayName = userProfile.displayName || '用戶';
-      showToast(`歡迎回來，${displayName}！`);
-      
-      // 退出匿名模式
-      isAnonymousMode = false;
-    } catch (error) {
-      console.error('LIFF登錄處理失敗:', error);
-      
-      // 重試機制
-      if (retries > 0) {
-        showToast(`獲取用戶信息失敗，正在重試（${retries}次）...`, 'error');
-        setTimeout(() => handleLiffLogin(retries - 1), 1500);
-        return;
-      }
-      
-      // 重試失敗後恢復按鈕狀態
-      liffLoginButton.innerHTML = '<i class="fa fa-line mr-2"></i> 重新嘗試LINE登錄';
-      liffLoginButton.disabled = false;
-      
-      // 更詳細的錯誤提示
-      let errorMsg = '獲取用戶信息失敗，已切換到匿名模式';
-      if (error.message.includes('timeout')) {
-        errorMsg += ' - 請求超時';
-      } else if (error.message.includes('network')) {
-        errorMsg += ' - 網絡連接問題';
-      } else if (error.message.includes('不完整')) {
-        errorMsg += ' - 數據格式錯誤';
-      }
-      showToast(errorMsg, 'error');
-      
-      // 確保在登錄失敗時啓用匿名模式
-      enableAnonymousMode();
-    }
-  }
-
-  // 檢查管理員狀態函數（從專門的管理員表格讀取）
-  async function checkAdminStatus(userId) {
-    // 驗證用戶ID格式
-    const USER_ID_PATTERN = /^[0-9A-Za-z_-]{5,}$/;
-    if (!userId || !USER_ID_PATTERN.test(userId)) {
-      console.error('無效的LINE User ID格式:', userId);
-      showToast('用戶ID格式錯誤', 'error');
-      return false;
-    }
-
-    try {
-      // 顯示加載狀態
-      showToast('正在驗證管理員權限...', 'info');
-      
-      const callbackName = `jsonpCheckAdminCallback_${Date.now()}`;
-      const params = new URLSearchParams({
-        userId: userId,
-        callback: callbackName,
-        action: 'checkAdminStatus',
-        timestamp: Date.now(),
-        adminSheetId: CONFIG.ADMIN_SHEET_ID, // 明確傳遞管理員表格ID
-        adminSettingsSheet: CONFIG.ADMIN_SETTINGS_SHEET // 傳遞工作表名稱
-      });
-      
-      // 增加超時設置，防止無限等待
-      const requestFn = () => jsonpRequest(
-        `${CONFIG.BACKEND_GOOGLE_SCRIPT_URL}?${params.toString()}`,
-        callbackName,
-        15000 // 15秒超時
-      );
-      
-      // 使用帶重試的請求
-      const response = await requestWithRetry(requestFn, 2, 2000);
-      
-      if (!response) {
-        throw new Error('未收到有效響應數據');
-      }
-      
-      if (response.status === 'error') {
-        console.error('管理員驗證失敗:', response.message);
-        // 不顯示錯誤提示，普通用戶也會走到這裡
-        isAdmin = false;
-        adminExpiryDate = null;
-        return false;
-      }
-      
-      if (response.isAdmin) {
-        isAdmin = true;
-        adminExpiryDate = response.expiryDate;
-        showToast('管理員權限驗證成功', 'success');
-        return true;
-      } else {
-        isAdmin = false;
-        adminExpiryDate = null;
-        return false;
-      }
-    } catch (error) {
-      console.error('檢查管理員狀態失敗:', error);
-      // 僅在明確是管理員表格錯誤時顯示提示
-      if (error.message.includes('管理員表格') || error.message.includes('權限')) {
-        showToast(`管理員驗證失敗: ${error.message}`, 'error');
-      }
-      isAdmin = false;
-      adminExpiryDate = null;
-      return false;
-    }
-  }
-
-  // 顯示管理員狀態
-  function showAdminStatus() {
-    if (!adminStatusDisplay || !isAdmin || !adminExpiryDate) return;
-    
-    // 格式化日期顯示
-    const formattedDate = new Date(adminExpiryDate).toLocaleDateString('zh-CN');
-    
-    adminStatusDisplay.innerHTML = `
-      <div class="bg-green-50 p-2 rounded-lg text-sm text-green-800 flex items-center">
-        <i class="fa fa-shield mr-2"></i>
-        <span>管理員權限 (有效期至: ${formattedDate})</span>
-      </div>
-    `;
-    adminStatusDisplay.style.display = 'block';
-  }
-
-  // 創建管理員狀態顯示元素
-  function createAdminStatusDisplay() {
-    const container = document.createElement('div');
-    container.id = 'adminStatusDisplay';
-    container.className = 'admin-status-display mt-2';
-    container.style.display = 'none';
-    
-    const userInfoContainer = document.getElementById('userInfoContainer');
-    if (userInfoContainer) {
-      userInfoContainer.parentNode.insertBefore(container, userInfoContainer.nextSibling);
-    } else {
-      formContainer.appendChild(container);
-    }
-    
-    return container;
-  }
-
-  // 獲取用戶使用次數 - 增強錯誤處理
-  async function fetchUserUsageCount() {
-    try {
-      // 管理員不受使用次數限制
-      if (isAdmin) {
-        remainingUsageCount = -1; // -1表示無限制
-        return remainingUsageCount;
-      }
-      
-      if (!userProfile) return;
-      
-      const callbackName = `jsonpUsageCountCallback_${Date.now()}`;
-      const params = new URLSearchParams({
-        userId: userProfile.userId,
-        callback: callbackName,
-        action: 'getUsageCount',
-        timestamp: Date.now(),
-        dataSheetId: CONFIG.DATA_SHEET_ID // 使用數據存儲表格ID
-      });
-      
-      const response = await jsonpRequest(
-        `${CONFIG.BACKEND_GOOGLE_SCRIPT_URL}?${params.toString()}`,
-        callbackName
-      );
-      
-      if (response?.status === 'success') {
-        remainingUsageCount = MAX_USAGE_COUNT - response.usageCount;
-        return remainingUsageCount;
-      } else {
-        throw new Error('獲取使用次數失敗');
-      }
-    } catch (error) {
-      console.error('獲取使用次數失敗:', error);
-      showToast('獲取使用次數失敗，默認限制為1次', 'error');
-      remainingUsageCount = 1;
-      return remainingUsageCount;
-    }
-  }
-
-  // 增加用戶使用次數
-  async function incrementUsageCount() {
-    try {
-      // 管理員不受使用次數限制，不需要增加計數
-      if (isAdmin) return true;
-      
-      if (!userProfile && isAnonymousMode) {
-        // 匿名模式下本地減少次數
-        remainingUsageCount = Math.max(0, remainingUsageCount - 1);
-        updateUsageCountDisplay();
-        return true;
-      }
-      
-      if (!userProfile) return false;
-      
-      const callbackName = `jsonpIncrementCountCallback_${Date.now()}`;
-      const params = new URLSearchParams({
-        userId: userProfile.userId,
-        userName: userProfile.displayName || '未知用戶',
-        callback: callbackName,
-        action: 'incrementUsageCount',
-        timestamp: Date.now(),
-        dataSheetId: CONFIG.DATA_SHEET_ID // 使用數據存儲表格ID
-      });
-      
-      const response = await jsonpRequest(
-        `${CONFIG.BACKEND_GOOGLE_SCRIPT_URL}?${params.toString()}`,
-        callbackName
-      );
-      
-      if (response?.status === 'success') {
-        remainingUsageCount = MAX_USAGE_COUNT - response.newUsageCount;
-        updateUsageCountDisplay();
-        return true;
-      } else {
-        throw new Error('更新使用次數失敗');
-      }
-    } catch (error) {
-      console.error('更新使用次數失敗:', error);
-      // 即使更新失敗，也減少本地次數，避免無限使用
-      if (isAnonymousMode) {
-        remainingUsageCount = Math.max(0, remainingUsageCount - 1);
-        updateUsageCountDisplay();
-      }
-      return false;
-    }
-  }
-
-  // 檢查使用次數限制
-  function checkUsageLimit() {
-    // 管理員不受使用次數限制
-    if (isAdmin) {
-      submitBtn.disabled = false;
-      submitBtn.title = '';
-      usageCountDisplay.classList.remove('text-red-500');
-      return;
-    }
-    
-    // 匿名用戶特殊處理
-    if (isAnonymousMode) {
-      if (remainingUsageCount <= 0) {
-        submitBtn.disabled = true;
-        submitBtn.title = '匿名用戶只能使用1次，請登錄LINE獲取更多次數';
-        showToast('匿名用戶只能使用1次，請登錄LINE獲取更多次數', 'error');
-        usageCountDisplay.classList.add('text-red-500');
-      } else {
-        submitBtn.disabled = false;
-      }
-      return;
-    }
-    
-    if (remainingUsageCount <= 0) {
-      submitBtn.disabled = true;
-      submitBtn.title = '您已用完所有使用次數';
-      showToast(`您已用完${MAX_USAGE_COUNT}次使用次數`, 'error');
-      usageCountDisplay.classList.add('text-red-500');
-    } else {
-      submitBtn.disabled = false;
-    }
-  }
-
-  // 更新使用次數顯示
-  function updateUsageCountDisplay() {
-    // 管理員顯示無限制
-    if (isAdmin) {
-      usageCountDisplay.textContent = '使用次數: 管理員-無限制';
-      usageCountDisplay.classList.add('text-green-600');
-    } else if (isAnonymousMode) {
-      usageCountDisplay.textContent = `匿名用戶 - 剩餘使用次數: ${remainingUsageCount}/1`;
-      usageCountDisplay.classList.remove('text-green-600');
-    } else {
-      usageCountDisplay.textContent = `剩餘使用次數: ${remainingUsageCount}/${MAX_USAGE_COUNT}`;
-      usageCountDisplay.classList.remove('text-green-600');
-    }
-  }
-
-  // 創建使用次數顯示元素
-  function createUsageCountDisplay() {
-    const container = document.createElement('div');
-    container.id = 'usageCountDisplay';
-    container.className = 'text-sm text-gray-600 mt-2';
-    container.style.textAlign = 'right';
-    container.style.paddingRight = '10px';
-    
-    const formHeader = document.querySelector('.form-header') || formContainer.firstChild;
-    if (formHeader) {
-      formHeader.parentNode.insertBefore(container, formHeader.nextSibling);
-    } else {
-      formContainer.appendChild(container);
-    }
-    
-    return container;
-  }
-
-  // 創建LIFF登錄按鈕
-  function createLiffLoginButton() {
-    const button = document.createElement('button');
-    button.id = 'liffLoginButton';
-    button.className = 'bg-green-500 text-white px-4 py-2 rounded-lg mb-4 flex items-center justify-center';
-    button.innerHTML = '<i class="fa fa-line mr-2"></i> 使用LINE登錄以獲得完整功能';
-    button.style.width = '100%';
-    button.addEventListener('click', () => {
-      try {
-        if (liff.isInClient()) {
-          liff.login();
-        } else {
-          const redirectUri = window.location.href;
-          liff.login({ redirectUri });
-        }
-      } catch (error) {
-        console.error('登錄按鈕點擊錯誤:', error);
-        showToast('登錄功能暫時不可用，請稍後再試', 'error');
-      }
-    });
-    
-    const formHeader = document.querySelector('.form-header') || formContainer.firstChild;
-    if (formHeader) {
-      formHeader.parentNode.insertBefore(button, formHeader.nextSibling);
-    } else {
-      formContainer.prepend(button);
-    }
-    
-    return button;
-  }
-
-  // 顯示用戶信息
-  function showUserInfo() {
-    if (!userProfile) return;
-    
-    const userInfoContainer = document.getElementById('userInfoContainer') || createUserInfoContainer();
-    userInfoContainer.innerHTML = `
-      <div class="flex items-center text-sm text-gray-700">
-        <img src="${userProfile.pictureUrl || 'https://via.placeholder.com/24'}" alt="${userProfile.displayName || '用戶'}" class="w-6 h-6 rounded-full mr-2">
-        <span>登錄用戶: ${userProfile.displayName || '未知用戶'}</span>
-        <span class="ml-2 text-xs bg-gray-100 px-1.5 py-0.5 rounded">
-          ID: ${userProfile.userId.substring(0, 6)}...${userProfile.userId.substring(userProfile.userId.length - 4)}
-        </span>
-      </div>
-    `;
-  }
-
-  // 創建用戶信息容器
-  function createUserInfoContainer() {
-    const container = document.createElement('div');
-    container.id = 'userInfoContainer';
-    container.className = 'mt-2 mb-3';
-    
-    const usageContainer = document.getElementById('usageCountDisplay');
-    if (usageContainer) {
-      usageContainer.parentNode.insertBefore(container, usageContainer);
-    } else {
-      formContainer.appendChild(container);
-    }
-    
-    return container;
-  }
-
-  // 顯示LIFF登錄按鈕
-  function showLiffLoginButton() {
-    liffLoginButton.style.display = 'block';
-    liffLoginButton.innerHTML = '<i class="fa fa-line mr-2"></i> 使用LINE登錄以獲得完整功能';
-    liffLoginButton.disabled = false;
-  }
-
-  // 動態創建AI評估容器
+  // 5. 動態創建AI評估容器
   function createAiContainer() {
     const container = document.createElement('div');
     container.id = 'aiEvaluationContainer';
@@ -2310,12 +1816,107 @@ document.addEventListener('DOMContentLoaded', function() {
     return container;
   }
 
-  // 導航菜單切換（移動端）
+  // 創建登錄狀態元素
+  function createLoginStatusElement() {
+    const statusElement = document.createElement('div');
+    statusElement.id = 'loginStatus';
+    statusElement.className = 'login-status';
+    statusElement.style.cssText = `
+      position: fixed; top: 10px; right: 10px; padding: 5px 10px; 
+      background: #f0f0f0; border-radius: 4px; font-size: 12px;
+      z-index: 1000;
+    `;
+    document.body.appendChild(statusElement);
+    return statusElement;
+  }
+
+  // -------------------------- 用戶認證與自動登錄
+  async function autoLogin() {
+    try {
+      // 檢查本地存儲的會話
+      const savedSession = localStorage.getItem('healthFormSession');
+      if (savedSession) {
+        const session = JSON.parse(savedSession);
+        // 檢查會話是否過期（7天有效期）
+        if (new Date().getTime() - session.timestamp < 7 * 24 * 60 * 60 * 1000) {
+          userSession = session;
+          updateLoginStatus(true);
+          return true;
+        }
+      }
+
+      // 執行自動登錄流程
+      const callbackName = `jsonpLoginCallback_${Date.now()}`;
+      const params = new URLSearchParams({
+        userId: USER_ID,
+        action: 'authenticateUser',
+        callback: callbackName,
+        timestamp: Date.now()
+      });
+
+      const requestFn = () => jsonpRequest(
+        `${BACKEND_GOOGLE_SCRIPT_URL}?${params.toString()}`,
+        callbackName
+      );
+      
+      const response = await requestWithRetry(requestFn);
+
+      if (response?.status === 'success' && response.sessionId) {
+        // 創建新會話並保存到本地存儲
+        userSession = {
+          userId: USER_ID,
+          sessionId: response.sessionId,
+          timestamp: new Date().getTime()
+        };
+        localStorage.setItem('healthFormSession', JSON.stringify(userSession));
+        updateLoginStatus(true);
+        return true;
+      } else {
+        throw new Error('登錄失敗: ' + (response?.message || '未知錯誤'));
+      }
+    } catch (error) {
+      console.error('自動登錄失敗:', error);
+      updateLoginStatus(false, error.message);
+      return false;
+    }
+  }
+
+  // 更新登錄狀態顯示
+  function updateLoginStatus(isLoggedIn, message = '') {
+    if (isLoggedIn) {
+      loginStatus.innerHTML = `
+        <span style="color: green;">
+          <i class="fa fa-check-circle"></i> 已登錄 (用戶ID: ${USER_ID.slice(0, 8)}...)
+        </span>
+      `;
+    } else {
+      loginStatus.innerHTML = `
+        <span style="color: #e53e3e;">
+          <i class="fa fa-exclamation-circle"></i> 未登錄 ${message ? '- ' + message : ''}
+        </span>
+        <button id="retryLogin" style="margin-left: 8px; padding: 2px 6px; font-size: 11px;">
+          重試
+        </button>
+      `;
+      document.getElementById('retryLogin').addEventListener('click', autoLogin);
+    }
+  }
+
+  // 檢查登錄狀態
+  function checkLoginStatus() {
+    if (!userSession) {
+      showToast('請先登錄', 'error');
+      return false;
+    }
+    return true;
+  }
+
+  // -------------------------- 1. 導航菜單切換（移動端）
   menuToggle.addEventListener('click', () => {
     mobileMenu.classList.toggle('hidden');
   });
 
-  // 性別選擇驅動UI變化
+  // -------------------------- 2. 性別選擇驅動UI變化
   genderRadios.forEach(radio => {
     radio.addEventListener('change', updateGenderBasedUI);
   });
@@ -2344,7 +1945,7 @@ document.addEventListener('DOMContentLoaded', function() {
     updateGlobalSymptomData();
   }
 
-  // 全局症狀/習慣數據更新
+  // -------------------------- 3. 全局症狀/習慣數據更新
   function updateGlobalSymptomData() {
     // 症狀去重
     const symptomElements = document.querySelectorAll('input[name="symptoms"]:checked');
@@ -2355,7 +1956,7 @@ document.addEventListener('DOMContentLoaded', function() {
     globalUniqueHabits = [...new Set(Array.from(habitElements).map(checkbox => checkbox.value))];
   }
 
-  // 表單步驟導航
+  // -------------------------- 4. 表單步驟導航
   prevBtn.addEventListener('click', () => {
     if (currentStep > 1) {
       currentStep--;
@@ -2375,7 +1976,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
 
-  // 表單驗證邏輯
+  // -------------------------- 5. 表單驗證邏輯
   function validateStep(step) {
     let isValid = true;
     clearAllErrors();
@@ -2440,14 +2041,9 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
-  // 修正JSONP請求函數，增加更詳細的錯誤處理
+  // -------------------------- 6. 通用JSONP請求函數（帶重試機制）
   function jsonpRequest(url, callbackName, timeout = REQUEST_TIMEOUT) {
     return new Promise((resolve, reject) => {
-      // 清除可能存在的同名回調
-      if (window[callbackName]) {
-        delete window[callbackName];
-      }
-      
       const script = document.createElement('script');
       script.src = url;
       script.type = 'text/javascript';
@@ -2456,48 +2052,28 @@ document.addEventListener('DOMContentLoaded', function() {
       // 超時處理
       const timeoutId = setTimeout(() => {
         cleanup();
-        reject(new Error(`請求超時: ${url}`));
+        reject(new Error('請求超時'));
       }, timeout);
       
       // 成功回調
       window[callbackName] = function(response) {
         cleanup();
-        
-        // 處理可能的錯誤響應
-        if (response?.status === 'error') {
-          // 特別處理管理員表格相關錯誤
-          if (response.errorCode && response.errorCode.includes('ADMIN_SHEET')) {
-            reject(new Error(`管理員表格錯誤: ${response.message}`));
-          } else {
-            reject(new Error(response.message || '請求處理失敗'));
-          }
-        } else {
-          resolve(response);
-        }
+        resolve(response);
       };
       
       // 錯誤處理
       script.onerror = function() {
         cleanup();
-        reject(new Error(`網絡錯誤或無效請求: ${url}`));
+        reject(new Error('網絡錯誤'));
       };
       
       // 清理函數
       function cleanup() {
         clearTimeout(timeoutId);
-        if (window[callbackName]) {
-          delete window[callbackName];
-        }
+        delete window[callbackName];
         if (document.body.contains(script)) {
           document.body.removeChild(script);
         }
-      }
-      
-      // 添加防緩存隨機參數
-      if (script.src.indexOf('?') === -1) {
-        script.src += `?cb=${Math.random().toString(36).substring(2, 15)}`;
-      } else {
-        script.src += `&cb=${Math.random().toString(36).substring(2, 15)}`;
       }
       
       document.body.appendChild(script);
@@ -2517,8 +2093,11 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
-  // 調用後端生成AI評語
+  // -------------------------- 7. 調用後端生成AI評語
   async function callOpenAIByBackend(healthData) {
+    // 檢查登錄狀態
+    if (!checkLoginStatus()) return false;
+    
     try {
       // 顯示加載狀態
       aiEvaluationContainer.innerHTML = `
@@ -2532,13 +2111,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
       // 構建完整請求數據（精簡數據傳輸）
       const formData = {
+        userId: USER_ID, // 添加用戶ID
+        sessionId: userSession.sessionId, // 添加會話ID
         basicInfo: healthData.basicInfo,
         symptoms: healthData.symptoms,
         symptomCount: healthData.symptomCount,
         habits: healthData.habits,
         habitCount: healthData.habitCount,
-        healthIssues: healthData.healthIssues,
-        userId: userProfile?.userId || 'anonymous'
+        healthIssues: healthData.healthIssues
       };
 
       // 使用帶重試的JSONP請求
@@ -2551,7 +2131,7 @@ document.addEventListener('DOMContentLoaded', function() {
       });
       
       const requestFn = () => jsonpRequest(
-        `${CONFIG.BACKEND_GOOGLE_SCRIPT_URL}?${params.toString()}`,
+        `${BACKEND_GOOGLE_SCRIPT_URL}?${params.toString()}`,
         callbackName
       );
       
@@ -2586,7 +2166,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
-  // 渲染AI評估結果
+  // -------------------------- 8. 渲染AI評估結果
   function renderAiEvaluation() {
     if (!aiEvaluationContainer || !globalAiComment) return;
 
@@ -2610,28 +2190,16 @@ document.addEventListener('DOMContentLoaded', function() {
     `;
   }
 
-  // 表單提交
+  // -------------------------- 9. 表單提交
   submitBtn.addEventListener('click', async () => {
-    // 檢查使用次數（管理員不受限制）
-    if (!isAdmin && remainingUsageCount <= 0) {
-      showToast(isAnonymousMode ? '匿名用戶只能使用1次，請登錄LINE獲取更多次數' : `您已用完${MAX_USAGE_COUNT}次使用次數`, 'error');
-      return;
-    }
+    // 檢查登錄狀態
+    if (!checkLoginStatus()) return;
     
     updateGlobalSymptomData();
     if (!validateStep(4)) return;
 
     successModal.classList.remove('hidden');
     try {
-      // 增加使用次數（管理員不需要）
-      let countUpdated = true;
-      if (!isAdmin) {
-        countUpdated = await incrementUsageCount();
-        if (!countUpdated && userProfile && !isAnonymousMode) {
-          throw new Error('更新使用次數失敗，請稍後重試');
-        }
-      }
-      
       // 並行執行AI評估和數據提交，提高速度
       const healthData = collectHealthData();
       
@@ -2647,7 +2215,6 @@ document.addEventListener('DOMContentLoaded', function() {
       
       if (aiSuccess || submitSuccess) {
         generateResult();
-        checkUsageLimit(); // 檢查是否已用完次數
       } else {
         // 顯示具體錯誤信息
         const errorMsg = [];
@@ -2664,7 +2231,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
 
-  // 查看結果/重新評估按鈕事件
+  // -------------------------- 10. 查看結果/重新評估按鈕事件
   viewResultBtn.addEventListener('click', () => {
     successModal.classList.add('hidden');
     resultSection.classList.remove('hidden');
@@ -2709,7 +2276,7 @@ document.addEventListener('DOMContentLoaded', function() {
     formContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
 
-  // 症狀/習慣分類篩選
+  // -------------------------- 11. 症狀/習慣分類篩選
   document.querySelectorAll('.symptom-tab').forEach(tab => {
     tab.addEventListener('click', () => {
       // 更新標籤樣式
@@ -2763,7 +2330,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   });
 
-  // 表單步驟更新
+  // -------------------------- 12. 表單步驟更新
   function updateFormSteps() {
     // 切換步驟顯示狀態
     document.querySelectorAll('.form-step').forEach(step => {
@@ -2804,7 +2371,7 @@ document.addEventListener('DOMContentLoaded', function() {
     formContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
-  // 工具函數：收集AI所需精簡健康數據
+  // -------------------------- 13. 工具函數：收集AI所需精簡健康數據
   function collectHealthData() {
     const selectedGender = document.querySelector('input[name="gender"]:checked');
     return {
@@ -2826,18 +2393,16 @@ document.addEventListener('DOMContentLoaded', function() {
     };
   }
 
-  // 工具函數：收集全量表單數據
+  // -------------------------- 14. 工具函數：收集全量表單數據
   function collectFullFormData() {
     const selectedGender = document.querySelector('input[name="gender"]:checked');
     return {
+      userId: USER_ID, // 添加用戶ID
+      sessionId: userSession?.sessionId || '', // 添加會話ID
       submitTime: new Date().toLocaleString('zh-CN', {
         year: 'numeric', month: '2-digit', day: '2-digit',
         hour: '2-digit', minute: '2-digit', second: '2-digit'
       }),
-      userId: userProfile?.userId || 'anonymous',
-      userName: userProfile?.displayName || document.getElementById('name').value || '未知用戶',
-      isAdmin: isAdmin,
-      adminExpiryDate: adminExpiryDate || 'N/A',
       basicInfo: {
         name: document.getElementById('name').value || '未填寫',
         age: document.getElementById('age').value || '未填寫',
@@ -2870,7 +2435,7 @@ document.addEventListener('DOMContentLoaded', function() {
     };
   }
 
-  // 工具函數：BMI計算
+  // -------------------------- 15. 工具函數：BMI計算
   function calculateBMI() {
     const height = document.getElementById('height').value;
     const weight = document.getElementById('weight').value;
@@ -2889,8 +2454,13 @@ document.addEventListener('DOMContentLoaded', function() {
     return `${bmiValue} ${bmiStatus}`;
   }
 
-  // 提交數據到Google Sheets
+  // -------------------------- 16. 提交數據到Google Sheets
   function submitToGoogleSheets() {
+    // 檢查登錄狀態
+    if (!userSession) {
+      return Promise.reject(new Error('用戶未登錄'));
+    }
+    
     return requestWithRetry(() => {
       const formData = collectFullFormData();
       const callbackName = `jsonpSubmitCallback_${Date.now()}`;
@@ -2898,12 +2468,13 @@ document.addEventListener('DOMContentLoaded', function() {
         data: JSON.stringify(formData),
         callback: callbackName,
         action: 'saveToSheets',
-        timestamp: Date.now(), // 防止緩存
-        dataSheetId: CONFIG.DATA_SHEET_ID // 使用數據存儲表格ID
+        managerSheetId: MANAGER_SHEET_ID, // 添加管理者工作表ID
+        dataSheetId: DATA_SHEET_ID,       // 添加數據存儲工作表ID
+        timestamp: Date.now() // 防止緩存
       });
 
       return jsonpRequest(
-        `${CONFIG.BACKEND_GOOGLE_SCRIPT_URL}?${params.toString()}`,
+        `${BACKEND_GOOGLE_SCRIPT_URL}?${params.toString()}`,
         callbackName
       ).then(response => {
         if (response?.status === 'success') {
@@ -2915,7 +2486,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 
-  // 生成評估結果
+  // -------------------------- 17. 生成評估結果
   function generateResult() {
     // 1. 加載基本信息
     const name = document.getElementById('name').value || '未填寫';
@@ -2970,11 +2541,6 @@ document.addEventListener('DOMContentLoaded', function() {
           <div class="p-3 border border-gray-100 rounded-lg col-span-2">
             <p class="text-sm"><strong>職業：</strong> ${occupation}</p>
           </div>
-          ${isAdmin ? `
-          <div class="p-3 border border-green-200 bg-green-50 rounded-lg col-span-2">
-            <p class="text-sm text-green-800"><strong>管理員狀態：</strong> 有效至 ${new Date(adminExpiryDate).toLocaleDateString('zh-CN')}</p>
-          </div>
-          ` : ''}
         </div>
       `;
     } else {
@@ -3004,7 +2570,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // 4. 六大調理方向得分計算
     const adjustmentDirections = {
       體質: [
-        '頭部畏寒', '四肢無力', '平衡能力差/容易跌倒', '思緒中斷', '反應遲鈍', '容易打哈欠',
+        '頭部畏冷', '四肢無力', '平衡能力差/容易跌倒', '思緒中斷', '反應遲鈍', '容易打哈欠',
         '眼睛疲勞', '耳鳴/耳聾', '聽力減退', '嗅覺遲鈍', '咽喉異物感', '聲音沙啞',
         '嘆氣/呼吸短促/喘氣', '打呼', '手足麻木/發紺', '手足發熱/冰涼/腫脹/出汗',
         '胃痛/胃酸過多/腹脹/胃部畏寒', '惡心/打嗝/噯氣', '消化不良', '食慾不佳/容易飽脹',
@@ -3163,7 +2729,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 症狀分類映射
     const symptomCategories = {
-      '頭部症狀': ['頭痛/頭暈', '頭部麻木/腦鳴', '嗜睡/易醒', '失眠/多夢', '偏頭痛/健忘', '言語懶散/口吃', '暈車/暈機', '頭部畏寒', '思緒中斷', '反應遲鈍', '容易打哈欠', '眉骨疼痛'],
+      '頭部症狀': ['頭痛/頭暈', '頭部麻木/腦鳴', '嗜睡/易醒', '失眠/多夢', '偏頭痛/健忘', '言語懶散/口吃', '暈車/暈機', '頭部畏冷', '思緒中斷', '反應遲鈍', '容易打哈欠', '眉骨疼痛'],
       '眼耳鼻喉': ['老花眼', '眼睛癢/腫脹/突出/疼痛', '眼睛畏光/流淚', '眼睛乾澀/飛蚊症', '眼糞多/麥粒腫', '眼睛疲勞', '夜盲症', '視力模糊', '耳朵內潮濕/化膿', '耳垢多/耳朵疼痛/癢', '耳鳴/耳聾', '聽力減退', '鼻炎/鼻塞', '流鼻水/流鼻血', '打噴嚏', '過敏性鼻炎', '酒渣鼻', '嗅覺遲鈍', '咽喉異物感', '聲音沙啞'],
       '呼吸系統': ['咳嗽/氣喘', '支氣管炎', '感冒久不愈', '容易感冒/不易感冒', '痰液多/黃痰/痰液清稀', '白痰/黑痰/痰中帶血', '嘆氣/呼吸短促/喘氣', '打呼'],
       '循環系統': ['低血壓/高血壓', '貧血/高血脂症', '心絞痛', '心跳過快/過慢', '心悸/心律不整', '胸悶/胸痛', '右側肝區悶痛', '手足麻木/發紺', '手足發熱/冰涼/腫脹/出汗', '頭暈/頭部麻木/容易打哈欠', '面色異常（蒼白/發青）'],
@@ -3171,7 +2737,7 @@ document.addEventListener('DOMContentLoaded', function() {
       '內分泌與代謝': ['甲狀腺機能亢進/甲狀腺機能低下', '甲狀腺結節', '肥胖/腹型肥胖', '身體消瘦', '身高矮小/發育遲緩', '體重突然增加/減少10%', '指甲半月痕缺失/稀少', '指甲易斷裂/手指倒刺', '指甲凹陷/指甲竪紋', '血管瘤/脂肪瘤', '纖維瘤/皮脂腺囊腫', '膽結石/腎結石', '扁平疣/尋常疣', '皮贅/雞眼', '淋巴結腫大', '低燒37-38℃', '手足抽搐/手足顫抖', '低血糖/高血糖', '高血脂症'],
       '肌肉骨骼與關節': ['四肢無力', '平衡能力差/容易跌倒', '手足脫皮/凍瘡', '小腿水腫', '關節疼痛/腫脹', '容易落枕/頸部僵硬', '肩膀酸脹/麻木/疼痛', '頸部疼痛/頸部畏寒', '頸部脂肪堆積', '腰部酸痛/腰部畏寒', '游離性疼痛', '脊椎僵硬/脊椎疼痛', '靜脈曲張', '容易扭傷', '腳跟疼痛'],
       '皮膚與毛髮': ['頭髮稀疏', '頭髮乾燥/掉發', '白髮/圓形禿', '頭部/面部油膩', '臉頰泛紅', '面色黃/蒼白/黝黑', '痤瘡/青春痘/色素斑', '皮膚容易瘀青/紅點', '皮膚癢/背部青春痘', '皮膚乾燥/接觸性皮炎', '銀屑病/白斑病', '黑痣增大/增多', '蜘蛛痣/魚鱗病', '各類過敏/濕疹', '產後掉發/產後憂鬱', '產後色素沈澱', '脂肪粒', '身體異味'],
-      '女性症狀': ['不孕', '流產/死胎', '月經量少/月經有血塊', '月經量多/子宮肌瘤', '月經提前/延後', '月經期間煩躁/乳房脹痛', '月經期間厭食/水腫', '月經期間腰痛/頭痛', '月經期間嗜睡/失眠', '月經期間腹脹/痛經', '子宮腺肌症', '月經期間下腹部畏寒', '月經期間下腹部墜脹', '月經顏色暗/淡/深黑', '月經期間長青春痘', '月經期間延長', '停經', '乳頭凹陷/乳頭溢膿', '乳房腫塊/乳腺增生', '卵巢囊腫', '子宮頸息肉', '子宮頸肥大/子宮頸囊腫', '白帶增多/白帶帶血絲', '白帶顏色偏黃/黏稠', '白帶呈稀水狀/有腥臭味'],
+      '女性症狀': ['不孕', '流產/死胎', '月經量少/月經有血塊', '月經量多/子宮肌瘤', '月經提前/延後', '月經期間煩躁/乳房脹痛', '月經期間厭食/水腫', '月經期間腰痛/頭痛', '月經期間嗜睡/失眠', '月經期間腹脹/痛經', '子宮腺肌症', '月經期間下腹部畏寒', '月經期間下腹部墜脹', '月經顏色暗/淡/深黑', '月經期間長青春痘', '月經期延長', '停經', '乳頭凹陷/乳頭溢膿', '乳房腫塊/乳腺增生', '卵巢囊腫', '子宮頸息肉', '子宮頸肥大/子宮頸囊腫', '白帶增多/白帶帶血絲', '白帶顏色偏黃/黏稠', '白帶呈稀水狀/有腥臭味'],
       '泌尿生殖系統': ['夜尿頻繁/尿頻/尿急', '尿不盡/尿失禁', '排尿疼痛/血尿', '尿分叉/排尿等待', '尿液濃稠/尿液有異味', '尿液混濁/尿液泡沫多', '尿道口灼熱感/尿道口發炎', '外陰瘙癢/外陰異味', '下腹部悶痛', '睪丸腫塊/疝氣', '肛門瘙癢', '便血/痔瘡', '脫肛/肛裂/肛瘻', '性慾降低', '自汗/多汗/盜汗', '冒冷汗/後背畏寒']
     };
 
@@ -3332,6 +2898,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // 修正截圖處理函數，確保不包含六大調理方向
   async function handleImageDownload() {
+    // 檢查登錄狀態
+    if (!checkLoginStatus()) return;
+    
     try {
       // 禁用按鈕並顯示加載狀態
       downloadReportBtn.disabled = true;
@@ -3474,6 +3043,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
+  
   // 單獨的ImgBB上傳函數
   async function uploadToImgBB(blob, fileName) {
     try {
@@ -3484,7 +3054,7 @@ document.addEventListener('DOMContentLoaded', function() {
       });
 
       const formData = new FormData();
-      formData.append('key', CONFIG.IMGBB_API_KEY);
+      formData.append('key', IMGBB_API_KEY);
       formData.append('image', base64Image);
       formData.append('name', fileName);
 
@@ -3492,7 +3062,7 @@ document.addEventListener('DOMContentLoaded', function() {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
       
-      const uploadResponse = await fetch(CONFIG.IMGBB_UPLOAD_URL, {
+      const uploadResponse = await fetch(IMGBB_UPLOAD_URL, {
         method: 'POST',
         body: formData,
         signal: controller.signal
@@ -3573,7 +3143,7 @@ document.addEventListener('DOMContentLoaded', function() {
     indicator.querySelector('#progressStatus').textContent = text;
   }
 
-  // 顯示輕量級提示 - 新增info類型
+  // 顯示輕量級提示
   function showToast(message, type = 'success') {
     // 移除現有的toast
     const existingToast = document.querySelector('.custom-toast');
@@ -3587,11 +3157,8 @@ document.addEventListener('DOMContentLoaded', function() {
       box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2); transition: opacity 0.3s ease;
     `;
     
-    // 新增info類型的顏色
     if (type === 'error') {
       toast.style.background = '#ff4d4f';
-    } else if (type === 'info') {
-      toast.style.background = '#1890ff';
     } else {
       toast.style.background = '#52c41a';
     }
@@ -3720,27 +3287,32 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 
-  // 綁定事件與初始化
+  // -------------------------- 19. 綁定事件與初始化
   if (downloadReportBtn) {
     downloadReportBtn.addEventListener('click', handleImageDownload);
   }
 
-  // 修復prependChild拼寫錯誤為prepend
-  if (typeof Node.prototype.prependChild === 'undefined') {
-    Node.prototype.prependChild = function(child) {
-      this.prepend(child);
-    };
+  // 頁面初始化 - 先執行自動登錄
+  async function initialize() {
+    // 先執行自動登錄
+    const loginSuccess = await autoLogin();
+    
+    // 然後初始化表單
+    updateFormSteps();
+    updateGenderBasedUI();
+    
+    // 如果登錄失敗，顯示提示
+    if (!loginSuccess) {
+      showToast('登錄失敗，部分功能可能受限', 'error');
+    }
   }
-
-  // 頁面初始化
-  updateFormSteps();
-  updateGenderBasedUI();
   
-  // 初始化LIFF
-  initializeLiff();
+  // 啓動初始化流程
+  initialize();
 });
 </script>
-    
+
+
 
     
 </body>
