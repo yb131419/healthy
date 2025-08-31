@@ -1747,14 +1747,15 @@
   </div>
 
 <script>
+
 document.addEventListener('DOMContentLoaded', function() {
-  // 1. 全局狀態與配置 - 增加用戶管理相關配置
+  // 1. 全域狀態與配置 - 增加用戶管理相關配置
   let currentStep = 1;
   const totalSteps = 4;
   const OPENAI_MODEL = 'gpt-3.5-turbo';
-  // 更新Google工作表相關配置
+  // 更新Google試算表相關配置
   const MANAGER_SHEET_ID = '1MxnhJlr7Q5zdmMxjeoKZ5r7s8DZATRewbneiG3eDRgM';
-  const ADMIN_SHEET_NAME = '管理员名单'; // 管理表中存儲管理员信息的工作表名稱
+  const ADMIN_SHEET_NAME = '管理員名單'; // 管理表中存儲管理員資訊的工作表名稱
   const DATA_SHEET_ID = '1v1uJfdFfD6KHHXv-E0duki4KH1a6n-jIyZUx0mZFJ2o';
   const BACKEND_GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwQH5XE3u9vgedphUCOnXpYl9WG4-3ScF29SYoSb3MGLMQX28qBeY3tqt56PiIFsAtw4w/exec';
   const IMGBB_API_KEY = '60691c91e77a7ad5a7eabaf332fbdffe';
@@ -1763,10 +1764,11 @@ document.addEventListener('DOMContentLoaded', function() {
   
   // 用戶管理相關配置
   const USER_ID = 'U637a1021435c679291635394543be259'; // 用戶唯一標識
-  let userSession = null; // 用戶會話信息
-  let adminList = []; // 存儲管理员名单
+  let userSession = null; // 用戶會話資訊
+  let adminList = []; // 存儲管理員名單
+  const MAX_NORMAL_USER_USAGES = 3; // 一般用戶最大使用次數
   
-  // 新增：網絡請求配置
+  // 新增：網路請求配置
   const REQUEST_TIMEOUT = 15000; // 15秒超時
   const MAX_RETRIES = 2; // 最大重試次數
 
@@ -1793,7 +1795,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const femaleSymptomItems = document.querySelectorAll('.symptom-item[data-category="female"]');
   const postpartumSymptoms = document.querySelectorAll('.symptom-item[data-special="postpartum"]');
 
-  // 4. 核心全局數據
+  // 4. 核心全域數據
   let globalUniqueSymptoms = [];
   let globalUniqueHabits = [];
   let windowHealthChart = null;
@@ -1801,6 +1803,7 @@ document.addEventListener('DOMContentLoaded', function() {
   let localImageName = '';
   let imgbbImageUrl = '';
   let imgbbDeleteUrl = '';
+  let userUsageCount = 0; // 用戶使用次數
 
   // 5. 動態創建AI評估容器
   function createAiContainer() {
@@ -1895,6 +1898,62 @@ document.addEventListener('DOMContentLoaded', function() {
     };
   }
 
+  // 獲取用戶使用次數
+  async function getUserUsageCount(userId) {
+    try {
+      const callbackName = `jsonpGetUsage_${Date.now()}`;
+      const params = new URLSearchParams({
+        userId: userId,
+        action: 'getStats',
+        callback: callbackName,
+        timestamp: Date.now()
+      });
+
+      const requestFn = () => jsonpRequest(
+        `${BACKEND_GOOGLE_SCRIPT_URL}?${params.toString()}`,
+        callbackName
+      );
+      
+      const response = await requestWithRetry(requestFn);
+
+      if (response?.status === 'success' && typeof response.stats?.total === 'number') {
+        return response.stats.total;
+      } else {
+        return 0;
+      }
+    } catch (error) {
+      console.error('獲取用戶使用次數失敗:', error);
+      return 0;
+    }
+  }
+
+  // 獲取剩餘使用次數
+  function getRemainingUsage() {
+    if (userSession?.isAdmin) {
+      return '無限制';
+    }
+    return Math.max(0, MAX_NORMAL_USER_USAGES - userUsageCount);
+  }
+
+  // 檢查用戶是否可以繼續使用
+  function checkUserUsagePermission() {
+    // 管理員不受使用次數限制
+    if (userSession?.isAdmin) {
+      return { allowed: true, message: '' };
+    }
+    
+    // 一般用戶檢查使用次數
+    const remaining = getRemainingUsage();
+    if (remaining <= 0) {
+      return { 
+        allowed: false, 
+        message: `您已達到最大使用次數（${MAX_NORMAL_USER_USAGES}次）。如需繼續使用，請聯繫管理員升級權限。` 
+      };
+    }
+    
+    return { allowed: true, message: '' };
+  }
+
   // -------------------------- 用戶認證與自動登錄
   async function autoLogin() {
     try {
@@ -1913,6 +1972,8 @@ document.addEventListener('DOMContentLoaded', function() {
           session.expiryDate = adminCheck.expiryDate;
           
           userSession = session;
+          // 獲取用戶使用次數
+          userUsageCount = await getUserUsageCount(USER_ID);
           updateLoginStatus(true, adminCheck);
           return true;
         }
@@ -1922,7 +1983,7 @@ document.addEventListener('DOMContentLoaded', function() {
       const callbackName = `jsonpLoginCallback_${Date.now()}`;
       const params = new URLSearchParams({
         userId: USER_ID,
-        action: 'login', // 修改為後端支持的login操作
+        action: 'login',
         callback: callbackName,
         timestamp: Date.now()
       });
@@ -1945,6 +2006,9 @@ document.addEventListener('DOMContentLoaded', function() {
           expiryDate: adminCheck.expiryDate || response.userData?.expiryDate
         };
         localStorage.setItem('healthFormSession', JSON.stringify(userSession));
+        
+        // 獲取用戶使用次數
+        userUsageCount = await getUserUsageCount(USER_ID);
         updateLoginStatus(true, adminCheck);
         return true;
       } else {
@@ -1957,19 +2021,17 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
-  // 更新登錄狀態顯示
+  // 更新登錄狀態顯示（隱藏用戶ID和管理員信息）
   function updateLoginStatus(isLoggedIn, adminInfo, message = '') {
     if (isLoggedIn) {
-      const isAdmin = adminInfo?.isAdmin || userSession?.isAdmin;
-      const expiryDate = adminInfo?.expiryDate || userSession?.expiryDate;
-      const role = adminInfo?.role || '管理員';
+      // 顯示登錄狀態和剩餘使用次數
+      const remaining = getRemainingUsage();
+      let statusText = `<i class="fa fa-check-circle"></i> 已登錄`;
       
-      let statusText = `<i class="fa fa-check-circle"></i> 已登錄 (用戶ID: ${USER_ID.slice(0, 8)}...)`;
-      if (isAdmin) {
-        statusText += ` - ${role}`;
-        if (expiryDate) {
-          statusText += ` (有效期至: ${expiryDate})`;
-        }
+      if (userSession?.isAdmin) {
+        statusText += ` (管理員)`;
+      } else {
+        statusText += ` (剩餘次數: ${remaining})`;
       }
       
       loginStatus.innerHTML = `<span style="color: green;">${statusText}</span>`;
@@ -1986,8 +2048,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
-  // 檢查登錄狀態
-  function checkLoginStatus() {
+  // 檢查登錄狀態和使用權限
+  function checkLoginAndUsageStatus() {
     if (!userSession) {
       showToast('請先登錄', 'error');
       return false;
@@ -2001,7 +2063,15 @@ document.addEventListener('DOMContentLoaded', function() {
         userSession.isAdmin = false;
         localStorage.setItem('healthFormSession', JSON.stringify(userSession));
         updateLoginStatus(true, adminCheck);
+        return false;
       }
+    }
+    
+    // 檢查使用次數限制
+    const usageCheck = checkUserUsagePermission();
+    if (!usageCheck.allowed) {
+      showToast(usageCheck.message, 'error');
+      return false;
     }
     
     return true;
@@ -2041,7 +2111,7 @@ document.addEventListener('DOMContentLoaded', function() {
     updateGlobalSymptomData();
   }
 
-  // -------------------------- 3. 全局症狀/習慣數據更新
+  // -------------------------- 3. 全域症狀/習慣數據更新
   function updateGlobalSymptomData() {
     // 症狀去重
     const symptomElements = document.querySelectorAll('input[name="symptoms"]:checked');
@@ -2160,7 +2230,7 @@ document.addEventListener('DOMContentLoaded', function() {
       // 錯誤處理
       script.onerror = function() {
         cleanup();
-        reject(new Error('網絡錯誤'));
+        reject(new Error('網路錯誤'));
       };
       
       // 清理函數
@@ -2191,8 +2261,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // -------------------------- 7. 調用後端生成AI評語
   async function callOpenAIByBackend(healthData) {
-    // 檢查登錄狀態
-    if (!checkLoginStatus()) return false;
+    // 檢查登錄和使用狀態（已取消單獨ID驗證，只使用登錄時的驗證）
+    if (!checkLoginAndUsageStatus()) return false;
     
     try {
       // 顯示加載狀態
@@ -2247,7 +2317,7 @@ document.addEventListener('DOMContentLoaded', function() {
       aiEvaluationContainer.innerHTML = `
         <div class="bg-red-50 p-4 rounded-lg border border-red-100 mt-4">
           <h4 class="font-semibold text-red-600 mb-2">AI評估生成失敗</h4>
-          <p class="text-sm text-gray-600 mb-3">原因：${error.message || '網絡異常，請檢查網絡後重試'}</p>
+          <p class="text-sm text-gray-600 mb-3">原因：${error.message || '網路異常，請檢查網路後重試'}</p>
           <button id="aiRetryBtn" class="px-3 py-1 bg-primary text-white rounded text-sm hover:bg-primary/90">
             <i class="fa fa-refresh mr-1"></i> 重新生成
           </button>
@@ -2288,8 +2358,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // -------------------------- 9. 表單提交
   submitBtn.addEventListener('click', async () => {
-    // 檢查登錄狀態
-    if (!checkLoginStatus()) return;
+    // 檢查登錄和使用狀態
+    if (!checkLoginAndUsageStatus()) return;
     
     updateGlobalSymptomData();
     if (!validateStep(4)) return;
@@ -2310,6 +2380,10 @@ document.addEventListener('DOMContentLoaded', function() {
       const submitSuccess = submitResult.status === 'fulfilled' && submitResult.value;
       
       if (aiSuccess || submitSuccess) {
+        // 更新使用次數
+        userUsageCount++;
+        // 更新剩餘使用次數顯示
+        updateLoginStatus(true, verifyAdminPermission(USER_ID));
         generateResult();
       } else {
         // 顯示具體錯誤信息
@@ -2338,7 +2412,7 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 
   restartBtn.addEventListener('click', () => {
-    // 重置全局數據
+    // 重置全域數據
     globalUniqueSymptoms = [];
     globalUniqueHabits = [];
     globalAiComment = '';
@@ -2495,7 +2569,7 @@ document.addEventListener('DOMContentLoaded', function() {
     return {
       userId: USER_ID, // 添加用戶ID
       sessionId: userSession?.sessionId || '', // 添加會話ID
-      submitTime: new Date().toLocaleString('zh-CN', {
+      submitTime: new Date().toLocaleString('zh-TW', {
         year: 'numeric', month: '2-digit', day: '2-digit',
         hour: '2-digit', minute: '2-digit', second: '2-digit'
       }),
@@ -2550,7 +2624,7 @@ document.addEventListener('DOMContentLoaded', function() {
     return `${bmiValue} ${bmiStatus}`;
   }
 
-  // -------------------------- 16. 提交數據到Google Sheets
+  // -------------------------- 16. 提交數據到Google試算表
   function submitToGoogleSheets() {
     // 檢查登錄狀態
     if (!userSession) {
@@ -2574,6 +2648,11 @@ document.addEventListener('DOMContentLoaded', function() {
         callbackName
       ).then(response => {
         if (response?.status === 'success') {
+          // 更新剩餘使用次數
+          if (response.remainingUsage !== undefined) {
+            userUsageCount = MAX_NORMAL_USER_USAGES - response.remainingUsage;
+            updateLoginStatus(true, verifyAdminPermission(USER_ID));
+          }
           return true;
         } else {
           throw new Error(response?.message || '數據提交失敗，後端未確認保存');
@@ -2971,8 +3050,8 @@ document.addEventListener('DOMContentLoaded', function() {
   <!-- ⑤ 循環——健康的「暢通管道」 -->
   <div class="bg-white p-4 rounded-lg border border-gray-100 shadow-sm mb-4">
     <h4 class="font-semibold text-blue-600 mb-2">⑤ 循環 —— 健康的「暢通管道」</h4>
-    <p class="text-sm mb-2">👉血管循環似水溝，血脂、垃圾是「雜草」，高血壓是「水流壓力大」。降壓藥僅暫時「加寬管道」，沒清垃圾問題遲早反復。</p>
-    <p class="text-sm text-gray-700 italic">👉寓意：調循環關鍵是清理血管垃圾，讓血液順暢流動。</p>
+    <p class="text-sm mb-2">血管循環似水溝，血脂、垃圾是「雜草」，高血壓是「水流壓力大」。降壓藥僅暫時「加寬管道」，沒清垃圾問題遲早反復。</p>
+    <p class="text-sm text-gray-700 italic">寓意：調循環關鍵是清理血管垃圾，讓血液順暢流動。</p>
   </div>
 
   <!-- ⑥ 內分泌——身體的「總調度中心」 -->
@@ -2994,8 +3073,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // 修正截圖處理函數，確保不包含六大調理方向
   async function handleImageDownload() {
-    // 檢查登錄狀態
-    if (!checkLoginStatus()) return;
+    // 檢查登錄和使用狀態
+    if (!checkLoginAndUsageStatus()) return;
     
     try {
       // 禁用按鈕並顯示加載狀態
@@ -3109,7 +3188,7 @@ document.addEventListener('DOMContentLoaded', function() {
       if (uploadResult.status === 'fulfilled' && uploadResult.value) {
         imgbbImageUrl = uploadResult.value.url;
         imgbbDeleteUrl = uploadResult.value.deleteUrl;
-        // 異步更新Google Sheets
+        // 異步更新Google試算表
         submitToGoogleSheets().catch(err => console.log('更新圖片URL失敗:', err));
       }
       
@@ -3406,7 +3485,10 @@ document.addEventListener('DOMContentLoaded', function() {
   // 啓動初始化流程
   initialize();
 });
+
 </script>
+
+
 
 
     
