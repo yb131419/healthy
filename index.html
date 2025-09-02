@@ -1748,6 +1748,9 @@
 
 <script>
 
+// LINE登录相关配置 - 请替换为您的Channel ID
+const LINE_CHANNEL_ID = '2007488640'; // 替换为您的LINE Channel ID
+
 document.addEventListener('DOMContentLoaded', function() {
   // 1. 全域狀態與配置 - 增加超時設置
   let currentStep = 1;
@@ -1757,6 +1760,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const IMGBB_API_KEY = '60691c91e77a7ad5a7eabaf332fbdffe';
   const IMGBB_UPLOAD_URL = 'https://api.imgbb.com/1/upload';
   let globalAiComment = '';
+  let lineUserId = null; // 新增：LINE用戶ID
   
   // 新增：網路請求配置
   const REQUEST_TIMEOUT = 15000; // 15秒超時
@@ -1777,6 +1781,8 @@ document.addEventListener('DOMContentLoaded', function() {
   const formContainer = document.getElementById('form');
   const aiEvaluationContainer = document.getElementById('aiEvaluationContainer') || createAiContainer();
   const healthRecommendations = document.getElementById('healthRecommendations');
+  const loginButton = document.getElementById('lineLoginBtn'); // 新增：LINE登錄按鈕
+  const loginStatus = document.getElementById('loginStatus'); // 新增：登錄狀態顯示
 
   // 3. 性別相關元素
   const genderRadios = document.querySelectorAll('input[name="gender"]');
@@ -1811,6 +1817,120 @@ document.addEventListener('DOMContentLoaded', function() {
       document.body.appendChild(container);
     }
     return container;
+  }
+
+  // 新增：初始化LINE SDK
+  function initLineSDK() {
+    // 檢查是否已加載LINE SDK
+    if (window.LINE) {
+      setupLineLogin();
+      return;
+    }
+    
+    // 加載LINE SDK
+    const script = document.createElement('script');
+    script.src = 'https://static.line-scdn.net/liff/edge/2/sdk.js';
+    script.onload = setupLineLogin;
+    script.onerror = () => {
+      console.error('加載LINE SDK失敗');
+      if (loginStatus) {
+        loginStatus.textContent = 'LINE登錄功能加載失敗，請稍後重試';
+      }
+    };
+    document.head.appendChild(script);
+  }
+
+  // 新增：設置LINE登錄
+  function setupLineLogin() {
+    if (!window.LINE || !window.LINE.Liff) {
+      console.error('LINE SDK加載不完整');
+      return;
+    }
+    
+    // 初始化LIFF
+    window.LINE.Liff.init({ liffId: LINE_CHANNEL_ID })
+      .then(() => {
+        console.log('LINE LIFF初始化成功');
+        checkLineLoginStatus();
+        
+        // 綁定登錄按鈕事件
+        if (loginButton) {
+          loginButton.addEventListener('click', toggleLineLogin);
+        }
+      })
+      .catch((err) => {
+        console.error('LINE LIFF初始化失敗:', err);
+        if (loginStatus) {
+          loginStatus.textContent = `登錄初始化失敗: ${err.message}`;
+        }
+      });
+  }
+
+  // 新增：檢查LINE登錄狀態
+  function checkLineLoginStatus() {
+    if (!window.LINE || !window.LINE.Liff) return;
+    
+    if (window.LINE.Liff.isLoggedIn()) {
+      // 已登錄，獲取用戶信息
+      window.LINE.Liff.getProfile()
+        .then(profile => {
+          lineUserId = profile.userId;
+          const userName = profile.displayName || '用戶';
+          
+          // 更新UI顯示登錄狀態
+          if (loginStatus) {
+            loginStatus.textContent = `已登錄：${userName}`;
+          }
+          if (loginButton) {
+            loginButton.textContent = '退出登錄';
+          }
+          
+          console.log('LINE用戶ID:', lineUserId);
+        })
+        .catch(err => {
+          console.error('獲取LINE用戶信息失敗:', err);
+          if (loginStatus) {
+            loginStatus.textContent = '獲取用戶信息失敗';
+          }
+        });
+    } else {
+      // 未登錄
+      lineUserId = null;
+      if (loginStatus) {
+        loginStatus.textContent = '未登錄，請先登錄';
+      }
+      if (loginButton) {
+        loginButton.textContent = '使用LINE登錄';
+      }
+    }
+  }
+
+  // 新增：切換LINE登錄狀態（登錄/退出）
+  function toggleLineLogin() {
+    if (!window.LINE || !window.LINE.Liff) return;
+    
+    if (window.LINE.Liff.isLoggedIn()) {
+      // 退出登錄
+      window.LINE.Liff.logout()
+        .then(() => {
+          checkLineLoginStatus();
+          showToast('已退出登錄');
+        })
+        .catch(err => {
+          console.error('LINE退出登錄失敗:', err);
+          showToast('退出登錄失敗', 'error');
+        });
+    } else {
+      // 執行登錄
+      window.LINE.Liff.login()
+        .then(() => {
+          checkLineLoginStatus();
+        })
+        .catch(err => {
+          console.error('LINE登錄失敗:', err);
+          showToast('登錄失敗，請重試', 'error');
+        });
+    }
   }
 
   // -------------------------- 1. 導航菜單切換（移動端）
@@ -1878,7 +1998,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
 
-  // -------------------------- 5. 表單驗證邏輯
+  // -------------------------- 5. 表單驗證邏輯 - 新增LINE登錄驗證
   function validateStep(step) {
     let isValid = true;
     clearAllErrors();
@@ -1888,6 +2008,12 @@ document.addEventListener('DOMContentLoaded', function() {
       const name = document.getElementById('name').value.trim();
       const age = document.getElementById('age').value.trim();
       const genderSelected = document.querySelector('input[name="gender"]:checked');
+      
+      // 新增：檢查是否已登錄
+      if (!lineUserId) {
+        showError('login', '請先使用LINE登錄');
+        isValid = false;
+      }
 
       if (!name) { showError('name', '請輸入您的姓名'); isValid = false; }
       if (!age || isNaN(age) || age < 1 || age > 120) { showError('age', '請輸入有效的年齡（1-120歲）'); isValid = false; }
@@ -2010,6 +2136,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
       // 構建完整請求數據（精簡數據傳輸）
       const formData = {
+        lineUserId: lineUserId, // 新增：添加LINE用戶ID
         basicInfo: healthData.basicInfo,
         symptoms: healthData.symptoms,
         symptomCount: healthData.symptomCount,
@@ -2287,10 +2414,11 @@ document.addEventListener('DOMContentLoaded', function() {
     };
   }
 
-  // -------------------------- 14. 工具函數：收集全量表單數據
+  // -------------------------- 14. 工具函數：收集全量表單數據 - 新增LINE用戶ID
   function collectFullFormData() {
     const selectedGender = document.querySelector('input[name="gender"]:checked');
     return {
+      lineUserId: lineUserId, // 新增：LINE用戶ID
       submitTime: new Date().toLocaleString('zh-CN', {
         year: 'numeric', month: '2-digit', day: '2-digit',
         hour: '2-digit', minute: '2-digit', second: '2-digit'
@@ -3247,13 +3375,16 @@ document.addEventListener('DOMContentLoaded', function() {
     downloadReportBtn.addEventListener('click', handleImageDownload);
   }
 
+  // 初始化LINE登錄
+  initLineSDK();
+
   // 頁面初始化
   updateFormSteps();
   updateGenderBasedUI();
 });
 
-
 </script>
+
 
 
 
