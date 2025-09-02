@@ -1746,13 +1746,14 @@
     </div>
   </div>
 
-<script>
 
-// LINE登录相关配置 - 请替换为您的Channel ID
-const LINE_CHANNEL_ID = '2007488640'; // 替换为您的LINE Channel ID
+
+<script>
+// LINE登入相關設定 - 請替換為您的Channel ID
+const LINE_CHANNEL_ID = '2007488640'; // 替換為您的LINE Channel ID
 
 document.addEventListener('DOMContentLoaded', function() {
-  // 1. 全域狀態與配置 - 增加超時設置
+  // 1. 全域狀態與設定 - 增加超時設定
   let currentStep = 1;
   const totalSteps = 4;
   const OPENAI_MODEL = 'gpt-3.5-turbo';
@@ -1762,9 +1763,10 @@ document.addEventListener('DOMContentLoaded', function() {
   let globalAiComment = '';
   let lineUserId = null; // 新增：LINE用戶ID
   
-  // 新增：網路請求配置
+  // 新增：網路請求設定
   const REQUEST_TIMEOUT = 15000; // 15秒超時
-  const MAX_RETRIES = 2; // 最大重試次數
+  const MAX_RETRIES = 3; // 增加最大重試次數
+  const SDK_LOAD_DELAY = 2000; // SDK載入延遲
 
   // 2. DOM元素獲取（含AI評估容器）
   const menuToggle = document.getElementById('menuToggle');
@@ -1781,8 +1783,14 @@ document.addEventListener('DOMContentLoaded', function() {
   const formContainer = document.getElementById('form');
   const aiEvaluationContainer = document.getElementById('aiEvaluationContainer') || createAiContainer();
   const healthRecommendations = document.getElementById('healthRecommendations');
-  const loginButton = document.getElementById('lineLoginBtn'); // 新增：LINE登錄按鈕
-  const loginStatus = document.getElementById('loginStatus'); // 新增：登錄狀態顯示
+  const recommendationsContainer = document.getElementById('recommendationsContainer'); // 新增：確保此元素存在
+  
+  // LINE登入元素
+  let loginButton = document.getElementById('lineLoginBtn');
+  let loginStatus = document.getElementById('loginStatus');
+  
+  // 檢查LINE登入元素是否存在，不存在則建立
+  ensureLineLoginElementsExist();
 
   // 3. 性別相關元素
   const genderRadios = document.querySelectorAll('input[name="gender"]');
@@ -1802,8 +1810,59 @@ document.addEventListener('DOMContentLoaded', function() {
   // 新增：設備檢測
   const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
   const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
-  // 5. 動態創建AI評估容器
+  // 確保LINE登入元素存在
+  function ensureLineLoginElementsExist() {
+    // 檢查登入按鈕是否存在
+    if (!loginButton) {
+      console.log('LINE登入按鈕不存在，建立預設按鈕');
+      const buttonContainer = document.createElement('div');
+      buttonContainer.className = 'line-login-container';
+      buttonContainer.style.margin = '15px 0';
+      buttonContainer.style.display = 'flex';
+      buttonContainer.style.alignItems = 'center';
+      buttonContainer.style.gap = '10px';
+      buttonContainer.innerHTML = `
+        <button id="lineLoginBtn" class="line-login-btn px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">
+          使用LINE登入
+        </button>
+        <div id="loginStatus" class="login-status text-sm mt-2 text-gray-600">未登入，請先登入</div>
+      `;
+      
+      // 將按鈕新增到基本資訊區域旁邊
+      const basicInfoSection = document.querySelector('.basic-info-section') || 
+                             document.getElementById('step1') ||
+                             document.querySelector('.form-container');
+      
+      if (basicInfoSection) {
+        // 嘗試插入到基本資訊標題之後
+        const titleElement = basicInfoSection.querySelector('h3, h4');
+        if (titleElement && titleElement.nextSibling) {
+          basicInfoSection.insertBefore(buttonContainer, titleElement.nextSibling);
+        } else {
+          basicInfoSection.appendChild(buttonContainer);
+        }
+      } else {
+        // 如果找不到合適位置，新增到頁面頂部
+        document.body.insertBefore(buttonContainer, document.body.firstChild);
+      }
+      
+      // 重新獲取元素引用
+      loginButton = document.getElementById('lineLoginBtn');
+      loginStatus = document.getElementById('loginStatus');
+    }
+    
+    // 確保登入按鈕可見
+    if (loginButton) {
+      loginButton.style.display = 'inline-block';
+    }
+    if (loginStatus) {
+      loginStatus.style.display = 'block';
+    }
+  }
+
+  // 5. 動態建立AI評估容器
   function createAiContainer() {
     const container = document.createElement('div');
     container.id = 'aiEvaluationContainer';
@@ -1819,124 +1878,263 @@ document.addEventListener('DOMContentLoaded', function() {
     return container;
   }
 
-  // 新增：初始化LINE SDK
+  // 初始化LINE SDK - 改進版本（解決parser-blocking問題）
   function initLineSDK() {
-    // 檢查是否已加載LINE SDK
-    if (window.LINE) {
+    // 確保登入元素存在
+    if (!loginButton || !loginStatus) {
+      console.error('LINE登入元素不存在，無法初始化登入功能');
+      return;
+    }
+    
+    // 顯示初始化狀態
+    loginStatus.textContent = '正在初始化LINE登入...';
+    loginButton.disabled = true;
+    loginButton.innerHTML = '<i class="fa fa-spinner fa-spin mr-1"></i> 載入中...';
+    
+    // 檢查是否已載入LINE SDK
+    if (window.LINE && window.LINE.Liff) {
+      console.log('LINE SDK已載入，直接初始化');
       setupLineLogin();
       return;
     }
     
-    // 加載LINE SDK
-    const script = document.createElement('script');
-    script.src = 'https://static.line-scdn.net/liff/edge/2/sdk.js';
-    script.onload = setupLineLogin;
-    script.onerror = () => {
-      console.error('加載LINE SDK失敗');
-      if (loginStatus) {
-        loginStatus.textContent = 'LINE登錄功能加載失敗，請稍後重試';
-      }
-    };
-    document.head.appendChild(script);
+    // 移除可能存在的舊腳本
+    const oldScript = document.querySelector('script[src*="line-scdn.net/liff"]');
+    if (oldScript) {
+      document.head.removeChild(oldScript);
+      console.log('已移除舊版LINE SDK腳本');
+    }
+    
+    // 載入LINE SDK - 使用最新版本URL和多個備用URL，避免使用document.write
+    console.log('開始載入LINE SDK...');
+    const sdkUrls = [
+      'https://static.line-scdn.net/liff/edge/2.2/sdk.js',  // 主要URL
+      'https://static.line-scdn.net/liff/edge/2.1/sdk.js',  // 備用URL1
+      'https://d.line-scdn.net/liff/edge/2.2/sdk.js'        // 備用URL2
+    ];
+    
+    // 非同步動態載入SDK，避免parser-blocking
+    loadSdkWithFallback(sdkUrls, 0);
   }
-
-  // 新增：設置LINE登錄
-  function setupLineLogin() {
-    if (!window.LINE || !window.LINE.Liff) {
-      console.error('LINE SDK加載不完整');
+  
+  // 帶備用URL的SDK加載函數（非同步版本）
+  function loadSdkWithFallback(urls, index) {
+    if (index >= urls.length) {
+      console.error('所有LINE SDK URL都加載失敗');
+      showSdkLoadError('所有LINE SDK伺服器都無法連接，請檢查網路後重試');
       return;
     }
     
+    // 創建script標籤但不使用document.write
+    const script = document.createElement('script');
+    script.src = urls[index];
+    script.type = 'text/javascript';
+    script.async = true;  // 非同步載入，避免阻塞解析
+    script.defer = true;   // 延遲執行，進一步避免阻塞
+    console.log(`正在嘗試加載LINE SDK (${index + 1}/${urls.length}): ${urls[index]}`);
+    
+    // 超時處理延長至15秒
+    const sdkTimeout = setTimeout(() => {
+      console.error(`LINE SDK載入超時 (${urls[index]})`);
+      document.head.removeChild(script);
+      loadSdkWithFallback(urls, index + 1); // 嘗試下一個URL
+    }, 15000);
+    
+    // 載入成功
+    script.onload = () => {
+      clearTimeout(sdkTimeout);
+      console.log(`LINE SDK腳本載入完成: ${urls[index]}`);
+      
+      // 使用間隔檢查代替固定延遲，確保LINE.Liff已初始化
+      let checkCount = 0;
+      const maxChecks = 15; // 最多檢查15次
+      const checkInterval = setInterval(() => {
+        checkCount++;
+        console.log(`檢查LINE.Liff存在性 (${checkCount}/${maxChecks})`);
+        
+        if (window.LINE && window.LINE.Liff) {
+          clearInterval(checkInterval);
+          console.log('LINE.Liff已準備就緒');
+          setupLineLogin();
+        } else if (checkCount >= maxChecks) {
+          clearInterval(checkInterval);
+          console.error('超過最大檢查次數，未找到LINE.Liff');
+          document.head.removeChild(script);
+          loadSdkWithFallback(urls, index + 1); // 嘗試下一個URL
+        }
+      }, 300); // 每300毫秒檢查一次
+    };
+    
+    // 載入失敗
+    script.onerror = (error) => {
+      clearTimeout(sdkTimeout);
+      console.error(`LINE SDK載入失敗 (${urls[index]}):`, error);
+      document.head.removeChild(script);
+      loadSdkWithFallback(urls, index + 1); // 嘗試下一個URL
+    };
+    
+    // 將腳本添加到head而非body，減少阻塞風險
+    document.head.appendChild(script);
+  }
+  
+  // 顯示SDK加載錯誤
+  function showSdkLoadError(message) {
+    loginStatus.textContent = `LINE登入失敗: ${message}`;
+    loginButton.disabled = false;
+    loginButton.textContent = '重試登入';
+    loginButton.addEventListener('click', initLineSDK);
+    
+    // 提供手動重試按鈕和替代方案
+    const manualRetryBtn = document.createElement('button');
+    manualRetryBtn.className = 'mt-2 px-3 py-1 bg-gray-200 text-gray-800 rounded text-sm';
+    manualRetryBtn.textContent = '手動刷新頁面重試';
+    manualRetryBtn.onclick = () => window.location.reload();
+    
+    if (loginButton.parentNode) {
+      loginButton.parentNode.appendChild(manualRetryBtn);
+    }
+  }
+
+  // 設定LINE登入 - 改進版本
+  function setupLineLogin() {
+    if (!loginButton || !loginStatus) return;
+    
+    if (!window.LINE || !window.LINE.Liff) {
+      console.error('LINE SDK不完整，無法繼續');
+      loginStatus.textContent = 'LINE登入初始化失敗';
+      loginButton.disabled = false;
+      loginButton.textContent = '重試登入';
+      loginButton.addEventListener('click', initLineSDK);
+      return;
+    }
+    
+    // 清除之前的事件監聽器
+    loginButton.removeEventListener('click', toggleLineLogin);
+    loginButton.removeEventListener('click', initLineSDK);
+    
     // 初始化LIFF
-    window.LINE.Liff.init({ liffId: LINE_CHANNEL_ID })
+    loginStatus.textContent = '正在驗證登入狀態...';
+    
+    // 使用帶超時的初始化
+    const initPromise = window.LINE.Liff.init({ liffId: LINE_CHANNEL_ID });
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('初始化超時')), 15000)
+    );
+    
+    Promise.race([initPromise, timeoutPromise])
       .then(() => {
         console.log('LINE LIFF初始化成功');
         checkLineLoginStatus();
         
-        // 綁定登錄按鈕事件
-        if (loginButton) {
-          loginButton.addEventListener('click', toggleLineLogin);
-        }
+        // 綁定登入按鈕事件
+        loginButton.addEventListener('click', toggleLineLogin);
+        loginButton.disabled = false;
       })
       .catch((err) => {
         console.error('LINE LIFF初始化失敗:', err);
-        if (loginStatus) {
-          loginStatus.textContent = `登錄初始化失敗: ${err.message}`;
+        loginStatus.textContent = `登入初始化失敗: ${err.message || '未知錯誤'}`;
+        loginButton.disabled = false;
+        loginButton.textContent = '重試登入';
+        loginButton.addEventListener('click', initLineSDK);
+        
+        // 移動設備特殊提示
+        if (isMobile) {
+          const mobileTip = document.createElement('div');
+          mobileTip.className = 'text-xs text-yellow-600 mt-1';
+          mobileTip.textContent = '提示：移動設備請確保已安裝LINE應用';
+          loginButton.parentNode.appendChild(mobileTip);
         }
       });
   }
 
-  // 新增：檢查LINE登錄狀態
+  // 檢查LINE登入狀態
   function checkLineLoginStatus() {
     if (!window.LINE || !window.LINE.Liff) return;
     
     if (window.LINE.Liff.isLoggedIn()) {
-      // 已登錄，獲取用戶信息
+      // 已登入，獲取用戶資訊
       window.LINE.Liff.getProfile()
         .then(profile => {
           lineUserId = profile.userId;
           const userName = profile.displayName || '用戶';
           
-          // 更新UI顯示登錄狀態
-          if (loginStatus) {
-            loginStatus.textContent = `已登錄：${userName}`;
-          }
-          if (loginButton) {
-            loginButton.textContent = '退出登錄';
-          }
+          // 更新UI顯示登入狀態
+          loginStatus.textContent = `已登入：${userName}`;
+          loginButton.textContent = '退出登入';
           
           console.log('LINE用戶ID:', lineUserId);
         })
         .catch(err => {
-          console.error('獲取LINE用戶信息失敗:', err);
-          if (loginStatus) {
-            loginStatus.textContent = '獲取用戶信息失敗';
-          }
+          console.error('獲取LINE用戶資訊失敗:', err);
+          loginStatus.textContent = '獲取用戶資訊失敗';
+          loginButton.textContent = '重新登入';
         });
     } else {
-      // 未登錄
+      // 未登入
       lineUserId = null;
-      if (loginStatus) {
-        loginStatus.textContent = '未登錄，請先登錄';
-      }
-      if (loginButton) {
-        loginButton.textContent = '使用LINE登錄';
-      }
+      loginStatus.textContent = '未登入，請先登入';
+      loginButton.textContent = '使用LINE登入';
     }
   }
 
-  // 新增：切換LINE登錄狀態（登錄/退出）
+  // 切換LINE登入狀態（登入/退出）
   function toggleLineLogin() {
-    if (!window.LINE || !window.LINE.Liff) return;
+    if (!window.LINE || !window.LINE.Liff) {
+      initLineSDK();
+      return;
+    }
+    
+    // 禁用按鈕防止重複點擊
+    loginButton.disabled = true;
+    loginButton.innerHTML = '<i class="fa fa-spinner fa-spin mr-1"></i> 處理中...';
     
     if (window.LINE.Liff.isLoggedIn()) {
-      // 退出登錄
+      // 退出登入
       window.LINE.Liff.logout()
         .then(() => {
           checkLineLoginStatus();
-          showToast('已退出登錄');
+          showToast('已退出登入');
+          loginButton.disabled = false;
         })
         .catch(err => {
-          console.error('LINE退出登錄失敗:', err);
-          showToast('退出登錄失敗', 'error');
+          console.error('LINE退出登入失敗:', err);
+          showToast('退出登入失敗', 'error');
+          loginButton.disabled = false;
+          loginButton.textContent = '退出登入';
         });
     } else {
-      // 執行登錄
-      window.LINE.Liff.login()
+      // 執行登入
+      // 移動設備使用外部瀏覽器登入
+      const loginOptions = isMobile ? { redirectUri: window.location.href } : {};
+      
+      window.LINE.Liff.login(loginOptions)
         .then(() => {
           checkLineLoginStatus();
+          loginButton.disabled = false;
         })
         .catch(err => {
-          console.error('LINE登錄失敗:', err);
-          showToast('登錄失敗，請重試', 'error');
+          console.error('LINE登入失敗:', err);
+          showToast('登入失敗，請重試', 'error');
+          loginButton.disabled = false;
+          loginButton.textContent = '使用LINE登入';
+          
+          // 提供替代登入方式提示
+          if (err.message.includes('popup')) {
+            const popupTip = document.createElement('div');
+            popupTip.className = 'text-xs text-yellow-600 mt-1';
+            popupTip.textContent = '提示：請允許彈窗以完成登入';
+            loginButton.parentNode.appendChild(popupTip);
+          }
         });
     }
   }
 
   // -------------------------- 1. 導航菜單切換（移動端）
-  menuToggle.addEventListener('click', () => {
-    mobileMenu.classList.toggle('hidden');
-  });
+  if (menuToggle && mobileMenu) {
+    menuToggle.addEventListener('click', () => {
+      mobileMenu.classList.toggle('hidden');
+    });
+  }
 
   // -------------------------- 2. 性別選擇驅動UI變化
   genderRadios.forEach(radio => {
@@ -1979,47 +2177,79 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   // -------------------------- 4. 表單步驟導航
-  prevBtn.addEventListener('click', () => {
-    if (currentStep > 1) {
-      currentStep--;
-      updateFormSteps();
-      if (currentStep === 1) updateGenderBasedUI();
-    }
-  });
-
-  nextBtn.addEventListener('click', () => {
-    if (validateStep(currentStep)) {
-      if (currentStep === 2) updateGlobalSymptomData();
-      if (currentStep < totalSteps) {
-        currentStep++;
+  if (prevBtn) {
+    prevBtn.addEventListener('click', () => {
+      if (currentStep > 1) {
+        currentStep--;
         updateFormSteps();
-        if (currentStep === 2) updateGenderBasedUI();
+        if (currentStep === 1) updateGenderBasedUI();
       }
-    }
-  });
+    });
+  }
 
-  // -------------------------- 5. 表單驗證邏輯 - 新增LINE登錄驗證
+  // 修復下一步按鈕邏輯
+  if (nextBtn) {
+    // 先移除可能存在的舊事件監聽器
+    const newNextBtn = nextBtn.cloneNode(true);
+    nextBtn.parentNode.replaceChild(newNextBtn, nextBtn);
+    // 重新獲取nextBtn引用
+    const updatedNextBtn = document.getElementById(nextBtn.id);
+    
+    updatedNextBtn.addEventListener('click', async () => {
+      try {
+        // 顯示驗證中狀態
+        updatedNextBtn.disabled = true;
+        updatedNextBtn.innerHTML = '<i class="fa fa-spinner fa-spin mr-1"></i> 驗證中...';
+        
+        // 直接驗證
+        if (validateStep(currentStep)) {
+          if (currentStep === 2) updateGlobalSymptomData();
+          if (currentStep < totalSteps) {
+            currentStep++;
+            updateFormSteps();
+            if (currentStep === 2) updateGenderBasedUI();
+          }
+        }
+        
+        // 恢復按鈕狀態
+        updatedNextBtn.disabled = false;
+        updatedNextBtn.innerHTML = '下一步 <i class="fa fa-arrow-right ml-1"></i>';
+      } catch (error) {
+        console.error('下一步按鈕錯誤:', error);
+        // 出錯時也恢復按鈕狀態
+        updatedNextBtn.disabled = false;
+        updatedNextBtn.innerHTML = '下一步 <i class="fa fa-arrow-right ml-1"></i>';
+        showToast('操作出錯，請重試', 'error');
+      }
+    });
+  }
+
+  // -------------------------- 5. 表單驗證邏輯
   function validateStep(step) {
     let isValid = true;
     clearAllErrors();
 
-    // 步驟1：基本信息驗證
+    // 步驟1：基本資訊驗證
     if (step === 1) {
       const name = document.getElementById('name').value.trim();
       const age = document.getElementById('age').value.trim();
       const genderSelected = document.querySelector('input[name="gender"]:checked');
       
-      // 新增：檢查是否已登錄
+      // 檢查LINE登入狀態，如果未登入顯示警告但允許繼續
       if (!lineUserId) {
-        showError('login', '請先使用LINE登錄');
-        isValid = false;
+        showWarning('login', '未登入LINE，部分功能可能受限');
+        // 不設置isValid為false，允許用戶繼續
       }
 
       if (!name) { showError('name', '請輸入您的姓名'); isValid = false; }
       if (!age || isNaN(age) || age < 1 || age > 120) { showError('age', '請輸入有效的年齡（1-120歲）'); isValid = false; }
       if (!genderSelected) { showError('gender', '請選擇您的性別'); isValid = false; }
     }
-
+    // 步驟2和3的驗證
+    else if (step === 2 || step === 3) {
+      // 這兩個步驟不強制要求選擇，但可以新增基本驗證
+      isValid = true;
+    }
     // 步驟4：健康評估驗證
     else if (step === 4) {
       const mainConcern = document.getElementById('mainConcern').value.trim();
@@ -2044,9 +2274,33 @@ document.addEventListener('DOMContentLoaded', function() {
     return isValid;
   }
 
+  // 顯示警告（不阻斷流程）
+  function showWarning(fieldId, message) {
+    const warningElement = document.getElementById(`${fieldId}Warning`);
+    if (warningElement) {
+      warningElement.textContent = message;
+      warningElement.classList.remove('hidden');
+      warningElement.classList.add('text-yellow-600');
+    } else {
+      // 如果沒有警告元素，建立一個臨時的
+      const tempWarning = document.createElement('div');
+      tempWarning.id = `${fieldId}Warning`;
+      tempWarning.className = 'text-yellow-600 text-sm mt-1';
+      tempWarning.textContent = message;
+      
+      const loginContainer = loginButton.parentNode;
+      loginContainer.appendChild(tempWarning);
+      
+      // 5秒後自動隱藏警告
+      setTimeout(() => {
+        tempWarning.classList.add('hidden');
+      }, 5000);
+    }
+  }
+
   // 清除所有錯誤提示
   function clearAllErrors() {
-    document.querySelectorAll('.error-message').forEach(el => el.classList.add('hidden'));
+    document.querySelectorAll('.error-message, .text-yellow-600').forEach(el => el.classList.add('hidden'));
     document.querySelectorAll('input, select, textarea').forEach(el => el.classList.remove('error-input'));
   }
 
@@ -2056,6 +2310,19 @@ document.addEventListener('DOMContentLoaded', function() {
     if (errorElement) {
       errorElement.textContent = message;
       errorElement.classList.remove('hidden');
+    } else {
+      // 如果沒有錯誤元素，建立一個
+      const tempError = document.createElement('div');
+      tempError.id = `${fieldId}Error`;
+      tempError.className = 'error-message text-red-500 text-sm mt-1';
+      tempError.textContent = message;
+      
+      const fieldElement = document.getElementById(fieldId) || 
+                          document.querySelector(`input[name="${fieldId}"]`);
+      
+      if (fieldElement && fieldElement.parentNode) {
+        fieldElement.parentNode.appendChild(tempError);
+      }
     }
 
     const inputElement = document.getElementById(fieldId);
@@ -2124,7 +2391,7 @@ document.addEventListener('DOMContentLoaded', function() {
   // -------------------------- 7. 調用後端生成AI評語
   async function callOpenAIByBackend(healthData) {
     try {
-      // 顯示加載狀態
+      // 顯示載入狀態
       aiEvaluationContainer.innerHTML = `
         <div class="bg-blue-50 p-4 rounded-lg border border-blue-100 mt-4">
           <h4 class="font-semibold text-primary mb-2 flex items-center">
@@ -2136,7 +2403,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
       // 構建完整請求數據（精簡數據傳輸）
       const formData = {
-        lineUserId: lineUserId, // 新增：添加LINE用戶ID
+        lineUserId: lineUserId, // 新增LINE用戶ID
         basicInfo: healthData.basicInfo,
         symptoms: healthData.symptoms,
         symptomCount: healthData.symptomCount,
@@ -2215,87 +2482,93 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   // -------------------------- 9. 表單提交
-  submitBtn.addEventListener('click', async () => {
-    updateGlobalSymptomData();
-    if (!validateStep(4)) return;
+  if (submitBtn) {
+    submitBtn.addEventListener('click', async () => {
+      updateGlobalSymptomData();
+      if (!validateStep(4)) return;
 
-    successModal.classList.remove('hidden');
-    try {
-      // 並行執行AI評估和數據提交，提高速度
-      const healthData = collectHealthData();
-      
-      // 使用Promise.allSettled確保兩個操作都完成
-      const [aiResult, submitResult] = await Promise.allSettled([
-        callOpenAIByBackend(healthData),
-        submitToGoogleSheets()
-      ]);
-      
-      // 檢查是否有一個操作成功
-      const aiSuccess = aiResult.status === 'fulfilled' && aiResult.value;
-      const submitSuccess = submitResult.status === 'fulfilled' && submitResult.value;
-      
-      if (aiSuccess || submitSuccess) {
-        generateResult();
-      } else {
-        // 顯示具體錯誤信息
-        const errorMsg = [];
-        if (aiResult.status === 'rejected') errorMsg.push(`AI評估: ${aiResult.reason.message}`);
-        if (submitResult.status === 'rejected') errorMsg.push(`數據提交: ${submitResult.reason.message}`);
+      successModal.classList.remove('hidden');
+      try {
+        // 並行執行AI評估和數據提交，提高速度
+        const healthData = collectHealthData();
         
-        alert(`操作失敗：\n${errorMsg.join('\n')}\n請稍後重試`);
+        // 使用Promise.allSettled確保兩個操作都完成
+        const [aiResult, submitResult] = await Promise.allSettled([
+          callOpenAIByBackend(healthData),
+          submitToGoogleSheets()
+        ]);
+        
+        // 檢查是否有一個操作成功
+        const aiSuccess = aiResult.status === 'fulfilled' && aiResult.value;
+        const submitSuccess = submitResult.status === 'fulfilled' && submitResult.value;
+        
+        if (aiSuccess || submitSuccess) {
+          generateResult();
+        } else {
+          // 顯示具體錯誤信息
+          const errorMsg = [];
+          if (aiResult.status === 'rejected') errorMsg.push(`AI評估: ${aiResult.reason.message}`);
+          if (submitResult.status === 'rejected') errorMsg.push(`數據提交: ${submitResult.reason.message}`);
+          
+          alert(`操作失敗：\n${errorMsg.join('\n')}\n請稍後重試`);
+          successModal.classList.add('hidden');
+        }
+      } catch (error) {
+        console.error('提交異常：', error);
+        alert(`提交失敗：${error.message}`);
         successModal.classList.add('hidden');
       }
-    } catch (error) {
-      console.error('提交異常：', error);
-      alert(`提交失敗：${error.message}`);
-      successModal.classList.add('hidden');
-    }
-  });
+    });
+  }
 
   // -------------------------- 10. 查看結果/重新評估按鈕事件
-  viewResultBtn.addEventListener('click', () => {
-    successModal.classList.add('hidden');
-    resultSection.classList.remove('hidden');
-    resultSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    if (globalAiComment) {
-      renderAiEvaluation();
-    }
-  });
-
-  restartBtn.addEventListener('click', () => {
-    // 重置全域數據
-    globalUniqueSymptoms = [];
-    globalUniqueHabits = [];
-    globalAiComment = '';
-    localImageBlob = null;
-    localImageName = '';
-    imgbbImageUrl = '';
-    imgbbDeleteUrl = '';
-    currentStep = 1;
-
-    // 重置雷達圖
-    if (windowHealthChart) {
-      windowHealthChart.destroy();
-      windowHealthChart = null;
-    }
-
-    // 重置AI評估容器
-    aiEvaluationContainer.innerHTML = '';
-
-    // 重置表單元素
-    document.querySelectorAll('input, textarea, select').forEach(el => {
-      if (el.type === 'checkbox' || el.type === 'radio') el.checked = false;
-      else el.value = '';
-      el.classList.remove('error-input');
+  if (viewResultBtn) {
+    viewResultBtn.addEventListener('click', () => {
+      successModal.classList.add('hidden');
+      resultSection.classList.remove('hidden');
+      resultSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      if (globalAiComment) {
+        renderAiEvaluation();
+      }
     });
+  }
 
-    // 重置UI狀態
-    clearAllErrors();
-    updateFormSteps();
-    updateGenderBasedUI();
-    resultSection.classList.add('hidden');
-    formContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  });
+  if (restartBtn) {
+    restartBtn.addEventListener('click', () => {
+      // 重置全域數據
+      globalUniqueSymptoms = [];
+      globalUniqueHabits = [];
+      globalAiComment = '';
+      localImageBlob = null;
+      localImageName = '';
+      imgbbImageUrl = '';
+      imgbbDeleteUrl = '';
+      currentStep = 1;
+
+      // 重置雷達圖
+      if (windowHealthChart) {
+        windowHealthChart.destroy();
+        windowHealthChart = null;
+      }
+
+      // 重置AI評估容器
+      aiEvaluationContainer.innerHTML = '';
+
+      // 重置表單元素
+      document.querySelectorAll('input, textarea, select').forEach(el => {
+        if (el.type === 'checkbox' || el.type === 'radio') el.checked = false;
+        else el.value = '';
+        el.classList.remove('error-input');
+      });
+
+      // 重置UI狀態
+      clearAllErrors();
+      updateFormSteps();
+      updateGenderBasedUI();
+      resultSection.classList.add('hidden');
+      formContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  }
 
   // -------------------------- 11. 症狀/習慣分類篩選
   document.querySelectorAll('.symptom-tab').forEach(tab => {
@@ -2384,12 +2657,20 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // 控制按鈕顯隱
-    prevBtn.classList.toggle('hidden', currentStep === 1);
-    nextBtn.classList.toggle('hidden', currentStep === totalSteps);
-    submitBtn.classList.toggle('hidden', currentStep !== totalSteps);
+    if (prevBtn) {
+      prevBtn.classList.toggle('hidden', currentStep === 1);
+    }
+    if (nextBtn) {
+      nextBtn.classList.toggle('hidden', currentStep === totalSteps);
+    }
+    if (submitBtn) {
+      submitBtn.classList.toggle('hidden', currentStep !== totalSteps);
+    }
 
     // 滾動到當前表單區域
-    formContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (formContainer) {
+      formContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
   }
 
   // -------------------------- 13. 工具函數：收集AI所需精簡健康數據
@@ -2414,12 +2695,12 @@ document.addEventListener('DOMContentLoaded', function() {
     };
   }
 
-  // -------------------------- 14. 工具函數：收集全量表單數據 - 新增LINE用戶ID
+  // -------------------------- 14. 工具函數：收集全量表單數據
   function collectFullFormData() {
     const selectedGender = document.querySelector('input[name="gender"]:checked');
     return {
-      lineUserId: lineUserId, // 新增：LINE用戶ID
-      submitTime: new Date().toLocaleString('zh-CN', {
+      lineUserId: lineUserId, // 新增LINE用戶ID
+      submitTime: new Date().toLocaleString('zh-TW', {
         year: 'numeric', month: '2-digit', day: '2-digit',
         hour: '2-digit', minute: '2-digit', second: '2-digit'
       }),
@@ -2501,7 +2782,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // -------------------------- 17. 生成評估結果
   function generateResult() {
-    // 1. 加載基本信息
+    // 1. 載入基本資訊
     const name = document.getElementById('name').value || '未填寫';
     const age = document.getElementById('age').value || '未填寫';
     const selectedGender = document.querySelector('input[name="gender"]:checked');
@@ -2515,7 +2796,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const occupation = document.getElementById('occupation').value || '未填寫';
     const bmi = calculateBMI();
 
-    // 2. 渲染基本信息卡片
+    // 2. 渲染基本資訊卡片
     const basicInfoContainer = document.getElementById('basicInfo');
     if (basicInfoContainer) {
       basicInfoContainer.style.display = 'block';
@@ -2576,7 +2857,7 @@ document.addEventListener('DOMContentLoaded', function() {
       resultSection.insertBefore(newBasicInfo, resultHeader.nextSibling);
     }
 
-    // 3. 加載症狀/習慣統計數據
+    // 3. 載入症狀/習慣統計數據
     const totalSymptomCount = globalUniqueSymptoms.length;
     const habitCount = globalUniqueHabits.length;
 
@@ -2716,14 +2997,28 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // 6. 渲染症狀/習慣統計
-    document.getElementById('symptomCount').textContent = `${totalSymptomCount} 項症狀`;
-    document.getElementById('habitCount').textContent = `${habitCount} 項不良習慣`;
+    const symptomCountEl = document.getElementById('symptomCount');
+    if (symptomCountEl) {
+      symptomCountEl.textContent = `${totalSymptomCount} 項症狀`;
+    }
+    
+    const habitCountEl = document.getElementById('habitCount');
+    if (habitCountEl) {
+      habitCountEl.textContent = `${habitCount} 項不良習慣`;
+    }
 
     // 進度條寬度計算
-    const symptomPercent = Math.min(100, (totalSymptomCount / 50) * 100);
-    const habitPercent = Math.min(100, (habitCount / 20) * 100);
-    document.getElementById('symptomScoreBar').style.width = `${symptomPercent}%`;
-    document.getElementById('habitScoreBar').style.width = `${habitPercent}%`;
+    const symptomScoreBar = document.getElementById('symptomScoreBar');
+    if (symptomScoreBar) {
+      const symptomPercent = Math.min(100, (totalSymptomCount / 50) * 100);
+      symptomScoreBar.style.width = `${symptomPercent}%`;
+    }
+    
+    const habitScoreBar = document.getElementById('habitScoreBar');
+    if (habitScoreBar) {
+      const habitPercent = Math.min(100, (habitCount / 20) * 100);
+      habitScoreBar.style.width = `${habitPercent}%`;
+    }
 
     // 7. 渲染主要健康問題
     const mainIssuesContainer = document.getElementById('mainHealthIssues');
@@ -2841,8 +3136,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // 9. 渲染健康調理建議
-    const recommendationsContainer = document.getElementById('healthRecommendations');
-    if (recommendationsContainer) {
+    if (healthRecommendations) {
       const lowScoreDirections = Object.entries(adjustmentScores)
         .filter(([_, score]) => score < 60)
         .sort((a,b) => a[1]-b[1])
@@ -2905,23 +3199,25 @@ document.addEventListener('DOMContentLoaded', function() {
 </div>
     `;
 
-    recommendationsContainer.innerHTML = recommendationsHtml;
+    healthRecommendations.innerHTML = recommendationsHtml;
     }
   }
 
   // 修正截圖處理函數，確保不包含六大調理方向
   async function handleImageDownload() {
     try {
-      // 禁用按鈕並顯示加載狀態
-      downloadReportBtn.disabled = true;
-      downloadReportBtn.innerHTML = '<i class="fa fa-spinner fa-spin mr-2"></i> 準備中...';
+      // 禁用按鈕並顯示載入狀態
+      if (downloadReportBtn) {
+        downloadReportBtn.disabled = true;
+        downloadReportBtn.innerHTML = '<i class="fa fa-spinner fa-spin mr-2"></i> 準備中...';
+      }
       
-      // 創建進度提示
+      // 建立進度提示
       const progressIndicator = createProgressIndicator();
       document.body.appendChild(progressIndicator);
 
       // 1. 依賴檢查
-      if (typeof html2canvas === 'undefined') throw new Error('圖片處理庫未加載，請刷新頁面重試');
+      if (typeof html2canvas === 'undefined') throw new Error('圖片處理庫未載入，請重新整理頁面重試');
       const resultSection = document.getElementById('result');
       if (!resultSection) throw new Error('未找到健康評估結果頁容器，請先提交評估');
 
@@ -2948,7 +3244,7 @@ document.addEventListener('DOMContentLoaded', function() {
       resultSection.style.left = `-${rect.left}px`;
       resultSection.style.zIndex = '1000';
 
-      // 臨時隱藏六大調理方向（重點修正部分）
+      // 臨時隱藏六大調理方向
       const healthRecommendations = document.getElementById('healthRecommendations');
       const originalHealthRecommendationsDisplay = healthRecommendations ? healthRecommendations.style.display : 'block';
       if (healthRecommendations) {
@@ -2964,7 +3260,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
       updateProgress(progressIndicator, 40, '準備截圖...');
 
-      // 3. 執行截圖（優化配置，確保排除不需要的元素）
+      // 3. 執行截圖
       const canvas = await html2canvas(resultSection, {
         useCORS: true,
         allowTaint: false,
@@ -3040,8 +3336,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
       // 7. 完成處理
       document.body.removeChild(progressIndicator);
-      downloadReportBtn.disabled = false;
-      downloadReportBtn.innerHTML = '<i class="fa fa-download mr-2"></i> 重新轉檔操作';
+      if (downloadReportBtn) {
+        downloadReportBtn.disabled = false;
+        downloadReportBtn.innerHTML = '<i class="fa fa-download mr-2"></i> 重新轉檔操作';
+      }
       
       showToast(`圖片已成功保存！\n文件名：${localImageName}`);
       showSingleShareButton(userName, formattedDate);
@@ -3051,8 +3349,10 @@ document.addEventListener('DOMContentLoaded', function() {
       const progressIndicator = document.getElementById('progressIndicator');
       if (progressIndicator) document.body.removeChild(progressIndicator);
       
-      downloadReportBtn.disabled = false;
-      downloadReportBtn.innerHTML = '<i class="fa fa-download mr-2"></i> 下載圖片';
+      if (downloadReportBtn) {
+        downloadReportBtn.disabled = false;
+        downloadReportBtn.innerHTML = '<i class="fa fa-download mr-2"></i> 下載圖片';
+      }
       showToast(`操作失敗：${error.message}`, 'error');
     }
   }
@@ -3104,7 +3404,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
-  // 創建進度指示器
+  // 建立進度指示器
   function createProgressIndicator() {
     const indicator = document.createElement('div');
     indicator.id = 'progressIndicator';
@@ -3139,7 +3439,7 @@ document.addEventListener('DOMContentLoaded', function() {
     `;
     statusText.textContent = '準備中...';
     
-    // 加載動畫
+    // 載入動畫
     const spinner = document.createElement('i');
     spinner.className = 'fa fa-circle-o-notch fa-spin';
     spinner.style.cssText = 'font-size: 30px; color: #165DFF;';
@@ -3173,6 +3473,8 @@ document.addEventListener('DOMContentLoaded', function() {
     
     if (type === 'error') {
       toast.style.background = '#ff4d4f';
+    } else if (type === 'info') {
+      toast.style.background = '#1890ff';
     } else {
       toast.style.background = '#52c41a';
     }
@@ -3193,7 +3495,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // 保存圖片到相冊
   function saveToGallery(blob, fileName) {
-    // 新增：iPad特殊處理
+    // iPad特殊處理
     if (isIOS) {
       return new Promise((resolve) => {
         const blobUrl = URL.createObjectURL(blob);
@@ -3266,7 +3568,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const existingShareBtn = document.getElementById('singleShareBtn');
     if (existingShareBtn) document.body.removeChild(existingShareBtn);
 
-    // 創建新的分享按鈕
+    // 建立新的分享按鈕
     const shareBtn = document.createElement('button');
     shareBtn.id = 'singleShareBtn';
     shareBtn.style.cssText = `
@@ -3279,7 +3581,7 @@ document.addEventListener('DOMContentLoaded', function() {
     shareBtn.innerHTML = '<i class="fa fa-share-alt"></i> 分享健康自檢表';
     document.body.appendChild(shareBtn);
     
-    // 添加懸停效果
+    // 新增懸停效果
     shareBtn.addEventListener('mouseover', () => {
       shareBtn.style.background = '#0E42D2';
     });
@@ -3311,7 +3613,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const shareText = `📋 『 ${userName} 』的健康自檢表\n🗓️ 自檢日期：${date}\n💡 包含：調理方向 + AI評估\n🔗 圖片鏈接：`;
         const shareUrl = imgbbImageUrl || '';
 
-        // 新增：iPad分享特殊處理
+        // iPad分享特殊處理
         if (isIOS) {
           if (navigator.share) {
             shareBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> 喚醒分享...';
@@ -3323,7 +3625,7 @@ document.addEventListener('DOMContentLoaded', function() {
               url: shareUrl || window.location.href
             };
             
-            // 如果有圖片文件且支持文件分享，才添加文件
+            // 如果有圖片文件且支持文件分享，才新增文件
             if (imageFile && navigator.canShare && navigator.canShare({ files: [imageFile] })) {
               shareData.files = [imageFile];
             }
@@ -3375,15 +3677,18 @@ document.addEventListener('DOMContentLoaded', function() {
     downloadReportBtn.addEventListener('click', handleImageDownload);
   }
 
-  // 初始化LINE登錄
-  initLineSDK();
+  // 初始化LINE登錄 - 延遲啟動，避免與頁面其他資源競爭
+  setTimeout(initLineSDK, SDK_LOAD_DELAY);
 
   // 頁面初始化
   updateFormSteps();
   updateGenderBasedUI();
 });
-
 </script>
+
+
+
+
 
 
 
