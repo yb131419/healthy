@@ -1298,6 +1298,7 @@
   <h3 class="text-xl font-semibold mb-6 pb-2 border-b">生活習慣評估</h3>
   <p class="text-neutral-dark/70 mb-6 text-sm">請勾選您存在的不良生活習慣（可多選）</p>
   
+ <div class="container mx-auto px-4 py-8">
   <!-- 生活習慣分類標籤 -->
   <div class="flex flex-wrap gap-2 mb-6 overflow-x-auto scrollbar-hide pb-2">
     <button class="habit-tab active px-4 py-2 bg-primary text-white rounded-full text-sm whitespace-nowrap" data-category="all">全部習慣</button>
@@ -1306,14 +1307,13 @@
     <button class="habit-tab px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-full text-sm whitespace-nowrap" data-category="exercise">運動習慣</button>
     <button class="habit-tab px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-full text-sm whitespace-nowrap" data-category="cold">寒濕因素</button>
     <button class="habit-tab px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-full text-sm whitespace-nowrap" data-category="emotion">情緒因素</button>
+    <button class="habit-tab px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-full text-sm whitespace-nowrap" data-category="toxin">毒素接觸</button>
   </div>
   
   <!-- 飲食習慣 -->
   <div class="mb-8">
     <h4 class="font-medium text-lg mb-4 text-neutral-dark/90 habit-category-title" data-category="diet">飲食習慣</h4>
     <div class="grid md:grid-cols-2 gap-4">
-
-      
       <div class="habit-item" data-category="diet">
         <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
           <input type="checkbox" name="habits" value="經常不吃早餐" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
@@ -1344,6 +1344,20 @@
       
       <div class="habit-item" data-category="diet">
         <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="habits" value="常吃剩飯剩菜/愛吃動物內臟" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">常吃剩飯剩菜/愛吃動物內臟</span>
+        </label>
+      </div>
+      
+      <div class="habit-item" data-category="diet">
+        <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="habits" value="常吃葷食/吃菜偏好油多的" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">常吃葷食/吃菜偏好油多的</span>
+        </label>
+      </div>
+      
+      <div class="habit-item" data-category="diet">
+        <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
           <input type="checkbox" name="habits" value="口味偏辣/偏鹹(重口味)" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
           <span class="ml-2">口味偏辣/偏鹹(重口味)</span>
         </label>
@@ -1355,8 +1369,160 @@
           <span class="ml-2">很少吃蔬菜/素食者</span>
         </label>
       </div>
-
-
+      
+      <div class="habit-item" data-category="diet">
+        <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="habits" value="喜歡吃燙食/喝燙水" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">喜歡吃燙食/喝燙水</span>
+        </label>
+      </div>
+      
+      <div class="habit-item" data-category="diet">
+        <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="habits" value="偏好白米/白麵等精製主食" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">偏好白米/白麵等精製主食</span>
+        </label>
+      </div>
+      
+      <div class="habit-item" data-category="diet">
+        <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="habits" value="很少吃五穀雜糧" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">很少吃五穀雜糧</span>
+        </label>
+      </div>
+      
+      <div class="habit-item" data-category="diet">
+        <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="habits" value="偏食/挑食/特別嗜吃某種食物" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">偏食/挑食/特別嗜吃某種食物</span>
+        </label>
+      </div>
+      
+      <div class="habit-item" data-category="diet">
+        <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="habits" value="常喝酒/酗酒/喝冰啤酒" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">常喝酒/酗酒/喝冰啤酒</span>
+        </label>
+      </div>
+      
+      <div class="habit-item" data-category="diet">
+        <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="habits" value="習慣飯後吃水果/特別偏愛水果" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">習慣飯後吃水果/特別偏愛水果</span>
+        </label>
+      </div>
+      
+      <div class="habit-item" data-category="diet">
+        <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="habits" value="愛吃反季節蔬菜/水果" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">愛吃反季節蔬菜/水果</span>
+        </label>
+      </div>
+      
+      <div class="habit-item" data-category="diet">
+        <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="habits" value="喜歡吃螃蟹/柿子" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">喜歡吃螃蟹/柿子</span>
+        </label>
+      </div>
+      
+      <div class="habit-item" data-category="diet">
+        <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="habits" value="不吃堅果/吃花生/瓜子過多" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">不吃堅果/吃花生/瓜子過多</span>
+        </label>
+      </div>
+      
+      <div class="habit-item" data-category="diet">
+        <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="habits" value="喜歡吃泡麵/甜食" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">喜歡吃泡麵/甜食</span>
+        </label>
+      </div>
+      
+      <div class="habit-item" data-category="diet">
+        <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="habits" value="吃油炸食品/醃製食品" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">吃油炸食品/醃製食品</span>
+        </label>
+      </div>
+      
+      <div class="habit-item" data-category="diet">
+        <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="habits" value="喜歡吃果脯蜜餞/罐頭" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">喜歡吃果脯蜜餞/罐頭</span>
+        </label>
+      </div>
+      
+      <div class="habit-item" data-category="diet">
+        <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="habits" value="吃冰西瓜/特別偏愛水果" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">吃冰西瓜/特別偏愛水果</span>
+        </label>
+      </div>
+      
+      <div class="habit-item" data-category="diet">
+        <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="habits" value="愛吃燒烤/零食/愛吃雞頭" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">愛吃燒烤/零食/愛吃雞頭</span>
+        </label>
+      </div>
+      
+      <div class="habit-item" data-category="diet">
+        <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="habits" value="吃燒烤/火鍋時搭配冰啤酒/冰飲料" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">吃燒烤/火鍋時搭配冰啤酒/冰飲料</span>
+        </label>
+      </div>
+      
+      <div class="habit-item" data-category="diet">
+        <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="habits" value="吃冰棒/冰涼甜點/冰飲" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">吃冰棒/冰涼甜點/冰飲</span>
+        </label>
+      </div>
+      
+      <div class="habit-item" data-category="diet">
+        <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="habits" value="吃飯不共用餐筷/吃飯快/吃燙飯/愛吃油炸物" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">吃飯不共用餐筷/吃飯快/吃燙飯/愛吃油炸物</span>
+        </label>
+      </div>
+      
+      <div class="habit-item" data-category="diet">
+        <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="habits" value="愛喝濃茶/咖啡/吃醃製食物" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">愛喝濃茶/咖啡/吃醃製食物</span>
+        </label>
+      </div>
+      
+      <div class="habit-item" data-category="diet">
+        <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="habits" value="飲食時間不規律/接觸二手菸" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">飲食時間不規律/接觸二手菸</span>
+        </label>
+      </div>
+      
+      <div class="habit-item" data-category="diet">
+        <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="habits" value="常吃中藥/西藥/吃類固醇藥" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">常吃中藥/西藥/吃類固醇藥</span>
+        </label>
+      </div>
+      
+      <div class="habit-item" data-category="diet">
+        <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="habits" value="吃過減肥藥/做過減肥相關療程" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">吃過減肥藥/做過減肥相關療程</span>
+        </label>
+      </div>
+      
+      <div class="habit-item" data-category="diet">
+        <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="habits" value="常吃海鮮/炒菜時油燒到冒煙" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">常吃海鮮/炒菜時油燒到冒煙</span>
+        </label>
+      </div>
     </div>
   </div>
   
@@ -1366,8 +1532,15 @@
     <div class="grid md:grid-cols-2 gap-4">
       <div class="habit-item" data-category="sleep">
         <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
-          <input type="checkbox" name="habits" value="超過晚上11點睡/早上9點後起床" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
-          <span class="ml-2">超過晚上11點睡/早上9點後起床</span>
+          <input type="checkbox" name="habits" value="超過晚上11點睡覺" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">超過晚上11點睡覺</span>
+        </label>
+      </div>
+      
+      <div class="habit-item" data-category="sleep">
+        <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="habits" value="早上9點後才起床" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">早上9點後才起床</span>
         </label>
       </div>
       
@@ -1387,57 +1560,584 @@
       
       <div class="habit-item" data-category="sleep">
         <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="habits" value="睡軟床/用高枕頭" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">睡軟床/用高枕頭</span>
+        </label>
+      </div>
+      
+      <div class="habit-item" data-category="sleep">
+        <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
           <input type="checkbox" name="habits" value="開冷氣/開窗睡覺" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
           <span class="ml-2">開冷氣/開窗睡覺</span>
+        </label>
+      </div>
+      
+      <div class="habit-item" data-category="sleep">
+        <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="habits" value="飯後馬上睡覺" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">飯後馬上睡覺</span>
+        </label>
+      </div>
+      
+      <div class="habit-item" data-category="sleep">
+        <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="habits" value="睡覺時把腳露在被子外面" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">睡覺時把腳露在被子外面</span>
+        </label>
+      </div>
+      
+      <div class="habit-item" data-category="sleep">
+        <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="habits" value="早上5點前就起床(過早起床)" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">早上5點前就起床(過早起床)</span>
+        </label>
+      </div>
+      
+      <div class="habit-item" data-category="sleep">
+        <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="habits" value="蒙頭睡覺" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">蒙頭睡覺</span>
         </label>
       </div>
     </div>
   </div>
   
-  <!-- 其他習慣 -->
-  <div class="grid md:grid-cols-2 gap-6">
-    <!-- 運動習慣 -->
-    <div>
-      <h4 class="font-medium text-lg mb-4 text-neutral-dark/90 habit-category-title" data-category="exercise">運動習慣</h4>
-      <div class="space-y-4">
-        <div class="habit-item" data-category="exercise">
-          <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
-            <input type="checkbox" name="habits" value="不運動/運動量少/過度運動" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
-            <span class="ml-2">不運動/運動量少/過度運動</span>
-          </label>
-        </div>
-        
-        <div class="habit-item" data-category="exercise">
-          <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
-            <input type="checkbox" name="habits" value="長時間站立/久坐/長時間伏案工作" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
-            <span class="ml-2">長時間站立/久坐/長時間伏案工作</span>
-          </label>
-        </div>
+  <!-- 寒濕相關習慣 -->
+  <div class="mb-8">
+    <h4 class="font-medium text-lg mb-4 text-neutral-dark/90 habit-category-title" data-category="cold">寒濕因素</h4>
+    <div class="grid md:grid-cols-2 gap-4">
+      <div class="habit-item" data-category="cold">
+        <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="habits" value="開窗/開冷氣睡覺" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">開窗/開冷氣睡覺</span>
+        </label>
+      </div>
+      
+      <div class="habit-item" data-category="cold">
+        <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="habits" value="很少曬太陽" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">很少曬太陽</span>
+        </label>
+      </div>
+      
+      <div class="habit-item" data-category="cold">
+        <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="habits" value="長時間在冷氣房工作" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">長時間在冷氣房工作</span>
+        </label>
+      </div>
+      
+      <div class="habit-item" data-category="cold">
+        <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="habits" value="在地下室/冷凍庫工作" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">在地下室/冷凍庫工作</span>
+        </label>
+      </div>
+      
+      <div class="habit-item" data-category="cold">
+        <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="habits" value="早上洗頭/洗澡" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">早上洗頭/洗澡</span>
+        </label>
+      </div>
+      
+      <div class="habit-item" data-category="cold">
+        <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="habits" value="晚上11點後洗頭/洗澡" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">晚上11點後洗頭/洗澡</span>
+        </label>
+      </div>
+      
+      <div class="habit-item" data-category="cold">
+        <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="habits" value="用冷水洗頭/洗澡/每天都洗澡" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">用冷水洗頭/洗澡/每天都洗澡</span>
+        </label>
+      </div>
+      
+      <div class="habit-item" data-category="cold">
+        <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="habits" value="洗頭後沒有及時吹乾" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">洗頭後沒有及時吹乾</span>
+        </label>
+      </div>
+      
+      <div class="habit-item" data-category="cold">
+        <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="habits" value="運動後馬上洗澡" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">運動後馬上洗澡</span>
+        </label>
+      </div>
+      
+      <div class="habit-item" data-category="cold">
+        <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="habits" value="用冷水洗腳且不擦乾" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">用冷水洗腳且不擦乾</span>
+        </label>
+      </div>
+      
+      <div class="habit-item" data-category="cold">
+        <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="habits" value="喜歡光腳在地上走" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">喜歡光腳在地上走</span>
+        </label>
+      </div>
+      
+      <div class="habit-item" data-category="cold">
+        <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="habits" value="冬天用冷水洗菜/洗碗/洗衣物" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">冬天用冷水洗菜/洗碗/洗衣物</span>
+        </label>
+      </div>
+      
+      <div class="habit-item" data-category="cold">
+        <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="habits" value="有下河水等嚴重受寒的經歷" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">有下河水等嚴重受寒的經歷</span>
+        </label>
+      </div>
+      
+      <div class="habit-item" data-category="cold">
+        <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="habits" value="喜歡露肩膀/露腰/露腳踝" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">喜歡露肩膀/露腰/露腳踝</span>
+        </label>
+      </div>
+      
+      <div class="habit-item" data-category="cold">
+        <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="habits" value="四季都穿涼鞋/冬天穿得少/穿得薄" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">四季都穿涼鞋/冬天穿得少/穿得薄</span>
+        </label>
+      </div>
+      
+      <div class="habit-item" data-category="cold">
+        <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="habits" value="睡覺時把腳露在被子外面" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">睡覺時把腳露在被子外面</span>
+        </label>
+      </div>
+      
+      <div class="habit-item" data-category="cold">
+        <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="habits" value="騎機車時沒有做好防護(防風保暖)" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">騎機車時沒有做好防護(防風保暖)</span>
+        </label>
+      </div>
+      
+      <div class="habit-item" data-category="cold">
+        <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="habits" value="出汗時/生氣時喝冰水" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">出汗時/生氣時喝冰水</span>
+        </label>
       </div>
     </div>
-    
-    <!-- 情緒因素 -->
-    <div>
-      <h4 class="font-medium text-lg mb-4 text-neutral-dark/90 habit-category-title" data-category="emotion">情緒因素</h4>
-      <div class="space-y-4">
-        <div class="habit-item" data-category="emotion">
-          <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
-            <input type="checkbox" name="habits" value="經常生氣/愛發脾氣" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
-            <span class="ml-2">經常生氣/愛發脾氣</span>
-          </label>
-        </div>
-        
-        <div class="habit-item" data-category="emotion">
-          <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
-            <input type="checkbox" name="habits" value="壓力大/精神緊張" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
-            <span class="ml-2">壓力大/精神緊張</span>
-          </label>
-        </div>
+  </div>
+  
+  <!-- 情緒與心理習慣 -->
+  <div class="mb-8">
+    <h4 class="font-medium text-lg mb-4 text-neutral-dark/90 habit-category-title" data-category="emotion">情緒因素</h4>
+    <div class="grid md:grid-cols-2 gap-4">
+      <div class="habit-item" data-category="emotion">
+        <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="habits" value="經歷過重大情感變故" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">經歷過重大情感變故</span>
+        </label>
+      </div>
+      
+      <div class="habit-item" data-category="emotion">
+        <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="habits" value="經常生氣/愛發脾氣" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">經常生氣/愛發脾氣</span>
+        </label>
+      </div>
+      
+      <div class="habit-item" data-category="emotion">
+        <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="habits" value="壓力大/精神緊張" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">壓力大/精神緊張</span>
+        </label>
+      </div>
+      
+      <div class="habit-item" data-category="emotion">
+        <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="habits" value="容易憤怒/憎恨他人/有內疚感/心事重" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">容易憤怒/憎恨他人/有內疚感/心事重</span>
+        </label>
+      </div>
+      
+      <div class="habit-item" data-category="emotion">
+        <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="habits" value="過度思念/多慮/常擔驚受怕" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">過度思念/多慮/常擔驚受怕</span>
+        </label>
+      </div>
+      
+      <div class="habit-item" data-category="emotion">
+        <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="habits" value="遇到事情愛抱怨/習慣找外部原因/容易嫉妒別人" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">遇到事情愛抱怨/習慣找外部原因/容易嫉妒別人</span>
+        </label>
+      </div>
+      
+      <div class="habit-item" data-category="emotion">
+        <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="habits" value="因父母離異而感到悲憤/有被遺棄感" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">因父母離異而感到悲憤/有被遺棄感</span>
+        </label>
+      </div>
+      
+      <div class="habit-item" data-category="emotion">
+        <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="habits" value="經歷過喪偶/喪子(女)/喪父(母)等喪親之痛" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">經歷過喪偶/喪子(女)/喪父(母)等喪親之痛</span>
+        </label>
+      </div>
+      
+      <div class="habit-item" data-category="emotion">
+        <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="habits" value="沒有人生信念/感到空虛無助" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">沒有人生信念/感到空虛無助</span>
+        </label>
+      </div>
+      
+      <div class="habit-item" data-category="emotion">
+        <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="habits" value="不情願讓步/習慣自己悶著生氣" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">不情願讓步/習慣自己悶著生氣</span>
+        </label>
+      </div>
+      
+      <div class="habit-item" data-category="emotion">
+        <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="habits" value="慾望無法實現/對他人感到失望" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">慾望無法實現/對他人感到失望</span>
+        </label>
+      </div>
+      
+      <div class="habit-item" data-category="emotion">
+        <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="habits" value="莫名暴躁/發脾氣/有憂鬱傾向" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">莫名暴躁/發脾氣/有憂鬱傾向</span>
+        </label>
+      </div>
+      
+      <div class="habit-item" data-category="emotion">
+        <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="habits" value="自卑/性格軟弱/缺乏安全感/感到無助" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">自卑/性格軟弱/缺乏安全感/感到無助</span>
+        </label>
+      </div>
+      
+      <div class="habit-item" data-category="emotion">
+        <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="habits" value="容易生氣/憤憤不平/發怒/惱怒甚至暴怒" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">容易生氣/憤憤不平/發怒/惱怒甚至暴怒</span>
+        </label>
+      </div>
+      
+      <div class="habit-item" data-category="emotion">
+        <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="habits" value="感到傷心/難受/痛苦/悲痛或哀痛" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">感到傷心/難受/痛苦/悲痛或哀痛</span>
+        </label>
+      </div>
+      
+      <div class="habit-item" data-category="emotion">
+        <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="habits" value="容易憂慮/愁悶/憂鬱/有憂鬱傾向" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">容易憂慮/愁悶/憂鬱/有憂鬱傾向</span>
+        </label>
+      </div>
+      
+      <div class="habit-item" data-category="emotion">
+        <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="habits" value="容易害怕/慌張/恐懼甚至驚慌" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">容易害怕/慌張/恐懼甚至驚慌</span>
+        </label>
+      </div>
+      
+      <div class="habit-item" data-category="emotion">
+        <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="habits" value="從小被打罵/冷落/嫌棄/受過刺激" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">從小被打罵/冷落/嫌棄/受過刺激</span>
+        </label>
+      </div>
+      
+      <div class="habit-item" data-category="emotion">
+        <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="habits" value="懶惰不上進/缺乏活力" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">懶惰不上進/缺乏活力</span>
+        </label>
+      </div>
+      
+      <div class="habit-item" data-category="emotion">
+        <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="habits" value="膽小怕事/長時間有慾望卻無法實現" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">膽小怕事/長時間有慾望卻無法實現</span>
+        </label>
+      </div>
+      
+      <div class="habit-item" data-category="emotion">
+        <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="habits" value="內心浮躁/沒有興趣愛好/缺乏主見" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">內心浮躁/沒有興趣愛好/缺乏主見</span>
+        </label>
+      </div>
+      
+      <div class="habit-item" data-category="emotion">
+        <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="habits" value="抱怨命運不好/總是遇到麻煩事" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">抱怨命運不好/總是遇到麻煩事</span>
+        </label>
+      </div>
+      
+      <div class="habit-item" data-category="emotion">
+        <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="habits" value="坐月子期間生氣" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">坐月子期間生氣</span>
+        </label>
+      </div>
+      
+      <div class="habit-item" data-category="emotion">
+        <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="habits" value="性子急/愛罵人" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">性子急/愛罵人</span>
+        </label>
+      </div>
+      
+      <div class="habit-item" data-category="emotion">
+        <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="habits" value="喜歡追劇/看恐怖片" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">喜歡追劇/看恐怖片</span>
+        </label>
+      </div>
+      
+      <div class="habit-item" data-category="emotion">
+        <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="habits" value="愛攀比/別人有就嫉妒/別人沒有就看不起" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">愛攀比/別人有就嫉妒/別人沒有就看不起</span>
+        </label>
+      </div>
+      
+      <div class="habit-item" data-category="emotion">
+        <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="habits" value="容易過度興奮/激動或亢奮" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">容易過度興奮/激動或亢奮</span>
+        </label>
+      </div>
+    </div>
+  </div>
+  
+  <!-- 運動習慣 -->
+  <div class="mb-8">
+    <h4 class="font-medium text-lg mb-4 text-neutral-dark/90 habit-category-title" data-category="exercise">運動習慣</h4>
+    <div class="grid md:grid-cols-2 gap-4">
+      <div class="habit-item" data-category="exercise">
+        <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="habits" value="早上5點前/晚上7點後運動" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">早上5點前/晚上7點後運動</span>
+        </label>
+      </div>
+      
+      <div class="habit-item" data-category="exercise">
+        <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="habits" value="不運動/運動量太少/運動量過度" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">不運動/運動量太少/運動量過度</span>
+        </label>
+      </div>
+      
+      <div class="habit-item" data-category="exercise">
+        <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="habits" value="長時間站立/久坐/長時間低頭伏案工作" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">長時間站立/久坐/長時間低頭伏案工作</span>
+        </label>
+      </div>
+      
+      <div class="habit-item" data-category="exercise">
+        <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="habits" value="每天走路超過一萬步(過量)" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">每天走路超過一萬步(過量)</span>
+        </label>
+      </div>
+      
+      <div class="habit-item" data-category="exercise">
+        <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="habits" value="長時間游泳/從事冬泳" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">長時間游泳/從事冬泳</span>
+        </label>
+      </div>
+      
+      <div class="habit-item" data-category="exercise">
+        <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="habits" value="體力勞動過多/特別愛游泳" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">體力勞動過多/特別愛游泳</span>
+        </label>
+      </div>
+      
+      <div class="habit-item" data-category="exercise">
+        <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="habits" value="練瑜伽(指可能不合適的練習方式)" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">練瑜伽(指可能不合適的練習方式)</span>
+        </label>
+      </div>
+      
+      <div class="habit-item" data-category="exercise">
+        <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="habits" value="曾經是體育運動員(指過往高強度運動習慣的延續影響)" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">曾經是體育運動員(指過往高強度運動習慣的延續影響)</span>
+        </label>
+      </div>
+    </div>
+  </div>
+  
+  <!-- 毒素接觸習慣 -->
+  <div class="mb-8">
+    <h4 class="font-medium text-lg mb-4 text-neutral-dark/90 habit-category-title" data-category="toxin">毒素接觸</h4>
+    <div class="grid md:grid-cols-2 gap-4">
+      <div class="habit-item" data-category="toxin">
+        <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="habits" value="手機在床邊充電/放在頭附近睡覺" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">手機在床邊充電/放在頭附近睡覺</span>
+        </label>
+      </div>
+      
+      <div class="habit-item" data-category="toxin">
+        <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="habits" value="住家附近20公里內有化工廠等污染企業" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">住家附近20公里內有化工廠等污染企業</span>
+        </label>
+      </div>
+      
+      <div class="habit-item" data-category="toxin">
+        <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="habits" value="經常過度疲勞/住家裝修過度(可能接觸裝修污染)" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">經常過度疲勞/住家裝修過度(可能接觸裝修污染)</span>
+        </label>
+      </div>
+      
+      <div class="habit-item" data-category="toxin">
+        <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="habits" value="不喝水/很少喝水/喝冰水" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">不喝水/很少喝水/喝冰水</span>
+        </label>
+      </div>
+      
+      <div class="habit-item" data-category="toxin">
+        <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="habits" value="經常憋尿/不按時排便" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">經常憋尿/不按時排便</span>
+        </label>
+      </div>
+      
+      <div class="habit-item" data-category="toxin">
+        <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="habits" value="常燙髮/染髮/使用化妝品/塗指甲油" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">常燙髮/染髮/使用化妝品/塗指甲油</span>
+        </label>
+      </div>
+      
+      <div class="habit-item" data-category="toxin">
+        <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="habits" value="手淫/意淫/看色情影片/資料" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">手淫/意淫/看色情影片/資料</span>
+        </label>
+      </div>
+      
+      <div class="habit-item" data-category="toxin">
+        <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="habits" value="性生活頻繁/性慾低落" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">性生活頻繁/性慾低落</span>
+        </label>
+      </div>
+      
+      <div class="habit-item" data-category="toxin">
+        <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="habits" value="戴深色口罩/住在變電站附近" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">戴深色口罩/住在變電站附近</span>
+        </label>
+      </div>
+      
+      <div class="habit-item" data-category="toxin">
+        <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="habits" value="從小到大吃過抗生素/消炎藥" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">從小到大吃過抗生素/消炎藥</span>
+        </label>
+      </div>
+      
+      <div class="habit-item" data-category="toxin">
+        <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="habits" value="愛咬手指甲/咬筆桿/咬筷子" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">愛咬手指甲/咬筆桿/咬筷子</span>
+        </label>
+      </div>
+      
+      <div class="habit-item" data-category="toxin">
+        <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="habits" value="愛躺著看電視/玩手機" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">愛躺著看電視/玩手機</span>
+        </label>
+      </div>
+      
+      <div class="habit-item" data-category="toxin">
+        <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="habits" value="不使用抽油煙機/抽油煙機效果不好" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">不使用抽油煙機/抽油煙機效果不好</span>
+        </label>
+      </div>
+      
+      <div class="habit-item" data-category="toxin">
+        <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="habits" value="長期接觸汽車廢氣/灰塵/粉塵" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">長期接觸汽車廢氣/灰塵/粉塵</span>
+        </label>
+      </div>
+      
+      <div class="habit-item" data-category="toxin">
+        <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="habits" value="小孩用鉛筆剔牙/塗抹祛斑霜" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">小孩用鉛筆剔牙/塗抹祛斑霜</span>
+        </label>
+      </div>
+      
+      <div class="habit-item" data-category="toxin">
+        <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="habits" value="愛用84消毒液/脫色劑/強力除油劑/水果清洗劑" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">愛用84消毒液/脫色劑/強力除油劑/水果清洗劑</span>
+        </label>
+      </div>
+      
+      <div class="habit-item" data-category="toxin">
+        <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="habits" value="不戴正規防毒面具/防護服就噴灑農藥" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">不戴正規防毒面具/防護服就噴灑農藥</span>
+        </label>
+      </div>
+      
+      <div class="habit-item" data-category="toxin">
+        <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="habits" value="叼著包裝袋喝牛奶/飲料" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">叼著包裝袋喝牛奶/飲料</span>
+        </label>
+      </div>
+      
+      <div class="habit-item" data-category="toxin">
+        <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="habits" value="抽菸每天超過10根/長期吸二手菸" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">抽菸每天超過10根/長期吸二手菸</span>
+        </label>
+      </div>
+      
+      <div class="habit-item" data-category="toxin">
+        <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="habits" value="低頭玩手機/用電腦時間過多" class="mt-1 w-4 h-4 text-primary focus:ring-primary">
+          <span class="ml-2">低頭玩手機/用電腦時間過多</span>
+        </label>
       </div>
     </div>
   </div>
 </div>
-
+</div>
 
           <!-- 步驟4: 健康評估 -->
           <div class="form-step hidden" id="step4">
