@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <title>🧬 彥彬 健康自檢表系統</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: { primary: '#00B900', secondary: '#E8F4EA' },
+          fontFamily: { sans: ['Noto Sans TC', 'sans-serif'] }
+        }
+      }
+    };
+  </script>
+
+  <style type="text/tailwindcss">
+    @layer utilities {
+      .fade-in { animation: fadeIn 0.45s ease-in-out; }
+    }
+    @keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen flex items-center justify-center p-4">
+  <div class="max-w-md w-full bg-white rounded-xl shadow-lg overflow-hidden fade-in">
+    <div class="bg-primary p-6 text-white text-center">
+      <i class="fa fa-line-chart text-4xl mb-3"></i>
+      <h1 class="text-2xl font-bold">🧬 彥彬 健康自檢表系統</h1>
+    </div>
+
+    <div class="p-6">
+      <div id="status" class="flex items-center justify-center py-6 text-gray-700 text-center">
+        <div class="text-center">
+          <div class="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary mb-3"></div>
+          <p id="status-text">正在初始化 LIFF...</p>
+        </div>
+      </div>
+
+      <div id="error-message" class="hidden bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4"></div>
+
+      <div id="result-card" class="hidden border border-gray-100 rounded p-4 mb-3 text-center">
+        <div id="result-main" class="text-lg font-medium mb-2"></div>
+        <div id="result-details" class="text-sm text-gray-700 mb-3"></div>
+        <button id="redirect-btn" class="hidden bg-primary text-white px-4 py-2 rounded-full hover:bg-primary/90 transition">進入自檢表</button>
+        <div id="note" class="text-xs text-gray-500 mt-2 hidden">請點選「進入自檢表」以進入下一步。</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const LIFF_ID = "2007488640-PbB48ELN";
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbxsl-llg3RMZZkLnje8Qq4eQNg6lK869zq5f44EMATyHMmnV_5K_6RnSbzUUGbOevqm/exec";
+    const JSONP_TIMEOUT = 15000;
+
+    const setStatus = text => document.getElementById('status-text').textContent = text;
+
+    const showError = msg => {
+      document.getElementById('status').classList.add('hidden');
+      document.getElementById('result-card').classList.add('hidden');
+      const el = document.getElementById('error-message');
+      el.innerHTML = `<p>${msg}</p><div class="mt-3 flex justify-center">
+        <button onclick="window.location.reload()" class="text-primary hover:text-primary/80 font-medium">
+          <i class="fa fa-refresh mr-1"></i> 重新嘗試
+        </button></div>`;
+      el.classList.remove('hidden');
+    };
+
+    document.addEventListener('DOMContentLoaded', function() {
+      setStatus('正在初始化 LIFF...');
+      liff.init({ liffId: LIFF_ID })
+        .then(() => {
+          if (!liff.isLoggedIn()) liff.login();
+          else getProfileAndVerify();
+        })
+        .catch(err => showError('系統初始化失敗：' + err.message));
+    });
+
+    function getProfileAndVerify() {
+      setStatus('已登入，正在驗證使用者資訊...');
+      liff.getProfile()
+        .then(profile => callGasBackend(profile.userId, profile.displayName || ''))
+        .catch(err => showError('取得使用者資料失敗：' + err.message));
+    }
+
+    function callGasBackend(userId, displayName) {
+      $.ajax({
+        url: GAS_URL,
+        dataType: 'jsonp',
+        jsonp: 'callback',
+        timeout: JSONP_TIMEOUT,
+        data: { userId, displayName },
+        success: function(resp) {
+          if (resp.status === "error") {
+            showError(resp.message);
+          } else {
+            renderResult(resp);
+          }
+        },
+        error: function() { showError('與伺服器通訊失敗'); }
+      });
+    }
+
+    function renderResult(resp) {
+      document.getElementById('status').classList.add('hidden');
+      const card = document.getElementById('result-card');
+      const main = document.getElementById('result-main');
+      const details = document.getElementById('result-details');
+      const redirectBtn = document.getElementById('redirect-btn');
+      const note = document.getElementById('note');
+
+      if (resp.isAdmin) {
+        main.innerHTML = `專業用戶：${resp.displayName}`;
+        details.innerHTML = resp.remainingDays != null
+          ? `剩餘天數：${resp.remainingDays} 天`
+          : `剩餘天數：無限制`;
+      } else {
+        main.innerHTML = `普通用戶：${resp.displayName}`;
+        details.innerHTML = typeof resp.usageCount !== 'undefined'
+          ? `剩餘次數：${3 - resp.usageCount}`
+          : `剩餘次數：未知`;
+      }
+
+      if (resp.redirect && resp.redirectUrl) {
+        redirectBtn.classList.remove('hidden');
+        redirectBtn.onclick = () => attemptRedirect(resp.redirectUrl);
+        note.classList.remove('hidden');
+      }
+
+      card.classList.remove('hidden');
+    }
+
+    function attemptRedirect(url) {
+      try {
+        if (liff && liff.isInClient()) {
+          liff.openWindow({ url, external: true })
+            .catch(() => { window.location.href = url; });
+        } else {
+          window.location.href = url;
+        }
+      } catch {
+        window.location.href = url;
+      }
+    }
+  </script>
+</body>
+</html>
