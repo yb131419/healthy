@@ -1,5 +1,5 @@
 <!DOCTYPE html> 
-<html lang="zh-CN">
+<html lang="zh-Hant">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -195,79 +195,82 @@
         </div>
         
         <!-- 表單容器 -->
-        <div class="bg-white rounded-2xl shadow-md p-6 md:p-8 mb-8">
-          <!-- 步驟1: 基本信息 -->
-          <div class="form-step active" id="step1">
-            <h3 class="text-xl font-semibold mb-6 pb-2 border-b">基本信息</h3>
-            
-            <div class="grid md:grid-cols-2 gap-6 mb-6">
-              <div>
-                <label for="name" class="block text-sm font-medium text-neutral-dark/80 mb-1">姓名 <span class="text-warning">*</span></label>
-                <input type="text" id="name" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors" placeholder="請輸入您的姓名">
-                <div class="error-message hidden" id="nameError">請輸入您的姓名</div>
-              </div>
-              
-              <div>
-                <label for="age" class="block text-sm font-medium text-neutral-dark/80 mb-1">年齡 <span class="text-warning">*</span></label>
-                <input type="number" id="age" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors" placeholder="請輸入您的年齡">
-                <div class="error-message hidden" id="ageError">請輸入有效的年齡（1-120歲）</div>
-              </div>
-              
-              <div>
-                <label class="block text-sm font-medium text-neutral-dark/80 mb-1">性別 <span class="text-warning">*</span></label>
-                <div class="flex space-x-4">
-                  <label class="inline-flex items-center">
-                    <input type="radio" name="gender" value="male" class="w-4 h-4 text-primary focus:ring-primary">
-                    <span class="ml-2">男</span>
-                  </label>
-                  <label class="inline-flex items-center">
-                    <input type="radio" name="gender" value="female" class="w-4 h-4 text-primary focus:ring-primary">
-                    <span class="ml-2">女</span>
-                  </label>
-                </div>
-                <div class="error-message hidden" id="genderError">請選擇您的性別</div>
-              </div>
-              
-              <div>
-                <label for="phone" class="block text-sm font-medium text-neutral-dark/80 mb-1">電話 or Line</label>
-                <input type="tel" id="phone" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors" placeholder="請輸入您的聯繫電話">
-              </div>
-            </div>
-            
-            <div class="grid md:grid-cols-3 gap-6 mb-6">
-              <div>
-                <label for="height" class="block text-sm font-medium text-neutral-dark/80 mb-1">身高 (CM)</label>
-                <input type="number" id="height" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors" placeholder="身高">
-              </div>
-              
-              <div>
-                <label for="weight" class="block text-sm font-medium text-neutral-dark/80 mb-1">體重 (KG)</label>
-                <input type="number" id="weight" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors" placeholder="體重">
-              </div>
-              
-              <div>
-                <label for="waist" class="block text-sm font-medium text-neutral-dark/80 mb-1">腰圍 (CM)</label>
-                <input type="number" id="waist" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors" placeholder="腰圍">
-              </div>
-            </div>
-            
-            <div class="grid md:grid-cols-2 gap-6 mb-6">
-              <div>
-                <label for="bloodPressure" class="block text-sm font-medium text-neutral-dark/80 mb-1">血壓 (mmHg)</label>
-                <input type="text" id="bloodPressure" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors" placeholder="如: 120/80">
-              </div>
-              
-              <div>
-                <label for="bloodSugar" class="block text-sm font-medium text-neutral-dark/80 mb-1">血糖 (mmol/l)</label>
-                <input type="number" step="0.01" id="bloodSugar" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors" placeholder="血糖值">
-              </div>
-            </div>
-            
-            <div>
-              <label for="occupation" class="block text-sm font-medium text-neutral-dark/80 mb-1">職業</label>
-              <input type="text" id="occupation" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors" placeholder="請輸入您的職業">
-            </div>
-          </div>
+<div class="bg-white rounded-2xl shadow-md p-6 md:p-8 mb-8">
+  <!-- 步驟1: 基本信息 -->
+  <div class="form-step active" id="step1">
+    <h3 class="text-xl font-semibold mb-6 pb-2 border-b">基本信息</h3>
+    
+    <div class="grid md:grid-cols-2 gap-6 mb-6">
+
+
+      <div>
+        <label for="name" class="block text-sm font-medium text-neutral-dark/80 mb-1">姓名 <span class="text-warning">*</span></label>
+        <input type="text" id="name" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors" placeholder="請輸入您的姓名">
+        <div class="error-message hidden" id="nameError">請輸入您的姓名</div>
+      </div>
+      
+      <div>
+        <label for="age" class="block text-sm font-medium text-neutral-dark/80 mb-1">年齡 <span class="text-warning">*</span></label>
+        <input type="number" id="age" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors" placeholder="請輸入您的年齡">
+        <div class="error-message hidden" id="ageError">請輸入有效的年齡（1-120歲）</div>
+      </div>
+      
+      <div>
+        <label class="block text-sm font-medium text-neutral-dark/80 mb-1">性別 <span class="text-warning">*</span></label>
+        <div class="flex space-x-4">
+          <label class="inline-flex items-center">
+            <input type="radio" name="gender" value="male" class="w-4 h-4 text-primary focus:ring-primary">
+            <span class="ml-2">男</span>
+          </label>
+          <label class="inline-flex items-center">
+            <input type="radio" name="gender" value="female" class="w-4 h-4 text-primary focus:ring-primary">
+            <span class="ml-2">女</span>
+          </label>
+        </div>
+        <div class="error-message hidden" id="genderError">請選擇您的性別</div>
+      </div>
+      
+      <div>
+        <label for="phone" class="block text-sm font-medium text-neutral-dark/80 mb-1">電話</label>
+        <input type="tel" id="phone" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors" placeholder="請輸入您的聯繫電話">
+      </div>
+    
+    <div class="grid md:grid-cols-3 gap-6 mb-6">
+      <div>
+        <label for="height" class="block text-sm font-medium text-neutral-dark/80 mb-1">身高 (CM)</label>
+        <input type="number" id="height" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors" placeholder="身高">
+      </div>
+      
+      <div>
+        <label for="weight" class="block text-sm font-medium text-neutral-dark/80 mb-1">體重 (KG)</label>
+        <input type="number" id="weight" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors" placeholder="體重">
+      </div>
+      
+      <div>
+        <label for="waist" class="block text-sm font-medium text-neutral-dark/80 mb-1">腰圍 (CM)</label>
+        <input type="number" id="waist" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors" placeholder="腰圍">
+      </div>
+    </div>
+    
+    <div class="grid md:grid-cols-2 gap-6 mb-6">
+      <div>
+        <label for="bloodPressure" class="block text-sm font-medium text-neutral-dark/80 mb-1">血壓 (mmHg)</label>
+        <input type="text" id="bloodPressure" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors" placeholder="如: 120/80">
+      </div>
+      
+      <div>
+        <label for="bloodSugar" class="block text-sm font-medium text-neutral-dark/80 mb-1">血糖 (mmol/l)</label>
+        <input type="number" step="0.01" id="bloodSugar" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors" placeholder="血糖值">
+      </div>
+    </div>
+    
+    <div>
+      <label for="occupation" class="block text-sm font-medium text-neutral-dark/80 mb-1">職業</label>
+      <input type="text" id="occupation" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors" placeholder="請輸入您的職業">
+    </div>
+  </div>
+</div>
+
           
 <!-- 步驟2: 身體症狀 -->
 <div class="form-step hidden" id="step2">
@@ -2451,7 +2454,45 @@
   </div>
 
 <script>
+// 首先定义showToast函数，确保在任何地方都能调用
+function showToast(message, type = 'success') {
+  // 移除现有的toast
+  const existingToast = document.querySelector('.custom-toast');
+  if (existingToast) document.body.removeChild(existingToast);
+  
+  const toast = document.createElement('div');
+  toast.className = 'custom-toast';
+  toast.style.cssText = `
+    position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+    padding: 12px 20px; border-radius: 6px; color: white; z-index: 99999;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2); transition: opacity 0.3s ease;
+  `;
+  
+  if (type === 'error') {
+    toast.style.background = '#ff4d4f';
+  } else if (type === 'info') {
+    toast.style.background = '#1890ff';
+  } else if (type === 'warning') {
+    toast.style.background = '#faad14';
+  } else {
+    toast.style.background = '#52c41a';
+  }
+  
+  toast.textContent = message;
+  document.body.appendChild(toast);
+  
+  // 3秒后自动消失
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    setTimeout(() => {
+      if (document.body.contains(toast)) {
+        document.body.removeChild(toast);
+      }
+    }, 300);
+  }, 3000);
+}
 
+// 在页面加载完成后初始化功能
 document.addEventListener('DOMContentLoaded', function() {
   // 1. 全域狀態與配置 - 增加超時設置
   let currentStep = 1;
@@ -2995,7 +3036,7 @@ document.addEventListener('DOMContentLoaded', function() {
   function collectFullFormData() {
     const selectedGender = document.querySelector('input[name="gender"]:checked');
     return {
-      submitTime: new Date().toLocaleString('zh-CN', {
+      submitTime: new Date().toLocaleString('zh-Hant', {
         year: 'numeric', month: '2-digit', day: '2-digit',
         hour: '2-digit', minute: '2-digit', second: '2-digit'
       }),
@@ -3430,364 +3471,368 @@ document.addEventListener('DOMContentLoaded', function() {
       }
 
       recommendationsHtml += `
-<div class="health-guidance mt-4">
-  <h3 class="text-lg font-semibold mb-4 text-primary">健康六大核心調理方向</h3>
-  
-  <!-- ① 體質——健康的「基礎土壤」 -->
-  <div class="bg-white p-4 rounded-lg border border-gray-100 shadow-sm mb-4">
-    <h4 class="font-semibold text-blue-600 mb-2">① 體質 —— 健康的「基礎土壤」</h4>
-    <p class="text-sm mb-2">👉體內寒濕氣如同陰暗潮濕環境，易滋生類似水木耳（腫瘤、囊腫等）的健康問題，且會反復出現。</p>
-    <p class="text-sm text-gray-700 italic">👉寓意：調體質需先排寒除濕、提升身體溫度，從根源斷掉「問題生長的溫床」。</p>
-  </div>
+  <div class="health-guidance mt-4">
+    <h3 class="text-lg font-semibold mb-4 text-primary">健康六大核心調理方向</h3>
+    
+    <!-- ① 體質——健康的「基礎土壤」 -->
+    <div class="bg-white p-4 rounded-lg border border-gray-100 shadow-sm mb-4">
+      <h4 class="font-semibold text-blue-600 mb-2">① 體質 —— 健康的「基礎土壤」</h4>
+      <p class="text-sm mb-2">👉體內寒濕氣如同陰暗潮濕環境，易滋生類似水木耳（腫瘤、囊腫等）的健康問題，且會反復出現。</p>
+      <p class="text-sm text-gray-700 italic">👉寓意：調體質需先排寒除濕、提升身體溫度，從根源斷掉「問題生長的溫床」。</p>
+    </div>
 
-  <!-- ② 免疫——身體的「常駐軍隊」 -->
-  <div class="bg-white p-4 rounded-lg border border-gray-100 shadow-sm mb-4">
-    <h4 class="font-semibold text-blue-600 mb-2">② 免疫 —— 身體的「常駐軍隊」</h4>
-    <p class="text-sm mb-2">👉藥物像「臨時外援」，雖能暫時控制疾病，但會損傷免疫力；而充足營養能強化身體「常駐防線」（免疫力），使其主動抵御病邪並產生抗體。</p>
-    <p class="text-sm text-gray-700 italic">👉寓意：真正的健康靠營養餵飽免疫力，而非依賴藥物。</p>
-  </div>
+    <!-- ② 免疫——身體的「常駐軍隊」 -->
+    <div class="bg-white p-4 rounded-lg border border-gray-100 shadow-sm mb-4">
+      <h4 class="font-semibold text-blue-600 mb-2">② 免疫 —— 身體的「常駐軍隊」</h4>
+      <p class="text-sm mb-2">👉藥物像「臨時外援」，雖能暫時控制疾病，但會損傷免疫力；而充足營養能強化身體「常駐防線」（免疫力），使其主動抵御病邪並產生抗體。</p>
+      <p class="text-sm text-gray-700 italic">👉寓意：真正的健康靠營養餵飽免疫力，而非依賴藥物。</p>
+    </div>
 
-  <!-- ③ 毒素——疾病反復的「隱形根源」 -->
-  <div class="bg-white p-4 rounded-lg border border-gray-100 shadow-sm mb-4">
-    <h4 class="font-semibold text-blue-600 mb-2">③ 毒素 —— 疾病反復的「隱形根源」</h4>
-    <p class="text-sm mb-2">👉體內毒素如垃圾，會引發發炎、潰瘍等「蒼蠅」般的問題，若不排毒只治症狀，問題會反復甚至蔓延。</p>
-    <p class="text-sm text-gray-700 italic">👉寓意：調健康第一步是打通腸道、皮膚等排毒通道，給身體「掃垃圾」。</p>
-  </div>
+    <!-- ③ 毒素——疾病反復的「隱形根源」 -->
+    <div class="bg-white p-4 rounded-lg border border-gray-100 shadow-sm mb-4">
+      <h4 class="font-semibold text-blue-600 mb-2">③ 毒素 —— 疾病反復的「隱形根源」</h4>
+      <p class="text-sm mb-2">👉體內毒素如垃圾，會引發發炎、潰瘍等「蒼蠅」般的問題，若不排毒只治症狀，問題會反復甚至蔓延。</p>
+      <p class="text-sm text-gray-700 italic">👉寓意：調健康第一步是打通腸道、皮膚等排毒通道，給身體「掃垃圾」。</p>
+    </div>
 
-  <!-- ④ 營養——身體吸收的「原料密碼」 -->
-  <div class="bg-white p-4 rounded-lg border border-gray-100 shadow-sm mb-4">
-    <h4 class="font-semibold text-blue-600 mb-2">④ 營養 —— 身體吸收的「原料密碼」</h4>
-    <p class="text-sm mb-2">👉人體需「對的原料」運轉，若脾胃虛弱（如生病的牛），吃補品也難吸收，反增負擔。</p>
-    <p class="text-sm text-gray-700 italic">👉寓意：補營養要先讓脾胃「有能力轉化」，再給對食物，才能變成身體能量。</p>
-  </div>
+    <!-- ④ 營養——身體吸收的「原料密碼」 -->
+    <div class="bg-white p-4 rounded-lg border border-gray-100 shadow-sm mb-4">
+      <h4 class="font-semibold text-blue-600 mb-2">④ 營養 —— 身體吸收的「原料密碼」</h4>
+      <p class="text-sm mb-2">👉人體需「對的原料」運轉，若脾胃虛弱（如生病的牛），吃補品也難吸收，反增負擔。</p>
+      <p class="text-sm text-gray-700 italic">👉寓意：補營養要先讓脾胃「有能力轉化」，再給對食物，才能變成身體能量。</p>
+    </div>
 
-  <!-- ⑤ 循環——健康的「暢通管道」 -->
-  <div class="bg-white p-4 rounded-lg border border-gray-100 shadow-sm mb-4">
-    <h4 class="font-semibold text-blue-600 mb-2">⑤ 循環 —— 健康的「暢通管道」</h4>
-    <p class="text-sm mb-2">👉血管循環似水溝，血脂、垃圾是「雜草」，高血壓是「水流壓力大」。降壓藥僅暫時「加寬管道」，沒清垃圾問題遲早反復。</p>
-    <p class="text-sm text-gray-700 italic">👉寓意：調循環關鍵是清理血管垃圾，讓血液順暢流動。</p>
-  </div>
+    <!-- ⑤ 循環——健康的「暢通管道」 -->
+    <div class="bg-white p-4 rounded-lg border border-gray-100 shadow-sm mb-4">
+      <h4 class="font-semibold text-blue-600 mb-2">⑤ 循環 —— 健康的「暢通管道」</h4>
+      <p class="text-sm mb-2">👉血管循環似水溝，血脂、垃圾是「雜草」，高血壓是「水流壓力大」。降壓藥僅暫時「加寬管道」，沒清垃圾問題遲早反復。</p>
+      <p class="text-sm text-gray-700 italic">👉寓意：調循環關鍵是清理血管垃圾，讓血液順暢流動。</p>
+    </div>
 
-  <!-- ⑥ 內分泌——身體的「總調度中心」 -->
-  <div class="bg-white p-4 rounded-lg border border-gray-100 shadow-sm mb-4">
-    <h4 class="font-semibold text-blue-600 mb-2">⑥ 內分泌 —— 身體的「總調度中心」</h4>
-    <p class="text-sm mb-2">👉內分泌是身體「總電閘」，月經不調、失眠等單一問題，若沒解決內分泌失調的「總開關問題」，症狀遲早反復。</p>
-    <p class="text-sm text-gray-700 italic">👉寓意：只有調整內分泌平衡，身體所有系統才能正常運轉。</p>
+    <!-- ⑥ 內分泌——身體的「總調度中心」 -->
+    <div class="bg-white p-4 rounded-lg border border-gray-100 shadow-sm mb-4">
+      <h4 class="font-semibold text-blue-600 mb-2">⑥ 內分泌 —— 身體的「總調度中心」</h4>
+      <p class="text-sm mb-2">👉內分泌是身體「總電閘」，月經不調、失眠等單一問題，若沒解決內分泌失調的「總開關問題」，症狀遲早反復。</p>
+      <p class="text-sm text-gray-700 italic">👉寓意：只有調整內分泌平衡，身體所有系統才能正常運轉。</p>
+    </div>
   </div>
-</div>
-  <div class="mt-4 text-sm text-neutral-dark/70 text-center p-3 bg-blue-50 rounded-lg">
-    六大調理邏輯：<br>體質是根基，循環是動力，<br>毒素要清除，免疫要增強，<br>營養要均衡，內分泌要穩定，<br>才能長久健康！
+    <div class="mt-4 text-sm text-neutral-dark/70 text-center p-3 bg-blue-50 rounded-lg">
+      六大調理邏輯：<br>體質是根基，循環是動力，<br>毒素要清除，免疫要增強，<br>營養要均衡，內分泌要穩定，<br>才能長久健康！
+    </div>
   </div>
-</div>
-    `;
+        `;
 
-    recommendationsContainer.innerHTML = recommendationsHtml;
+        recommendationsContainer.innerHTML = recommendationsHtml;
+      }
     }
-  }
 
-  // 修正截圖處理函數，確保不包含六大調理方向
-  async function handleImageDownload() {
-    try {
-      // 禁用按鈕並顯示加載狀態
-      downloadReportBtn.disabled = true;
-      downloadReportBtn.innerHTML = '<i class="fa fa-spinner fa-spin mr-2"></i> 準備中...';
-      
-      // 創建進度提示
-      const progressIndicator = createProgressIndicator();
-      document.body.appendChild(progressIndicator);
-
-      // 1. 依賴檢查
-      if (typeof html2canvas === 'undefined') throw new Error('圖片處理庫未加載，請刷新頁面重試');
-      const resultSection = document.getElementById('result');
-      if (!resultSection) throw new Error('未找到健康評估結果頁容器，請先提交評估');
-
-      updateProgress(progressIndicator, 20, '調整頁面樣式...');
-
-      // 2. 臨時調整樣式
-      const originalStyles = {
-        resultPadding: resultSection.style.padding,
-        resultMargin: resultSection.style.margin,
-        resultBoxShadow: resultSection.style.boxShadow,
-        position: resultSection.style.position,
-        top: resultSection.style.top,
-        left: resultSection.style.left,
-        zIndex: resultSection.style.zIndex
-      };
-      
-      resultSection.style.padding = '20px';
-      resultSection.style.margin = '0 auto';
-      resultSection.style.boxShadow = 'none';
-      
-      const rect = resultSection.getBoundingClientRect();
-      resultSection.style.position = 'relative';
-      resultSection.style.top = `-${rect.top}px`;
-      resultSection.style.left = `-${rect.left}px`;
-      resultSection.style.zIndex = '1000';
-
-      // 臨時隱藏六大調理方向（重點修正部分）
-      const healthRecommendations = document.getElementById('healthRecommendations');
-      const originalHealthRecommendationsDisplay = healthRecommendations ? healthRecommendations.style.display : 'block';
-      if (healthRecommendations) {
-        healthRecommendations.style.display = 'none';
-      }
-      
-      // 額外隱藏可能包含六大調理方向的其他元素
-      const healthGuidance = document.querySelector('.health-guidance');
-      const originalHealthGuidanceDisplay = healthGuidance ? healthGuidance.style.display : 'block';
-      if (healthGuidance) {
-        healthGuidance.style.display = 'none';
-      }
-
-      updateProgress(progressIndicator, 40, '準備截圖...');
-
-      // 3. 執行截圖（優化配置，確保排除不需要的元素）
-      const canvas = await html2canvas(resultSection, {
-        useCORS: true,
-        allowTaint: false,
-        scale: Math.min(window.devicePixelRatio || 2, 2),
-        logging: false,
-        scrollX: 0,
-        scrollY: 0,
-        windowWidth: resultSection.scrollWidth,
-        windowHeight: resultSection.scrollHeight,
-        ignoreElements: (el) => {
-          // 明確排除六大調理方向相關元素
-          return el.id === 'downloadReportBtn' || 
-                 el.id === 'singleShareBtn' || 
-                 el.id === 'restartBtn' || 
-                 el === progressIndicator || 
-                 el.id === 'healthRecommendations' ||
-                 el.classList.contains('health-guidance');
-        }
-      });
-
-      updateProgress(progressIndicator, 60, '處理圖片...');
-
-      // 4. 恢復原始樣式
-      Object.keys(originalStyles).forEach(key => {
-        resultSection.style[key] = originalStyles[key];
-      });
-      
-      // 恢復六大調理方向顯示
-      if (healthRecommendations) {
-        healthRecommendations.style.display = originalHealthRecommendationsDisplay;
-      }
-      if (healthGuidance) {
-        healthGuidance.style.display = originalHealthGuidanceDisplay;
-      }
-
-      // 5. 圖片處理
-      const userName = document.getElementById('name').value.trim() || '未知用戶';
-      const currentDate = new Date();
-      const formattedDate = `${currentDate.getFullYear()}年${String(currentDate.getMonth() + 1).padStart(2, '0')}月${String(currentDate.getDate()).padStart(2, '0')}日`;
-      localImageName = `${userName}_健康評估結果_${formattedDate}.jpg`;
-      
-      // 轉換Canvas為JPG Blob
-      localImageBlob = await new Promise((resolve, reject) => {
-        canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('圖片Blob生成失敗')), 'image/jpeg', 0.8);
-      });
-
-      updateProgress(progressIndicator, 75, '轉檔中...');
-
-      // 6. 並行處理本地保存和ImgBB上傳
-      const [saveResult, uploadResult] = await Promise.allSettled([
-        saveToGallery(localImageBlob, localImageName),
-        uploadToImgBB(localImageBlob, localImageName)
-      ]);
-      
-      // 處理上傳結果
-      if (uploadResult.status === 'fulfilled' && uploadResult.value) {
-        imgbbImageUrl = uploadResult.value.url;
-        imgbbDeleteUrl = uploadResult.value.deleteUrl;
-        // 異步更新Google Sheets
-        submitToGoogleSheets().catch(err => console.log('更新圖片URL失敗:', err));
-      } else if (uploadResult.status === 'rejected') {
-        // 顯示上傳錯誤但不中斷流程
-        console.warn('圖片上傳失敗:', uploadResult.reason);
-        showToast('圖片已保存到本地，但上傳至服務器失敗', 'error');
-      }
-      
-      // 檢查保存結果
-      if (saveResult.status === 'rejected') {
-        throw new Error(`保存圖片失敗: ${saveResult.reason.message}`);
-      }
-
-      updateProgress(progressIndicator, 90, '保存圖片...');
-
-      // 7. 完成處理
-      document.body.removeChild(progressIndicator);
-      downloadReportBtn.disabled = false;
-      downloadReportBtn.innerHTML = '<i class="fa fa-download mr-2"></i> 重新轉檔操作';
-      
-      showToast(`圖片已成功保存！\n文件名：${localImageName}`);
-      showSingleShareButton(userName, formattedDate);
-
-    } catch (error) {
-      console.error('圖片處理失敗：', error);
-      const progressIndicator = document.getElementById('progressIndicator');
-      if (progressIndicator) document.body.removeChild(progressIndicator);
-      
-      downloadReportBtn.disabled = false;
-      downloadReportBtn.innerHTML = '<i class="fa fa-download mr-2"></i> 下載圖片';
-      showToast(`操作失敗：${error.message}`, 'error');
-    }
-  }
-
-  
-  // 單獨的ImgBB上傳函數
-  async function uploadToImgBB(blob, fileName) {
-    try {
-      const base64Image = await new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result.split(',')[1]);
-        reader.readAsDataURL(blob);
-      });
-
-      const formData = new FormData();
-      formData.append('key', IMGBB_API_KEY);
-      formData.append('image', base64Image);
-      formData.append('name', fileName);
-
-      // 超時控制
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
-      
-      const uploadResponse = await fetch(IMGBB_UPLOAD_URL, {
-        method: 'POST',
-        body: formData,
-        signal: controller.signal
-      });
-      
-      clearTimeout(timeoutId);
-
-      if (!uploadResponse.ok) {
-        throw new Error(`HTTP錯誤: ${uploadResponse.status}`);
-      }
-
-      const uploadResult = await uploadResponse.json();
-      if (!uploadResult.success) {
-        throw new Error(`上傳失敗：${uploadResult?.error?.message || '未知錯誤'}`);
-      }
-
-      return {
-        url: uploadResult.data.url,
-        deleteUrl: uploadResult.data.delete_url
-      };
-    } catch (error) {
-      console.warn('ImgBB上傳失敗:', error);
-      // 不阻斷主流程，僅返回錯誤
-      throw error;
-    }
-  }
-
-  // 創建進度指示器
-  function createProgressIndicator() {
-    const indicator = document.createElement('div');
-    indicator.id = 'progressIndicator';
-    indicator.style.cssText = `
-      position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-      background: rgba(255, 255, 255, 0.95); padding: 25px; border-radius: 12px;
-      box-shadow: 0 5px 25px rgba(0, 0, 0, 0.15); z-index: 99999;
-      display: flex; flex-direction: column; align-items: center; min-width: 280px;
-    `;
-    
-    // 進度條容器
-    const progressContainer = document.createElement('div');
-    progressContainer.style.cssText = `
-      width: 100%; height: 6px; background: #f0f0f0; border-radius: 3px; margin: 15px 0;
-      overflow: hidden;
-    `;
-    
-    // 進度條
-    const progressBar = document.createElement('div');
-    progressBar.id = 'progressBar';
-    progressBar.style.cssText = `
-      height: 100%; background: #165DFF; width: 0%; transition: width 0.3s ease;
-    `;
-    
-    progressContainer.appendChild(progressBar);
-    
-    // 狀態文本
-    const statusText = document.createElement('div');
-    statusText.id = 'progressStatus';
-    statusText.style.cssText = `
-      color: #333; font-size: 15px; text-align: center; margin-top: 10px;
-    `;
-    statusText.textContent = '準備中...';
-    
-    // 加載動畫
-    const spinner = document.createElement('i');
-    spinner.className = 'fa fa-circle-o-notch fa-spin';
-    spinner.style.cssText = 'font-size: 30px; color: #165DFF;';
-    
-    indicator.appendChild(spinner);
-    indicator.appendChild(progressContainer);
-    indicator.appendChild(statusText);
-    
-    return indicator;
-  }
-
-  // 更新進度
-  function updateProgress(indicator, percent, text) {
-    indicator.querySelector('#progressBar').style.width = `${percent}%`;
-    indicator.querySelector('#progressStatus').textContent = text;
-  }
-
-  // 顯示輕量級提示
-  function showToast(message, type = 'success') {
-    // 移除現有的toast
-    const existingToast = document.querySelector('.custom-toast');
-    if (existingToast) document.body.removeChild(existingToast);
-    
-    const toast = document.createElement('div');
-    toast.className = 'custom-toast';
-    toast.style.cssText = `
-      position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
-      padding: 12px 20px; border-radius: 6px; color: white; z-index: 99999;
-      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2); transition: opacity 0.3s ease;
-    `;
-    
-    if (type === 'error') {
-      toast.style.background = '#ff4d4f';
-    } else {
-      toast.style.background = '#52c41a';
-    }
-    
-    toast.textContent = message;
-    document.body.appendChild(toast);
-    
-    // 3秒後自動消失
-    setTimeout(() => {
-      toast.style.opacity = '0';
-      setTimeout(() => {
-        if (document.body.contains(toast)) {
-          document.body.removeChild(toast);
-        }
-      }, 300);
-    }, 3000);
-  }
-
-  // 保存圖片到相冊
-  function saveToGallery(blob, fileName) {
-    // 新增：iPad特殊處理
-    if (isIOS) {
-      return new Promise((resolve) => {
-        const blobUrl = URL.createObjectURL(blob);
-        const downloadLink = document.createElement('a');
-        downloadLink.download = fileName;
-        downloadLink.href = blobUrl;
-        downloadLink.style.display = 'none';
-        downloadLink.target = '_blank';
-
-        document.body.appendChild(downloadLink);
+    // -------------------------- 18. 截圖與分享功能
+    async function handleImageDownload() {
+      try {
+        // 禁用按鈕並顯示加載狀態
+        downloadReportBtn.disabled = true;
+        downloadReportBtn.innerHTML = '<i class="fa fa-spinner fa-spin mr-2"></i> 準備中...';
         
-        // 模擬點擊觸發下載
-        const clickEvent = new MouseEvent('click', {
-          view: window,
-          bubbles: true,
-          cancelable: true
+        // 創建進度提示
+        const progressIndicator = createProgressIndicator();
+        document.body.appendChild(progressIndicator);
+
+        // 1. 依賴檢查
+        if (typeof html2canvas === 'undefined') throw new Error('圖片處理庫未加載，請刷新頁面重試');
+        const resultSection = document.getElementById('result');
+        if (!resultSection) throw new Error('未找到健康評估結果頁容器，請先提交評估');
+
+        updateProgress(progressIndicator, 20, '調整頁面樣式...');
+
+        // 2. 臨時調整樣式
+        const originalStyles = {
+          resultPadding: resultSection.style.padding,
+          resultMargin: resultSection.style.margin,
+          resultBoxShadow: resultSection.style.boxShadow,
+          position: resultSection.style.position,
+          top: resultSection.style.top,
+          left: resultSection.style.left,
+          zIndex: resultSection.style.zIndex
+        };
+        
+        resultSection.style.padding = '20px';
+        resultSection.style.margin = '0 auto';
+        resultSection.style.boxShadow = 'none';
+        
+        const rect = resultSection.getBoundingClientRect();
+        resultSection.style.position = 'relative';
+        resultSection.style.top = `-${rect.top}px`;
+        resultSection.style.left = `-${rect.left}px`;
+        resultSection.style.zIndex = '1000';
+
+        // 臨時隱藏六大調理方向
+        const healthRecommendations = document.getElementById('healthRecommendations');
+        const originalHealthRecommendationsDisplay = healthRecommendations ? healthRecommendations.style.display : 'block';
+        if (healthRecommendations) {
+          healthRecommendations.style.display = 'none';
+        }
+        
+        // 額外隱藏可能包含六大調理方向的其他元素
+        const healthGuidance = document.querySelector('.health-guidance');
+        const originalHealthGuidanceDisplay = healthGuidance ? healthGuidance.style.display : 'block';
+        if (healthGuidance) {
+          healthGuidance.style.display = 'none';
+        }
+
+        updateProgress(progressIndicator, 40, '準備截圖...');
+
+        // 3. 執行截圖（優化配置，確保排除不需要的元素）
+        const canvas = await html2canvas(resultSection, {
+          useCORS: true,
+          allowTaint: false,
+          scale: Math.min(window.devicePixelRatio || 2, 2),
+          logging: false,
+          scrollX: 0,
+          scrollY: 0,
+          windowWidth: resultSection.scrollWidth,
+          windowHeight: resultSection.scrollHeight,
+          ignoreElements: (el) => {
+            // 明確排除不需要的元素
+            return el.id === 'downloadReportBtn' || 
+                   el.id === 'singleShareBtn' || 
+                   el.id === 'restartBtn' || 
+                   el === progressIndicator || 
+                   el.id === 'healthRecommendations' ||
+                   el.classList.contains('health-guidance');
+          }
         });
-        downloadLink.dispatchEvent(clickEvent);
+
+        updateProgress(progressIndicator, 60, '處理圖片...');
+
+        // 4. 恢復原始樣式
+        Object.keys(originalStyles).forEach(key => {
+          resultSection.style[key] = originalStyles[key];
+        });
+        
+        // 恢復六大調理方向顯示
+        if (healthRecommendations) {
+          healthRecommendations.style.display = originalHealthRecommendationsDisplay;
+        }
+        if (healthGuidance) {
+          healthGuidance.style.display = originalHealthGuidanceDisplay;
+        }
+
+        // 5. 圖片處理
+        const userName = document.getElementById('name').value.trim() || '未知用戶';
+        const currentDate = new Date();
+        const formattedDate = `${currentDate.getFullYear()}年${String(currentDate.getMonth() + 1).padStart(2, '0')}月${String(currentDate.getDate()).padStart(2, '0')}日`;
+        localImageName = `${userName}_健康評估結果_${formattedDate}.jpg`;
+        
+        // 轉換Canvas為JPG Blob
+        localImageBlob = await new Promise((resolve, reject) => {
+          canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('圖片Blob生成失敗')), 'image/jpeg', 0.8);
+        });
+
+        updateProgress(progressIndicator, 75, '轉檔中...');
+
+        // 6. 並行處理本地保存和ImgBB上傳
+        const [saveResult, uploadResult] = await Promise.allSettled([
+          saveToGallery(localImageBlob, localImageName),
+          uploadToImgBB(localImageBlob, localImageName)
+        ]);
+        
+        // 處理上傳結果
+        if (uploadResult.status === 'fulfilled' && uploadResult.value) {
+          imgbbImageUrl = uploadResult.value.url;
+          imgbbDeleteUrl = uploadResult.value.deleteUrl;
+          // 異步更新Google Sheets
+          submitToGoogleSheets().catch(err => console.log('更新圖片URL失敗:', err));
+        } else if (uploadResult.status === 'rejected') {
+          // 顯示上傳錯誤但不中斷流程
+          console.warn('圖片上傳失敗:', uploadResult.reason);
+          showToast('圖片已保存到本地，但上傳至服務器失敗', 'error');
+        }
+        
+        // 檢查保存結果
+        if (saveResult.status === 'rejected') {
+          throw new Error(`保存圖片失敗: ${saveResult.reason.message}`);
+        }
+
+        updateProgress(progressIndicator, 90, '保存圖片...');
+
+        // 7. 完成處理
+        document.body.removeChild(progressIndicator);
+        downloadReportBtn.disabled = false;
+        downloadReportBtn.innerHTML = '<i class="fa fa-download mr-2"></i> 重新轉檔操作';
+        
+        showToast(`圖片已成功保存！\n文件名：${localImageName}`);
+        showSingleShareButton(userName, formattedDate);
+
+      } catch (error) {
+        console.error('圖片處理失敗：', error);
+        const progressIndicator = document.getElementById('progressIndicator');
+        if (progressIndicator) document.body.removeChild(progressIndicator);
+        
+        downloadReportBtn.disabled = false;
+        downloadReportBtn.innerHTML = '<i class="fa fa-download mr-2"></i> 下載圖片';
+        showToast(`操作失敗：${error.message}`, 'error');
+      }
+    }
+
+    
+    // 單獨的ImgBB上傳函數
+    async function uploadToImgBB(blob, fileName) {
+      try {
+        const base64Image = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result.split(',')[1]);
+          reader.readAsDataURL(blob);
+        });
+
+        const formData = new FormData();
+        formData.append('key', IMGBB_API_KEY);
+        formData.append('image', base64Image);
+        formData.append('name', fileName);
+
+        // 超時控制
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
+        
+        const uploadResponse = await fetch(IMGBB_UPLOAD_URL, {
+          method: 'POST',
+          body: formData,
+          signal: controller.signal
+        });
+        
+        clearTimeout(timeoutId);
+
+        if (!uploadResponse.ok) {
+          throw new Error(`HTTP錯誤: ${uploadResponse.status}`);
+        }
+
+        const uploadResult = await uploadResponse.json();
+        if (!uploadResult.success) {
+          throw new Error(`上傳失敗：${uploadResult?.error?.message || '未知錯誤'}`);
+        }
+
+        return {
+          url: uploadResult.data.url,
+          deleteUrl: uploadResult.data.delete_url
+        };
+      } catch (error) {
+        console.warn('ImgBB上傳失敗:', error);
+        // 不阻斷主流程，僅返回錯誤
+        throw error;
+      }
+    }
+
+    // 創建進度指示器
+    function createProgressIndicator() {
+      const indicator = document.createElement('div');
+      indicator.id = 'progressIndicator';
+      indicator.style.cssText = `
+        position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+        background: rgba(255, 255, 255, 0.95); padding: 25px; border-radius: 12px;
+        box-shadow: 0 5px 25px rgba(0, 0, 0, 0.15); z-index: 99999;
+        display: flex; flex-direction: column; align-items: center; min-width: 280px;
+      `;
+      
+      // 進度條容器
+      const progressContainer = document.createElement('div');
+      progressContainer.style.cssText = `
+        width: 100%; height: 6px; background: #f0f0f0; border-radius: 3px; margin: 15px 0;
+        overflow: hidden;
+      `;
+      
+      // 進度條
+      const progressBar = document.createElement('div');
+      progressBar.id = 'progressBar';
+      progressBar.style.cssText = `
+        height: 100%; background: #165DFF; width: 0%; transition: width 0.3s ease;
+      `;
+      
+      progressContainer.appendChild(progressBar);
+      
+      // 狀態文本
+      const statusText = document.createElement('div');
+      statusText.id = 'progressStatus';
+      statusText.style.cssText = `
+        color: #333; font-size: 15px; text-align: center; margin-top: 10px;
+      `;
+      statusText.textContent = '準備中...';
+      
+      // 加載動畫
+      const spinner = document.createElement('i');
+      spinner.className = 'fa fa-circle-o-notch fa-spin';
+      spinner.style.cssText = 'font-size: 30px; color: #165DFF;';
+      
+      indicator.appendChild(spinner);
+      indicator.appendChild(progressContainer);
+      indicator.appendChild(statusText);
+      
+      return indicator;
+    }
+
+    // 更新進度
+    function updateProgress(indicator, percent, text) {
+      indicator.querySelector('#progressBar').style.width = `${percent}%`;
+      indicator.querySelector('#progressStatus').textContent = text;
+    }
+
+    // 保存圖片到相冊
+    function saveToGallery(blob, fileName) {
+      // iPad特殊處理
+      if (isIOS) {
+        return new Promise((resolve) => {
+          const blobUrl = URL.createObjectURL(blob);
+          const downloadLink = document.createElement('a');
+          downloadLink.download = fileName;
+          downloadLink.href = blobUrl;
+          downloadLink.style.display = 'none';
+          downloadLink.target = '_blank';
+
+          document.body.appendChild(downloadLink);
+          
+          // 模擬點擊觸發下載
+          const clickEvent = new MouseEvent('click', {
+            view: window,
+            bubbles: true,
+            cancelable: true
+          });
+          downloadLink.dispatchEvent(clickEvent);
+          
+          // 清理臨時資源
+          setTimeout(() => {
+            document.body.removeChild(downloadLink);
+            URL.revokeObjectURL(blobUrl);
+            resolve(true);
+          }, 1000);
+        });
+      }
+
+      return new Promise((resolve, reject) => {
+        if (window.showSaveFilePicker) {
+          window.showSaveFilePicker({
+            suggestedName: fileName,
+            types: [{ description: '圖片文件', accept: { 'image/jpeg': ['.jpg'] } }]
+          })
+          .then(handle => handle.createWritable())
+          .then(writable => writable.write(blob).then(() => writable.close()))
+          .then(() => resolve(true))
+          .catch(err => saveWithAnchorTag(blob, fileName, resolve, reject));
+        } else {
+          saveWithAnchorTag(blob, fileName, resolve, reject);
+        }
+      });
+    }
+
+    // a標籤兼容下載
+    function saveWithAnchorTag(blob, fileName, resolve, reject) {
+      const blobUrl = URL.createObjectURL(blob);
+      const downloadLink = document.createElement('a');
+      downloadLink.download = fileName;
+      downloadLink.href = blobUrl;
+      downloadLink.style.display = 'none';
+
+      document.body.appendChild(downloadLink);
+      
+      requestAnimationFrame(() => {
+        downloadLink.click();
         
         // 清理臨時資源
         setTimeout(() => {
@@ -3798,108 +3843,92 @@ document.addEventListener('DOMContentLoaded', function() {
       });
     }
 
-    return new Promise((resolve, reject) => {
-      if (window.showSaveFilePicker) {
-        window.showSaveFilePicker({
-          suggestedName: fileName,
-          types: [{ description: '圖片文件', accept: { 'image/jpeg': ['.jpg'] } }]
-        })
-        .then(handle => handle.createWritable())
-        .then(writable => writable.write(blob).then(() => writable.close()))
-        .then(() => resolve(true))
-        .catch(err => saveWithAnchorTag(blob, fileName, resolve, reject));
-      } else {
-        saveWithAnchorTag(blob, fileName, resolve, reject);
-      }
-    });
-  }
+    // 顯示分享按鈕
+    function showSingleShareButton(userName, date) {
+      // 移除舊的分享按鈕
+      const existingShareBtn = document.getElementById('singleShareBtn');
+      if (existingShareBtn) document.body.removeChild(existingShareBtn);
 
-  // a標籤兼容下載
-  function saveWithAnchorTag(blob, fileName, resolve, reject) {
-    const blobUrl = URL.createObjectURL(blob);
-    const downloadLink = document.createElement('a');
-    downloadLink.download = fileName;
-    downloadLink.href = blobUrl;
-    downloadLink.style.display = 'none';
-
-    document.body.appendChild(downloadLink);
-    
-    requestAnimationFrame(() => {
-      downloadLink.click();
+      // 創建新的分享按鈕
+      const shareBtn = document.createElement('button');
+      shareBtn.id = 'singleShareBtn';
+      shareBtn.style.cssText = `
+        position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+        padding: 12px 28px; border-radius: 30px; background: #165DFF; color: white;
+        border: none; box-shadow: 0 4px 15px rgba(22, 93, 255, 0.3);
+        font-size: 16px; font-weight: bold; display: flex; align-items: center; gap: 8px;
+        z-index: 9999; cursor: pointer; transition: background 0.2s ease;
+      `;
+      shareBtn.innerHTML = '<i class="fa fa-share-alt"></i> 分享健康自檢表';
+      document.body.appendChild(shareBtn);
       
-      // 清理臨時資源
-      setTimeout(() => {
-        document.body.removeChild(downloadLink);
-        URL.revokeObjectURL(blobUrl);
-        resolve(true);
-      }, 1000);
-    });
-  }
+      // 添加懸停效果
+      shareBtn.addEventListener('mouseover', () => {
+        shareBtn.style.background = '#0E42D2';
+      });
+      
+      shareBtn.addEventListener('mouseout', () => {
+        shareBtn.style.background = '#165DFF';
+      });
 
-  // 顯示分享按鈕
-  function showSingleShareButton(userName, date) {
-    // 移除舊的分享按鈕
-    const existingShareBtn = document.getElementById('singleShareBtn');
-    if (existingShareBtn) document.body.removeChild(existingShareBtn);
+      // 綁定分享事件
+      shareBtn.addEventListener('click', async () => {
+        try {
+          // 增強的檢查和錯誤處理
+          if (!localImageBlob && !imgbbImageUrl) {
+            showToast('分享資源不完整，請重新生成圖片', 'error');
+            return;
+          }
+          
+          // 若localImageBlob不存在但有imgbbImageUrl，仍然允許分享
+          if (!localImageBlob) {
+            showToast('使用網絡圖片進行分享', 'info');
+          }
 
-    // 創建新的分享按鈕
-    const shareBtn = document.createElement('button');
-    shareBtn.id = 'singleShareBtn';
-    shareBtn.style.cssText = `
-      position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
-      padding: 12px 28px; border-radius: 30px; background: #165DFF; color: white;
-      border: none; box-shadow: 0 4px 15px rgba(22, 93, 255, 0.3);
-      font-size: 16px; font-weight: bold; display: flex; align-items: center; gap: 8px;
-      z-index: 9999; cursor: pointer; transition: background 0.2s ease;
-    `;
-    shareBtn.innerHTML = '<i class="fa fa-share-alt"></i> 分享健康自檢表';
-    document.body.appendChild(shareBtn);
-    
-    // 添加懸停效果
-    shareBtn.addEventListener('mouseover', () => {
-      shareBtn.style.background = '#0E42D2';
-    });
-    
-    shareBtn.addEventListener('mouseout', () => {
-      shareBtn.style.background = '#165DFF';
-    });
+          // 構建分享內容
+          let imageFile = null;
+          if (localImageBlob) {
+            imageFile = new File([localImageBlob], localImageName, { type: 'image/jpeg' });
+          }
+          
+          const shareText = `📋 『 ${userName} 』的健康自檢表\n🗓️ 自檢日期：${date}\n💡 包含：調理方向 + AI評估\n🔗 圖片鏈接：`;
+          const shareUrl = imgbbImageUrl || '';
 
-    // 綁定分享事件
-    shareBtn.addEventListener('click', async () => {
-      try {
-        // 增強的檢查和錯誤處理
-        if (!localImageBlob && !imgbbImageUrl) {
-          showToast('分享資源不完整，請重新生成圖片', 'error');
-          return;
-        }
-        
-        // 若localImageBlob不存在但有imgbbImageUrl，仍然允許分享
-        if (!localImageBlob) {
-          showToast('使用網絡圖片進行分享', 'info');
-        }
-
-        // 構建分享內容
-        let imageFile = null;
-        if (localImageBlob) {
-          imageFile = new File([localImageBlob], localImageName, { type: 'image/jpeg' });
-        }
-        
-        const shareText = `📋 『 ${userName} 』的健康自檢表\n🗓️ 自檢日期：${date}\n💡 包含：調理方向 + AI評估\n🔗 圖片鏈接：`;
-        const shareUrl = imgbbImageUrl || '';
-
-        // 新增：iPad分享特殊處理
-        if (isIOS) {
-          if (navigator.share) {
+          // iPad分享特殊處理
+          if (isIOS) {
+            if (navigator.share) {
+              shareBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> 喚醒分享...';
+              
+              // 對iPad Safari使用不同的分享策略
+              const shareData = {
+                title: `${userName}的健康自檢表`,
+                text: shareText + (shareUrl ? shareUrl : ''),
+                url: shareUrl || window.location.href
+              };
+              
+              // 如果有圖片文件且支持文件分享，才添加文件
+              if (imageFile && navigator.canShare && navigator.canShare({ files: [imageFile] })) {
+                shareData.files = [imageFile];
+              }
+              
+              await navigator.share(shareData);
+              showToast('分享成功！');
+              shareBtn.innerHTML = '<i class="fa fa-share-alt"></i> 分享健康自檢表';
+            } else {
+              // Safari不支持分享API時，複製鏈接
+              await navigator.clipboard.writeText(shareText + (shareUrl || window.location.href));
+              showToast('分享鏈接已複製到剪貼板');
+            }
+          } else if (navigator.share) {
+            // 其他設備的分享邏輯
             shareBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> 喚醒分享...';
             
-            // 對iPad Safari使用不同的分享策略
             const shareData = {
               title: `${userName}的健康自檢表`,
-              text: shareText + (shareUrl ? shareUrl : ''),
+              text: shareText,
               url: shareUrl || window.location.href
             };
             
-            // 如果有圖片文件且支持文件分享，才添加文件
             if (imageFile && navigator.canShare && navigator.canShare({ files: [imageFile] })) {
               shareData.files = [imageFile];
             }
@@ -3908,56 +3937,35 @@ document.addEventListener('DOMContentLoaded', function() {
             showToast('分享成功！');
             shareBtn.innerHTML = '<i class="fa fa-share-alt"></i> 分享健康自檢表';
           } else {
-            // Safari不支持分享API時，複製鏈接
+            // 不支持分享API時，複製鏈接
             await navigator.clipboard.writeText(shareText + (shareUrl || window.location.href));
-            showToast('分享鏈接已複製到剪貼板');
+            showToast('分享內容已複製到剪貼板');
           }
-        } else if (navigator.share) {
-          // 其他設備的分享邏輯
-          shareBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> 喚醒分享...';
-          
-          const shareData = {
-            title: `${userName}的健康自檢表`,
-            text: shareText,
-            url: shareUrl || window.location.href
-          };
-          
-          if (imageFile && navigator.canShare && navigator.canShare({ files: [imageFile] })) {
-            shareData.files = [imageFile];
-          }
-          
-          await navigator.share(shareData);
-          showToast('分享成功！');
+        } catch (shareError) {
+          console.error('分享失敗:', shareError);
           shareBtn.innerHTML = '<i class="fa fa-share-alt"></i> 分享健康自檢表';
-        } else {
-          // 不支持分享API時，複製鏈接
-          await navigator.clipboard.writeText(shareText + (shareUrl || window.location.href));
-          showToast('分享內容已複製到剪貼板');
+          if (shareError.name !== 'AbortError') {
+            showToast(`分享失敗，鏈接：${imgbbImageUrl || '無'}`, 'error');
+          } else {
+            showToast('分享已取消');
+          }
         }
-      } catch (shareError) {
-        console.error('分享失敗:', shareError);
-        shareBtn.innerHTML = '<i class="fa fa-share-alt"></i> 分享健康自檢表';
-        if (shareError.name !== 'AbortError') {
-          showToast(`分享失敗，鏈接：${imgbbImageUrl || '無'}`, 'error');
-        } else {
-          showToast('分享已取消');
-        }
-      }
-    });
-  }
+      });
+    }
 
-  // -------------------------- 19. 綁定事件與初始化
-  if (downloadReportBtn) {
-    downloadReportBtn.addEventListener('click', handleImageDownload);
-  }
+    // -------------------------- 19. 綁定事件與初始化
+    if (downloadReportBtn) {
+      downloadReportBtn.addEventListener('click', handleImageDownload);
+    }
 
-  // 頁面初始化
-  updateFormSteps();
-  updateGenderBasedUI();
-});
-
-
+    // 頁面初始化
+    updateFormSteps();
+    updateGenderBasedUI();
+  });
+  
 </script>
+    
+
 
 
 
