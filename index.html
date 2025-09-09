@@ -3902,7 +3902,7 @@ document.addEventListener('DOMContentLoaded', function() {
               // 對iPad Safari使用不同的分享策略
               const shareData = {
                 title: `${userName}的健康自檢表`,
-                text: shareText + (shareUrl ? shareUrl : ''),
+                text: shareText + (''),
                 url: shareUrl || window.location.href
               };
               
