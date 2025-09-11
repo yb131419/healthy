@@ -194,15 +194,14 @@
           </div>
         </div>
         
-        <!-- 表單容器 -->
+<!-- 表單容器 -->
 <div class="bg-white rounded-2xl shadow-md p-6 md:p-8 mb-8">
   <!-- 步驟1: 基本信息 -->
   <div class="form-step active" id="step1">
     <h3 class="text-xl font-semibold mb-6 pb-2 border-b">基本信息</h3>
     
+    <!-- 統一使用兩列網格佈局 -->
     <div class="grid md:grid-cols-2 gap-6 mb-6">
-
-
       <div>
         <label for="name" class="block text-sm font-medium text-neutral-dark/80 mb-1">姓名 <span class="text-warning">*</span></label>
         <input type="text" id="name" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors" placeholder="請輸入您的姓名">
@@ -231,11 +230,10 @@
       </div>
       
       <div>
-        <label for="phone" class="block text-sm font-medium text-neutral-dark/80 mb-1">電話</label>
-        <input type="tel" id="phone" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors" placeholder="請輸入您的聯繫電話">
+        <label for="phone" class="block text-sm font-medium text-neutral-dark/80 mb-1">電話 or Line</label>
+        <input type="tel" id="phone" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors" placeholder="請輸入您的聯繫資料">
       </div>
-    
-    <div class="grid md:grid-cols-3 gap-6 mb-6">
+      
       <div>
         <label for="height" class="block text-sm font-medium text-neutral-dark/80 mb-1">身高 (CM)</label>
         <input type="number" id="height" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors" placeholder="身高">
@@ -250,9 +248,7 @@
         <label for="waist" class="block text-sm font-medium text-neutral-dark/80 mb-1">腰圍 (CM)</label>
         <input type="number" id="waist" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors" placeholder="腰圍">
       </div>
-    </div>
-    
-    <div class="grid md:grid-cols-2 gap-6 mb-6">
+      
       <div>
         <label for="bloodPressure" class="block text-sm font-medium text-neutral-dark/80 mb-1">血壓 (mmHg)</label>
         <input type="text" id="bloodPressure" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors" placeholder="如: 120/80">
@@ -262,14 +258,15 @@
         <label for="bloodSugar" class="block text-sm font-medium text-neutral-dark/80 mb-1">血糖 (mmol/l)</label>
         <input type="number" step="0.01" id="bloodSugar" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors" placeholder="血糖值">
       </div>
-    </div>
-    
-    <div>
-      <label for="occupation" class="block text-sm font-medium text-neutral-dark/80 mb-1">職業</label>
-      <input type="text" id="occupation" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors" placeholder="請輸入您的職業">
+      
+      <div>
+        <label for="occupation" class="block text-sm font-medium text-neutral-dark/80 mb-1">職業</label>
+        <input type="text" id="occupation" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors" placeholder="請輸入您的職業">
+      </div>
     </div>
   </div>
 </div>
+
 
           
 <!-- 步驟2: 身體症狀 -->
