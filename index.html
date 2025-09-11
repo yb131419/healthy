@@ -2513,6 +2513,27 @@ document.addEventListener('DOMContentLoaded', function() {
   const formContainer = document.getElementById('form');
   const aiEvaluationContainer = document.getElementById('aiEvaluationContainer') || createAiContainer();
   const healthRecommendations = document.getElementById('healthRecommendations');
+  
+  // 添加導航按鈕容器樣式
+  const navButtonsContainer = document.createElement('div');
+  navButtonsContainer.id = 'navButtonsContainer';
+  navButtonsContainer.style.cssText = `
+    margin-top: 20px;
+    display: flex;
+    justify-content: space-between;
+    padding: 0 15px;
+  `;
+  
+  // 將導航按鈕移動到新容器
+  if (prevBtn && nextBtn && submitBtn) {
+    const formFooter = prevBtn.parentNode;
+    if (formFooter) {
+      formFooter.appendChild(navButtonsContainer);
+      navButtonsContainer.appendChild(prevBtn);
+      navButtonsContainer.appendChild(nextBtn);
+      navButtonsContainer.appendChild(submitBtn);
+    }
+  }
 
   // 3. 性別相關元素
   const genderRadios = document.querySelectorAll('input[name="gender"]');
@@ -2580,11 +2601,11 @@ document.addEventListener('DOMContentLoaded', function() {
       document.querySelector('.symptom-tab[data-category="all"]')?.click();
     }
 
-    updateGlobalSymptomData();
+    updateGlobalData();
   }
 
   // -------------------------- 3. 全域症狀/習慣數據更新
-  function updateGlobalSymptomData() {
+  function updateGlobalData() {
     // 症狀去重
     const symptomElements = document.querySelectorAll('input[name="symptoms"]:checked');
     globalUniqueSymptoms = [...new Set(Array.from(symptomElements).map(checkbox => checkbox.value))];
@@ -2605,7 +2626,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
   nextBtn.addEventListener('click', () => {
     if (validateStep(currentStep)) {
-      if (currentStep === 2) updateGlobalSymptomData();
+      if (currentStep === 2) updateGlobalData();
       if (currentStep < totalSteps) {
         currentStep++;
         updateFormSteps();
@@ -2825,7 +2846,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // -------------------------- 9. 表單提交
   submitBtn.addEventListener('click', async () => {
-    updateGlobalSymptomData();
+    updateGlobalData();
     if (!validateStep(4)) return;
 
     successModal.classList.remove('hidden');
@@ -2932,7 +2953,7 @@ document.addEventListener('DOMContentLoaded', function() {
         item.style.display = (selectedCategory === 'all' || itemCategory === selectedCategory) ? 'block' : 'none';
       });
 
-      updateGlobalSymptomData();
+      updateGlobalData();
     });
   });
 
@@ -2956,7 +2977,7 @@ document.addEventListener('DOMContentLoaded', function() {
         title.parentElement.style.display = (selectedCategory === 'all' || title.getAttribute('data-category') === selectedCategory) ? 'block' : 'none';
       });
 
-      updateGlobalSymptomData();
+      updateGlobalData();
     });
   });
 
@@ -2996,6 +3017,16 @@ document.addEventListener('DOMContentLoaded', function() {
     prevBtn.classList.toggle('hidden', currentStep === 1);
     nextBtn.classList.toggle('hidden', currentStep === totalSteps);
     submitBtn.classList.toggle('hidden', currentStep !== totalSteps);
+
+    // 確保按鈕容器顯示在當前步驟下方
+    if (currentStepEl && navButtonsContainer) {
+      const stepContent = currentStepEl.querySelector('.step-content');
+      if (stepContent) {
+        stepContent.parentNode.insertBefore(navButtonsContainer, stepContent.nextSibling);
+      } else {
+        currentStepEl.appendChild(navButtonsContainer);
+      }
+    }
 
     // 滾動到當前表單區域
     formContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -3333,7 +3364,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('symptomScoreBar').style.width = `${symptomPercent}%`;
     document.getElementById('habitScoreBar').style.width = `${habitPercent}%`;
 
-    // 7. 渲染主要健康問題
+    // 7. 渲染主要健康問題和不良習慣
     const mainIssuesContainer = document.getElementById('mainHealthIssues');
     let mainConcern = document.getElementById('mainConcern').value.trim();
     if (!mainConcern && totalSymptomCount > 0) {
@@ -3387,7 +3418,85 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     });
 
-    // 渲染主要健康問題區域
+    // 整合不良習慣顯示 - 統一為一種顯示方式
+    let habitsHtml = '';
+    if (globalUniqueHabits.length > 0) {
+      habitsHtml = `<div class="mt-4">
+        <h3 class="text-base font-semibold mb-2 text-primary">不良生活習慣</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-2">`;
+        
+      const habitCategories = {
+  '飲食習慣': [
+    '經常不吃早餐', '晚上8點後吃晚餐/吃消夜', '吃飯過飽/過急/過快/過少', '經常外食/點外送',
+    '常吃剩飯剩菜/愛吃動物內臟', '常吃葷食/吃菜偏好油多的', '口味偏辣/偏咸(重口味)', '很少吃蔬菜/素食者',
+    '喜歡吃燙食/喝燙水', '偏好白米/白麵等精制主食', '很少吃五穀雜糧', '偏食/挑食/特別嗜吃某種食物',
+    '常喝酒/酗酒/喝冰啤酒', '習慣飯後吃水果/特別偏愛水果', '愛吃反季節蔬菜/水果', '喜歡吃螃蟹/柿子',
+    '不吃堅果/吃花生/瓜子過多', '喜歡吃泡面/甜食', '吃油炸食品/醃制食品', '喜歡吃果脯蜜餞/罐頭',
+    '吃冰西瓜/特別偏愛水果', '愛吃燒烤/零食/愛吃雞頭', '吃燒烤/火鍋時搭配冰啤酒/冰飲料', '吃冰棒/冰涼甜點/冰飲',
+    '吃飯不共用餐筷/吃飯快/吃燙飯/愛吃油炸物', '愛喝濃茶/咖啡/吃醃制食物', '飲食時間不規律/接觸二手煙',
+    '常吃中藥/西藥/吃類固醇藥', '吃過減肥藥/做過減肥相關療程', '常吃海鮮/炒菜時油燒到冒煙'
+  ],
+  '睡眠習慣': [
+    '超過晚上11點睡覺', '早上9點後才起床', '經常上大夜班(到天亮)', '睡眠時間不足7-8小時',
+    '睡軟床/用高枕頭', '開冷氣/開窗睡覺', '飯後馬上睡覺', '睡覺時把腳露在被子外面',
+    '早上5點前就起床(過早起床)', '蒙頭睡覺'
+  ],
+  '運動習慣': [
+    '早上5點前/晚上7點後運動', '不運動/運動量太少/運動量過度', '長時間站立/久坐/長時間低頭伏案工作',
+    '每天走路超過一萬步(過量)', '長時間游泳/從事冬泳', '體力勞動過多/特別愛游泳',
+    '練瑜伽(指可能不合適的練習方式)', '曾經是體育運動員(指過往高強度運動習慣的延續影響)'
+  ],
+  '寒濕因素': [
+    '很少曬太陽', '長時間在冷氣房工作', '在地下室/冷凍庫工作', '早上洗頭/洗澡',
+    '晚上11點後洗頭/洗澡', '用冷水洗頭/洗澡/每天都洗澡', '洗頭後沒有及時吹乾', '運動後馬上洗澡',
+    '用冷水洗腳且不擦乾', '喜歡光腳在地上走', '冬天用冷水洗菜/洗碗/洗衣物', '有下河水等嚴重受寒的經歷',
+    '喜歡露肩膀/露腰/露腳踝', '四季都穿涼鞋/冬天穿得少/穿得薄', '睡覺時把腳露在被子外面',
+    '騎機車時沒有做好防護(防風保暖)', '出汗時/生氣時喝冰水'
+  ],
+  '情緒因素': [
+    '經歷過重大情感變故', '經常生氣/愛發脾氣', '壓力大/精神緊張', '容易憤怒/憎恨他人/有內疚感/心事重',
+    '過度思念/多慮/常擔驚受怕', '遇到事情愛抱怨/習慣找外部原因/容易嫉妒別人',
+    '因父母離異而感到悲憤/有被遺棄感', '經歷過喪偶/喪子(女)/喪父(母)等喪親之痛',
+    '沒有人生信念/感到空虛無助', '不情願讓步/習慣自己悶著生氣', '慾望無法實現/對他人感到失望',
+    '莫名暴躁/發脾氣/有憂鬱傾向', '自卑/性格軟弱/缺乏安全感/感到無助',
+    '容易生氣/憤憤不平/發怒/惱怒甚至暴怒', '感到傷心/難受/痛苦/悲痛或哀痛',
+    '容易憂慮/愁悶/憂鬱/有憂鬱傾向', '容易害怕/慌張/恐懼甚至驚慌', '從小被打罵/冷落/嫌棄/受過刺激',
+    '懶惰不上進/缺乏活力', '膽小怕事/長時間有慾望卻無法實現', '內心浮躁/沒有興趣愛好/缺乏主見',
+    '抱怨命運不好/總是遇到麻煩事', '坐月子期間生氣', '性子急/愛罵人', '喜歡追劇/看恐怖片',
+    '愛攀比/別人有就嫉妒/別人沒有就看不起', '容易過度興奮/激動或亢奮'
+  ],
+  '毒素接觸': [
+    '手機在床邊充電/放在頭附近睡覺', '住家附近20公里內有化工廠等污染企業',
+    '經常過度疲勞/住家裝修過度(可能接觸裝修污染)', '不喝水/很少喝水/喝冰水', '經常憋尿/不按時排便',
+    '常燙髮/染髮/使用化妝品/塗指甲油', '手淫/意淫/看色情影片/資料', '性生活頻繁/性慾低落',
+    '戴深色口罩/住在變電站附近', '頻繁吃過抗生素/消炎藥', '愛咬手指甲/咬筆桿/咬筷子',
+    '愛躺著看電視/玩手機', '不使用抽油煙機/抽油煙機效果不好', '長期接觸汽車廢氣/灰塵/粉塵',
+    '小孩用鉛筆剔牙/塗抹祛斑霜', '常用消毒液/脫色劑/強力除油劑/水果清洗劑',
+    '不戴正規防毒面具/防護服就噴灑農藥', '叼著包裝袋喝牛奶/飲料', '抽煙每天超過10根/長期吸二手煙',
+    '低頭玩手機/用電腦時間過多'
+  ]
+};
+
+      
+      // 遍歷每個習慣分類
+      Object.entries(habitCategories).forEach(([category, habits]) => {
+        const selectedHabitsInCategory = globalUniqueHabits.filter(habit => habits.includes(habit));
+        if (selectedHabitsInCategory.length > 0) {
+          habitsHtml += `<div class="p-3 border border-gray-100 rounded-lg">
+            <p class="text-sm font-medium mb-1">${category}：</p>
+            <p class="text-sm">${selectedHabitsInCategory.join('、')}</p>
+          </div>`;
+        }
+      });
+      
+      habitsHtml += `</div></div>`;
+    } else {
+      habitsHtml = `<div class="mt-4 text-gray-500">
+        <p><strong>不良生活習慣：</strong>未選擇任何不良習慣</p>
+      </div>`;
+    }
+
+    // 渲染主要健康問題和不良習慣區域
     if (mainIssuesContainer) {
       mainIssuesContainer.style.display = 'block';
       mainIssuesContainer.innerHTML = `
@@ -3400,6 +3509,8 @@ document.addEventListener('DOMContentLoaded', function() {
             `<div class="mt-3"><strong>詳細症狀：</strong>${symptomsHtml}</div>` : 
             `<div class="mt-3 text-gray-500"><strong>詳細症狀：</strong>未選擇任何症狀</div>`
           }
+          
+          ${habitsHtml}
         </div>
       `;
     } else {
@@ -3416,6 +3527,8 @@ document.addEventListener('DOMContentLoaded', function() {
             `<div class="mt-3"><strong>詳細症狀：</strong>${symptomsHtml}</div>` : 
             `<div class="mt-3 text-gray-500"><strong>詳細症狀：</strong>未選擇任何症狀</div>`
           }
+          
+          ${habitsHtml}
         </div>
       `;
       
@@ -3955,7 +4068,7 @@ document.addEventListener('DOMContentLoaded', function() {
   });
   
 </script>
-    
+
 
 
 
