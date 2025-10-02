@@ -2444,8 +2444,10 @@
     </div>
   </div>
 
+
+
 <script>
-// 首先定義showToast函數，確保在任何地方都能調用
+
 function showToast(message, type = 'success') {
   // 移除現有的toast
   const existingToast = document.querySelector('.custom-toast');
@@ -2497,8 +2499,8 @@ document.addEventListener('DOMContentLoaded', function() {
   // 新增：網絡請求配置
   const REQUEST_TIMEOUT = 30000; // 延長到30秒超時，更適合平板設備
   const MAX_RETRIES = 3; // 增加重試次數
-  const TABLET_CANVAS_SCALE = 1.2; // 降低平板設備的canvas縮放比例，減少內存佔用
-  const TABLET_IMAGE_QUALITY = 0.6; // 平板設備降低圖片質量以提高成功率
+  const TABLET_CANVAS_SCALE = 0.8; // 降低平板設備的canvas縮放比例，減少內存佔用
+  const TABLET_IMAGE_QUALITY = 0.5; // 平板設備降低圖片質量以提高成功率
 
   // 2. DOM元素獲取（含AI評估容器）
   const menuToggle = document.getElementById('menuToggle');
@@ -3054,9 +3056,9 @@ document.addEventListener('DOMContentLoaded', function() {
       healthIssues: {
         mainConcern: document.getElementById('mainConcern').value || '未明確說明',
         symptomDuration: document.getElementById('symptomDuration').value || '未說明',
-        // 收集過敏史和既往病史的詳細信息 - 修正：未填寫時返回空字符串
-        allergyDetails: document.getElementById('allergyDetails')?.value || '',
-        medicalDetails: document.getElementById('medicalDetails')?.value || ''
+        // 收集過敏史和既往病史的詳細信息 - 修正：即使為空也返回真實值
+        allergyDetails: document.getElementById('allergyDetails') ? document.getElementById('allergyDetails').value : '',
+        medicalDetails: document.getElementById('medicalDetails') ? document.getElementById('medicalDetails').value : ''
       }
     };
   }
@@ -3064,6 +3066,12 @@ document.addEventListener('DOMContentLoaded', function() {
   // -------------------------- 14. 工具函數：收集全量表單數據
   function collectFullFormData() {
     const selectedGender = document.querySelector('input[name="gender"]:checked');
+    // 修正：確保過敏史和既往病史的數據被正確收集
+    const allergyDetails = document.getElementById('allergyDetails') ? 
+      document.getElementById('allergyDetails').value : '';
+    const medicalDetails = document.getElementById('medicalDetails') ? 
+      document.getElementById('medicalDetails').value : '';
+      
     return {
       submitTime: new Date().toLocaleString('zh-Hant', {
         year: 'numeric', month: '2-digit', day: '2-digit',
@@ -3090,9 +3098,9 @@ document.addEventListener('DOMContentLoaded', function() {
         mainConcern: document.getElementById('mainConcern').value || '未明確說明',
         symptomDuration: document.getElementById('symptomDuration').value || '未說明',
         possibleCauses: document.getElementById('possibleCauses').value || '未說明',
-        // 只收集和存儲用戶輸入的詳細信息，不使用預定義的選項值 - 修正：未填寫時返回空字符串
-        allergyDetails: document.getElementById('allergyDetails')?.value || '',
-        medicalDetails: document.getElementById('medicalDetails')?.value || ''
+        // 修正：即使為空也返回用戶輸入的真實值，而不是默認的"未填寫"
+        allergyDetails: allergyDetails,
+        medicalDetails: medicalDetails
       },
       aiComment: globalAiComment || 'AI評語生成失敗',
       imgbb: {
@@ -3385,15 +3393,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const symptomDuration = document.getElementById('symptomDuration').value || '未說明';
     const possibleCauses = document.getElementById('possibleCauses').value || '未說明';
-    // 只顯示用戶輸入的詳細信息，不顯示drug和surgery等預定義選項
-    const allergyDetails = document.getElementById('allergyDetails')?.value || '';
-    const medicalDetails = document.getElementById('medicalDetails')?.value || '';
+    // 只顯示用戶輸入的詳細信息
+    const allergyDetails = document.getElementById('allergyDetails') ? document.getElementById('allergyDetails').value : '';
+    const medicalDetails = document.getElementById('medicalDetails') ? document.getElementById('medicalDetails').value : '';
     
     const isFemale = gender === '女';
 
     // 症狀分類映射
     const symptomCategories = {
-      '頭部症狀': ['頭痛/頭暈', '頭部麻木/腦鳴', '嗜睡/易醒', '失眠/多夢', '偏頭痛/健忘', '言語懶散/口吃', '暈車/暈機', '頭部畏冷', '思緒中斷', '反應遲鈍', '容易打哈欠', '眉骨疼痛'],
+      '頭部症狀': ['頭痛/頭暈', '頭部麻木/腦鳴', '嗜睡/易醒', '失眠/多夢', '偏頭痛/健忘', '言語懶散/口吃', '暈車/暈機', '頭部畏冷', '思�緒中斷', '反應遲鈍', '容易打哈欠', '眉骨疼痛'],
       '眼耳鼻喉': ['老花眼', '眼睛癢/腫脹/突出/疼痛', '眼睛畏光/流淚', '眼睛乾澀/飛蚊症', '眼糞多/麥粒腫', '眼睛疲勞', '夜盲症', '視力模糊', '耳朵內潮濕/化膿', '耳垢多/耳朵疼痛/癢', '耳鳴/耳聾', '聽力減退', '鼻炎/鼻塞', '流鼻水/流鼻血', '打噴嚏', '過敏性鼻炎', '酒渣鼻', '嗅覺遲鈍', '咽喉異物感', '聲音沙啞'],
       '呼吸系統': ['咳嗽/氣喘', '支氣管炎', '感冒久不愈', '容易感冒/不易感冒', '痰液多/黃痰/痰液清稀', '白痰/黑痰/痰中帶血', '嘆氣/呼吸短促/喘氣', '打呼'],
       '循環系統': ['低血壓/高血壓', '貧血/高血脂症', '心絞痛', '心跳過快/過慢', '心悸/心律不整', '胸悶/胸痛', '右側肝區悶痛', '手足麻木/發紺', '手足發熱/冰涼/腫脹/出汗', '頭暈/頭部麻木/容易打哈欠', '面色異常（蒼白/發青）'],
@@ -3733,11 +3741,17 @@ document.addEventListener('DOMContentLoaded', function() {
         resultSection.style.left = `-${rect.left}px`;
         resultSection.style.zIndex = '1000';
 
-        // 臨時隱藏六大調理方向
+        // 臨時隱藏六大調理方向和分享按鈕，減少截圖內容
         const healthRecommendations = document.getElementById('healthRecommendations');
         const originalHealthRecommendationsDisplay = healthRecommendations ? healthRecommendations.style.display : 'block';
         if (healthRecommendations) {
           healthRecommendations.style.display = 'none';
+        }
+        
+        const singleShareBtn = document.getElementById('singleShareBtn');
+        const originalShareBtnDisplay = singleShareBtn ? singleShareBtn.style.display : 'none';
+        if (singleShareBtn) {
+          singleShareBtn.style.display = 'none';
         }
         
         // 額外隱藏可能包含六大調理方向的其他元素
@@ -3807,6 +3821,9 @@ document.addEventListener('DOMContentLoaded', function() {
         if (healthGuidance) {
           healthGuidance.style.display = originalHealthGuidanceDisplay;
         }
+        if (singleShareBtn) {
+          singleShareBtn.style.display = originalShareBtnDisplay;
+        }
 
         // 5. 圖片處理
         const userName = document.getElementById('name').value.trim() || '未知用戶';
@@ -3822,26 +3839,34 @@ document.addEventListener('DOMContentLoaded', function() {
 
         updateProgress(progressIndicator, 75, '轉檔中...');
 
-        // 6. 並行處理本地保存和ImgBB上傳
-        const [saveResult, uploadResult] = await Promise.allSettled([
-          saveToGallery(localImageBlob, localImageName),
-          uploadToImgBB(localImageBlob, localImageName)
-        ]);
+        // 6. 串行處理本地保存和ImgBB上傳（平板設備使用串行處理避免資源競爭）
+        let saveResult, uploadResult;
+        if (isTablet) {
+          // 平板設備使用串行處理
+          saveResult = await Promise.resolve(saveToGallery(localImageBlob, localImageName));
+          uploadResult = await Promise.resolve(uploadToImgBB(localImageBlob, localImageName));
+        } else {
+          // 其他設備使用並行處理
+          [saveResult, uploadResult] = await Promise.allSettled([
+            saveToGallery(localImageBlob, localImageName),
+            uploadToImgBB(localImageBlob, localImageName)
+          ]);
+        }
         
         // 處理上傳結果
-        if (uploadResult.status === 'fulfilled' && uploadResult.value) {
-          imgbbImageUrl = uploadResult.value.url;
-          imgbbDeleteUrl = uploadResult.value.deleteUrl;
+        if (uploadResult && uploadResult.status !== 'rejected' && uploadResult.url) {
+          imgbbImageUrl = uploadResult.url;
+          imgbbDeleteUrl = uploadResult.deleteUrl;
           // 異步更新Google Sheets
           submitToGoogleSheets().catch(err => console.log('更新圖片URL失敗:', err));
-        } else if (uploadResult.status === 'rejected') {
+        } else if (uploadResult && uploadResult.status === 'rejected') {
           // 顯示上傳錯誤但不中斷流程
           console.warn('圖片上傳失敗:', uploadResult.reason);
           showToast('圖片已保存到本地，但上傳至服務器失敗', 'error');
         }
         
         // 檢查保存結果
-        if (saveResult.status === 'rejected') {
+        if (saveResult && saveResult.status === 'rejected') {
           throw new Error(`保存圖片失敗: ${saveResult.reason.message}`);
         }
 
@@ -4077,7 +4102,7 @@ document.addEventListener('DOMContentLoaded', function() {
       });
     }
 
-  // 顯示分享按鈕
+ // 顯示分享按鈕
 function showSingleShareButton(userName, date) {
   // 移除舊的分享按鈕
   const existingShareBtn = document.getElementById('singleShareBtn');
@@ -4125,66 +4150,57 @@ function showSingleShareButton(userName, date) {
         imageFile = new File([localImageBlob], localImageName, { type: 'image/jpeg' });
       }
       
-      const shareText = `📋 『 ${userName} 』的健康自檢表\n🗓️ 自檢日期：${date}\n💡 包含：調理方向 + AI評估\n🔗 圖片鏈接：`;
-      const shareUrl = imgbbImageUrl || '';
-
-      // 平板/iPad分享特殊處理
-      if (isTablet || isIOS) {
-        if (navigator.share) {
-          shareBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> 喚醒分享...';
-          
-          // 對平板Safari使用不同的分享策略
-          const shareData = {
-            title: `${userName}的健康自檢表`,
-            text: shareText + (''),
-            url: shareUrl || window.location.href
-          };
-          
-          // 如果有圖片文件且支持文件分享，才添加文件
-          if (imageFile && navigator.canShare && navigator.canShare({ files: [imageFile] })) {
-            shareData.files = [imageFile];
-          }
-          
-          await navigator.share(shareData);
-          showToast('分享成功！');
-          shareBtn.innerHTML = '<i class="fa fa-share-alt"></i> 分享健康自檢表';
-        } else {
-          // Safari不支持分享API時，複製鏈接
-          await navigator.clipboard.writeText(shareText + (shareUrl || window.location.href));
-          showToast('分享鏈接已複製到剪貼板');
-        }
-      } else if (navigator.share) {
-        // 其他設備的分享邏輯
-        shareBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> 喚醒分享...';
-        
+      // 分享文本內容
+      const shareText = `${userName}的健康自檢表結果（${date}）\n如需詳細分析，請參考圖片中的健康建議。`;
+      
+      // 檢查瀏覽器是否支持Web Share API
+      if (navigator.share) {
+        // 準備分享數據
         const shareData = {
           title: `${userName}的健康自檢表`,
-          text: shareText,
-          url: shareUrl || window.location.href
+          text: shareText
         };
         
-        if (imageFile && navigator.canShare && navigator.canShare({ files: [imageFile] })) {
+        // 有圖片文件則分享文件
+        if (imageFile) {
           shareData.files = [imageFile];
+        } 
+        // 沒有本地圖片但有網絡圖片，分享圖片鏈接
+        else if (imgbbImageUrl) {
+          shareData.url = imgbbImageUrl;
         }
         
+        // 執行分享
         await navigator.share(shareData);
-        showToast('分享成功！');
-        shareBtn.innerHTML = '<i class="fa fa-share-alt"></i> 分享健康自檢表';
+        showToast('分享成功！', 'success');
+      } 
+      // 不支持Web Share API的瀏覽器
+      else {
+        // 複製圖片鏈接到剪貼板
+        if (imgbbImageUrl) {
+          await navigator.clipboard.writeText(`${shareText}\n圖片鏈接：${imgbbImageUrl}`);
+          showToast('分享內容已複製到剪貼板，請手動粘貼分享', 'info');
+        } else {
+          showToast('您的瀏覽器不支持直接分享，請使用截圖功能', 'warning');
+        }
+      }
+    } catch (error) {
+      console.error('分享失敗:', error);
+      // 區分取消分享和真正的錯誤
+      if (error.name !== 'AbortError') {
+        showToast(`分享失敗：${error.message}`, 'error');
       } else {
-        // 不支持分享API時，複製鏈接
-        await navigator.clipboard.writeText(shareText + (shareUrl || window.location.href));
-        showToast('分享內容已複製到剪貼板');
+        showToast('分享已取消', 'info');
       }
-    } catch (shareError) {
-      console.error('分享失敗:', shareError);
-      shareBtn.innerHTML = '<i class="fa fa-share-alt"></i> 分享健康自檢表';
-      if (shareError.name !== 'AbortError') {
-        showToast(`分享失敗，請手動複製鏈接: ${imgbbImageUrl || '無鏈接'}`, 'error');
-      }
+    } finally {
+      // 3秒後自動隱藏分享按鈕
+      setTimeout(() => {
+        const btn = document.getElementById('singleShareBtn');
+        if (btn) document.body.removeChild(btn);
+      }, 3000);
     }
   });
 }
-    
     // -------------------------- 19. 綁定事件與初始化
     if (downloadReportBtn) {
       downloadReportBtn.addEventListener('click', handleImageDownload);
@@ -4194,7 +4210,6 @@ function showSingleShareButton(userName, date) {
     updateFormSteps();
     updateGenderBasedUI();
   });
-  
 </script>
 
 
