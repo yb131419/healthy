@@ -2444,10 +2444,8 @@
     </div>
   </div>
 
-
-
 <script>
-
+// 首先定義showToast函數，確保在任何地方都能調用
 function showToast(message, type = 'success') {
   // 移除現有的toast
   const existingToast = document.querySelector('.custom-toast');
@@ -2496,11 +2494,10 @@ document.addEventListener('DOMContentLoaded', function() {
   const IMGBB_UPLOAD_URL = 'https://api.imgbb.com/1/upload';
   let globalAiComment = '';
   
-  // 新增：網絡請求配置
-  const REQUEST_TIMEOUT = 30000; // 延長到30秒超時，更適合平板設備
+  // 新增：網路請求配置
+  const REQUEST_TIMEOUT = 20000; // 延長到20秒超時，適合平板設備
   const MAX_RETRIES = 3; // 增加重試次數
-  const TABLET_CANVAS_SCALE = 0.8; // 降低平板設備的canvas縮放比例，減少內存佔用
-  const TABLET_IMAGE_QUALITY = 0.5; // 平板設備降低圖片質量以提高成功率
+  const TABLET_CANVAS_SCALE = 1.5; // 平板設備的canvas縮放比例
 
   // 2. DOM元素獲取（含AI評估容器）
   const menuToggle = document.getElementById('menuToggle');
@@ -2729,7 +2726,7 @@ document.addEventListener('DOMContentLoaded', function() {
       // 錯誤處理
       script.onerror = function() {
         cleanup();
-        reject(new Error('網絡錯誤'));
+        reject(new Error('網路錯誤'));
       };
       
       // 清理函數
@@ -2811,7 +2808,7 @@ document.addEventListener('DOMContentLoaded', function() {
       aiEvaluationContainer.innerHTML = `
         <div class="bg-red-50 p-4 rounded-lg border border-red-100 mt-4">
           <h4 class="font-semibold text-red-600 mb-2">AI評估生成失敗</h4>
-          <p class="text-sm text-gray-600 mb-3">原因：${error.message || '網絡異常，請檢查網絡後重試'}</p>
+          <p class="text-sm text-gray-600 mb-3">原因：${error.message || '網路異常，請檢查網路後重試'}</p>
           <button id="aiRetryBtn" class="px-3 py-1 bg-primary text-white rounded text-sm hover:bg-primary/90">
             <i class="fa fa-refresh mr-1"></i> 重新生成
           </button>
@@ -3056,9 +3053,9 @@ document.addEventListener('DOMContentLoaded', function() {
       healthIssues: {
         mainConcern: document.getElementById('mainConcern').value || '未明確說明',
         symptomDuration: document.getElementById('symptomDuration').value || '未說明',
-        // 收集過敏史和既往病史的詳細信息 - 修正：即使為空也返回真實值
-        allergyDetails: document.getElementById('allergyDetails') ? document.getElementById('allergyDetails').value : '',
-        medicalDetails: document.getElementById('medicalDetails') ? document.getElementById('medicalDetails').value : ''
+        // 收集過敏史和既往病史的詳細信息
+        allergyDetails: document.getElementById('allergyDetails')?.value || '未填寫',
+        medicalDetails: document.getElementById('medicalDetails')?.value || '未填寫'
       }
     };
   }
@@ -3066,12 +3063,6 @@ document.addEventListener('DOMContentLoaded', function() {
   // -------------------------- 14. 工具函數：收集全量表單數據
   function collectFullFormData() {
     const selectedGender = document.querySelector('input[name="gender"]:checked');
-    // 修正：確保過敏史和既往病史的數據被正確收集
-    const allergyDetails = document.getElementById('allergyDetails') ? 
-      document.getElementById('allergyDetails').value : '';
-    const medicalDetails = document.getElementById('medicalDetails') ? 
-      document.getElementById('medicalDetails').value : '';
-      
     return {
       submitTime: new Date().toLocaleString('zh-Hant', {
         year: 'numeric', month: '2-digit', day: '2-digit',
@@ -3098,9 +3089,9 @@ document.addEventListener('DOMContentLoaded', function() {
         mainConcern: document.getElementById('mainConcern').value || '未明確說明',
         symptomDuration: document.getElementById('symptomDuration').value || '未說明',
         possibleCauses: document.getElementById('possibleCauses').value || '未說明',
-        // 修正：即使為空也返回用戶輸入的真實值，而不是默認的"未填寫"
-        allergyDetails: allergyDetails,
-        medicalDetails: medicalDetails
+        // 只收集和存儲用戶輸入的詳細信息，不使用預定義的選項值
+        allergyDetails: document.getElementById('allergyDetails')?.value || '未填寫',
+        medicalDetails: document.getElementById('medicalDetails')?.value || '未填寫'
       },
       aiComment: globalAiComment || 'AI評語生成失敗',
       imgbb: {
@@ -3393,15 +3384,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const symptomDuration = document.getElementById('symptomDuration').value || '未說明';
     const possibleCauses = document.getElementById('possibleCauses').value || '未說明';
-    // 只顯示用戶輸入的詳細信息
-    const allergyDetails = document.getElementById('allergyDetails') ? document.getElementById('allergyDetails').value : '';
-    const medicalDetails = document.getElementById('medicalDetails') ? document.getElementById('medicalDetails').value : '';
+    // 只顯示用戶輸入的詳細信息，不顯示drug和surgery等預定義選項
+    const allergyDetails = document.getElementById('allergyDetails')?.value || '未填寫';
+    const medicalDetails = document.getElementById('medicalDetails')?.value || '未填寫';
     
     const isFemale = gender === '女';
 
     // 症狀分類映射
     const symptomCategories = {
-      '頭部症狀': ['頭痛/頭暈', '頭部麻木/腦鳴', '嗜睡/易醒', '失眠/多夢', '偏頭痛/健忘', '言語懶散/口吃', '暈車/暈機', '頭部畏冷', '思�緒中斷', '反應遲鈍', '容易打哈欠', '眉骨疼痛'],
+      '頭部症狀': ['頭痛/頭暈', '頭部麻木/腦鳴', '嗜睡/易醒', '失眠/多夢', '偏頭痛/健忘', '言語懶散/口吃', '暈車/暈機', '頭部畏冷', '思緒中斷', '反應遲鈍', '容易打哈欠', '眉骨疼痛'],
       '眼耳鼻喉': ['老花眼', '眼睛癢/腫脹/突出/疼痛', '眼睛畏光/流淚', '眼睛乾澀/飛蚊症', '眼糞多/麥粒腫', '眼睛疲勞', '夜盲症', '視力模糊', '耳朵內潮濕/化膿', '耳垢多/耳朵疼痛/癢', '耳鳴/耳聾', '聽力減退', '鼻炎/鼻塞', '流鼻水/流鼻血', '打噴嚏', '過敏性鼻炎', '酒渣鼻', '嗅覺遲鈍', '咽喉異物感', '聲音沙啞'],
       '呼吸系統': ['咳嗽/氣喘', '支氣管炎', '感冒久不愈', '容易感冒/不易感冒', '痰液多/黃痰/痰液清稀', '白痰/黑痰/痰中帶血', '嘆氣/呼吸短促/喘氣', '打呼'],
       '循環系統': ['低血壓/高血壓', '貧血/高血脂症', '心絞痛', '心跳過快/過慢', '心悸/心律不整', '胸悶/胸痛', '右側肝區悶痛', '手足麻木/發紺', '手足發熱/冰涼/腫脹/出汗', '頭暈/頭部麻木/容易打哈欠', '面色異常（蒼白/發青）'],
@@ -3439,24 +3430,16 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // 構建病歷信息HTML（只顯示用戶輸入的詳細內容）
-    let medicalHistoryHtml = '';
-    // 只在有內容時顯示過敏史和既往病史部分
-    if (allergyDetails) {
-      medicalHistoryHtml += `
-        <div class="mt-3">
-          <p class="text-sm font-medium">過敏史詳情：</p>
-          <p class="text-sm ml-4">${allergyDetails}</p>
-        </div>
-      `;
-    }
-    if (medicalDetails) {
-      medicalHistoryHtml += `
-        <div class="mt-2">
-          <p class="text-sm font-medium">既往病史/手術史詳情：</p>
-          <p class="text-sm ml-4">${medicalDetails}</p>
-        </div>
-      `;
-    }
+    let medicalHistoryHtml = `
+      <div class="mt-3">
+        <p class="text-sm font-medium">過敏史詳情：</p>
+        <p class="text-sm ml-4">${allergyDetails}</p>
+      </div>
+      <div class="mt-2">
+        <p class="text-sm font-medium">既往病史/手術史詳情：</p>
+        <p class="text-sm ml-4">${medicalDetails}</p>
+      </div>
+    `;
 
     // 整合不良習慣顯示 - 統一為一種顯示方式
     let habitsHtml = '';
@@ -3468,7 +3451,7 @@ document.addEventListener('DOMContentLoaded', function() {
       const habitCategories = {
   '飲食習慣': [
     '經常不吃早餐', '晚上8點後吃晚餐/吃消夜', '吃飯過飽/過急/過快/過少', '經常外食/點外送',
-    '常吃剩飯菜/愛吃動物內臟', '常吃葷食/吃菜偏好油多的', '口味偏辣/偏咸(重口味)', '很少吃蔬菜/素食者',
+    '常吃剩飯剩菜/愛吃動物內臟', '常吃葷食/吃菜偏好油多的', '口味偏辣/偏咸(重口味)', '很少吃蔬菜/素食者',
     '喜歡吃燙食/喝燙水', '偏好白米/白麵等精制主食', '很少吃五穀雜糧', '偏食/挑食/特別嗜吃某種食物',
     '常喝酒/酗酒/喝冰啤酒', '習慣飯後吃水果/特別偏愛水果', '愛吃反季節蔬菜/水果', '喜歡吃螃蟹/柿子',
     '不吃堅果/吃花生/瓜子過多', '喜歡吃泡面/甜食', '吃油炸食品/醃制食品', '喜歡吃果脯蜜餞/罐頭',
@@ -3477,7 +3460,7 @@ document.addEventListener('DOMContentLoaded', function() {
     '常吃中藥/西藥/吃類固醇藥', '吃過減肥藥/做過減肥相關療程', '常吃海鮮/炒菜時油燒到冒煙'
   ],
   '睡眠習慣': [
-    '超過晚上11點睡覺', '早上9點後才起床', '經常上大夜班(到天亮)', '睡眠不足7-8小時',
+    '超過晚上11點睡覺', '早上9點後才起床', '經常上大夜班(到天亮)', '睡眠時間不足7-8小時',
     '睡軟床/用高枕頭', '開冷氣/開窗睡覺', '飯後馬上睡覺', '睡覺時把腳露在被子外面',
     '早上5點前就起床(過早起床)', '蒙頭睡覺'
   ],
@@ -3509,7 +3492,7 @@ document.addEventListener('DOMContentLoaded', function() {
     '手機在床邊充電/放在頭附近睡覺', '住家附近20公里內有化工廠等污染企業',
     '經常過度疲勞/住家裝修過度(可能接觸裝修污染)', '不喝水/很少喝水/喝冰水', '經常憋尿/不按時排便',
     '常燙髮/染髮/使用化妝品/塗指甲油', '手淫/意淫/看色情影片/資料', '性生活頻繁/性慾低落',
-    '戴深色口罩/住在變電站附近', '頻繁吃抗生素/消炎藥', '愛咬手指甲/咬筆桿/咬筷子',
+    '戴深色口罩/住在變電站附近', '頻繁吃過抗生素/消炎藥', '愛咬手指甲/咬筆桿/咬筷子',
     '愛躺著看電視/玩手機', '不使用抽油煙機/抽油煙機效果不好', '長期接觸汽車廢氣/灰塵/粉塵',
     '小孩用鉛筆剔牙/塗抹祛斑霜', '常用消毒液/脫色劑/強力除油劑/水果清洗劑',
     '不戴正規防毒面具/防護服就噴灑農藥', '叼著包裝袋喝牛奶/飲料', '抽煙每天超過10根/長期吸二手煙',
@@ -3623,7 +3606,7 @@ document.addEventListener('DOMContentLoaded', function() {
     <!-- ① 體質——健康的「基礎土壤」（對應《壁紙發霉的故事》） -->
     <div class="bg-white p-4 rounded-lg border border-gray-100 shadow-sm mb-4">
       <h4 class="font-semibold text-blue-600 mb-2">① 體質 —— 健康的「基礎土壤」
-        <a href="[替換為體質相關影片鏈接]" target="_blank" class="text-blue-500 text-sm ml-2 hover:underline">📺 觀看解說影片</a>
+        <a href="[替換為體質相關影片連結]" target="_blank" class="text-blue-500 text-sm ml-2 hover:underline">📺 觀看解說影片</a>
       </h4>
       <p class="text-sm mb-2">👉體質就像房子的內環境：有的房子乾淨通風，有的房子潮濕陰暗。潮濕的房子里，木頭容易發霉、鐵器容易生鏽，即便擦掉霉斑、鏽跡，只要潮濕環境沒變，這些問題遲早還會出現；體內的寒濕、毒素積存，就像房子里的潮氣，會讓身體出現類似「發霉、生鏽」的反復狀況。</p>
       <p class="text-sm text-gray-700 italic">👉原理：體質的核心是身體內環境的穩定性，內環境的「潮濕、髒亂」是問題反復的根源，調理需從改善內環境本身入手。</p>
@@ -3632,7 +3615,7 @@ document.addEventListener('DOMContentLoaded', function() {
     <!-- ② 免疫——身體的「常駐軍隊」（對應《軍隊打仗的故事》） -->
     <div class="bg-white p-4 rounded-lg border border-gray-100 shadow-sm mb-4">
       <h4 class="font-semibold text-blue-600 mb-2">② 免疫 —— 身體的「常駐軍隊」
-        <a href="[替換為免疫相關影片鏈接]" target="_blank" class="text-blue-500 text-sm ml-2 hover:underline">📺 觀看解說影片</a>
+        <a href="[替換為免疫相關影片連結]" target="_blank" class="text-blue-500 text-sm ml-2 hover:underline">📺 觀看解說影片</a>
       </h4>
       <p class="text-sm mb-2">👉免疫力像駐守身體的軍隊體系：骨髓負責「招募兵源」（生產血細胞），胸腺是「士兵訓練營」（培養免疫細胞），淋巴是「戰場過濾站」（匯集並處理異物），白細胞是「前線戰士」（對抗異物、清理衰老細胞）；扁桃體、闌尾也是這個體系的一部分，負責特定區域的防禦。</p>
       <p class="text-sm text-gray-700 italic">👉原理：免疫系統通過「招募-訓練-作戰-清理」的流程運作，各器官分工協作，維持身體對外界異物和內部異常細胞的監控。</p>
@@ -3641,7 +3624,7 @@ document.addEventListener('DOMContentLoaded', function() {
     <!-- ③ 毒素——身體的「堆積垃圾」（對應《蓄水池的故事》） -->
     <div class="bg-white p-4 rounded-lg border border-gray-100 shadow-sm mb-4">
       <h4 class="font-semibold text-blue-600 mb-2">③ 毒素 —— 身體的「堆積垃圾」
-        <a href="[替換為毒素相關影片鏈接]" target="_blank" class="text-blue-500 text-sm ml-2 hover:underline">📺 觀看解說影片</a>
+        <a href="[替換為毒素相關影片連結]" target="_blank" class="text-blue-500 text-sm ml-2 hover:underline">📺 觀看解說影片</a>
       </h4>
       <p class="text-sm mb-2">👉身體里的毒素分兩類：一是「外來垃圾」（從飲食、環境中進入的雜質），二是「內部廢物」（身體代謝產生的廢棄物）。這類毒素就像蓄水池里的髒水，若肺、皮膚、大腸等「排水口」被堵住，髒水無法排出，就會在池內慢慢堆積；日常吃太多、動太少，也會讓「髒水進量超過排水量」。</p>
       <p class="text-sm text-gray-700 italic">👉原理：毒素的堆積源於「進出失衡」，要麼是外部攝入過多，要麼是內部排出通道堵塞，維持平衡需同時控制「進量」和暢通「出口」。</p>
@@ -3650,7 +3633,7 @@ document.addEventListener('DOMContentLoaded', function() {
     <!-- ④ 循環——健康的「暢通網絡」（對應《道路堵車的故事》） -->
     <div class="bg-white p-4 rounded-lg border border-gray-100 shadow-sm mb-4">
       <h4 class="font-semibold text-blue-600 mb-2">④ 循環 —— 健康的「暢通網絡」
-        <a href="[替換為循環相關影片鏈接]" target="_blank" class="text-blue-500 text-sm ml-2 hover:underline">📺 觀看解說影片</a>
+        <a href="[替換為循環相關影片連結]" target="_blank" class="text-blue-500 text-sm ml-2 hover:underline">📺 觀看解說影片</a>
       </h4>
       <p class="text-sm mb-2">👉微循環是身體里的「小馬路網絡」，由無數毛細血管組成，負責把營養「送達」各器官細胞，再把代謝廢物「運走」。若體內寒濕重、垃圾多，就像馬路上堆了雜物，容易出現「堵車」——營養送不到位，廢物也排不出去，就像交通堵塞時，物資運輸和垃圾清理都會受影響。</p>
       <p class="text-sm text-gray-700 italic">👉原理：循環的核心是「暢通」，血管是運輸通道，通道內的「雜物」（寒濕、垃圾）是堵塞關鍵，需先清理通道才能保障物資和廢物的正常流動。</p>
@@ -3659,7 +3642,7 @@ document.addEventListener('DOMContentLoaded', function() {
     <!-- ⑤ 營養——身體的「運轉原料」（對應《房子的故事》） -->
     <div class="bg-white p-4 rounded-lg border border-gray-100 shadow-sm mb-4">
       <h4 class="font-semibold text-blue-600 mb-2">⑤ 營養 —— 身體的「運轉原料」
-        <a href="[替換為營養相關影片鏈接]" target="_blank" class="text-blue-500 text-sm ml-2 hover:underline">📺 觀看解說影片</a>
+        <a href="[替換為營養相關影片連結]" target="_blank" class="text-blue-500 text-sm ml-2 hover:underline">📺 觀看解說影片</a>
       </h4>
       <p class="text-sm mb-2">👉人體維持理想健康狀況，至少需要60種礦物質，維生素對人體很重要，但是在缺乏礦物質的情況下，維生素無用武之地。就像蓋房子：用土坯蓋房和用鋼筋水泥蓋房，原料不同，房子的穩定性、耐用性也不同；飲食單一、偏食，就像蓋房少了關鍵建材，身體運轉也會受影響。</p>
       <p class="text-sm text-gray-700 italic">👉原理：身體的運轉依賴「全面且足量的原料」，原料種類不全或數量不足，就像工廠缺材料，無法正常生產，需通過多樣飲食保障原料供應。</p>
@@ -3668,7 +3651,7 @@ document.addEventListener('DOMContentLoaded', function() {
     <!-- ⑥ 內分泌——身體的「規律指揮」（對應《順應規律的故事》） -->
     <div class="bg-white p-4 rounded-lg border border-gray-100 shadow-sm mb-4">
       <h4 class="font-semibold text-blue-600 mb-2">⑥ 內分泌 —— 身體的「規律指揮」
-        <a href="[替換為內分泌相關影片鏈接]" target="_blank" class="text-blue-500 text-sm ml-2 hover:underline">📺 觀看解說影片</a>
+        <a href="[替換為內分泌相關影片連結]" target="_blank" class="text-blue-500 text-sm ml-2 hover:underline">📺 觀看解說影片</a>
       </h4>
       <p class="text-sm mb-2">👉內分泌系統是身體的「指揮體系」，由腦下垂體、松果體、甲狀腺等8大腺體組成：腦下垂體是「總司令」（協調其他腺體），松果體是「時間管理員」（負責睡眠、生理週期等規律，比如晚上11點後分泌褪黑素），甲狀腺是「代謝監督員」（控制身體代謝快慢）；任一腺體「失職」，都會打破整體平衡，就像辦事違背上下班規律，會導致流程紊亂。</p>
       <p class="text-sm text-gray-700 italic">👉原理：內分泌的核心是「規律協作」，各腺體按固定節奏分泌物質、執行職能，順應節奏才能維持指揮體系的穩定。</p>
@@ -3677,7 +3660,7 @@ document.addEventListener('DOMContentLoaded', function() {
     <!-- ⑦ 生活習慣——身體的「承重保護」（對應《板凳的故事》） -->
     <div class="bg-white p-4 rounded-lg border border-gray-100 shadow-sm mb-4">
       <h4 class="font-semibold text-blue-600 mb-2">⑦ 生活習慣 —— 身體的「承重保護」
-        <a href="[替換為生活習慣相關影片鏈接]" target="_blank" class="text-blue-500 text-sm ml-2 hover:underline">📺 觀看解說影片</a>
+        <a href="[替換為生活習慣相關影片連結]" target="_blank" class="text-blue-500 text-sm ml-2 hover:underline">📺 觀看解說影片</a>
       </h4>
       <p class="text-sm mb-2">👉身體就像一張有最大承重（比如100塊磚）的板凳：熬夜、喝酒、不運動、偏食等習慣，就像一塊塊往板凳上堆磚，磚塊越堆越多，板凳的負荷也越來越大。當磚塊堆滿100塊，再輕輕放一個「手機」（比如一次應酬、一場劇烈活動），板凳就可能超過承重極限；壞習慣越多、時間越長，身體的「承重壓力」也越大。</p>
       <p class="text-sm text-gray-700 italic">👉原理：生活習慣的影響是「累加式」的，每個壞習慣都是一筆「負擔積累」，超過身體承受極限就會出現問題，需通過調整習慣減少負擔。</p>
@@ -3727,8 +3710,6 @@ document.addEventListener('DOMContentLoaded', function() {
         // 平板設備特殊樣式調整
         if (isTablet) {
           resultSection.style.width = '90%';
-          // 平板設備額外增加內邊距，確保內容完整
-          resultSection.style.padding = '15px';
         }
         
         resultSection.style.padding = '20px';
@@ -3741,17 +3722,11 @@ document.addEventListener('DOMContentLoaded', function() {
         resultSection.style.left = `-${rect.left}px`;
         resultSection.style.zIndex = '1000';
 
-        // 臨時隱藏六大調理方向和分享按鈕，減少截圖內容
+        // 臨時隱藏六大調理方向
         const healthRecommendations = document.getElementById('healthRecommendations');
         const originalHealthRecommendationsDisplay = healthRecommendations ? healthRecommendations.style.display : 'block';
         if (healthRecommendations) {
           healthRecommendations.style.display = 'none';
-        }
-        
-        const singleShareBtn = document.getElementById('singleShareBtn');
-        const originalShareBtnDisplay = singleShareBtn ? singleShareBtn.style.display : 'none';
-        if (singleShareBtn) {
-          singleShareBtn.style.display = 'none';
         }
         
         // 額外隱藏可能包含六大調理方向的其他元素
@@ -3789,8 +3764,6 @@ document.addEventListener('DOMContentLoaded', function() {
         if (isTablet) {
           canvasConfig.letterRendering = true;
           canvasConfig.logging = true; // 平板設備開啓日誌，便於調試
-          // 平板設備增加延遲，確保DOM渲染完成
-          await new Promise(resolve => setTimeout(resolve, 1000));
         }
 
         // 增加平板設備的超時處理
@@ -3800,7 +3773,7 @@ document.addEventListener('DOMContentLoaded', function() {
           canvas = await Promise.race([
             html2canvas(resultSection, canvasConfig),
             new Promise((_, reject) => 
-              setTimeout(() => reject(new Error('平板設備截圖超時，請重試')), 40000)
+              setTimeout(() => reject(new Error('平板設備截圖超時，請重試')), 30000)
             )
           ]);
         } else {
@@ -3821,9 +3794,6 @@ document.addEventListener('DOMContentLoaded', function() {
         if (healthGuidance) {
           healthGuidance.style.display = originalHealthGuidanceDisplay;
         }
-        if (singleShareBtn) {
-          singleShareBtn.style.display = originalShareBtnDisplay;
-        }
 
         // 5. 圖片處理
         const userName = document.getElementById('name').value.trim() || '未知用戶';
@@ -3832,41 +3802,33 @@ document.addEventListener('DOMContentLoaded', function() {
         localImageName = `${userName}_健康評估結果_${formattedDate}.jpg`;
         
         // 轉換Canvas為JPG Blob - 平板設備使用不同的質量設置
-        const quality = isTablet ? TABLET_IMAGE_QUALITY : 0.8; // 平板設備降低質量以提高成功率
+        const quality = isTablet ? 0.7 : 0.8; // 平板設備降低質量以提高成功率
         localImageBlob = await new Promise((resolve, reject) => {
           canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('圖片Blob生成失敗')), 'image/jpeg', quality);
         });
 
         updateProgress(progressIndicator, 75, '轉檔中...');
 
-        // 6. 串行處理本地保存和ImgBB上傳（平板設備使用串行處理避免資源競爭）
-        let saveResult, uploadResult;
-        if (isTablet) {
-          // 平板設備使用串行處理
-          saveResult = await Promise.resolve(saveToGallery(localImageBlob, localImageName));
-          uploadResult = await Promise.resolve(uploadToImgBB(localImageBlob, localImageName));
-        } else {
-          // 其他設備使用並行處理
-          [saveResult, uploadResult] = await Promise.allSettled([
-            saveToGallery(localImageBlob, localImageName),
-            uploadToImgBB(localImageBlob, localImageName)
-          ]);
-        }
+        // 6. 並行處理本地保存和ImgBB上傳
+        const [saveResult, uploadResult] = await Promise.allSettled([
+          saveToGallery(localImageBlob, localImageName),
+          uploadToImgBB(localImageBlob, localImageName)
+        ]);
         
         // 處理上傳結果
-        if (uploadResult && uploadResult.status !== 'rejected' && uploadResult.url) {
-          imgbbImageUrl = uploadResult.url;
-          imgbbDeleteUrl = uploadResult.deleteUrl;
+        if (uploadResult.status === 'fulfilled' && uploadResult.value) {
+          imgbbImageUrl = uploadResult.value.url;
+          imgbbDeleteUrl = uploadResult.value.deleteUrl;
           // 異步更新Google Sheets
           submitToGoogleSheets().catch(err => console.log('更新圖片URL失敗:', err));
-        } else if (uploadResult && uploadResult.status === 'rejected') {
+        } else if (uploadResult.status === 'rejected') {
           // 顯示上傳錯誤但不中斷流程
           console.warn('圖片上傳失敗:', uploadResult.reason);
           showToast('圖片已保存到本地，但上傳至服務器失敗', 'error');
         }
         
         // 檢查保存結果
-        if (saveResult && saveResult.status === 'rejected') {
+        if (saveResult.status === 'rejected') {
           throw new Error(`保存圖片失敗: ${saveResult.reason.message}`);
         }
 
@@ -3898,17 +3860,9 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     
-    // 單獨的ImgBB上傳函數 - 優化平板設備上傳
+    // 單獨的ImgBB上傳函數
     async function uploadToImgBB(blob, fileName) {
       try {
-        // 平板設備特殊處理：檢查網絡連接
-        if (isTablet) {
-          const networkState = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
-          if (networkState && networkState.type === 'cellular' && networkState.downlink < 1) {
-            throw new Error('網絡速度較慢，建議使用WiFi上傳圖片');
-          }
-        }
-
         const base64Image = await new Promise((resolve) => {
           const reader = new FileReader();
           reader.onloadend = () => resolve(reader.result.split(',')[1]);
@@ -3920,17 +3874,14 @@ document.addEventListener('DOMContentLoaded', function() {
         formData.append('image', base64Image);
         formData.append('name', fileName);
 
-        // 超時控制 - 平板設備延長超時時間
+        // 超時控制
         const controller = new AbortController();
-        const timeout = isTablet ? REQUEST_TIMEOUT * 2 : REQUEST_TIMEOUT;
-        const timeoutId = setTimeout(() => controller.abort(), timeout);
+        const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
         
         const uploadResponse = await fetch(IMGBB_UPLOAD_URL, {
           method: 'POST',
           body: formData,
-          signal: controller.signal,
-          // 平板設備增加緩存控制
-          headers: isTablet ? { 'Cache-Control': 'no-store' } : {}
+          signal: controller.signal
         });
         
         clearTimeout(timeoutId);
@@ -4008,7 +3959,7 @@ document.addEventListener('DOMContentLoaded', function() {
       indicator.querySelector('#progressStatus').textContent = text;
     }
 
-    // 保存圖片到相冊 - 增強平板設備兼容性
+    // 保存圖片到相冊
     function saveToGallery(blob, fileName) {
       // 平板/iPad特殊處理
       if (isTablet || isIOS) {
@@ -4032,17 +3983,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 bubbles: true,
                 cancelable: true
               });
-              
-              // 平板設備使用不同的觸發方式
-              if (isTablet) {
-                downloadLink.touchstart();
-                setTimeout(() => {
-                  downloadLink.click();
-                  downloadLink.touchend();
-                }, 300);
-              } else {
-                downloadLink.dispatchEvent(clickEvent);
-              }
+              downloadLink.dispatchEvent(clickEvent);
               
               // 二次嘗試
               setTimeout(() => {
@@ -4102,7 +4043,7 @@ document.addEventListener('DOMContentLoaded', function() {
       });
     }
 
- // 顯示分享按鈕
+  // 顯示分享按鈕
 function showSingleShareButton(userName, date) {
   // 移除舊的分享按鈕
   const existingShareBtn = document.getElementById('singleShareBtn');
@@ -4150,57 +4091,66 @@ function showSingleShareButton(userName, date) {
         imageFile = new File([localImageBlob], localImageName, { type: 'image/jpeg' });
       }
       
-      // 分享文本內容
-      const shareText = `${userName}的健康自檢表結果（${date}）\n如需詳細分析，請參考圖片中的健康建議。`;
-      
-      // 檢查瀏覽器是否支持Web Share API
-      if (navigator.share) {
-        // 準備分享數據
+      const shareText = `📋 『 ${userName} 』的健康自檢表\n🗓️ 自檢日期：${date}\n💡 包含：調理方向 + AI評估\n🔗 圖片鏈接：`;
+      const shareUrl = imgbbImageUrl || '';
+
+      // 平板/iPad分享特殊處理
+      if (isTablet || isIOS) {
+        if (navigator.share) {
+          shareBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> 喚醒分享...';
+          
+          // 對平板Safari使用不同的分享策略
+          const shareData = {
+            title: `${userName}的健康自檢表`,
+            text: shareText + (''),
+            url: shareUrl || window.location.href
+          };
+          
+          // 如果有圖片文件且支持文件分享，才添加文件
+          if (imageFile && navigator.canShare && navigator.canShare({ files: [imageFile] })) {
+            shareData.files = [imageFile];
+          }
+          
+          await navigator.share(shareData);
+          showToast('分享成功！');
+          shareBtn.innerHTML = '<i class="fa fa-share-alt"></i> 分享健康自檢表';
+        } else {
+          // Safari不支持分享API時，複製鏈接
+          await navigator.clipboard.writeText(shareText + (shareUrl || window.location.href));
+          showToast('分享鏈接已複製到剪貼板');
+        }
+      } else if (navigator.share) {
+        // 其他設備的分享邏輯
+        shareBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> 喚醒分享...';
+        
         const shareData = {
           title: `${userName}的健康自檢表`,
-          text: shareText
+          text: shareText,
+          url: shareUrl || window.location.href
         };
         
-        // 有圖片文件則分享文件
-        if (imageFile) {
+        if (imageFile && navigator.canShare && navigator.canShare({ files: [imageFile] })) {
           shareData.files = [imageFile];
-        } 
-        // 沒有本地圖片但有網絡圖片，分享圖片鏈接
-        else if (imgbbImageUrl) {
-          shareData.url = imgbbImageUrl;
         }
         
-        // 執行分享
         await navigator.share(shareData);
-        showToast('分享成功！', 'success');
-      } 
-      // 不支持Web Share API的瀏覽器
-      else {
-        // 複製圖片鏈接到剪貼板
-        if (imgbbImageUrl) {
-          await navigator.clipboard.writeText(`${shareText}\n圖片鏈接：${imgbbImageUrl}`);
-          showToast('分享內容已複製到剪貼板，請手動粘貼分享', 'info');
-        } else {
-          showToast('您的瀏覽器不支持直接分享，請使用截圖功能', 'warning');
-        }
-      }
-    } catch (error) {
-      console.error('分享失敗:', error);
-      // 區分取消分享和真正的錯誤
-      if (error.name !== 'AbortError') {
-        showToast(`分享失敗：${error.message}`, 'error');
+        showToast('分享成功！');
+        shareBtn.innerHTML = '<i class="fa fa-share-alt"></i> 分享健康自檢表';
       } else {
-        showToast('分享已取消', 'info');
+        // 不支持分享API時，複製鏈接
+        await navigator.clipboard.writeText(shareText + (shareUrl || window.location.href));
+        showToast('分享內容已複製到剪貼板');
       }
-    } finally {
-      // 3秒後自動隱藏分享按鈕
-      setTimeout(() => {
-        const btn = document.getElementById('singleShareBtn');
-        if (btn) document.body.removeChild(btn);
-      }, 3000);
+    } catch (shareError) {
+      console.error('分享失敗:', shareError);
+      shareBtn.innerHTML = '<i class="fa fa-share-alt"></i> 分享健康自檢表';
+      if (shareError.name !== 'AbortError') {
+        showToast(`分享失敗，請手動複製鏈接: ${imgbbImageUrl || '無鏈接'}`, 'error');
+      }
     }
   });
 }
+    
     // -------------------------- 19. 綁定事件與初始化
     if (downloadReportBtn) {
       downloadReportBtn.addEventListener('click', handleImageDownload);
@@ -4210,8 +4160,8 @@ function showSingleShareButton(userName, date) {
     updateFormSteps();
     updateGenderBasedUI();
   });
+  
 </script>
-
 
 
 
