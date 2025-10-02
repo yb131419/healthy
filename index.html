@@ -2443,7 +2443,6 @@
       </div>
     </div>
   </div>
-
 <script>
 // 首先定義showToast函數，確保在任何地方都能調用
 function showToast(message, type = 'success') {
@@ -2495,9 +2494,9 @@ document.addEventListener('DOMContentLoaded', function() {
   let globalAiComment = '';
   
   // 新增：網路請求配置
-  const REQUEST_TIMEOUT = 20000; // 延長到20秒超時，適合平板設備
+  const REQUEST_TIMEOUT = 30000; // 延長到30秒超時，適合圖片上傳
   const MAX_RETRIES = 3; // 增加重試次數
-  const TABLET_CANVAS_SCALE = 1.5; // 平板設備的canvas縮放比例
+  const TABLET_CANVAS_SCALE = 1.2; // 平板設備的canvas縮放比例降低，提高成功率
 
   // 2. DOM元素獲取（含AI評估容器）
   const menuToggle = document.getElementById('menuToggle');
@@ -3498,9 +3497,7 @@ document.addEventListener('DOMContentLoaded', function() {
     '不戴正規防毒面具/防護服就噴灑農藥', '叼著包裝袋喝牛奶/飲料', '抽煙每天超過10根/長期吸二手煙',
     '低頭玩手機/用電腦時間過多'
   ]
-};
-
-      
+};      
       // 遍歷每個習慣分類
       Object.entries(habitCategories).forEach(([category, habits]) => {
         const selectedHabitsInCategory = globalUniqueHabits.filter(habit => habits.includes(habit));
@@ -3665,6 +3662,7 @@ document.addEventListener('DOMContentLoaded', function() {
       <p class="text-sm mb-2">👉身體就像一張有最大承重（比如100塊磚）的板凳：熬夜、喝酒、不運動、偏食等習慣，就像一塊塊往板凳上堆磚，磚塊越堆越多，板凳的負荷也越來越大。當磚塊堆滿100塊，再輕輕放一個「手機」（比如一次應酬、一場劇烈活動），板凳就可能超過承重極限；壞習慣越多、時間越長，身體的「承重壓力」也越大。</p>
       <p class="text-sm text-gray-700 italic">👉原理：生活習慣的影響是「累加式」的，每個壞習慣都是一筆「負擔積累」，超過身體承受極限就會出現問題，需通過調整習慣減少負擔。</p>
     </div>
+
   </div>
     <div class="mt-4 text-sm text-neutral-dark/70 text-center p-3 bg-blue-50 rounded-lg">
       七大調理邏輯：<br>體質定內環境，免疫築防線，<br>毒素要平衡，循環需暢通，<br>營養補原料，內分泌守規律，<br>習慣減負擔，共護身體穩！
@@ -3860,49 +3858,101 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     
-    // 單獨的ImgBB上傳函數
+    // 修正：ImgBB上傳函數，增加更詳細的錯誤處理和兼容代碼
     async function uploadToImgBB(blob, fileName) {
       try {
-        const base64Image = await new Promise((resolve) => {
+        // 檢查API密鑰是否有效
+        if (!IMGBB_API_KEY || IMGBB_API_KEY.trim() === '') {
+          throw new Error('ImgBB API密鑰未配置');
+        }
+        
+        // 將blob轉換為base64
+        const base64Image = await new Promise((resolve, reject) => {
           const reader = new FileReader();
-          reader.onloadend = () => resolve(reader.result.split(',')[1]);
+          reader.onloadend = () => {
+            if (typeof reader.result === 'string') {
+              const base64 = reader.result.split(',')[1];
+              if (base64) {
+                resolve(base64);
+              } else {
+                reject(new Error('轉換圖片為Base64失敗'));
+              }
+            } else {
+              reject(new Error('圖片讀取結果無效'));
+            }
+          };
+          reader.onerror = () => reject(new Error('讀取圖片時發生錯誤'));
           reader.readAsDataURL(blob);
         });
 
+        // 構建請求數據
         const formData = new FormData();
         formData.append('key', IMGBB_API_KEY);
         formData.append('image', base64Image);
         formData.append('name', fileName);
+        
+        // 移動設備額外參數
+        if (isMobile || isTablet) {
+          formData.append('expiration', '86400'); // 圖片保存24小時
+        }
 
         // 超時控制
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
         
+        console.log('開始上傳圖片到ImgBB...');
         const uploadResponse = await fetch(IMGBB_UPLOAD_URL, {
           method: 'POST',
           body: formData,
-          signal: controller.signal
+          signal: controller.signal,
+          headers: {
+            // 移除Content-Type，讓瀏覽器自動設置multipart/form-data
+            'Accept': 'application/json'
+          }
         });
         
         clearTimeout(timeoutId);
 
         if (!uploadResponse.ok) {
-          throw new Error(`HTTP錯誤: ${uploadResponse.status}`);
+          const errorDetails = await uploadResponse.text().catch(() => '未知錯誤');
+          throw new Error(`上傳失敗 (HTTP ${uploadResponse.status}): ${errorDetails}`);
         }
 
         const uploadResult = await uploadResponse.json();
+        
+        // 檢查API返回結果
+        if (!uploadResult || typeof uploadResult !== 'object') {
+          throw new Error('ImgBB返回無效的響應格式');
+        }
+        
         if (!uploadResult.success) {
-          throw new Error(`上傳失敗：${uploadResult?.error?.message || '未知錯誤'}`);
+          const errorMsg = uploadResult.error?.message || '未知錯誤';
+          const errorCode = uploadResult.error?.code || '未知錯誤代碼';
+          throw new Error(`ImgBB上傳失敗: ${errorMsg} (代碼: ${errorCode})`);
+        }
+        
+        if (!uploadResult.data?.url || !uploadResult.data?.delete_url) {
+          throw new Error('ImgBB返回的響應缺少必要的URL信息');
         }
 
+        console.log('圖片上傳成功:', uploadResult.data.url);
         return {
           url: uploadResult.data.url,
           deleteUrl: uploadResult.data.delete_url
         };
       } catch (error) {
         console.warn('ImgBB上傳失敗:', error);
-        // 不阻斷主流程，僅返回錯誤
-        throw error;
+        
+        // 提供更具體的錯誤信息
+        if (error.name === 'AbortError') {
+          throw new Error('圖片上傳超時，請檢查網絡後重試');
+        } else if (error.message.includes('CORS') || error.message.includes('跨域')) {
+          throw new Error('跨域請求錯誤，可能是瀏覽器安全設置阻止了上傳');
+        } else if (isMobile || isTablet) {
+          throw new Error(`移動設備上傳失敗: ${error.message}，請嘗試在電腦上操作`);
+        } else {
+          throw error;
+        }
       }
     }
 
@@ -4162,6 +4212,7 @@ function showSingleShareButton(userName, date) {
   });
   
 </script>
+    
 
 
 
