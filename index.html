@@ -2369,7 +2369,7 @@
           </div>
           
           <div>
-            <h3 class="text-xl font-semibold mb-4 pb-2 border-b">🟢 六大調理方向： <p>找到健康的根本邏輯</h3>
+            <h3 class="text-xl font-semibold mb-4 pb-2 border-b">🟢 七大調理方向： <p>找到健康的根本邏輯</h3>
             <div id="healthRecommendations" class="space-y-4">
               <!-- 建議將在這裡動態顯示 -->
             </div>
@@ -2495,8 +2495,9 @@ document.addEventListener('DOMContentLoaded', function() {
   let globalAiComment = '';
   
   // 新增：網路請求配置
-  const REQUEST_TIMEOUT = 15000; // 15秒超時
-  const MAX_RETRIES = 2; // 最大重試次數
+  const REQUEST_TIMEOUT = 20000; // 延長到20秒超時，適合平板設備
+  const MAX_RETRIES = 3; // 增加重試次數
+  const TABLET_CANVAS_SCALE = 1.5; // 平板設備的canvas縮放比例
 
   // 2. DOM元素獲取（含AI評估容器）
   const menuToggle = document.getElementById('menuToggle');
@@ -2550,9 +2551,11 @@ document.addEventListener('DOMContentLoaded', function() {
   let imgbbImageUrl = '';
   let imgbbDeleteUrl = '';
   
-  // 新增：設備檢測
+  // 新增：設備檢測 - 增強平板檢測
   const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
   const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+  const isTablet = /iPad|Tablet|PlayBook|Silk|(Android(?!.*Mobile))/i.test(navigator.userAgent);
+  const isMobile = /iPhone|Android.*Mobile/i.test(navigator.userAgent) && !isTablet;
 
   // 5. 動態創建AI評估容器
   function createAiContainer() {
@@ -3083,8 +3086,11 @@ document.addEventListener('DOMContentLoaded', function() {
         mainConcern: document.getElementById('mainConcern').value || '未明確說明',
         symptomDuration: document.getElementById('symptomDuration').value || '未說明',
         possibleCauses: document.getElementById('possibleCauses').value || '未說明',
+        // 修復：收集過敏史和既往病史的文字資料
         allergyHistory: document.querySelector('input[name="allergyHistory"]:checked')?.value || '未選擇',
-        medicalHistory: document.querySelector('input[name="medicalHistory"]:checked')?.value || '未選擇'
+        allergyDetails: document.getElementById('allergyDetails')?.value || '未填寫',
+        medicalHistory: document.querySelector('input[name="medicalHistory"]:checked')?.value || '未選擇',
+        medicalDetails: document.getElementById('medicalDetails')?.value || '未填寫'
       },
       aiComment: globalAiComment || 'AI評語生成失敗',
       imgbb: {
@@ -3373,10 +3379,16 @@ document.addEventListener('DOMContentLoaded', function() {
       mainConcern = `${topCategory}（${globalUniqueSymptoms.slice(0,3).join('、')}...）`;
     } else if (!mainConcern) {
       mainConcern = '未明確說明';
-    }
+    } 
 
     const symptomDuration = document.getElementById('symptomDuration').value || '未說明';
     const possibleCauses = document.getElementById('possibleCauses').value || '未說明';
+    // 新增：收集過敏史和既往病史的文字資料
+    const allergyHistory = document.querySelector('input[name="allergyHistory"]:checked')?.value || '未選擇';
+    const allergyDetails = document.getElementById('allergyDetails')?.value || '未填寫';
+    const medicalHistory = document.querySelector('input[name="medicalHistory"]:checked')?.value || '未選擇';
+    const medicalDetails = document.getElementById('medicalDetails')?.value || '未填寫';
+    
     const isFemale = gender === '女';
 
     // 症狀分類映射
@@ -3417,6 +3429,18 @@ document.addEventListener('DOMContentLoaded', function() {
         </div>`;
       }
     });
+
+    // 構建病歷信息HTML（新增）
+    let medicalHistoryHtml = `
+      <div class="mt-3">
+        <p class="text-sm font-medium">過敏史：</p>
+        <p class="text-sm ml-4">${allergyHistory} ${allergyDetails ? `- ${allergyDetails}` : ''}</p>
+      </div>
+      <div class="mt-2">
+        <p class="text-sm font-medium">既往病史/手術史：</p>
+        <p class="text-sm ml-4">${medicalHistory} ${medicalDetails ? `- ${medicalDetails}` : ''}</p>
+      </div>
+    `;
 
     // 整合不良習慣顯示 - 統一為一種顯示方式
     let habitsHtml = '';
@@ -3505,6 +3529,7 @@ document.addEventListener('DOMContentLoaded', function() {
           <p class="mb-3"><strong>主要關注問題：</strong> ${mainConcern}</p>
           <p class="mb-3"><strong>症狀持續時間：</strong> ${symptomDuration}</p>
           <p class="mb-3"><strong>可能原因：</strong> ${possibleCauses}</p>
+          ${medicalHistoryHtml}
           ${totalSymptomCount > 0 ? 
             `<div class="mt-3"><strong>詳細症狀：</strong>${symptomsHtml}</div>` : 
             `<div class="mt-3 text-gray-500"><strong>詳細症狀：</strong>未選擇任何症狀</div>`
@@ -3523,6 +3548,7 @@ document.addEventListener('DOMContentLoaded', function() {
           <p class="mb-3"><strong>主要關注問題：</strong> ${mainConcern}</p>
           <p class="mb-3"><strong>症狀持續時間：</strong> ${symptomDuration}</p>
           <p class="mb-3"><strong>可能原因：</strong> ${possibleCauses}</p>
+          ${medicalHistoryHtml}
           ${totalSymptomCount > 0 ? 
             `<div class="mt-3"><strong>詳細症狀：</strong>${symptomsHtml}</div>` : 
             `<div class="mt-3 text-gray-500"><strong>詳細症狀：</strong>未選擇任何症狀</div>`
@@ -3670,7 +3696,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         updateProgress(progressIndicator, 20, '調整頁面樣式...');
 
-        // 2. 臨時調整樣式
+        // 2. 臨時調整樣式 - 針對平板設備優化
         const originalStyles = {
           resultPadding: resultSection.style.padding,
           resultMargin: resultSection.style.margin,
@@ -3678,8 +3704,14 @@ document.addEventListener('DOMContentLoaded', function() {
           position: resultSection.style.position,
           top: resultSection.style.top,
           left: resultSection.style.left,
-          zIndex: resultSection.style.zIndex
+          zIndex: resultSection.style.zIndex,
+          width: resultSection.style.width
         };
+        
+        // 平板設備特殊樣式調整
+        if (isTablet) {
+          resultSection.style.width = '90%';
+        }
         
         resultSection.style.padding = '20px';
         resultSection.style.margin = '0 auto';
@@ -3708,10 +3740,11 @@ document.addEventListener('DOMContentLoaded', function() {
         updateProgress(progressIndicator, 40, '準備截圖...');
 
         // 3. 執行截圖（優化配置，確保排除不需要的元素）
-        const canvas = await html2canvas(resultSection, {
+        // 平板設備使用不同的配置
+        const canvasConfig = {
           useCORS: true,
           allowTaint: false,
-          scale: Math.min(window.devicePixelRatio || 2, 2),
+          scale: isTablet ? TABLET_CANVAS_SCALE : Math.min(window.devicePixelRatio || 2, 2),
           logging: false,
           scrollX: 0,
           scrollY: 0,
@@ -3726,7 +3759,27 @@ document.addEventListener('DOMContentLoaded', function() {
                    el.id === 'healthRecommendations' ||
                    el.classList.contains('health-guidance');
           }
-        });
+        };
+        
+        // 平板設備額外配置
+        if (isTablet) {
+          canvasConfig.letterRendering = true;
+          canvasConfig.logging = true; // 平板設備開啟日誌，便於調試
+        }
+
+        // 增加平板設備的超時處理
+        let canvas;
+        if (isTablet) {
+          // 使用Promise.race設置超時
+          canvas = await Promise.race([
+            html2canvas(resultSection, canvasConfig),
+            new Promise((_, reject) => 
+              setTimeout(() => reject(new Error('平板設備截圖超時，請重試')), 30000)
+            )
+          ]);
+        } else {
+          canvas = await html2canvas(resultSection, canvasConfig);
+        }
 
         updateProgress(progressIndicator, 60, '處理圖片...');
 
@@ -3749,9 +3802,10 @@ document.addEventListener('DOMContentLoaded', function() {
         const formattedDate = `${currentDate.getFullYear()}年${String(currentDate.getMonth() + 1).padStart(2, '0')}月${String(currentDate.getDate()).padStart(2, '0')}日`;
         localImageName = `${userName}_健康評估結果_${formattedDate}.jpg`;
         
-        // 轉換Canvas為JPG Blob
+        // 轉換Canvas為JPG Blob - 平板設備使用不同的質量設置
+        const quality = isTablet ? 0.7 : 0.8; // 平板設備降低質量以提高成功率
         localImageBlob = await new Promise((resolve, reject) => {
-          canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('圖片Blob生成失敗')), 'image/jpeg', 0.8);
+          canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('圖片Blob生成失敗')), 'image/jpeg', quality);
         });
 
         updateProgress(progressIndicator, 75, '轉檔中...');
@@ -3796,7 +3850,13 @@ document.addEventListener('DOMContentLoaded', function() {
         
         downloadReportBtn.disabled = false;
         downloadReportBtn.innerHTML = '<i class="fa fa-download mr-2"></i> 下載圖片';
-        showToast(`操作失敗：${error.message}`, 'error');
+        
+        // 平板設備顯示更具體的錯誤提示
+        if (isTablet) {
+          showToast(`平板設備操作失敗：${error.message}\n請嘗試縮小屏幕或關閉部分內容後重試`, 'error');
+        } else {
+          showToast(`操作失敗：${error.message}`, 'error');
+        }
       }
     }
 
@@ -3902,9 +3962,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 保存圖片到相冊
     function saveToGallery(blob, fileName) {
-      // iPad特殊處理
-      if (isIOS) {
-        return new Promise((resolve) => {
+      // 平板/iPad特殊處理
+      if (isTablet || isIOS) {
+        return new Promise((resolve, reject) => {
           const blobUrl = URL.createObjectURL(blob);
           const downloadLink = document.createElement('a');
           downloadLink.download = fileName;
@@ -3914,20 +3974,35 @@ document.addEventListener('DOMContentLoaded', function() {
 
           document.body.appendChild(downloadLink);
           
-          // 模擬點擊觸發下載
-          const clickEvent = new MouseEvent('click', {
-            view: window,
-            bubbles: true,
-            cancelable: true
-          });
-          downloadLink.dispatchEvent(clickEvent);
-          
-          // 清理臨時資源
-          setTimeout(() => {
+          // 模擬點擊觸發下載 - 平板設備使用不同的觸發方式
+          try {
+            // 平板設備可能需要延遲和多次嘗試
+            setTimeout(() => {
+              // 創建鼠標事件
+              const clickEvent = new MouseEvent('click', {
+                view: window,
+                bubbles: true,
+                cancelable: true
+              });
+              downloadLink.dispatchEvent(clickEvent);
+              
+              // 二次嘗試
+              setTimeout(() => {
+                downloadLink.dispatchEvent(clickEvent);
+              }, 500);
+              
+              // 清理臨時資源
+              setTimeout(() => {
+                document.body.removeChild(downloadLink);
+                URL.revokeObjectURL(blobUrl);
+                resolve(true);
+              }, 1500);
+            }, 300);
+          } catch (error) {
             document.body.removeChild(downloadLink);
             URL.revokeObjectURL(blobUrl);
-            resolve(true);
-          }, 1000);
+            reject(error);
+          }
         });
       }
 
@@ -3969,116 +4044,114 @@ document.addEventListener('DOMContentLoaded', function() {
       });
     }
 
-    // 顯示分享按鈕
-    function showSingleShareButton(userName, date) {
-      // 移除舊的分享按鈕
-      const existingShareBtn = document.getElementById('singleShareBtn');
-      if (existingShareBtn) document.body.removeChild(existingShareBtn);
+  // 显示分享按钮
+function showSingleShareButton(userName, date) {
+  // 移除旧的分享按钮
+  const existingShareBtn = document.getElementById('singleShareBtn');
+  if (existingShareBtn) document.body.removeChild(existingShareBtn);
 
-      // 創建新的分享按鈕
-      const shareBtn = document.createElement('button');
-      shareBtn.id = 'singleShareBtn';
-      shareBtn.style.cssText = `
-        position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
-        padding: 12px 28px; border-radius: 30px; background: #165DFF; color: white;
-        border: none; box-shadow: 0 4px 15px rgba(22, 93, 255, 0.3);
-        font-size: 16px; font-weight: bold; display: flex; align-items: center; gap: 8px;
-        z-index: 9999; cursor: pointer; transition: background 0.2s ease;
-      `;
-      shareBtn.innerHTML = '<i class="fa fa-share-alt"></i> 分享健康自檢表';
-      document.body.appendChild(shareBtn);
-      
-      // 添加懸停效果
-      shareBtn.addEventListener('mouseover', () => {
-        shareBtn.style.background = '#0E42D2';
-      });
-      
-      shareBtn.addEventListener('mouseout', () => {
-        shareBtn.style.background = '#165DFF';
-      });
+  // 创建新的分享按钮
+  const shareBtn = document.createElement('button');
+  shareBtn.id = 'singleShareBtn';
+  shareBtn.style.cssText = `
+    position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+    padding: 12px 28px; border-radius: 30px; background: #165DFF; color: white;
+    border: none; box-shadow: 0 4px 15px rgba(22, 93, 255, 0.3);
+    font-size: 16px; font-weight: bold; display: flex; align-items: center; gap: 8px;
+    z-index: 9999; cursor: pointer; transition: background 0.2s ease;
+  `;
+  shareBtn.innerHTML = '<i class="fa fa-share-alt"></i> 分享健康自檢表';
+  document.body.appendChild(shareBtn);
+  
+  // 添加悬停效果
+  shareBtn.addEventListener('mouseover', () => {
+    shareBtn.style.background = '#0E42D2';
+  });
+  
+  shareBtn.addEventListener('mouseout', () => {
+    shareBtn.style.background = '#165DFF';
+  });
 
-      // 綁定分享事件
-      shareBtn.addEventListener('click', async () => {
-        try {
-          // 增強的檢查和錯誤處理
-          if (!localImageBlob && !imgbbImageUrl) {
-            showToast('分享資源不完整，請重新生成圖片', 'error');
-            return;
+  // 绑定分享事件
+  shareBtn.addEventListener('click', async () => {
+    try {
+      // 增强的检查和错误处理
+      if (!localImageBlob && !imgbbImageUrl) {
+        showToast('分享資源不完整，請重新生成圖片', 'error');
+        return;
+      }
+      
+      // 若localImageBlob不存在但有imgbbImageUrl，仍然允许分享
+      if (!localImageBlob) {
+        showToast('使用網絡圖片進行分享', 'info');
+      }
+
+      // 构建分享内容
+      let imageFile = null;
+      if (localImageBlob) {
+        imageFile = new File([localImageBlob], localImageName, { type: 'image/jpeg' });
+      }
+      
+      const shareText = `📋 『 ${userName} 』的健康自檢表\n🗓️ 自檢日期：${date}\n💡 包含：調理方向 + AI評估\n🔗 圖片鏈接：`;
+      const shareUrl = imgbbImageUrl || '';
+
+      // 平板/iPad分享特殊处理
+      if (isTablet || isIOS) {
+        if (navigator.share) {
+          shareBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> 喚醒分享...';
+          
+          // 对平板Safari使用不同的分享策略
+          const shareData = {
+            title: `${userName}的健康自檢表`,
+            text: shareText + (''),
+            url: shareUrl || window.location.href
+          };
+          
+          // 如果有图片文件且支持文件分享，才添加文件
+          if (imageFile && navigator.canShare && navigator.canShare({ files: [imageFile] })) {
+            shareData.files = [imageFile];
           }
           
-          // 若localImageBlob不存在但有imgbbImageUrl，仍然允許分享
-          if (!localImageBlob) {
-            showToast('使用網絡圖片進行分享', 'info');
-          }
-
-          // 構建分享內容
-          let imageFile = null;
-          if (localImageBlob) {
-            imageFile = new File([localImageBlob], localImageName, { type: 'image/jpeg' });
-          }
-          
-          const shareText = `📋 『 ${userName} 』的健康自檢表\n🗓️ 自檢日期：${date}\n💡 包含：調理方向 + AI評估\n🔗 圖片鏈接：`;
-          const shareUrl = imgbbImageUrl || '';
-
-          // iPad分享特殊處理
-          if (isIOS) {
-            if (navigator.share) {
-              shareBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> 喚醒分享...';
-              
-              // 對iPad Safari使用不同的分享策略
-              const shareData = {
-                title: `${userName}的健康自檢表`,
-                text: shareText + (''),
-                url: shareUrl || window.location.href
-              };
-              
-              // 如果有圖片文件且支持文件分享，才添加文件
-              if (imageFile && navigator.canShare && navigator.canShare({ files: [imageFile] })) {
-                shareData.files = [imageFile];
-              }
-              
-              await navigator.share(shareData);
-              showToast('分享成功！');
-              shareBtn.innerHTML = '<i class="fa fa-share-alt"></i> 分享健康自檢表';
-            } else {
-              // Safari不支持分享API時，複製鏈接
-              await navigator.clipboard.writeText(shareText + (shareUrl || window.location.href));
-              showToast('分享鏈接已複製到剪貼板');
-            }
-          } else if (navigator.share) {
-            // 其他設備的分享邏輯
-            shareBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> 喚醒分享...';
-            
-            const shareData = {
-              title: `${userName}的健康自檢表`,
-              text: shareText,
-              url: shareUrl || window.location.href
-            };
-            
-            if (imageFile && navigator.canShare && navigator.canShare({ files: [imageFile] })) {
-              shareData.files = [imageFile];
-            }
-            
-            await navigator.share(shareData);
-            showToast('分享成功！');
-            shareBtn.innerHTML = '<i class="fa fa-share-alt"></i> 分享健康自檢表';
-          } else {
-            // 不支持分享API時，複製鏈接
-            await navigator.clipboard.writeText(shareText + (shareUrl || window.location.href));
-            showToast('分享內容已複製到剪貼板');
-          }
-        } catch (shareError) {
-          console.error('分享失敗:', shareError);
+          await navigator.share(shareData);
+          showToast('分享成功！');
           shareBtn.innerHTML = '<i class="fa fa-share-alt"></i> 分享健康自檢表';
-          if (shareError.name !== 'AbortError') {
-            showToast(`分享失敗，鏈接：${imgbbImageUrl || '無'}`, 'error');
-          } else {
-            showToast('分享已取消');
-          }
+        } else {
+          // Safari不支持分享API时，复制链接
+          await navigator.clipboard.writeText(shareText + (shareUrl || window.location.href));
+          showToast('分享鏈接已複製到剪貼板');
         }
-      });
+      } else if (navigator.share) {
+        // 其他设备的分享逻辑
+        shareBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> 喚醒分享...';
+        
+        const shareData = {
+          title: `${userName}的健康自檢表`,
+          text: shareText,
+          url: shareUrl || window.location.href
+        };
+        
+        if (imageFile && navigator.canShare && navigator.canShare({ files: [imageFile] })) {
+          shareData.files = [imageFile];
+        }
+        
+        await navigator.share(shareData);
+        showToast('分享成功！');
+        shareBtn.innerHTML = '<i class="fa fa-share-alt"></i> 分享健康自檢表';
+      } else {
+        // 不支持分享API时，复制链接
+        await navigator.clipboard.writeText(shareText + (shareUrl || window.location.href));
+        showToast('分享內容已複製到剪貼板');
+      }
+    } catch (shareError) {
+      console.error('分享失敗:', shareError);
+      shareBtn.innerHTML = '<i class="fa fa-share-alt"></i> 分享健康自檢表';
+      if (shareError.name !== 'AbortError') {
+        showToast(`分享失敗，請手動複製鏈接: ${imgbbImageUrl || '無鏈接'}`, 'error');
+      }
     }
-
+  });
+}
+    
     // -------------------------- 19. 綁定事件與初始化
     if (downloadReportBtn) {
       downloadReportBtn.addEventListener('click', handleImageDownload);
@@ -4090,6 +4163,9 @@ document.addEventListener('DOMContentLoaded', function() {
   });
   
 </script>
+
+
+
 
 
 
