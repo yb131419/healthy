@@ -3052,7 +3052,10 @@ document.addEventListener('DOMContentLoaded', function() {
       habitCount: globalUniqueHabits.length,
       healthIssues: {
         mainConcern: document.getElementById('mainConcern').value || '未明確說明',
-        symptomDuration: document.getElementById('symptomDuration').value || '未說明'
+        symptomDuration: document.getElementById('symptomDuration').value || '未說明',
+        // 收集過敏史和既往病史的詳細信息
+        allergyDetails: document.getElementById('allergyDetails')?.value || '未填寫',
+        medicalDetails: document.getElementById('medicalDetails')?.value || '未填寫'
       }
     };
   }
@@ -3086,10 +3089,8 @@ document.addEventListener('DOMContentLoaded', function() {
         mainConcern: document.getElementById('mainConcern').value || '未明確說明',
         symptomDuration: document.getElementById('symptomDuration').value || '未說明',
         possibleCauses: document.getElementById('possibleCauses').value || '未說明',
-        // 修復：收集過敏史和既往病史的文字資料
-        allergyHistory: document.querySelector('input[name="allergyHistory"]:checked')?.value || '未選擇',
+        // 只收集和存儲用戶輸入的詳細信息，不使用預定義的選項值
         allergyDetails: document.getElementById('allergyDetails')?.value || '未填寫',
-        medicalHistory: document.querySelector('input[name="medicalHistory"]:checked')?.value || '未選擇',
         medicalDetails: document.getElementById('medicalDetails')?.value || '未填寫'
       },
       aiComment: globalAiComment || 'AI評語生成失敗',
@@ -3383,10 +3384,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const symptomDuration = document.getElementById('symptomDuration').value || '未說明';
     const possibleCauses = document.getElementById('possibleCauses').value || '未說明';
-    // 新增：收集過敏史和既往病史的文字資料
-    const allergyHistory = document.querySelector('input[name="allergyHistory"]:checked')?.value || '未選擇';
+    // 只顯示用戶輸入的詳細信息，不顯示drug和surgery等預定義選項
     const allergyDetails = document.getElementById('allergyDetails')?.value || '未填寫';
-    const medicalHistory = document.querySelector('input[name="medicalHistory"]:checked')?.value || '未選擇';
     const medicalDetails = document.getElementById('medicalDetails')?.value || '未填寫';
     
     const isFemale = gender === '女';
@@ -3430,15 +3429,15 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     });
 
-    // 構建病歷信息HTML（新增）
+    // 構建病歷信息HTML（只顯示用戶輸入的詳細內容）
     let medicalHistoryHtml = `
       <div class="mt-3">
-        <p class="text-sm font-medium">過敏史：</p>
-        <p class="text-sm ml-4">${allergyHistory} ${allergyDetails ? `- ${allergyDetails}` : ''}</p>
+        <p class="text-sm font-medium">過敏史詳情：</p>
+        <p class="text-sm ml-4">${allergyDetails}</p>
       </div>
       <div class="mt-2">
-        <p class="text-sm font-medium">既往病史/手術史：</p>
-        <p class="text-sm ml-4">${medicalHistory} ${medicalDetails ? `- ${medicalDetails}` : ''}</p>
+        <p class="text-sm font-medium">既往病史/手術史詳情：</p>
+        <p class="text-sm ml-4">${medicalDetails}</p>
       </div>
     `;
 
@@ -3609,7 +3608,7 @@ document.addEventListener('DOMContentLoaded', function() {
       <h4 class="font-semibold text-blue-600 mb-2">① 體質 —— 健康的「基礎土壤」
         <a href="[替換為體質相關影片連結]" target="_blank" class="text-blue-500 text-sm ml-2 hover:underline">📺 觀看解說影片</a>
       </h4>
-      <p class="text-sm mb-2">👉體質就像房子的內環境：有的房子乾淨通風，有的房子潮濕陰暗。潮濕的房子裡，木頭容易發霉、鐵器容易生鏽，即便擦掉霉斑、鏽跡，只要潮濕環境沒變，這些問題遲早還會出現；體內的寒濕、毒素積存，就像房子裡的潮氣，會讓身體出現類似「發霉、生鏽」的反復狀況。</p>
+      <p class="text-sm mb-2">👉體質就像房子的內環境：有的房子乾淨通風，有的房子潮濕陰暗。潮濕的房子里，木頭容易發霉、鐵器容易生鏽，即便擦掉霉斑、鏽跡，只要潮濕環境沒變，這些問題遲早還會出現；體內的寒濕、毒素積存，就像房子里的潮氣，會讓身體出現類似「發霉、生鏽」的反復狀況。</p>
       <p class="text-sm text-gray-700 italic">👉原理：體質的核心是身體內環境的穩定性，內環境的「潮濕、髒亂」是問題反復的根源，調理需從改善內環境本身入手。</p>
     </div>
 
@@ -3618,7 +3617,7 @@ document.addEventListener('DOMContentLoaded', function() {
       <h4 class="font-semibold text-blue-600 mb-2">② 免疫 —— 身體的「常駐軍隊」
         <a href="[替換為免疫相關影片連結]" target="_blank" class="text-blue-500 text-sm ml-2 hover:underline">📺 觀看解說影片</a>
       </h4>
-      <p class="text-sm mb-2">👉免疫力像駐守身體的軍隊體系：骨髓負責「招募兵源」（生產血细胞），胸腺是「士兵訓練營」（培養免疫細胞），淋巴是「戰場過濾站」（匯集並處理異物），白細胞是「前線戰士」（對抗異物、清理衰老細胞）；扁桃體、闌尾也是這個體系的一部分，負責特定區域的防禦。</p>
+      <p class="text-sm mb-2">👉免疫力像駐守身體的軍隊體系：骨髓負責「招募兵源」（生產血細胞），胸腺是「士兵訓練營」（培養免疫細胞），淋巴是「戰場過濾站」（匯集並處理異物），白細胞是「前線戰士」（對抗異物、清理衰老細胞）；扁桃體、闌尾也是這個體系的一部分，負責特定區域的防禦。</p>
       <p class="text-sm text-gray-700 italic">👉原理：免疫系統通過「招募-訓練-作戰-清理」的流程運作，各器官分工協作，維持身體對外界異物和內部異常細胞的監控。</p>
     </div>
 
@@ -3627,8 +3626,8 @@ document.addEventListener('DOMContentLoaded', function() {
       <h4 class="font-semibold text-blue-600 mb-2">③ 毒素 —— 身體的「堆積垃圾」
         <a href="[替換為毒素相關影片連結]" target="_blank" class="text-blue-500 text-sm ml-2 hover:underline">📺 觀看解說影片</a>
       </h4>
-      <p class="text-sm mb-2">👉身體裡的毒素分兩類：一是「外來垃圾」（從飲食、環境中進入的雜質），二是「內部廢物」（身體代謝產生的廢棄物）。這類毒素就像蓄水池裡的臟水，若肺、皮膚、大腸等「排水口」被堵住，臟水無法排出，就會在池內慢慢堆積；日常吃太多、動太少，也會讓「臟水進量超過排水量」。</p>
-      <p class="text-sm text-gray-700 italic">👉原理：毒素的堆積源於「進出失衡」，要么是外部摄入過多，要么是內部排出通道堵塞，維持平衡需同時控制「進量」和暢通「出口」。</p>
+      <p class="text-sm mb-2">👉身體里的毒素分兩類：一是「外來垃圾」（從飲食、環境中進入的雜質），二是「內部廢物」（身體代謝產生的廢棄物）。這類毒素就像蓄水池里的髒水，若肺、皮膚、大腸等「排水口」被堵住，髒水無法排出，就會在池內慢慢堆積；日常吃太多、動太少，也會讓「髒水進量超過排水量」。</p>
+      <p class="text-sm text-gray-700 italic">👉原理：毒素的堆積源於「進出失衡」，要麼是外部攝入過多，要麼是內部排出通道堵塞，維持平衡需同時控制「進量」和暢通「出口」。</p>
     </div>
 
     <!-- ④ 循環——健康的「暢通網絡」（對應《道路堵車的故事》） -->
@@ -3636,7 +3635,7 @@ document.addEventListener('DOMContentLoaded', function() {
       <h4 class="font-semibold text-blue-600 mb-2">④ 循環 —— 健康的「暢通網絡」
         <a href="[替換為循環相關影片連結]" target="_blank" class="text-blue-500 text-sm ml-2 hover:underline">📺 觀看解說影片</a>
       </h4>
-      <p class="text-sm mb-2">👉微循環是身體裡的「小馬路網絡」，由無數毛細血管組成，負責把營養「送達」各器官細胞，再把代謝廢物「運走」。若體內寒濕重、垃圾多，就像馬路上堆了雜物，容易出現「堵車」——營養送不到位，廢物也排不出去，就像交通堵塞時，物資運輸和垃圾清理都會受影響。</p>
+      <p class="text-sm mb-2">👉微循環是身體里的「小馬路網絡」，由無數毛細血管組成，負責把營養「送達」各器官細胞，再把代謝廢物「運走」。若體內寒濕重、垃圾多，就像馬路上堆了雜物，容易出現「堵車」——營養送不到位，廢物也排不出去，就像交通堵塞時，物資運輸和垃圾清理都會受影響。</p>
       <p class="text-sm text-gray-700 italic">👉原理：循環的核心是「暢通」，血管是運輸通道，通道內的「雜物」（寒濕、垃圾）是堵塞關鍵，需先清理通道才能保障物資和廢物的正常流動。</p>
     </div>
 
@@ -3646,7 +3645,7 @@ document.addEventListener('DOMContentLoaded', function() {
         <a href="[替換為營養相關影片連結]" target="_blank" class="text-blue-500 text-sm ml-2 hover:underline">📺 觀看解說影片</a>
       </h4>
       <p class="text-sm mb-2">👉人體維持理想健康狀況，至少需要60種礦物質，維生素對人體很重要，但是在缺乏礦物質的情況下，維生素無用武之地。就像蓋房子：用土坯蓋房和用鋼筋水泥蓋房，原料不同，房子的穩定性、耐用性也不同；飲食單一、偏食，就像蓋房少了關鍵建材，身體運轉也會受影響。</p>
-      <p class="text-sm text-gray-700 italic">👉原理：身體的運轉依賴「全麵且足量的原料」，原料種類不全或數量不足，就像工廠缺材料，無法正常生產，需通過多樣飲食保障原料供應。</p>
+      <p class="text-sm text-gray-700 italic">👉原理：身體的運轉依賴「全面且足量的原料」，原料種類不全或數量不足，就像工廠缺材料，無法正常生產，需通過多樣飲食保障原料供應。</p>
     </div>
 
     <!-- ⑥ 內分泌——身體的「規律指揮」（對應《順應規律的故事》） -->
@@ -3654,7 +3653,7 @@ document.addEventListener('DOMContentLoaded', function() {
       <h4 class="font-semibold text-blue-600 mb-2">⑥ 內分泌 —— 身體的「規律指揮」
         <a href="[替換為內分泌相關影片連結]" target="_blank" class="text-blue-500 text-sm ml-2 hover:underline">📺 觀看解說影片</a>
       </h4>
-      <p class="text-sm mb-2">👉內分泌系統是身體的「指揮體系」，由腦下垂體、松果體、甲狀腺等8大腺體組成：腦下垂體是「總司令」（協調其他腺體），松果體是「時間管理員」（負責睡眠、生理周期等規律，比如晚上11點後分泌褪黑素），甲狀腺是「代謝監督員」（控制身體代謝快慢）；任一腺體「失職」，都會打破整體平衡，就像辦事違背上下班規律，會導致流程紊亂。</p>
+      <p class="text-sm mb-2">👉內分泌系統是身體的「指揮體系」，由腦下垂體、松果體、甲狀腺等8大腺體組成：腦下垂體是「總司令」（協調其他腺體），松果體是「時間管理員」（負責睡眠、生理週期等規律，比如晚上11點後分泌褪黑素），甲狀腺是「代謝監督員」（控制身體代謝快慢）；任一腺體「失職」，都會打破整體平衡，就像辦事違背上下班規律，會導致流程紊亂。</p>
       <p class="text-sm text-gray-700 italic">👉原理：內分泌的核心是「規律協作」，各腺體按固定節奏分泌物質、執行職能，順應節奏才能維持指揮體系的穩定。</p>
     </div>
 
@@ -3764,7 +3763,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // 平板設備額外配置
         if (isTablet) {
           canvasConfig.letterRendering = true;
-          canvasConfig.logging = true; // 平板設備開啟日誌，便於調試
+          canvasConfig.logging = true; // 平板設備開啓日誌，便於調試
         }
 
         // 增加平板設備的超時處理
@@ -4044,13 +4043,13 @@ document.addEventListener('DOMContentLoaded', function() {
       });
     }
 
-  // 显示分享按钮
+  // 顯示分享按鈕
 function showSingleShareButton(userName, date) {
-  // 移除旧的分享按钮
+  // 移除舊的分享按鈕
   const existingShareBtn = document.getElementById('singleShareBtn');
   if (existingShareBtn) document.body.removeChild(existingShareBtn);
 
-  // 创建新的分享按钮
+  // 創建新的分享按鈕
   const shareBtn = document.createElement('button');
   shareBtn.id = 'singleShareBtn';
   shareBtn.style.cssText = `
@@ -4063,7 +4062,7 @@ function showSingleShareButton(userName, date) {
   shareBtn.innerHTML = '<i class="fa fa-share-alt"></i> 分享健康自檢表';
   document.body.appendChild(shareBtn);
   
-  // 添加悬停效果
+  // 添加懸停效果
   shareBtn.addEventListener('mouseover', () => {
     shareBtn.style.background = '#0E42D2';
   });
@@ -4072,21 +4071,21 @@ function showSingleShareButton(userName, date) {
     shareBtn.style.background = '#165DFF';
   });
 
-  // 绑定分享事件
+  // 綁定分享事件
   shareBtn.addEventListener('click', async () => {
     try {
-      // 增强的检查和错误处理
+      // 增強的檢查和錯誤處理
       if (!localImageBlob && !imgbbImageUrl) {
         showToast('分享資源不完整，請重新生成圖片', 'error');
         return;
       }
       
-      // 若localImageBlob不存在但有imgbbImageUrl，仍然允许分享
+      // 若localImageBlob不存在但有imgbbImageUrl，仍然允許分享
       if (!localImageBlob) {
         showToast('使用網絡圖片進行分享', 'info');
       }
 
-      // 构建分享内容
+      // 構建分享內容
       let imageFile = null;
       if (localImageBlob) {
         imageFile = new File([localImageBlob], localImageName, { type: 'image/jpeg' });
@@ -4095,19 +4094,19 @@ function showSingleShareButton(userName, date) {
       const shareText = `📋 『 ${userName} 』的健康自檢表\n🗓️ 自檢日期：${date}\n💡 包含：調理方向 + AI評估\n🔗 圖片鏈接：`;
       const shareUrl = imgbbImageUrl || '';
 
-      // 平板/iPad分享特殊处理
+      // 平板/iPad分享特殊處理
       if (isTablet || isIOS) {
         if (navigator.share) {
           shareBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> 喚醒分享...';
           
-          // 对平板Safari使用不同的分享策略
+          // 對平板Safari使用不同的分享策略
           const shareData = {
             title: `${userName}的健康自檢表`,
             text: shareText + (''),
             url: shareUrl || window.location.href
           };
           
-          // 如果有图片文件且支持文件分享，才添加文件
+          // 如果有圖片文件且支持文件分享，才添加文件
           if (imageFile && navigator.canShare && navigator.canShare({ files: [imageFile] })) {
             shareData.files = [imageFile];
           }
@@ -4116,12 +4115,12 @@ function showSingleShareButton(userName, date) {
           showToast('分享成功！');
           shareBtn.innerHTML = '<i class="fa fa-share-alt"></i> 分享健康自檢表';
         } else {
-          // Safari不支持分享API时，复制链接
+          // Safari不支持分享API時，複製鏈接
           await navigator.clipboard.writeText(shareText + (shareUrl || window.location.href));
           showToast('分享鏈接已複製到剪貼板');
         }
       } else if (navigator.share) {
-        // 其他设备的分享逻辑
+        // 其他設備的分享邏輯
         shareBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> 喚醒分享...';
         
         const shareData = {
@@ -4138,7 +4137,7 @@ function showSingleShareButton(userName, date) {
         showToast('分享成功！');
         shareBtn.innerHTML = '<i class="fa fa-share-alt"></i> 分享健康自檢表';
       } else {
-        // 不支持分享API时，复制链接
+        // 不支持分享API時，複製鏈接
         await navigator.clipboard.writeText(shareText + (shareUrl || window.location.href));
         showToast('分享內容已複製到剪貼板');
       }
@@ -4163,10 +4162,6 @@ function showSingleShareButton(userName, date) {
   });
   
 </script>
-
-
-
-
 
 
 
