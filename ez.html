@@ -74,6 +74,21 @@
     .required-mark {
       color: #ff4444;
     }
+    .status-text {
+      text-align: center;
+      padding: 8px 0;
+      margin-bottom: 16px;
+      border-radius: 6px;
+      font-size: 0.9rem;
+    }
+    .status-loading {
+      background: #2a2a2a;
+      color: #888;
+    }
+    .status-error {
+      background: #331a1a;
+      color: #ffcccc;
+    }
     button {
       width: 100%;
       background: linear-gradient(135deg, #7ac70c, #4a9c00);
@@ -96,12 +111,6 @@
       box-shadow: none;
       cursor: not-allowed;
     }
-    .loading {
-      text-align: center;
-      padding: 10px 0;
-      color: #888;
-      font-size: 0.9rem;
-    }
   </style>
 </head>
 <body>
@@ -111,8 +120,8 @@
     <form id="infoForm">
       <input type="hidden" id="pageId" name="pageId" value="調整方案" />
       <input type="hidden" id="date" name="date" />
-      <!-- 存储 LINE 内部唯一 ID（自动获取） -->
-      <input type="hidden" id="lineInternalId" name="lineInternalId" />
+      <!-- 存储 LINE 内部唯一 ID（对应后端 lineId 参数） -->
+      <input type="hidden" id="lineId" name="lineId" />
 
       <label for="name">姓名 <span class="required-mark">*</span></label>
       <input type="text" id="name" name="name" required autocomplete="off" placeholder="請輸入您的姓名" />
@@ -120,22 +129,25 @@
       <label for="phone">電話</label>
       <input type="tel" id="phone" name="phone" autocomplete="off" placeholder="請輸入電話（選填）" />
 
-      <label for="linePublicId">Line ID（@開頭）<span class="required-mark">*</span></label>
-      <input type="text" id="linePublicId" name="linePublicId" required autocomplete="off" placeholder="例如：@abc123（必填）" />
-      <div class="hint">用於發送免費方案，請正確填寫</div>
+      <!-- 手动填写 Line ID（对应后端 userId 参数） -->
+      <label for="userId">Line ID（@開頭）<span class="required-mark" id="userIdRequiredMark">*</span></label>
+      <input type="text" id="userId" name="userId" required autocomplete="off" placeholder="例如：@abc123（必填）" />
+      <div class="hint" id="userIdHint">用於發送免費方案，請正確填寫</div>
 
       <label for="email">信箱</label>
       <input type="email" id="email" name="email" autocomplete="off" placeholder="請輸入電子郵件（選填）" />
 
-      <!-- 自动获取的 LINE 識別碼（默认隐藏，成功获取后显示） -->
+      <!-- 自动获取的 LINE 識別碼（成功后显示） -->
       <div id="autoLineIdGroup" style="display: none;">
         <label for="lineIdDisplay">LINE 識別碼（自動获取）</label>
-        <input type="text" id="lineIdDisplay" readonly placeholder="已成功获取" />
-        <div class="hint">用於自動發送文件，不可修改</div>
+        <input type="text" id="lineIdDisplay" readonly />
+        <div class="hint">已自動綁定您的 LINE 帳號，無需手動填寫 Line ID</div>
       </div>
 
-      <div class="loading" id="loadingText">載入 LINE 服務中...</div>
-      <button type="submit" id="submitBtn" disabled style="display: none;">送出</button>
+      <!-- 加载/错误状态提示 -->
+      <div class="status-text status-loading" id="statusText">載入 LINE 服務中... 請稍候</div>
+      
+      <button type="submit" id="submitBtn" disabled>送出</button>
     </form>
   </main>
 
@@ -145,10 +157,13 @@
     const submitBtn = document.getElementById('submitBtn');
     const lineIdDisplay = document.getElementById('lineIdDisplay');
     const autoLineIdGroup = document.getElementById('autoLineIdGroup');
-    const loadingText = document.getElementById('loadingText');
-    const linePublicIdInput = document.getElementById('linePublicId');
+    const statusText = document.getElementById('statusText');
+    const userIdInput = document.getElementById('userId');
+    const userIdRequiredMark = document.getElementById('userIdRequiredMark');
+    const userIdHint = document.getElementById('userIdHint');
 
-    // 初始化标记：避免重复加载SDK
+    // 标记 SDK 加载状态
+    let sdkLoading = false;
     let sdkLoaded = false;
 
     // 获取台北时间（保持原功能）
@@ -163,120 +178,122 @@
       return `${year}-${month}-${day}`;
     }
 
-    // 动态加载 LINE LIFF SDK（核心修复：确保能监听加载状态）
+    // 动态加载 LINE LIFF SDK（核心修复）
     function loadLiffSdk() {
       return new Promise((resolve, reject) => {
         // 防止重复加载
+        if (sdkLoading) return;
+        sdkLoading = true;
+
+        // 若已加载完成，直接返回
         if (window.liff) {
           sdkLoaded = true;
           resolve();
           return;
         }
 
-        // 创建 SDK 脚本标签
+        // 创建 SDK 脚本
         const script = document.createElement('script');
         script.src = 'https://static.line-scdn.net/liff/edge/2.21.0/sdk.js';
         script.async = true;
 
-        // 加载成功回调
+        // 加载成功
         script.onload = () => {
           sdkLoaded = true;
-          console.log("LINE SDK 加载成功");
+          console.log("LINE SDK 动态加载成功");
           resolve();
         };
 
-        // 加载失败回调
+        // 加载失败
         script.onerror = () => {
           console.error("LINE SDK 加载失败");
-          reject(new Error("SDK 加载超时或网络错误"));
+          reject(new Error("網絡不穩定，SDK 加載失敗"));
         };
 
         // 添加到页面
         document.head.appendChild(script);
 
-        // 超时处理（5秒超时）
+        // 5秒超时处理
         setTimeout(() => {
           if (!sdkLoaded) {
-            reject(new Error("SDK 加载超时"));
+            reject(new Error("SDK 加載超時"));
           }
         }, 5000);
       });
     }
 
-    // 初始化 LIFF（核心逻辑）
+    // 初始化 LIFF + 处理状态
     async function initLiff() {
       try {
         // 1. 动态加载 SDK
         await loadLiffSdk();
 
-        // 2. 初始化 LIFF
-        await liff.init({ 
+        // 2. 初始化 LIFF（带回调地址）
+        await liff.init({
           liffId: LIFF_ID,
-          redirectUri: window.location.href // 与 LINE Developers 回调 URL 一致
+          redirectUri: window.location.href // 必须与 LINE Developers 回调 URL 一致
         });
         console.log("LIFF 初始化成功");
 
-        // 3. 检查登录状态
+        // 3. 检查登录状态，未登录则授权
         if (!liff.isLoggedIn()) {
           console.log("用户未登录，触发 LINE 授权");
           liff.login({ redirectUri: window.location.href });
-          return;
+          return; // 授权后会跳转回页面，重新执行初始化
         }
 
-        // 4. 成功获取用户信息
+        // 4. 成功获取用户信息（匹配后端 lineId 参数）
         const profile = await liff.getProfile();
         const lineInternalId = profile.userId;
-        document.getElementById('lineInternalId').value = lineInternalId;
+        document.getElementById('lineId').value = lineInternalId; // 传给后端的 lineId
 
-        // 5. 显示自动获取的 ID，隐藏手动输入的必填标记（优化体验）
+        // 5. 更新 UI：显示自动获取的 ID，隐藏手动填写的必填项
         autoLineIdGroup.style.display = 'block';
         lineIdDisplay.value = lineInternalId;
-        linePublicIdInput.required = false; // 已自动获取，手动 ID 变为可选
-        linePublicIdInput.placeholder = "例如：@abc123（選填）";
-        document.querySelector('label[for="linePublicId"] .required-mark').style.display = 'none';
+        userIdInput.required = false; // 手动 ID 变为可选
+        userIdRequiredMark.style.display = 'none';
+        userIdHint.textContent = "用於手動聯繫（選填）";
+        userIdInput.placeholder = "例如：@abc123（選填）";
 
-        // 6. 显示提交按钮
-        loadingText.style.display = 'none';
-        submitBtn.style.display = 'block';
+        // 6. 更新状态提示和提交按钮
+        statusText.textContent = "✅ LINE 服務已就緒，可直接送出";
+        statusText.className = "status-text"; // 清除加载样式
         submitBtn.disabled = false;
-        submitBtn.textContent = "送出";
 
       } catch (error) {
-        // 降级处理：SDK 加载失败或 LIFF 初始化失败，强制手动填写
-        console.error("LIFF 相关操作失败：", error);
+        // 降级处理：SDK 加载失败/初始化失败，强制手动填写
+        console.error("LIFF 处理失败：", error);
+        statusText.textContent = `📌 ${error.message}，請手動填寫 Line ID 提交`;
+        statusText.className = "status-text status-error";
         
-        // 显示错误提示（不弹窗打扰，改为文字提示）
-        loadingText.textContent = "📌 LINE 自動服務未啟用，請手動填寫 Line ID";
-        loadingText.style.color = "#ffcc00";
-
-        // 显示提交按钮，强制手动填写 Line ID（已设置为必填）
-        submitBtn.style.display = 'block';
+        // 确保手动 Line ID 为必填，启用提交按钮
+        userIdInput.required = true;
+        userIdRequiredMark.style.display = 'inline';
         submitBtn.disabled = false;
-        submitBtn.textContent = "手動送出";
       }
     }
 
     // 处理 Google 表单回调（保持原功能）
     function handleResponse(response) {
       if (response.status === "success") {
-        alert("✅ 資料已成功送出！\n會透過 Line ID 贈送免費調整方案，敬請留意訊息～");
+        alert("✅ 資料已成功送出！\n會透過 LINE 贈送免費調整方案，敬請留意訊息～");
         document.getElementById('infoForm').reset();
-        // 恢复自动获取的 ID 显示（如果之前成功获取）
-        if (document.getElementById('lineInternalId').value) {
-          lineIdDisplay.value = document.getElementById('lineInternalId').value;
+        // 恢复自动获取的 ID 显示（如果有）
+        if (document.getElementById('lineId').value) {
+          lineIdDisplay.value = document.getElementById('lineId').value;
         }
       } else {
         alert("❌ 發生錯誤：" + (response.message || "提交失敗，請稍後重試"));
       }
     }
 
-    // 提交数据（保持原功能）
+    // 提交数据（参数名与后端一致：lineId + userId）
     function sendData() {
       const data = {
         pageId: document.getElementById('pageId').value,
         date: document.getElementById('date').value,
-        lineInternalId: document.getElementById('lineInternalId').value || "手動提交",
-        linePublicId: document.getElementById('linePublicId').value,
+        lineId: document.getElementById('lineId').value || "手動提交", // 对应后端 lineId
+        userId: document.getElementById('userId').value, // 对应后端 userId（手动 Line ID）
         name: document.getElementById('name').value,
         phone: document.getElementById('phone').value,
         email: document.getElementById('email').value
@@ -296,15 +313,16 @@
       };
     }
 
-    // 表单提交事件
+    // 表单提交事件（添加 Line ID 格式验证）
     document.getElementById('infoForm').addEventListener('submit', function(e) {
       e.preventDefault();
-      const linePublicId = document.getElementById('linePublicId').value.trim();
+      const userId = userIdInput.value.trim();
+      const lineId = document.getElementById('lineId').value;
 
-      // 验证手动 Line ID 格式（如果未自动获取）
-      if (!document.getElementById('lineInternalId').value && !linePublicId.startsWith('@')) {
+      // 未自动获取 ID 时，验证手动 Line ID 格式
+      if (!lineId && userId && !userId.startsWith('@')) {
         alert("⚠️ Line ID 格式錯誤！\n請以 @ 開頭填寫（例如：@abc123）");
-        linePublicIdInput.focus();
+        userIdInput.focus();
         return;
       }
 
@@ -314,7 +332,7 @@
     // 页面加载初始化
     window.onload = () => {
       document.getElementById('date').value = getTaipeiDate();
-      // 启动 SDK 加载和 LIFF 初始化
+      // 立即启动 SDK 加载和 LIFF 初始化（不依赖 window.liff 初始状态）
       initLiff();
     };
   </script>
