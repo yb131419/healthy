@@ -4,8 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>彥彬📘免費資料領取 </title>
-  <!-- 加载最新稳定版 LIFF SDK -->
-  <script src="https://static.line-scdn.net/liff/edge/2.21.0/sdk.js"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
     * { box-sizing: border-box; }
@@ -73,6 +71,9 @@
       margin: -15px 0 15px 0;
       text-align: right;
     }
+    .required-mark {
+      color: #ff4444;
+    }
     button {
       width: 100%;
       background: linear-gradient(135deg, #7ac70c, #4a9c00);
@@ -95,6 +96,12 @@
       box-shadow: none;
       cursor: not-allowed;
     }
+    .loading {
+      text-align: center;
+      padding: 10px 0;
+      color: #888;
+      font-size: 0.9rem;
+    }
   </style>
 </head>
 <body>
@@ -107,25 +114,28 @@
       <!-- 存储 LINE 内部唯一 ID（自动获取） -->
       <input type="hidden" id="lineInternalId" name="lineInternalId" />
 
-      <label for="name">姓名</label>
+      <label for="name">姓名 <span class="required-mark">*</span></label>
       <input type="text" id="name" name="name" required autocomplete="off" placeholder="請輸入您的姓名" />
 
       <label for="phone">電話</label>
       <input type="tel" id="phone" name="phone" autocomplete="off" placeholder="請輸入電話（選填）" />
 
-      <label for="linePublicId">Line ID（@開頭）</label>
-      <input type="text" id="linePublicId" name="linePublicId" autocomplete="off" placeholder="例如：@abc123（選填）" />
-      <div class="hint">用於手動聯繫，已自動获取 LINE 識別碼</div>
+      <label for="linePublicId">Line ID（@開頭）<span class="required-mark">*</span></label>
+      <input type="text" id="linePublicId" name="linePublicId" required autocomplete="off" placeholder="例如：@abc123（必填）" />
+      <div class="hint">用於發送免費方案，請正確填寫</div>
 
       <label for="email">信箱</label>
       <input type="email" id="email" name="email" autocomplete="off" placeholder="請輸入電子郵件（選填）" />
 
-      <!-- 显示自动获取的 LINE 内部 ID（只读，让用户确认） -->
-      <label for="lineIdDisplay">LINE 識別碼（自動获取）</label>
-      <input type="text" id="lineIdDisplay" readonly placeholder="載入中..." />
-      <div class="hint">用於自動發送文件，不可修改</div>
+      <!-- 自动获取的 LINE 識別碼（默认隐藏，成功获取后显示） -->
+      <div id="autoLineIdGroup" style="display: none;">
+        <label for="lineIdDisplay">LINE 識別碼（自動获取）</label>
+        <input type="text" id="lineIdDisplay" readonly placeholder="已成功获取" />
+        <div class="hint">用於自動發送文件，不可修改</div>
+      </div>
 
-      <button type="submit" id="submitBtn" disabled>載入中...</button>
+      <div class="loading" id="loadingText">載入 LINE 服務中...</div>
+      <button type="submit" id="submitBtn" disabled style="display: none;">送出</button>
     </form>
   </main>
 
@@ -134,6 +144,12 @@
     const LIFF_ID = "2008578880-NznKeG2a";
     const submitBtn = document.getElementById('submitBtn');
     const lineIdDisplay = document.getElementById('lineIdDisplay');
+    const autoLineIdGroup = document.getElementById('autoLineIdGroup');
+    const loadingText = document.getElementById('loadingText');
+    const linePublicIdInput = document.getElementById('linePublicId');
+
+    // 初始化标记：避免重复加载SDK
+    let sdkLoaded = false;
 
     // 获取台北时间（保持原功能）
     function getTaipeiDate() {
@@ -147,45 +163,94 @@
       return `${year}-${month}-${day}`;
     }
 
-    // 初始化 LIFF（核心修复）
-    async function initLiff() {
-      try {
-        // 1. 初始化 LIFF，添加 redirectUri（授权后返回当前页面）
-        await liff.init({ 
-          liffId: LIFF_ID,
-          redirectUri: window.location.href // 关键：必须与 LINE Developers 配置的回调 URL 一致
-        });
-        console.log("LIFF 初始化成功");
-
-        // 2. 检查是否登录，未登录则触发授权
-        if (!liff.isLoggedIn()) {
-          console.log("用户未登录，跳转 LINE 授权");
-          liff.login({ redirectUri: window.location.href }); // 再次明确回调地址
+    // 动态加载 LINE LIFF SDK（核心修复：确保能监听加载状态）
+    function loadLiffSdk() {
+      return new Promise((resolve, reject) => {
+        // 防止重复加载
+        if (window.liff) {
+          sdkLoaded = true;
+          resolve();
           return;
         }
 
-        // 3. 登录成功，获取用户信息
+        // 创建 SDK 脚本标签
+        const script = document.createElement('script');
+        script.src = 'https://static.line-scdn.net/liff/edge/2.21.0/sdk.js';
+        script.async = true;
+
+        // 加载成功回调
+        script.onload = () => {
+          sdkLoaded = true;
+          console.log("LINE SDK 加载成功");
+          resolve();
+        };
+
+        // 加载失败回调
+        script.onerror = () => {
+          console.error("LINE SDK 加载失败");
+          reject(new Error("SDK 加载超时或网络错误"));
+        };
+
+        // 添加到页面
+        document.head.appendChild(script);
+
+        // 超时处理（5秒超时）
+        setTimeout(() => {
+          if (!sdkLoaded) {
+            reject(new Error("SDK 加载超时"));
+          }
+        }, 5000);
+      });
+    }
+
+    // 初始化 LIFF（核心逻辑）
+    async function initLiff() {
+      try {
+        // 1. 动态加载 SDK
+        await loadLiffSdk();
+
+        // 2. 初始化 LIFF
+        await liff.init({ 
+          liffId: LIFF_ID,
+          redirectUri: window.location.href // 与 LINE Developers 回调 URL 一致
+        });
+        console.log("LIFF 初始化成功");
+
+        // 3. 检查登录状态
+        if (!liff.isLoggedIn()) {
+          console.log("用户未登录，触发 LINE 授权");
+          liff.login({ redirectUri: window.location.href });
+          return;
+        }
+
+        // 4. 成功获取用户信息
         const profile = await liff.getProfile();
-        console.log("LINE 用户信息获取成功：", profile);
-        
-        // 4. 存储并显示 LINE 内部唯一 ID（用于自动发文件）
         const lineInternalId = profile.userId;
         document.getElementById('lineInternalId').value = lineInternalId;
-        lineIdDisplay.value = lineInternalId; // 显示给用户确认
-        lineIdDisplay.placeholder = "已成功获取";
 
-        // 5. 启用提交按钮
+        // 5. 显示自动获取的 ID，隐藏手动输入的必填标记（优化体验）
+        autoLineIdGroup.style.display = 'block';
+        lineIdDisplay.value = lineInternalId;
+        linePublicIdInput.required = false; // 已自动获取，手动 ID 变为可选
+        linePublicIdInput.placeholder = "例如：@abc123（選填）";
+        document.querySelector('label[for="linePublicId"] .required-mark').style.display = 'none';
+
+        // 6. 显示提交按钮
+        loadingText.style.display = 'none';
+        submitBtn.style.display = 'block';
         submitBtn.disabled = false;
         submitBtn.textContent = "送出";
 
       } catch (error) {
-        // 关键：显示具体错误信息，方便排查
-        const errorMsg = error.message || "未知错误";
-        console.error("LIFF 初始化失败：", error);
-        alert(`❌ 無法取得 LINE 用戶資料：\n${errorMsg}\n\n請確認：\n1. 在 LINE 內部瀏覽器打開頁面\n2. 網絡連接正常\n3. 聯繫管理員核對 LIFF 配置`);
+        // 降级处理：SDK 加载失败或 LIFF 初始化失败，强制手动填写
+        console.error("LIFF 相关操作失败：", error);
         
-        // 异常情况下仍允许用户手动提交（可选，提升用户体验）
-        lineIdDisplay.value = "無法自動获取，請手動填寫 Line ID";
+        // 显示错误提示（不弹窗打扰，改为文字提示）
+        loadingText.textContent = "📌 LINE 自動服務未啟用，請手動填寫 Line ID";
+        loadingText.style.color = "#ffcc00";
+
+        // 显示提交按钮，强制手动填写 Line ID（已设置为必填）
+        submitBtn.style.display = 'block';
         submitBtn.disabled = false;
         submitBtn.textContent = "手動送出";
       }
@@ -194,20 +259,23 @@
     // 处理 Google 表单回调（保持原功能）
     function handleResponse(response) {
       if (response.status === "success") {
-        alert("✅ 資料已成功送出！\n會透過 LINE 贈送免費調整方案，敬請留意訊息～");
+        alert("✅ 資料已成功送出！\n會透過 Line ID 贈送免費調整方案，敬請留意訊息～");
         document.getElementById('infoForm').reset();
-        lineIdDisplay.value = document.getElementById('lineInternalId').value; // 恢复显示自动获取的 ID
+        // 恢复自动获取的 ID 显示（如果之前成功获取）
+        if (document.getElementById('lineInternalId').value) {
+          lineIdDisplay.value = document.getElementById('lineInternalId').value;
+        }
       } else {
         alert("❌ 發生錯誤：" + (response.message || "提交失敗，請稍後重試"));
       }
     }
 
-    // 提交数据到 Google 表单（保持原功能）
+    // 提交数据（保持原功能）
     function sendData() {
       const data = {
         pageId: document.getElementById('pageId').value,
         date: document.getElementById('date').value,
-        lineInternalId: document.getElementById('lineInternalId').value || "用戶手動提交",
+        lineInternalId: document.getElementById('lineInternalId').value || "手動提交",
         linePublicId: document.getElementById('linePublicId').value,
         name: document.getElementById('name').value,
         phone: document.getElementById('phone').value,
@@ -228,16 +296,15 @@
       };
     }
 
-    // 表单提交事件（保持原功能，优化判断）
+    // 表单提交事件
     document.getElementById('infoForm').addEventListener('submit', function(e) {
       e.preventDefault();
-      const lineInternalId = document.getElementById('lineInternalId').value;
-      const linePublicId = document.getElementById('linePublicId').value;
+      const linePublicId = document.getElementById('linePublicId').value.trim();
 
-      // 若未自动获取到内部 ID，需确保用户填写了手动 Line ID
-      if (!lineInternalId && !linePublicId) {
-        alert("請填寫您的 Line ID（@開頭），以便發送免費方案！");
-        document.getElementById('linePublicId').focus();
+      // 验证手动 Line ID 格式（如果未自动获取）
+      if (!document.getElementById('lineInternalId').value && !linePublicId.startsWith('@')) {
+        alert("⚠️ Line ID 格式錯誤！\n請以 @ 開頭填寫（例如：@abc123）");
+        linePublicIdInput.focus();
         return;
       }
 
@@ -247,14 +314,8 @@
     // 页面加载初始化
     window.onload = () => {
       document.getElementById('date').value = getTaipeiDate();
-      // 确保 LIFF SDK 加载完成后再初始化
-      if (window.liff) {
-        initLiff();
-      } else {
-        alert("⚠️ LINE SDK 加载失敗，請刷新頁面重試");
-        submitBtn.disabled = false;
-        submitBtn.textContent = "手動送出";
-      }
+      // 启动 SDK 加载和 LIFF 初始化
+      initLiff();
     };
   </script>
 </body>
