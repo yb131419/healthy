@@ -1,332 +1,526 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
+  
 <head>
   <meta charset="UTF-8" />
-  <title>彥彬🔮 數字風水</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
-  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <meta name="theme-color" content="#1e1e1e" />
+  <title>彥彬 ✍️AI故事行銷</title>
   <style>
-    body {
-      margin: 0;
-      padding: 24px 12px;
-      font-family: 'Segoe UI', 'Noto Sans TC', sans-serif;
-      background: linear-gradient(145deg, #0a0f1e, #192c50);
-      color: #eaf1ff;
-    }
-    .container {
-      max-width: 500px;
-      margin: auto;
-    }
-    .title {
-      font-size: 24px;
-      font-weight: bold;
-      text-align: center;
-      margin-bottom: 6px;
-    }
-    .subtitle {
-      font-size: 14px;
-      text-align: center;
-      color: #a9c1ee;
-      margin-bottom: 20px;
-    }
-    .inputBox {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 20px;
-    }
-    input {
-      flex: 1;
-      padding: 12px;
-      font-size: 16px;
-      border-radius: 8px;
-      border: none;
-    }
-    .analyzeButton {
-      padding: 14px 20px;
-      font-size: 16px;
-      font-weight: bold;
-      background: linear-gradient(145deg, #3a5fb4, #284887);
-      border: none;
-      border-radius: 10px;
-      color: white;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-      cursor: pointer;
-      flex: none;
-    }
-    .analyzeButton:hover {
-      background: linear-gradient(145deg, #4e72c6, #2e57a0);
-    }
-    #result {
-      margin-top: 20px;
-    }
-    #resultCard {
-      background: rgba(255,255,255,0.08);
-      padding: 20px;
-      border-radius: 12px;
-    }
-    .luckyBox {
-      background: rgba(255, 255, 255, 0.06);
-      padding: 12px;
-      margin-top: 12px;
-      border-left: 5px solid gold;
-      border-radius: 10px;
-      font-weight: bold;
-      color: #ffe766;
-    }
-    .shareBox {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      margin-top: 20px;
-    }
-    .shareBox button {
-      width: 100%;
-      padding: 14px;
-      font-size: 16px;
-      font-weight: bold;
-      background: linear-gradient(135deg, #ffd166, #f4a261);
-      color: #202020;
-      border: none;
-      border-radius: 10px;
-      cursor: pointer;
-    }
-    .shareBox button:hover {
-      background: linear-gradient(135deg, #ffcc80, #e68a00);
-    }
+    /* ===== 全域樣式 ===== */
+* { box-sizing: border-box; margin:0; padding:0; }
 
-    .screenshotMode {
-      background: #16233d !important;
-      color: #ffffff !important;
-    }
-    .screenshotMode .luckyBox {
-      background: none !important;
-      color: #ffe766 !important;
-      border-left: 4px solid gold !important;
-    }
+/* Body 主要版面設定 */
+body {
+  padding: 24px;
+  font-family: 'Roboto', sans-serif;
+  background: linear-gradient(135deg, #1a1a1a, #222222);
+  color: #e0e0e0;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  flex-direction: column;
+  gap: 12px;
+}
 
-    .loading {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      font-size: 18px;
-      font-weight: bold;
-      user-select: none;
-      animation: bgFlash 2.5s ease-in-out infinite;
-      padding: 12px;
-      border-radius: 10px;
-      background: rgba(50, 75, 140, 0.6);
-      color: #a9d1ff;
-      justify-content: center;
-    }
-    .loadingIcon {
-      width: 24px;
-      height: 24px;
-      border: 3.5px solid #a9d1ff;
-      border-top-color: transparent;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-    }
-    .loadingText {
-      position: relative;
-      animation: pulseJump 1.5s ease-in-out infinite;
-    }
-    .loadingText span {
-      display: inline-block;
-      animation: flicker 1.8s infinite;
-      animation-fill-mode: forwards;
-      animation-timing-function: ease-in-out;
-    }
-    .loadingText span:nth-child(1) { animation-delay: 0s; }
-    .loadingText span:nth-child(2) { animation-delay: 0.2s; }
-    .loadingText span:nth-child(3) { animation-delay: 0.4s; }
-    .loadingText span:nth-child(4) { animation-delay: 0.6s; }
-    .loadingText span:nth-child(5) { animation-delay: 0.8s; }
-    .loadingText span:nth-child(6) { animation-delay: 1.0s; }
-    .loadingText span:nth-child(7) { animation-delay: 1.2s; }
+/* 主要內容卡片區塊 */
+main.card {
+  background: rgba(30, 30, 30, 0.9);
+  border-radius: 20px;
+  box-shadow:
+    0 8px 16px rgba(0, 0, 0, 0.9),
+    inset 0 0 60px rgba(255, 255, 255, 0.05);
+  max-width: 500px;
+  width: 100%;
+  padding: 28px 32px;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
 
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-    @keyframes pulseJump {
-      0%, 100% { transform: translateY(0); color: #a9d1ff; }
-      50% { transform: translateY(-6px); color: #66b3ff; }
-    }
-    @keyframes flicker {
-      0%, 100% { opacity: 1; color: #a9d1ff; text-shadow: 0 0 5px #66b3ff; }
-      50% { opacity: 0.4; color: #4477cc; text-shadow: none; }
-    }
-    @keyframes bgFlash {
-      0%, 100% { background: rgba(50, 75, 140, 0.6); }
-      50% { background: rgba(90, 130, 220, 0.9); }
-    }
-      .errorBox {
-    color: white;
-    background-color: rgba(255, 0, 0, 0.15);
-    padding: 12px;
-    border-radius: 8px;
-    font-size: 15px;
-  }
-  .errorBox a {
-    color: #80d4ff;
-    text-decoration: underline;
-  }
+/* 語言切換按鈕 */
+#langSelect {
+  position: absolute;
+  top: 4px; right: 12px;
+  font-size: 14px;
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  padding: 10px 4px; width: auto;
+  border-radius: 10px;
+  background: #333; color: #fff; border: none;
+  cursor: pointer;
+  box-shadow: 0 0 8px rgba(255,255,255,0.1);
+  white-space: nowrap; text-overflow: ellipsis; overflow: hidden;
+}
+#langSelect:hover { background: #444; }
+
+
+/* 使用者資訊區塊 - 高質感藍色背景（未來科技感版） */
+#userInfo {
+  max-width: 500px;
+  margin: 0 auto 16px auto;
+  padding: 18px 24px;
+  background: linear-gradient(135deg, #0f1c3f, #2a5298);
+  border-radius: 20px;
+  border: 1px solid rgba(90, 140, 255, 0.3);
+  box-shadow:
+    0 4px 20px rgba(0, 60, 150, 0.6),
+    0 0 8px rgba(90, 160, 255, 0.2),
+    inset 0 0 20px rgba(255, 255, 255, 0.03);
+  color: #e0f7ff;
+  text-align: center;
+  user-select: none;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(4px);
+}
+
+/* Hover 時浮起 + 光暈變強 */
+#userInfo:hover {
+  transform: translateY(-4px);
+  box-shadow:
+    0 8px 28px rgba(0, 100, 255, 0.6),
+    0 0 16px rgba(120, 180, 255, 0.4),
+    inset 0 0 30px rgba(255, 255, 255, 0.06);
+}
+
+/* 使用者名稱文字 - 光暈感強化 */
+#userInfo .name {
+  font-size: 24px;
+  font-weight: 800;
+  color: #e6f0ff;
+  margin-bottom: 8px;
+  text-shadow: 0 0 10px rgba(90, 160, 255, 0.8),
+               0 0 4px rgba(255, 255, 255, 0.2);
+  letter-spacing: 0.5px;
+}
+
+/* 到期日文字 - 更細緻亮感 */
+#userInfo .expiry {
+  font-size: 15px;
+  color: #a6d2ff;
+  margin-top: 6px;
+  display: block;
+  letter-spacing: 0.06em;
+  text-shadow: 0 0 4px rgba(90, 160, 255, 0.4);
+}
+
+
+/* 使用者名稱文字 */
+#userInfo .name {
+  font-size: 22px;
+  font-weight: 800;
+  color: #f0f0f0;
+  margin-bottom: 6px;
+  text-shadow: 0 0 14px rgba(74, 144, 226, 0.9);
+}
+
+/* 天數顯示包裹盒 */
+.daysWrapper {
+  display: inline-block; padding: 8px 20px; border-radius: 20px;
+  box-shadow: 0 0 14px rgba(255,255,255,0.9), inset 0 0 10px rgba(0,0,0,0.1);
+  background: linear-gradient(135deg, #fff, #e0e0e0);
+  color: #111; font-size: 20px; font-weight: 700;
+  margin: 0 6px;
+  min-width: 90px;
+}
+
+/* 天數危險狀態樣式 */
+.daysWrapper.danger {
+  background: linear-gradient(135deg, #ffb6b9, #ff6f61);
+  color: #fff0f0;
+  text-shadow: 0 0 6px rgba(255,182,193,0.6);
+  box-shadow: 0 0 14px rgba(255,182,193,0.6), inset 0 0 12px rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,192,203,0.4);
+}
+
+/* 使用者資訊區的到期日文字 */
+#userInfo .expiry {
+  font-size: 15px; color: #ddd; margin-top: 6px;
+  display: block; letter-spacing: 0.04em;
+  text-shadow: 0 0 6px rgba(255,255,255,0.3);
+}
+
+/* 頁面標題 */
+h2 {
+  margin-bottom: 24px; color: #fafafa; font-weight: 700;
+  font-size: 24px; line-height: 1.3; text-align: center;
+  letter-spacing: 0.05em;
+  text-shadow: 0 0 8px #4a90e2, 0 0 18px #4a90e2;
+}
+
+/* 標題副標 */
+h2 small {
+  display: block; font-weight: 400; font-size: 14px;
+  color: #99aabb; margin-top: 4px; line-height: 1.2;
+}
+
+/* 多行文字輸入框 */
+textarea {
+  font-size: 16px; line-height: 1.5; padding: 16px 18px;
+  border-radius: 12px; border: none; resize: vertical;
+  min-height: 140px; background: #222831; color: #f5f5f5;
+  box-shadow: inset 0 0 12px #395B64, 0 2px 6px rgba(0,0,0,0.5);
+  transition: box-shadow 0.3s ease; margin-bottom: 20px;
+  letter-spacing: 0.03em;
+}
+textarea:focus {
+  outline: none;
+  box-shadow: inset 0 0 16px #74b9ff, 0 4px 12px rgba(116,185,255,0.7);
+  background: #1e272e; color: #dcdde1;
+}
+
+/* Label 標籤 */
+label {
+  font-weight: 600; margin-bottom: 8px; display: block;
+  letter-spacing: 0.04em; color: #dcdcdc;
+  text-shadow: 0 0 4px rgba(0,0,0,0.3);
+  white-space: pre-line;
+}
+
+/* 下拉選單 & 按鈕 */
+select, button {
+  font-size: 16px; padding: 12px;
+  border-radius: 12px; border: none;
+  margin-bottom: 24px; width: 100%;
+  letter-spacing: 0.03em;
+}
+
+/* 下拉選單 */
+select {
+  background: #222831; color: #f0f0f0; cursor: pointer;
+  box-shadow: inset 0 0 12px #395B64, 0 2px 6px rgba(0,0,0,0.5);
+  transition: box-shadow 0.3s ease;
+}
+select:hover, select:focus {
+  outline: none;
+  box-shadow: inset 0 0 16px #74b9ff, 0 4px 12px rgba(116,185,255,0.7);
+  background: #1e272e;
+}
+
+/* 一般按鈕 */
+button {
+  font-weight: 600; font-size: 17px;
+  padding: 14px 26px; cursor: pointer;
+  transition: background-color 0.3s ease, box-shadow 0.3s ease;
+  box-shadow: 0 6px 12px rgba(74,144,226,0.6);
+  color: #fff;
+  background: linear-gradient(135deg, #4a90e2, #357ABD);
+  text-shadow: 0 0 4px rgba(0,0,0,0.4);
+}
+button:hover:not(:disabled) {
+  background: linear-gradient(135deg, #5aa0ff, #4d83e1);
+  box-shadow: 0 8px 18px rgba(74,144,226,0.8);
+}
+button:disabled {
+  background: #444; cursor: not-allowed; opacity: 0.7; box-shadow: none;
+}
+
+/* 分享按鈕（預設隱藏） */
+#shareBtn {
+  background: linear-gradient(135deg, #27ae60, #2ecc71);
+  box-shadow: 0 6px 14px rgba(39,174,96,0.7);
+  display: none; color: #f0f9f1;
+  text-shadow: 0 0 5px rgba(0,0,0,0.5);
+}
+#shareBtn:hover {
+  background: linear-gradient(135deg, #3acf7d, #47d88d);
+  box-shadow: 0 9px 22px rgba(39,174,96,0.9);
+}
+
+/* 改寫結果區塊 */
+#rewriteResult {
+  white-space: pre-wrap; font-size: 16px; line-height: 1.6;
+  background: #181818; border-radius: 14px; padding: 20px;
+  min-height: 140px; color: #ccc;
+  box-shadow: inset 0 0 12px #222;
+  letter-spacing: 0.03em;
+}
+
+/* 錯誤訊息樣式 */
+.error {
+  color: #ff6b6b; font-weight: 700;
+  text-shadow: 0 0 8px rgba(255,107,107,0.6);
+}
+
   </style>
 </head>
+
+
 <body>
-  <div class="container">
-    <div class="title">🔢 彥彬數字風水</div>
-    <div class="subtitle">
-      <span>解鎖數字，掌握運勢的鑰匙，讓未來更精彩</span><br>
-      <span>輸入『英文』、『數字』：如「手機號碼」、「車號」</span><br><br>
-      <span>數字能量是我們日常生活中非常重要的磁場</span><br>
-      <span>像手機號碼、車牌號碼和住宅號碼</span><br>
-      <span>都影響我們的財運、人緣和健康</span><br><br>
-      <span>每個帳號，三次免費使用，讓選擇更自由</span>
-    </div>
-    <div class="inputBox">
-      <input id="inputText" placeholder="請輸入號碼..." autocomplete="off" />
-      <button class="analyzeButton" onclick="analyze()">🌟 分析</button>
-    </div>
-    <div id="result"></div>
-  </div>
+  <main class="card">
+    <select id="langSelect" onchange="changeLang()">
+      <option value="zh-Hant">繁體中文</option>
+      <option value="zh-Hans">简体中文</option>
+      <option value="en">English</option>
+      <option value="vi">Tiếng Việt</option>
+    </select>
 
+    <div id="userInfo"></div>
+
+    <h2 id="headerTitle">📘 『彥彬 AI故事行銷』<br><small>✍️ 自動改寫 + 翻譯</small></h2>
+
+    <textarea id="originalText" placeholder="請貼上原始文章..."></textarea>
+
+    <label for="topicSelect" id="labelTopic">選擇分類主題『可AI自動判斷』</label>
+    <select id="topicSelect"></select>
+
+    <label for="outputLangSelect" id="labelOutputLang">輸出語言</label>
+    <select id="outputLangSelect"></select>
+
+    <button id="rewriteBtn" onclick="autoRewrite()" disabled>🚀 自動改寫 + 翻譯</button>
+    <button id="shareBtn" onclick="nativeShare()" style="display:none;">📤 分享文案</button>
+
+    <div id="rewriteResult"></div>
+    <div id="bottomSpacer" style="height:60px;"></div>
+  </main>
+
+  <!-- 📦 JS 區塊 -->
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <script>
-    const luckyNumbersMap = {
-      "財富": ["168", "648", "139"],
-      "人緣": ["314", "276", "289"],
-      "成功": ["912", "634", "819"],
-      "桃花": ["647", "829", "138"],
-      "等待": ["222", "444", "888"],
-      "病痛": ["741", "893", "224"],
-      "凶險": ["444", "966", "248"],
-      "孤獨": ["121", "369", "084"],
-      "無明顯主星": ["000", "111", "999"]
-    };
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbykBtM2_PM7IZ-ZUU4tgTqVa1xGhVQFaZ523FXc4ivdLz_GZ09sdmL6s5zk7SdloFuG/exec";
+    const LIFF_ID = "2008578880-NznKeG2a";
+    let liffUserId = "", hasPermission = false, lastRewrite = {}, loadingInterval;
 
-    let userId = "", userName = "", currentShareText = "";
+const langMap = {
+    "zh-Hant": {
+      title: "📘 『彥彬 AI故事行銷』", subtitle: "✍️ 自動改寫 + 翻譯",
+      placeholder: "請貼上原始文章...",
+      labelTopic: "選擇分類主題『可AI自動判斷』",
+      labelOutput: "輸出語言",
+      rewriteBtn: "🚀 自動改寫 + 翻譯", shareBtn: "📤 分享文案",
+      outputOptions: ["繁體中文", "简体中文", "英文", "越南文"],
+      topicOptions: [
+        { value: "auto", label: "AI 自動判斷" },
+        { value: "selfintro", label: "三分鐘自我介紹" },
+        { value: "quote", label: "覺醒語錄（品牌記憶）" },
+        { value: "story", label: "共鳴故事（信任建立）" },
+        { value: "education", label: "教育內容（知識價值）" },
+        { value: "product", label: "產品轉換（軟性銷售）" },
+        { value: "recruit", label: "合作機會（吸引夥伴）" }
 
-    window.onload = async function () {
-      await liff.init({ liffId: "2007475335-1LbDw0QV" });
-      if (!liff.isLoggedIn()) {
-        liff.login();
-        return;
-      }
-      const profile = await liff.getProfile();
-      userId = profile.userId;
-      userName = profile.displayName;
-    };
+      ]
+    },
+    "zh-Hans": {
+      title: "📘 『彦彬 AI故事营销』", subtitle: "✍️ 自动改写 + 翻译",
+      placeholder: "请粘贴原始文章...",
+      labelTopic: "选择分类主题『可AI自动判断』",
+      labelOutput: "输出语言",
+      rewriteBtn: "🚀 自动改写 + 翻译", shareBtn: "📤 分享文案",
+      outputOptions: ["繁體中文", "简体中文", "英文", "越南文"],
+      topicOptions: [
+        { value: "auto", label: "AI 自动判断" },
+        { value: "selfintro", label: "三分钟自我介绍" },
+        { value: "quote", label: "觉醒语录（品牌记忆）" },
+        { value: "story", label: "共鸣故事（信任建立）" },
+        { value: "education", label: "教育内容（知识价值）" },
+        { value: "product", label: "产品转换（软性销售）" },
+        { value: "recruit", label: "合作机会（吸引伙伴）" }
+      ]
+    },
+    "en": {
+      title: "📘 'Yanbin AI Story Marketing'", subtitle: "✍️ Rewrite + Translate Automatically",
+      placeholder: "Paste your original text here...",
+      labelTopic: "Choose topic (or let AI decide)",
+      labelOutput: "Output Language",
+      rewriteBtn: "🚀 Rewrite + Translate", shareBtn: "📤 Share Copy",
+      outputOptions: ["Traditional Chinese", "Simplified Chinese", "English", "Vietnamese"],
+      topicOptions: [
+        { value: "auto", label: "AI Auto" },
+        { value: "selfintro", label: "3-Min Self Introduction" },
+        { value: "quote", label: "Quote & Awakening" },
+        { value: "story", label: "Emotional Story" },
+        { value: "education", label: "Educational Content" },
+        { value: "product", label: "Product Conversion" },
+        { value: "recruit", label: "Collaboration" }
+      ]
+    },
+    "vi": {
+      title: "📘 'Yanbin Tiếp thị câu chuyện bằng AI'", subtitle: "✍️ Viết lại và Dịch tự động",
+      placeholder: "Vui lòng dán văn bản gốc...",
+      labelTopic: "Chọn chủ đề (hoặc AI tự động)",
+      labelOutput: "Ngôn ngữ đầu ra",
+      rewriteBtn: "🚀 Viết lại + Dịch", shareBtn: "📤 Chia sẻ",
+      outputOptions: ["Tiếng Trung Phồn thể", "Tiếng Trung Giản thể", "Tiếng Anh", "Tiếng Việt"],
+      topicOptions: [
+        { value: "auto", label: "AI tự động" },
+        { value: "selfintro", label: "Giới thiệu bản thân 3 phút" },
+        { value: "quote", label: "Trích dẫn thức tỉnh" },
+        { value: "story", label: "Câu chuyện đồng cảm" },
+        { value: "education", label: "Nội dung giáo dục" },
+        { value: "product", label: "Chuyển đổi sản phẩm" },
+        { value: "recruit", label: "Cơ hội hợp tác" }
+      ]
+    }
+  };
 
-    function createAnimatedLoadingText(text) {
-      return [...text].map(ch => `<span>${ch}</span>`).join('');
+    function changeLang() {
+      const lang = document.getElementById('langSelect').value;
+      const map = langMap[lang] || langMap['zh-Hant'];
+
+      document.querySelector('#headerTitle').innerHTML = `${map.title}<br><small>${map.subtitle}</small>`;
+      document.querySelector('#originalText').placeholder = map.placeholder;
+      document.querySelector('#labelTopic').textContent = map.labelTopic;
+      document.querySelector('#labelOutputLang').textContent = map.labelOutput;
+      document.querySelector('#rewriteBtn').textContent = map.rewriteBtn;
+      document.querySelector('#shareBtn').textContent = map.shareBtn;
+
+      const outputSelect = document.getElementById('outputLangSelect');
+      const outputValues = ["zh-Hant", "zh-Hans", "en", "vi"];
+      outputSelect.innerHTML = "";
+      outputValues.forEach((val, i) => {
+        const opt = document.createElement("option");
+        opt.value = val;
+        opt.textContent = map.outputOptions[i] || val;
+        outputSelect.appendChild(opt);
+      });
+
+      const topicSelect = document.getElementById('topicSelect');
+      topicSelect.innerHTML = "";
+      map.topicOptions.forEach(optData => {
+        const opt = document.createElement("option");
+        opt.value = optData.value;
+        opt.textContent = optData.label;
+        topicSelect.appendChild(opt);
+      });
     }
 
-    function analyze() {
-      const input = document.getElementById("inputText").value.trim();
-      const resultDiv = document.getElementById("result");
-      if (!input) {
-        alert("請輸入資料");
-        return;
+    window.onload = async () => {
+      try {
+        await liff.init({ liffId: LIFF_ID });
+        if (!liff.isLoggedIn()) return liff.login();
+
+        let profile = null, idToken = null;
+        try {
+          profile = await liff.getProfile();
+          idToken = liff.getDecodedIDToken();
+        } catch (e) {
+          document.getElementById("rewriteResult").innerHTML = `<div class="error">❌ 無法取得使用者資訊，請重新登入。</div>`;
+          return;
+        }
+
+        liffUserId = (idToken?.sub) || (profile?.userId) || "";
+        if (!liffUserId) {
+          document.getElementById("rewriteResult").innerHTML = `<div class="error">❌ 無法取得使用者 ID，請確認已登入 LINE。</div>`;
+          return;
+        }
+
+        checkPermission(liffUserId, profile?.displayName || "使用者");
+
+        document.getElementById("originalText").addEventListener("input", () => {
+          document.getElementById("rewriteBtn").disabled = !(hasPermission && originalText.value.trim().length >= 8);
+        });
+
+        changeLang(); // 初始化語言介面
+      } catch (err) {
+        document.getElementById("rewriteResult").innerHTML = `<div class="error">❌ LIFF 初始化失敗，請稍後重試。</div>`;
+        console.error("LIFF 初始化錯誤", err);
       }
-      resultDiv.innerHTML = `
-        <div class="loading">
-          <div class="loadingText">${createAnimatedLoadingText("🔮 正在分析中...")}</div>
-        </div>
-      `;
+    };
 
-      const oldScript = document.getElementById("jsonpScript");
-      if (oldScript) oldScript.remove();
+    function checkPermission(userId, displayName = "使用者") {
+      window.handlePermission = res => {
+        const infoDiv = document.getElementById("userInfo");
+        const resultDiv = document.getElementById("rewriteResult");
+        if (res?.auth) {
+          hasPermission = true;
+          const days = calcDaysLeft(res.expiryDate);
+          const danger = typeof days === "number" && days <= 3;
+          infoDiv.innerHTML = `
+            <div class="name">👑 使用者<br>『 ${displayName} 』</div>
+            <div class="daysWrapper ${danger ? "danger" : ""}">剩餘日：${typeof days === "number" ? days + " 天" : days}</div>
+            <div class="expiry">到期日：${formatTaipeiDate(res.expiryDate)}</div>
+          `;
+          resultDiv.innerHTML = ""; document.getElementById("rewriteBtn").disabled = false;
+        } else {
+          infoDiv.innerHTML = `<div class="name">👑 使用者<br>${displayName}</div><div class="daysWrapper">無權限</div>`;
+          resultDiv.innerHTML = `<div class="error">⛔ 尚未開通使用權限</div>`;
+        }
+      };
+      const s = document.createElement("script");
+      s.src = `${SCRIPT_URL}?userId=${userId}&checkAuth=1&callback=handlePermission`;
+      s.onerror = () => document.getElementById("rewriteResult").innerHTML = `<div class="error">❌ 權限驗證失敗</div>`;
+      document.body.appendChild(s);
+    }
 
+    function calcDaysLeft(dateStr) {
+      const d = new Date(dateStr.trim()), now = new Date();
+      const diff = Math.floor((d - now) / (1000 * 60 * 60 * 24));
+      return isNaN(diff) ? "無效日期" : diff < 0 ? "已過期" : diff === 0 ? 0 : diff;
+    }
+
+    function formatTaipeiDate(dateStr) {
+      const d = new Date(dateStr.trim());
+      return isNaN(d.getTime()) ? "無效日期" : d.toLocaleDateString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit', timeZone: 'Asia/Taipei' });
+    }
+
+    function autoRewrite() {
+      const text = document.getElementById("originalText").value.trim();
+      const topic = document.getElementById("topicSelect").value; // ✅ topic 主題傳入
+      const outputLang = document.getElementById("outputLangSelect").value;
+      const resultDiv = document.getElementById("rewriteResult");
+      const btn = document.getElementById("rewriteBtn");
+      const shareBtn = document.getElementById("shareBtn");
+
+      if (!text || btn.disabled || !liffUserId || !hasPermission) return;
+
+      btn.disabled = true;
+      btn.textContent = langMap[document.getElementById('langSelect').value].rewriteBtn + "...";
+      shareBtn.style.display = "none";
+      resultDiv.textContent = "⏳ 改寫中...";
+      let dots = 0;
+      loadingInterval = setInterval(() => {
+        dots = (dots + 1) % 4;
+        resultDiv.textContent = "⏳ 改寫中" + ".".repeat(dots);
+      }, 500);
+
+      window.handleResponse = res => {
+        clearInterval(loadingInterval);
+        btn.disabled = false;
+        btn.textContent = langMap[document.getElementById('langSelect').value].rewriteBtn;
+        if (res.error) {
+          resultDiv.innerHTML = `<div class="error">❌ ${res.error}</div>`;
+          return;
+        }
+        let content = (res.content || res.rewrite || "").replace(/。/g, "。\n\n");
+        let output = "";
+        if (res.topic) output += `🔖 類別：\n${res.topic}\n\n`;
+        if (res.title) output += `📌 推薦標題：\n${res.title}\n\n`;
+        output += `📝 改寫內容：\n${content}`;
+        resultDiv.textContent = output;
+        lastRewrite = { title: res.title || "", content };
+        shareBtn.style.display = content.trim() ? "block" : "none";
+      };
+
+      const old = document.getElementById("jsonpScript");
+      if (old) old.remove();
       const script = document.createElement("script");
       script.id = "jsonpScript";
-      script.src = `https://script.google.com/macros/s/AKfycbykBtM2_PM7IZ-ZUU4tgTqVa1xGhVQFaZ523FXc4ivdLz_GZ09sdmL6s5zk7SdloFuG/exec?input=${encodeURIComponent(input)}&userId=${encodeURIComponent(userId)}&name=${encodeURIComponent(userName)}&callback=showResult`;
+      script.src = `${SCRIPT_URL}?text=${encodeURIComponent(text)}&topic=${encodeURIComponent(topic)}&outputLang=${outputLang}&userId=${liffUserId}&callback=handleResponse`;
+      script.onerror = () => {
+        clearInterval(loadingInterval);
+        btn.disabled = false;
+        resultDiv.innerHTML = `<div class="error">❌ 無法取得回應，請稍後再試。</div>`;
+      };
       document.body.appendChild(script);
     }
 
-    function linkify(text) {
-      const urlRegex = /(https?:\/\/[^\s<]+)/g;
-      return text.replace(urlRegex, url => `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`);
-    }
-
-    function showResult(data) {
-      const resultDiv = document.getElementById("result");
-
-      if (data.error) {
-        let errorHtml = linkify(data.error.replace(/\n/g, "<br>"));
-        resultDiv.innerHTML = `<div class="errorBox">⚠️ ${errorHtml}</div>`;
+    function nativeShare() {
+      if (!lastRewrite.content.trim()) {
+        alert("內容為空，無法分享。");
         return;
       }
-
-      const formattedComment = data.comment.replace(/\n/g, "<br>").replace(/([。！？])<br>/g, "$1<br><br>");
-      const luckyArray = luckyNumbersMap[data.dominant] || ["111", "222"];
-      const getRandomCode = (len) => {
-        let code = "";
-        while (code.length < len) code += luckyArray[Math.floor(Math.random() * luckyArray.length)];
-        return code.slice(0, len);
+      const shareData = {
+        title: lastRewrite.title || "文案改寫分享",
+        text: `${lastRewrite.title ? `📌 推薦標題：\n${lastRewrite.title}\n\n` : ""}📝 改寫內容：\n${lastRewrite.content}`
       };
-
-      const lucky6 = getRandomCode(6);
-      const lucky4 = getRandomCode(4);
-      const luckyText = `🌟 推薦幸運號碼<br>🔢 6位數：${lucky6}<br>🔢 4位數：${lucky4}`;
-      const quotaText = (data.quota === undefined || data.quota === null) ? "無限制" : data.quota;
-      const expireText = data.expireAt
-        ? new Date(data.expireAt).toLocaleDateString('zh-TW', {
-            timeZone: 'Asia/Taipei',
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit'
-          })
-        : "";
-
-      resultDiv.innerHTML = `
-        <div id="resultCard">
-          <h1>彥彬 🔮 數字風水</h1>
-          <h3>查詢數字：${data.input}</h3>
-          <p>數字風水：${data.numericStr}</p>
-          <p>八星統計：${data.summary}</p>
-          <p>主導星曜：${data.dominant}星</p>
-          <div>🔍 彥彬評語：<br>${formattedComment}</div>
-          <div class="luckyBox">${luckyText}</div>
-          <div style="margin-top:16px; padding:12px; background:rgba(255,255,255,0.05); border-left:4px solid #80d4ff; border-radius:10px; font-size:14px;">
-            🙋 使用者名稱：<b>${userName}</b>
-            <br>🔁 剩餘次數：<b>${quotaText}</b>
-            ${data.isAdmin ? `<br>🛡️ 有效期至：<b>${expireText}</b>` : ""}
-          </div>
-        </div>
-        <div class="shareBox">
-          <button onclick="shareAsImage()">📸 分享圖片</button>
-        </div>
-      `;
-    }
-
-    async function shareAsImage() {
-      const target = document.getElementById("resultCard");
-      if (!target) return alert("❗ 尚未有分析結果");
-
-      try {
-        target.classList.add("screenshotMode");
-        const canvas = await html2canvas(target, { backgroundColor: null });
-        const blob = await new Promise(res => canvas.toBlob(res, 'image/png'));
-        const file = new File([blob], "彥彬數字風水.png", { type: "image/png" });
-
-        if (navigator.canShare && navigator.canShare({ files: [file] })) {
-          await navigator.share({ files: [file], title: "彥彬🔮數字風水" });
-        } else {
-          const link = document.createElement("a");
-          const url = URL.createObjectURL(blob);
-          link.href = url;
-          link.download = "彥彬數字風水.png";
-          link.click();
-          URL.revokeObjectURL(url);
-        }
-      } catch (err) {
-        alert("❌ 分享失敗：" + err.message);
-      } finally {
-        target.classList.remove("screenshotMode");
-      }
+      if (navigator.share) navigator.share(shareData).catch(() => alert("分享失敗"));
+      else navigator.clipboard.writeText(shareData.text).then(() => alert("已複製到剪貼簿"));
     }
   </script>
 </body>
+
+
 </html>
