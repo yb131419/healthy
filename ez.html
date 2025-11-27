@@ -1,150 +1,330 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
-  <title>🧬 彥彬 健康自檢表系統（簡表）</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+  <title>彥彬🔮 數字風水</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: { primary: '#00B900', secondary: '#E8F4EA' },
-          fontFamily: { sans: ['Noto Sans TC', 'sans-serif'] }
-        }
-      }
-    };
-  </script>
-
-  <style type="text/tailwindcss">
-    @layer utilities {
-      .fade-in { animation: fadeIn 0.45s ease-in-out; }
+  <style>
+    body {
+      margin: 0;
+      padding: 24px 12px;
+      font-family: 'Segoe UI', 'Noto Sans TC', sans-serif;
+      background: linear-gradient(145deg, #0a0f1e, #192c50);
+      color: #eaf1ff;
     }
-    @keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
+    .container {
+      max-width: 500px;
+      margin: auto;
+    }
+    .title {
+      font-size: 24px;
+      font-weight: bold;
+      text-align: center;
+      margin-bottom: 6px;
+    }
+    .subtitle {
+      font-size: 14px;
+      text-align: center;
+      color: #a9c1ee;
+      margin-bottom: 20px;
+    }
+    .inputBox {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    input {
+      flex: 1;
+      padding: 12px;
+      font-size: 16px;
+      border-radius: 8px;
+      border: none;
+    }
+    .analyzeButton {
+      padding: 14px 20px;
+      font-size: 16px;
+      font-weight: bold;
+      background: linear-gradient(145deg, #3a5fb4, #284887);
+      border: none;
+      border-radius: 10px;
+      color: white;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      cursor: pointer;
+      flex: none;
+    }
+    .analyzeButton:hover {
+      background: linear-gradient(145deg, #4e72c6, #2e57a0);
+    }
+    #result {
+      margin-top: 20px;
+    }
+    #resultCard {
+      background: rgba(255,255,255,0.08);
+      padding: 20px;
+      border-radius: 12px;
+    }
+    .luckyBox {
+      background: rgba(255, 255, 255, 0.06);
+      padding: 12px;
+      margin-top: 12px;
+      border-left: 5px solid gold;
+      border-radius: 10px;
+      font-weight: bold;
+      color: #ffe766;
+    }
+    .shareBox {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-top: 20px;
+    }
+    .shareBox button {
+      width: 100%;
+      padding: 14px;
+      font-size: 16px;
+      font-weight: bold;
+      background: linear-gradient(135deg, #ffd166, #f4a261);
+      color: #202020;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+    .shareBox button:hover {
+      background: linear-gradient(135deg, #ffcc80, #e68a00);
+    }
+
+    .screenshotMode {
+      background: #16233d !important;
+      color: #ffffff !important;
+    }
+    .screenshotMode .luckyBox {
+      background: none !important;
+      color: #ffe766 !important;
+      border-left: 4px solid gold !important;
+    }
+
+    .loading {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 18px;
+      font-weight: bold;
+      user-select: none;
+      animation: bgFlash 2.5s ease-in-out infinite;
+      padding: 12px;
+      border-radius: 10px;
+      background: rgba(50, 75, 140, 0.6);
+      color: #a9d1ff;
+      justify-content: center;
+    }
+    .loadingIcon {
+      width: 24px;
+      height: 24px;
+      border: 3.5px solid #a9d1ff;
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    .loadingText {
+      position: relative;
+      animation: pulseJump 1.5s ease-in-out infinite;
+    }
+    .loadingText span {
+      display: inline-block;
+      animation: flicker 1.8s infinite;
+      animation-fill-mode: forwards;
+      animation-timing-function: ease-in-out;
+    }
+    .loadingText span:nth-child(1) { animation-delay: 0s; }
+    .loadingText span:nth-child(2) { animation-delay: 0.2s; }
+    .loadingText span:nth-child(3) { animation-delay: 0.4s; }
+    .loadingText span:nth-child(4) { animation-delay: 0.6s; }
+    .loadingText span:nth-child(5) { animation-delay: 0.8s; }
+    .loadingText span:nth-child(6) { animation-delay: 1.0s; }
+    .loadingText span:nth-child(7) { animation-delay: 1.2s; }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    @keyframes pulseJump {
+      0%, 100% { transform: translateY(0); color: #a9d1ff; }
+      50% { transform: translateY(-6px); color: #66b3ff; }
+    }
+    @keyframes flicker {
+      0%, 100% { opacity: 1; color: #a9d1ff; text-shadow: 0 0 5px #66b3ff; }
+      50% { opacity: 0.4; color: #4477cc; text-shadow: none; }
+    }
+    @keyframes bgFlash {
+      0%, 100% { background: rgba(50, 75, 140, 0.6); }
+      50% { background: rgba(90, 130, 220, 0.9); }
+    }
+      .errorBox {
+    color: white;
+    background-color: rgba(255, 0, 0, 0.15);
+    padding: 12px;
+    border-radius: 8px;
+    font-size: 15px;
+  }
+  .errorBox a {
+    color: #80d4ff;
+    text-decoration: underline;
+  }
   </style>
 </head>
-<body class="bg-gray-50 min-h-screen flex items-center justify-center p-4">
-  <div class="max-w-md w-full bg-white rounded-xl shadow-lg overflow-hidden fade-in">
-    <div class="bg-primary p-6 text-white text-center">
-      <i class="fa fa-line-chart text-4xl mb-3"></i>
-      <h1 class="text-2xl font-bold">🧬 彥彬 健康自檢表系統(簡表)</h1>
+<body>
+  <div class="container">
+    <div class="title">🔢 彥彬數字風水</div>
+    <div class="subtitle">
+      <span>解鎖數字，掌握運勢的鑰匙，讓未來更精彩</span><br>
+      <span>輸入『英文』、『數字』：如「手機號碼」、「車號」</span><br><br>
+      <span>數字能量是我們日常生活中非常重要的磁場</span><br>
+      <span>像手機號碼、車牌號碼和住宅號碼</span><br>
+      <span>都影響我們的財運、人緣和健康</span><br><br>
+      <span>每個帳號，三次免費使用，讓選擇更自由</span>
     </div>
-
-    <div class="p-6">
-      <div id="status" class="flex items-center justify-center py-6 text-gray-700 text-center">
-        <div class="text-center">
-          <div class="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary mb-3"></div>
-          <p id="status-text">正在初始化 LIFF...</p>
-        </div>
-      </div>
-
-      <div id="error-message" class="hidden bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4"></div>
-
-      <div id="result-card" class="hidden border border-gray-100 rounded p-4 mb-3 text-center">
-        <div id="result-main" class="text-lg font-medium mb-2"></div>
-        <div id="result-details" class="text-sm text-gray-700 mb-3"></div>
-        <button id="redirect-btn" class="hidden bg-primary text-white px-4 py-2 rounded-full hover:bg-primary/90 transition">進入自檢表</button>
-        <div id="note" class="text-xs text-gray-500 mt-2 hidden">請點選「進入自檢表」以進入下一步。</div>
-      </div>
+    <div class="inputBox">
+      <input id="inputText" placeholder="請輸入號碼..." autocomplete="off" />
+      <button class="analyzeButton" onclick="analyze()">🌟 分析</button>
     </div>
+    <div id="result"></div>
   </div>
 
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <script>
-    const LIFF_ID = "2008578880-NznKeG2a";
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbykBtM2_PM7IZ-ZUU4tgTqVa1xGhVQFaZ523FXc4ivdLz_GZ09sdmL6s5zk7SdloFuG/exec";
-    const JSONP_TIMEOUT = 15000;
-
-    const setStatus = text => document.getElementById('status-text').textContent = text;
-
-    const showError = msg => {
-      document.getElementById('status').classList.add('hidden');
-      document.getElementById('result-card').classList.add('hidden');
-      const el = document.getElementById('error-message');
-      el.innerHTML = `<p>${msg}</p><div class="mt-3 flex justify-center">
-        <button onclick="window.location.reload()" class="text-primary hover:text-primar y/80 font-medium">
-          <i class="fa fa-refresh mr-1"></i> 重新嘗試
-        </button></div>`;
-      el.classList.remove('hidden');
+    const luckyNumbersMap = {
+      "財富": ["168", "648", "139"],
+      "人緣": ["314", "276", "289"],
+      "成功": ["912", "634", "819"],
+      "桃花": ["647", "829", "138"],
+      "等待": ["222", "444", "888"],
+      "病痛": ["741", "893", "224"],
+      "凶險": ["444", "966", "248"],
+      "孤獨": ["121", "369", "084"],
+      "無明顯主星": ["000", "111", "999"]
     };
 
-    document.addEventListener('DOMContentLoaded', function() {
-      setStatus('正在初始化 LIFF...');
-      liff.init({ liffId: LIFF_ID })
-        .then(() => {
-          if (!liff.isLoggedIn()) liff.login();
-          else getProfileAndVerify();
-        })
-        .catch(err => showError('系統初始化失敗：' + err.message));
-    });
+    let userId = "", userName = "", currentShareText = "";
 
-    function getProfileAndVerify() {
-      setStatus('已登入，正在驗證使用者資訊...');
-      liff.getProfile()
-        .then(profile => callGasBackend(profile.userId, profile.displayName || ''))
-        .catch(err => showError('取得使用者資料失敗：' + err.message));
+    window.onload = async function () {
+      await liff.init({ liffId: "2007475335-1LbDw0QV" });
+      if (!liff.isLoggedIn()) {
+        liff.login();
+        return;
+      }
+      const profile = await liff.getProfile();
+      userId = profile.userId;
+      userName = profile.displayName;
+    };
+
+    function createAnimatedLoadingText(text) {
+      return [...text].map(ch => `<span>${ch}</span>`).join('');
     }
 
-    function callGasBackend(userId, displayName) {
-      $.ajax({
-        url: GAS_URL,
-        dataType: 'jsonp',
-        jsonp: 'callback',
-        timeout: JSONP_TIMEOUT,
-        data: { userId, displayName },
-        success: function(resp) {
-          if (resp.status === "error") {
-            showError(resp.message);
-          } else {
-            renderResult(resp);
-          }
-        },
-        error: function() { showError('與伺服器通訊失敗'); }
-      });
+    function analyze() {
+      const input = document.getElementById("inputText").value.trim();
+      const resultDiv = document.getElementById("result");
+      if (!input) {
+        alert("請輸入資料");
+        return;
+      }
+      resultDiv.innerHTML = `
+        <div class="loading">
+          <div class="loadingText">${createAnimatedLoadingText("🔮 正在分析中...")}</div>
+        </div>
+      `;
+
+      const oldScript = document.getElementById("jsonpScript");
+      if (oldScript) oldScript.remove();
+
+      const script = document.createElement("script");
+      script.id = "jsonpScript";
+      script.src = `https://script.google.com/macros/s/AKfycbykBtM2_PM7IZ-ZUU4tgTqVa1xGhVQFaZ523FXc4ivdLz_GZ09sdmL6s5zk7SdloFuG/exec?input=${encodeURIComponent(input)}&userId=${encodeURIComponent(userId)}&name=${encodeURIComponent(userName)}&callback=showResult`;
+      document.body.appendChild(script);
     }
 
-    function renderResult(resp) {
-      document.getElementById('status').classList.add('hidden');
-      const card = document.getElementById('result-card');
-      const main = document.getElementById('result-main');
-      const details = document.getElementById('result-details');
-      const redirectBtn = document.getElementById('redirect-btn');
-      const note = document.getElementById('note');
+    function linkify(text) {
+      const urlRegex = /(https?:\/\/[^\s<]+)/g;
+      return text.replace(urlRegex, url => `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`);
+    }
 
-      if (resp.isAdmin) {
-        main.innerHTML = `專業用戶：${resp.displayName}`;
-        details.innerHTML = resp.remainingDays != null
-          ? `剩餘天數：${resp.remainingDays} 天`
-          : `剩餘天數：無限制`;
-      } else {
-        main.innerHTML = `普通用戶：${resp.displayName}`;
-        details.innerHTML = typeof resp.usageCount !== 'undefined'
-          ? `剩餘次數：${3 - resp.usageCount}`
-          : `剩餘次數：未知`;
+    function showResult(data) {
+      const resultDiv = document.getElementById("result");
+
+      if (data.error) {
+        let errorHtml = linkify(data.error.replace(/\n/g, "<br>"));
+        resultDiv.innerHTML = `<div class="errorBox">⚠️ ${errorHtml}</div>`;
+        return;
       }
 
-      if (resp.redirect && resp.redirectUrl) {
-        redirectBtn.classList.remove('hidden');
-        redirectBtn.onclick = () => attemptRedirect(resp.redirectUrl);
-        note.classList.remove('hidden');
-      }
+      const formattedComment = data.comment.replace(/\n/g, "<br>").replace(/([。！？])<br>/g, "$1<br><br>");
+      const luckyArray = luckyNumbersMap[data.dominant] || ["111", "222"];
+      const getRandomCode = (len) => {
+        let code = "";
+        while (code.length < len) code += luckyArray[Math.floor(Math.random() * luckyArray.length)];
+        return code.slice(0, len);
+      };
 
-      card.classList.remove('hidden');
+      const lucky6 = getRandomCode(6);
+      const lucky4 = getRandomCode(4);
+      const luckyText = `🌟 推薦幸運號碼<br>🔢 6位數：${lucky6}<br>🔢 4位數：${lucky4}`;
+      const quotaText = (data.quota === undefined || data.quota === null) ? "無限制" : data.quota;
+      const expireText = data.expireAt
+        ? new Date(data.expireAt).toLocaleDateString('zh-TW', {
+            timeZone: 'Asia/Taipei',
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit'
+          })
+        : "";
+
+      resultDiv.innerHTML = `
+        <div id="resultCard">
+          <h1>彥彬 🔮 數字風水</h1>
+          <h3>查詢數字：${data.input}</h3>
+          <p>數字風水：${data.numericStr}</p>
+          <p>八星統計：${data.summary}</p>
+          <p>主導星曜：${data.dominant}星</p>
+          <div>🔍 彥彬評語：<br>${formattedComment}</div>
+          <div class="luckyBox">${luckyText}</div>
+          <div style="margin-top:16px; padding:12px; background:rgba(255,255,255,0.05); border-left:4px solid #80d4ff; border-radius:10px; font-size:14px;">
+            🙋 使用者名稱：<b>${userName}</b>
+            <br>🔁 剩餘次數：<b>${quotaText}</b>
+            ${data.isAdmin ? `<br>🛡️ 有效期至：<b>${expireText}</b>` : ""}
+          </div>
+        </div>
+        <div class="shareBox">
+          <button onclick="shareAsImage()">📸 分享圖片</button>
+        </div>
+      `;
     }
 
-    function attemptRedirect(url) {
+    async function shareAsImage() {
+      const target = document.getElementById("resultCard");
+      if (!target) return alert("❗ 尚未有分析結果");
+
       try {
-        if (liff && liff.isInClient()) {
-          liff.openWindow({ url, external: true })
-            .catch(() => { window.location.href = url; });
+        target.classList.add("screenshotMode");
+        const canvas = await html2canvas(target, { backgroundColor: null });
+        const blob = await new Promise(res => canvas.toBlob(res, 'image/png'));
+        const file = new File([blob], "彥彬數字風水.png", { type: "image/png" });
+
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          await navigator.share({ files: [file], title: "彥彬🔮數字風水" });
         } else {
-          window.location.href = url;
+          const link = document.createElement("a");
+          const url = URL.createObjectURL(blob);
+          link.href = url;
+          link.download = "彥彬數字風水.png";
+          link.click();
+          URL.revokeObjectURL(url);
         }
-      } catch {
-        window.location.href = url;
+      } catch (err) {
+        alert("❌ 分享失敗：" + err.message);
+      } finally {
+        target.classList.remove("screenshotMode");
       }
     }
   </script>
