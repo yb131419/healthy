@@ -27,7 +27,7 @@
       max-width: 420px;
       padding: 32px 28px;
     }
-    /* 新增：用户信息卡片样式 */
+    /* 新增：用戶信息卡片樣式 */
     .user-info-card {
       background: #2a2a2a;
       border-radius: 10px;
@@ -71,7 +71,7 @@
       font-size: 0.8rem;
       font-weight: 700;
     }
-    /* 原有样式保持不变 */
+    /* 原有樣式保持不變 */
     h2 {
       font-weight: 700;
       font-size: 1.8rem;
@@ -127,7 +127,7 @@
       background: linear-gradient(135deg, #4a9c00, #7ac70c);
       box-shadow: 0 6px 20px rgba(122,199,12,0.7);
     }
-    /* 加载提示样式 */
+    /* 加載提示樣式 */
     .loading {
       text-align: center;
       color: #9acd32;
@@ -140,7 +140,7 @@
   <main>
     <h2>彥彬📘 資料填寫 <br> 免費調整方案 <br> 用戶填寫後 <br>『LINE發送文件』</h2>
 
-    <!-- 新增：用户信息展示区域 -->
+    <!-- 新增：用戶信息展示區域 -->
     <div class="user-info-card">
       <div class="user-info-title">👤 用戶狀態</div>
       <div id="userInfoLoading" class="loading">載入用戶資訊中...</div>
@@ -186,9 +186,10 @@
   <script>
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbykBtM2_PM7IZ-ZUU4tgTqVa1xGhVQFaZ523FXc4ivdLz_GZ09sdmL6s5zk7SdloFuG/exec";
     const LIFF_ID = "2008578880-NznKeG2a";
-    let currentUserId = ""; // 存储当前用户ID，用于获取状态
+    let currentUserId = ""; // 存儲當前用戶ID，用於獲取狀態
+    let lineDisplayName = ""; // 存儲LINE顯示名稱
 
-    // 获取台北时区日期
+    // 獲取台北時區日期
     function getTaipeiDate() {
       const dtf = new Intl.DateTimeFormat('zh-TW', {
         timeZone: 'Asia/Taipei',
@@ -200,7 +201,7 @@
       return `${year}-${month}-${day}`;
     }
 
-    // 初始化LIFF并获取用户信息
+    // 初始化LIFF並獲取用戶信息
     async function initLiff() {
       try {
         await liff.init({ liffId: LIFF_ID });
@@ -209,22 +210,29 @@
           return;
         }
         const profile = await liff.getProfile();
-        currentUserId = profile.userId; // 保存用户ID
+        currentUserId = profile.userId; // 保存用戶ID
+        lineDisplayName = profile.displayName; // 直接獲取LINE顯示名稱（關鍵修正）
         document.getElementById('lineId').value = currentUserId;
         
-        // 加载用户状态（用户类型、剩余次数等）
+        // 立即顯示LINE名稱，無需等待後端響應
+        document.getElementById('displayUserName').textContent = lineDisplayName || "未設定";
+        
+        // 加載用戶狀態（用戶類型、剩餘次數等）
         fetchUserStatus(currentUserId);
       } catch (error) {
-        alert("無法取得 LINE 用戶資料，請確認已在 LINE 裡開啟此頁面。");
+        alert("無法取得 LINE 用戶資料，請確認已在 LINE 里開啓此頁面。");
         console.error(error);
         hideLoading();
+        // 異常時仍顯示默認名稱
+        document.getElementById('displayUserName').textContent = "未知用戶";
+        document.getElementById('userInfoContent').style.display = "block";
       }
     }
 
-    // 从后端获取用户状态（用户类型、剩余次数）
+    // 從後端獲取用戶狀態（用戶類型、剩餘次數）
     function fetchUserStatus(userId) {
       const data = {
-        action: "getUserStatus", // 后端识别动作
+        action: "getUserStatus", // 後端識別動作
         userId: userId,
         date: getTaipeiDate()
       };
@@ -241,45 +249,44 @@
         alert("⚠️ 無法載入用戶狀態，請稍後再試");
         hideLoading();
         document.body.removeChild(script);
+        // 狀態加載失敗時顯示默認剩餘次數
+        document.getElementById('displayRemaining').textContent = "0次/天";
       };
     }
 
-    // 处理用户状态响应
+    // 處理用戶狀態響應
     function handleUserStatusResponse(response) {
       hideLoading();
       if (response.status === "success" && response.userRecord) {
         const userRecord = response.userRecord;
-        // 渲染用户信息到页面
-        document.getElementById('displayUserName').textContent = userRecord.userName || "未設定";
+        // 剩餘次數優先使用後端返回值
         document.getElementById('displayRemaining').textContent = userRecord.remaining || "0次/天";
         
-        // 渲染用户类型标签
+        // 渲染用戶類型標籤
         const userTypeEl = document.getElementById('displayUserType');
         if (userRecord.userType === "專業用戶") {
           userTypeEl.innerHTML = '<span class="pro-tag">專業用戶</span>';
         } else {
           userTypeEl.innerHTML = '<span class="normal-tag">普通用戶</span>';
         }
-        
-        document.getElementById('userInfoContent').style.display = "block";
       } else {
-        // 失败时显示默认信息
-        document.getElementById('displayUserName').textContent = "未知用戶";
+        // 失敗時顯示默認信息
         document.getElementById('displayRemaining').textContent = "0次/天";
-        document.getElementById('userInfoContent').style.display = "block";
-        console.error("获取用户状态失败：", response.message);
+        console.error("獲取用戶狀態失敗：", response.message);
       }
+      // 確保用戶信息區域顯示（無論後端是否成功響應）
+      document.getElementById('userInfoContent').style.display = "block";
     }
 
-    // 处理表单提交响应
+    // 處理表單提交響應
     function handleResponse(response) {
       if (response.status === "success") {
         alert("✅ 資料已成功送出！\n會用Line贈送免費調整方案！");
-        // 提交成功后更新剩余次数
+        // 提交成功後更新剩餘次數
         if (response.userRecord) {
           document.getElementById('displayRemaining').textContent = response.userRecord.remaining || "0次/天";
         }
-        // 清空表单
+        // 清空表單
         document.getElementById('userId').value = "";
         document.getElementById('name').value = "";
         document.getElementById('phone').value = "";
@@ -289,12 +296,12 @@
       }
     }
 
-    // 隐藏加载提示
+    // 隱藏加載提示
     function hideLoading() {
       document.getElementById('userInfoLoading').style.display = "none";
     }
 
-    // 发送表单数据
+    // 發送表單數據
     function sendData() {
       const data = {
         pageId: document.getElementById('pageId').value,
@@ -320,7 +327,7 @@
       };
     }
 
-    // 表单提交事件
+    // 表單提交事件
     document.getElementById('infoForm').addEventListener('submit', function(e) {
       e.preventDefault();
       if (!document.getElementById('lineId').value) {
@@ -330,13 +337,13 @@
       sendData();
     });
 
-    // 页面加载初始化
+    // 頁面加載初始化
     window.onload = () => {
       document.getElementById('date').value = getTaipeiDate();
       initLiff();
     };
 
-    // 全局函数：用于JSONP回调（必须挂载到window）
+    // 全局函數：用於JSONP回調（必須掛載到window）
     window.handleUserStatusResponse = handleUserStatusResponse;
     window.handleResponse = handleResponse;
   </script>
