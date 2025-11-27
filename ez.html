@@ -1,340 +1,152 @@
 <!DOCTYPE html>
-<html lang="zh-Hant">
+<html lang="zh-TW">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>彥彬📘免費資料領取 </title>
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      background: #121212;
-      font-family: 'Roboto', sans-serif;
-      color: #eee;
-      display: flex;
-      justify-content: center;
-      align-items: flex-start;
-      min-height: 100vh;
-      padding: 40px 20px;
-    }
-    main {
-      background: #1f1f1f;
-      border-radius: 12px;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.8);
-      width: 100%;
-      max-width: 420px;
-      padding: 32px 28px;
-    }
-    h2 {
-      font-weight: 700;
-      font-size: 1.8rem;
-      margin-bottom: 28px;
-      text-align: center;
-      letter-spacing: 1.2px;
-      color: #9acd32;
-    }
-    form label {
-      display: block;
-      margin-bottom: 6px;
-      font-weight: 500;
-      font-size: 1rem;
-      color: #ccc;
-    }
-    input[type="text"],
-    input[type="email"],
-    input[type="tel"] {
-      width: 100%;
-      padding: 10px 14px;
-      border-radius: 8px;
-      border: none;
-      font-size: 1rem;
-      background: #2a2a2a;
-      color: #eee;
-      margin-bottom: 20px;
-      transition: background-color 0.3s ease;
-    }
-    input[type="text"]:focus,
-    input[type="email"]:focus,
-    input[type="tel"]:focus {
-      background: #3a3a3a;
-      outline: none;
-    }
-    input[readonly] {
-      opacity: 0.9;
-      cursor: default;
-      background: #2f2f2f;
-    }
-    .hint {
-      font-size: 0.85rem;
-      color: #888;
-      margin: -15px 0 15px 0;
-      text-align: right;
-    }
-    .required-mark {
-      color: #ff4444;
-    }
-    .status-text {
-      text-align: center;
-      padding: 8px 0;
-      margin-bottom: 16px;
-      border-radius: 6px;
-      font-size: 0.9rem;
-    }
-    .status-loading {
-      background: #2a2a2a;
-      color: #888;
-    }
-    .status-error {
-      background: #331a1a;
-      color: #ffcccc;
-    }
-    button {
-      width: 100%;
-      background: linear-gradient(135deg, #7ac70c, #4a9c00);
-      border: none;
-      padding: 14px;
-      border-radius: 10px;
-      font-size: 1.1rem;
-      color: #fff;
-      font-weight: 700;
-      cursor: pointer;
-      transition: background 0.3s ease;
-      box-shadow: 0 4px 12px rgba(122,199,12,0.5);
-    }
-    button:hover {
-      background: linear-gradient(135deg, #4a9c00, #7ac70c);
-      box-shadow: 0 6px 20px rgba(122,199,12,0.7);
-    }
-    button:disabled {
-      background: linear-gradient(135deg, #666, #444);
-      box-shadow: none;
-      cursor: not-allowed;
-    }
-  </style>
-</head>
-<body>
-  <main>
-    <h2>彥彬📘 資料填寫 <br> 免費調整方案 <br> 用戶填寫後 <br>『LINE發送文件』</h2>
-
-    <form id="infoForm">
-      <input type="hidden" id="pageId" name="pageId" value="調整方案" />
-      <input type="hidden" id="date" name="date" />
-      <!-- 存储 LINE 内部唯一 ID（对应后端 lineId 参数） -->
-      <input type="hidden" id="lineId" name="lineId" />
-
-      <label for="name">姓名 <span class="required-mark">*</span></label>
-      <input type="text" id="name" name="name" required autocomplete="off" placeholder="請輸入您的姓名" />
-
-      <label for="phone">電話</label>
-      <input type="tel" id="phone" name="phone" autocomplete="off" placeholder="請輸入電話（選填）" />
-
-      <!-- 手动填写 Line ID（对应后端 userId 参数） -->
-      <label for="userId">Line ID（@開頭）<span class="required-mark" id="userIdRequiredMark">*</span></label>
-      <input type="text" id="userId" name="userId" required autocomplete="off" placeholder="例如：@abc123（必填）" />
-      <div class="hint" id="userIdHint">用於發送免費方案，請正確填寫</div>
-
-      <label for="email">信箱</label>
-      <input type="email" id="email" name="email" autocomplete="off" placeholder="請輸入電子郵件（選填）" />
-
-      <!-- 自动获取的 LINE 識別碼（成功后显示） -->
-      <div id="autoLineIdGroup" style="display: none;">
-        <label for="lineIdDisplay">LINE 識別碼（自動获取）</label>
-        <input type="text" id="lineIdDisplay" readonly />
-        <div class="hint">已自動綁定您的 LINE 帳號，無需手動填寫 Line ID</div>
-      </div>
-
-      <!-- 加载/错误状态提示 -->
-      <div class="status-text status-loading" id="statusText">載入 LINE 服務中... 請稍候</div>
-      
-      <button type="submit" id="submitBtn" disabled>送出</button>
-    </form>
-  </main>
+  <title>🧬 彥彬 健康自檢表系統（簡表）</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
   <script>
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbykBtM2_PM7IZ-ZUU4tgTqVa1xGhVQFaZ523FXc4ivdLz_GZ09sdmL6s5zk7SdloFuG/exec";
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: { primary: '#00B900', secondary: '#E8F4EA' },
+          fontFamily: { sans: ['Noto Sans TC', 'sans-serif'] }
+        }
+      }
+    };
+  </script>
+
+  <style type="text/tailwindcss">
+    @layer utilities {
+      .fade-in { animation: fadeIn 0.45s ease-in-out; }
+    }
+    @keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen flex items-center justify-center p-4">
+  <div class="max-w-md w-full bg-white rounded-xl shadow-lg overflow-hidden fade-in">
+    <div class="bg-primary p-6 text-white text-center">
+      <i class="fa fa-line-chart text-4xl mb-3"></i>
+      <h1 class="text-2xl font-bold">🧬 彥彬 健康自檢表系統(簡表)</h1>
+    </div>
+
+    <div class="p-6">
+      <div id="status" class="flex items-center justify-center py-6 text-gray-700 text-center">
+        <div class="text-center">
+          <div class="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary mb-3"></div>
+          <p id="status-text">正在初始化 LIFF...</p>
+        </div>
+      </div>
+
+      <div id="error-message" class="hidden bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4"></div>
+
+      <div id="result-card" class="hidden border border-gray-100 rounded p-4 mb-3 text-center">
+        <div id="result-main" class="text-lg font-medium mb-2"></div>
+        <div id="result-details" class="text-sm text-gray-700 mb-3"></div>
+        <button id="redirect-btn" class="hidden bg-primary text-white px-4 py-2 rounded-full hover:bg-primary/90 transition">進入自檢表</button>
+        <div id="note" class="text-xs text-gray-500 mt-2 hidden">請點選「進入自檢表」以進入下一步。</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
     const LIFF_ID = "2008578880-NznKeG2a";
-    const submitBtn = document.getElementById('submitBtn');
-    const lineIdDisplay = document.getElementById('lineIdDisplay');
-    const autoLineIdGroup = document.getElementById('autoLineIdGroup');
-    const statusText = document.getElementById('statusText');
-    const userIdInput = document.getElementById('userId');
-    const userIdRequiredMark = document.getElementById('userIdRequiredMark');
-    const userIdHint = document.getElementById('userIdHint');
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbykBtM2_PM7IZ-ZUU4tgTqVa1xGhVQFaZ523FXc4ivdLz_GZ09sdmL6s5zk7SdloFuG/exec";
+    const JSONP_TIMEOUT = 15000;
 
-    // 标记 SDK 加载状态
-    let sdkLoading = false;
-    let sdkLoaded = false;
+    const setStatus = text => document.getElementById('status-text').textContent = text;
 
-    // 获取台北时间（保持原功能）
-    function getTaipeiDate() {
-      const dtf = new Intl.DateTimeFormat('zh-TW', {
-        timeZone: 'Asia/Taipei',
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-      });
-      const [{value: year},,{value: month},,{value: day}] = dtf.formatToParts(new Date());
-      return `${year}-${month}-${day}`;
-    }
+    const showError = msg => {
+      document.getElementById('status').classList.add('hidden');
+      document.getElementById('result-card').classList.add('hidden');
+      const el = document.getElementById('error-message');
+      el.innerHTML = `<p>${msg}</p><div class="mt-3 flex justify-center">
+        <button onclick="window.location.reload()" class="text-primary hover:text-primar y/80 font-medium">
+          <i class="fa fa-refresh mr-1"></i> 重新嘗試
+        </button></div>`;
+      el.classList.remove('hidden');
+    };
 
-    // 动态加载 LINE LIFF SDK（核心修复）
-    function loadLiffSdk() {
-      return new Promise((resolve, reject) => {
-        // 防止重复加载
-        if (sdkLoading) return;
-        sdkLoading = true;
-
-        // 若已加载完成，直接返回
-        if (window.liff) {
-          sdkLoaded = true;
-          resolve();
-          return;
-        }
-
-        // 创建 SDK 脚本
-        const script = document.createElement('script');
-        script.src = 'https://static.line-scdn.net/liff/edge/2.21.0/sdk.js';
-        script.async = true;
-
-        // 加载成功
-        script.onload = () => {
-          sdkLoaded = true;
-          console.log("LINE SDK 动态加载成功");
-          resolve();
-        };
-
-        // 加载失败
-        script.onerror = () => {
-          console.error("LINE SDK 加载失败");
-          reject(new Error("網絡不穩定，SDK 加載失敗"));
-        };
-
-        // 添加到页面
-        document.head.appendChild(script);
-
-        // 5秒超时处理
-        setTimeout(() => {
-          if (!sdkLoaded) {
-            reject(new Error("SDK 加載超時"));
-          }
-        }, 5000);
-      });
-    }
-
-    // 初始化 LIFF + 处理状态
-    async function initLiff() {
-      try {
-        // 1. 动态加载 SDK
-        await loadLiffSdk();
-
-        // 2. 初始化 LIFF（带回调地址）
-        await liff.init({
-          liffId: LIFF_ID,
-          redirectUri: window.location.href // 必须与 LINE Developers 回调 URL 一致
-        });
-        console.log("LIFF 初始化成功");
-
-        // 3. 检查登录状态，未登录则授权
-        if (!liff.isLoggedIn()) {
-          console.log("用户未登录，触发 LINE 授权");
-          liff.login({ redirectUri: window.location.href });
-          return; // 授权后会跳转回页面，重新执行初始化
-        }
-
-        // 4. 成功获取用户信息（匹配后端 lineId 参数）
-        const profile = await liff.getProfile();
-        const lineInternalId = profile.userId;
-        document.getElementById('lineId').value = lineInternalId; // 传给后端的 lineId
-
-        // 5. 更新 UI：显示自动获取的 ID，隐藏手动填写的必填项
-        autoLineIdGroup.style.display = 'block';
-        lineIdDisplay.value = lineInternalId;
-        userIdInput.required = false; // 手动 ID 变为可选
-        userIdRequiredMark.style.display = 'none';
-        userIdHint.textContent = "用於手動聯繫（選填）";
-        userIdInput.placeholder = "例如：@abc123（選填）";
-
-        // 6. 更新状态提示和提交按钮
-        statusText.textContent = "✅ LINE 服務已就緒，可直接送出";
-        statusText.className = "status-text"; // 清除加载样式
-        submitBtn.disabled = false;
-
-      } catch (error) {
-        // 降级处理：SDK 加载失败/初始化失败，强制手动填写
-        console.error("LIFF 处理失败：", error);
-        statusText.textContent = `📌 ${error.message}，請手動填寫 Line ID 提交`;
-        statusText.className = "status-text status-error";
-        
-        // 确保手动 Line ID 为必填，启用提交按钮
-        userIdInput.required = true;
-        userIdRequiredMark.style.display = 'inline';
-        submitBtn.disabled = false;
-      }
-    }
-
-    // 处理 Google 表单回调（保持原功能）
-    function handleResponse(response) {
-      if (response.status === "success") {
-        alert("✅ 資料已成功送出！\n會透過 LINE 贈送免費調整方案，敬請留意訊息～");
-        document.getElementById('infoForm').reset();
-        // 恢复自动获取的 ID 显示（如果有）
-        if (document.getElementById('lineId').value) {
-          lineIdDisplay.value = document.getElementById('lineId').value;
-        }
-      } else {
-        alert("❌ 發生錯誤：" + (response.message || "提交失敗，請稍後重試"));
-      }
-    }
-
-    // 提交数据（参数名与后端一致：lineId + userId）
-    function sendData() {
-      const data = {
-        pageId: document.getElementById('pageId').value,
-        date: document.getElementById('date').value,
-        lineId: document.getElementById('lineId').value || "手動提交", // 对应后端 lineId
-        userId: document.getElementById('userId').value, // 对应后端 userId（手动 Line ID）
-        name: document.getElementById('name').value,
-        phone: document.getElementById('phone').value,
-        email: document.getElementById('email').value
-      };
-
-      const params = new URLSearchParams(data);
-      params.append('callback', 'handleResponse');
-
-      const script = document.createElement('script');
-      script.src = SCRIPT_URL + "?" + params.toString();
-      document.body.appendChild(script);
-
-      script.onload = () => document.body.removeChild(script);
-      script.onerror = () => {
-        alert("⚠️ 網絡錯誤，提交失敗，請檢查網絡後重試");
-        document.body.removeChild(script);
-      };
-    }
-
-    // 表单提交事件（添加 Line ID 格式验证）
-    document.getElementById('infoForm').addEventListener('submit', function(e) {
-      e.preventDefault();
-      const userId = userIdInput.value.trim();
-      const lineId = document.getElementById('lineId').value;
-
-      // 未自动获取 ID 时，验证手动 Line ID 格式
-      if (!lineId && userId && !userId.startsWith('@')) {
-        alert("⚠️ Line ID 格式錯誤！\n請以 @ 開頭填寫（例如：@abc123）");
-        userIdInput.focus();
-        return;
-      }
-
-      sendData();
+    document.addEventListener('DOMContentLoaded', function() {
+      setStatus('正在初始化 LIFF...');
+      liff.init({ liffId: LIFF_ID })
+        .then(() => {
+          if (!liff.isLoggedIn()) liff.login();
+          else getProfileAndVerify();
+        })
+        .catch(err => showError('系統初始化失敗：' + err.message));
     });
 
-    // 页面加载初始化
-    window.onload = () => {
-      document.getElementById('date').value = getTaipeiDate();
-      // 立即启动 SDK 加载和 LIFF 初始化（不依赖 window.liff 初始状态）
-      initLiff();
-    };
+    function getProfileAndVerify() {
+      setStatus('已登入，正在驗證使用者資訊...');
+      liff.getProfile()
+        .then(profile => callGasBackend(profile.userId, profile.displayName || ''))
+        .catch(err => showError('取得使用者資料失敗：' + err.message));
+    }
+
+    function callGasBackend(userId, displayName) {
+      $.ajax({
+        url: GAS_URL,
+        dataType: 'jsonp',
+        jsonp: 'callback',
+        timeout: JSONP_TIMEOUT,
+        data: { userId, displayName },
+        success: function(resp) {
+          if (resp.status === "error") {
+            showError(resp.message);
+          } else {
+            renderResult(resp);
+          }
+        },
+        error: function() { showError('與伺服器通訊失敗'); }
+      });
+    }
+
+    function renderResult(resp) {
+      document.getElementById('status').classList.add('hidden');
+      const card = document.getElementById('result-card');
+      const main = document.getElementById('result-main');
+      const details = document.getElementById('result-details');
+      const redirectBtn = document.getElementById('redirect-btn');
+      const note = document.getElementById('note');
+
+      if (resp.isAdmin) {
+        main.innerHTML = `專業用戶：${resp.displayName}`;
+        details.innerHTML = resp.remainingDays != null
+          ? `剩餘天數：${resp.remainingDays} 天`
+          : `剩餘天數：無限制`;
+      } else {
+        main.innerHTML = `普通用戶：${resp.displayName}`;
+        details.innerHTML = typeof resp.usageCount !== 'undefined'
+          ? `剩餘次數：${3 - resp.usageCount}`
+          : `剩餘次數：未知`;
+      }
+
+      if (resp.redirect && resp.redirectUrl) {
+        redirectBtn.classList.remove('hidden');
+        redirectBtn.onclick = () => attemptRedirect(resp.redirectUrl);
+        note.classList.remove('hidden');
+      }
+
+      card.classList.remove('hidden');
+    }
+
+    function attemptRedirect(url) {
+      try {
+        if (liff && liff.isInClient()) {
+          liff.openWindow({ url, external: true })
+            .catch(() => { window.location.href = url; });
+        } else {
+          window.location.href = url;
+        }
+      } catch {
+        window.location.href = url;
+      }
+    }
   </script>
 </body>
 </html>
