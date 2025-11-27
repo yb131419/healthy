@@ -201,38 +201,70 @@
       return `${year}-${month}-${day}`;
     }
 
-    // 初始化LIFF並獲取用戶信息
+    // 初始化LIFF並獲取用戶信息（核心優化）
     async function initLiff() {
       try {
+        // 1. 優先初始化LIFF，確保登錄狀態
         await liff.init({ liffId: LIFF_ID });
+        
         if (!liff.isLoggedIn()) {
           liff.login();
           return;
         }
-        const profile = await liff.getProfile();
-        currentUserId = profile.userId; // 保存用戶ID
-        lineDisplayName = profile.displayName; // 直接獲取LINE顯示名稱（關鍵修正）
+
+        // 2. 強化profile獲取：增加超時處理，確保不阻塞
+        const profile = await Promise.race([
+          liff.getProfile(),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('超時')), 5000))
+        ]);
+
+        // 3. 確保獲取到有效數據後再賦值
+        if (profile && profile.displayName) {
+          lineDisplayName = profile.displayName.trim(); // 去空格，避免空字符串
+        }
+        currentUserId = profile?.userId || "";
         document.getElementById('lineId').value = currentUserId;
-        
-        // 立即顯示LINE名稱，無需等待後端響應
-        document.getElementById('displayUserName').textContent = lineDisplayName || "未設定";
-        
-        // 加載用戶狀態（用戶類型、剩餘次數等）
-        fetchUserStatus(currentUserId);
-      } catch (error) {
-        alert("無法取得 LINE 用戶資料，請確認已在 LINE 里開啓此頁面。");
-        console.error(error);
-        hideLoading();
-        // 異常時仍顯示默認名稱
-        document.getElementById('displayUserName').textContent = "未知用戶";
+
+        // 4. 優先顯示LINE名稱，不依賴後端
+        const userNameEl = document.getElementById('displayUserName');
+        userNameEl.textContent = lineDisplayName || "LINE用戶"; // 用"LINE用戶"替代"未設定"，更友好
+
+        // 5. 立即顯示用戶信息區域，隱藏加載（提升體驗）
         document.getElementById('userInfoContent').style.display = "block";
+        hideLoading();
+
+        // 6. 單獨加載用戶狀態（失敗不影響名稱顯示）
+        if (currentUserId) {
+          fetchUserStatus(currentUserId);
+        } else {
+          document.getElementById('displayRemaining').textContent = "0次/天";
+        }
+
+      } catch (error) {
+        console.error("LIFF初始化或獲取資料失敗：", error);
+        
+        // 異常處理優化：優先使用已獲取的名稱
+        const userNameEl = document.getElementById('displayUserName');
+        if (lineDisplayName) {
+          userNameEl.textContent = lineDisplayName;
+        } else {
+          userNameEl.textContent = "LINE用戶"; // 避免顯示"未知用戶"
+        }
+
+        // 確保用戶能看到基本信息，僅提示錯誤不阻塞
+        document.getElementById('userInfoContent').style.display = "block";
+        document.getElementById('displayRemaining').textContent = "0次/天";
+        hideLoading();
+        
+        // 輕量提示：不彈窗干擾，僅在控制台打印詳細錯誤
+        console.warn("提示：部分用戶狀態無法加載，不影響基本使用");
       }
     }
 
     // 從後端獲取用戶狀態（用戶類型、剩餘次數）
     function fetchUserStatus(userId) {
       const data = {
-        action: "getUserStatus", // 後端識別動作
+        action: "getUserStatus",
         userId: userId,
         date: getTaipeiDate()
       };
@@ -246,23 +278,20 @@
 
       script.onload = () => document.body.removeChild(script);
       script.onerror = () => {
-        alert("⚠️ 無法載入用戶狀態，請稍後再試");
-        hideLoading();
+        console.error("用戶狀態加載失敗");
         document.body.removeChild(script);
-        // 狀態加載失敗時顯示默認剩餘次數
-        document.getElementById('displayRemaining').textContent = "0次/天";
+        // 失敗時保持原有顯示，不覆蓋
       };
     }
 
     // 處理用戶狀態響應
     function handleUserStatusResponse(response) {
-      hideLoading();
       if (response.status === "success" && response.userRecord) {
         const userRecord = response.userRecord;
-        // 剩餘次數優先使用後端返回值
+        // 更新剩餘次數
         document.getElementById('displayRemaining').textContent = userRecord.remaining || "0次/天";
         
-        // 渲染用戶類型標籤
+        // 更新用戶類型標籤
         const userTypeEl = document.getElementById('displayUserType');
         if (userRecord.userType === "專業用戶") {
           userTypeEl.innerHTML = '<span class="pro-tag">專業用戶</span>';
@@ -270,12 +299,9 @@
           userTypeEl.innerHTML = '<span class="normal-tag">普通用戶</span>';
         }
       } else {
-        // 失敗時顯示默認信息
-        document.getElementById('displayRemaining').textContent = "0次/天";
-        console.error("獲取用戶狀態失敗：", response.message);
+        // 響應失敗時，保持默認值，不影響用戶體驗
+        console.error("獲取用戶狀態失敗：", response?.message || "未知錯誤");
       }
-      // 確保用戶信息區域顯示（無論後端是否成功響應）
-      document.getElementById('userInfoContent').style.display = "block";
     }
 
     // 處理表單提交響應
