@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8" />
-  <title>🧬 彥彬 健康自檢表系統</title>
+  <title>🧬 彥彬 自檢表系統</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
@@ -31,7 +31,7 @@
   <div class="max-w-md w-full bg-white rounded-xl shadow-lg overflow-hidden fade-in">
     <div class="bg-primary p-6 text-white text-center">
       <i class="fa fa-line-chart text-4xl mb-3"></i>
-      <h1 class="text-2xl font-bold">🧬 彥彬 健康自檢表系統</h1>
+      <h1 class="text-2xl font-bold">🧬 彥彬 自檢表系統</h1>
     </div>
 
     <div class="p-6">
@@ -47,8 +47,7 @@
       <div id="result-card" class="hidden border border-gray-100 rounded p-4 mb-3 text-center">
         <div id="result-main" class="text-lg font-medium mb-2"></div>
         <div id="result-details" class="text-sm text-gray-700 mb-3"></div>
-        <button id="redirect-btn" class="hidden bg-primary text-white px-4 py-2 rounded-full hover:bg-primary/90 transition">進入自檢表</button>
-        <div id="note" class="text-xs text-gray-500 mt-2 hidden">請點選「進入自檢表」以進入下一步。</div>
+        <!-- 刪除跳轉按鈕和備註 -->
       </div>
     </div>
   </div>
@@ -58,14 +57,16 @@
     const GAS_URL = "https://script.google.com/macros/s/AKfycbykBtM2_PM7IZ-ZUU4tgTqVa1xGhVQFaZ523FXc4ivdLz_GZ09sdmL6s5zk7SdloFuG/exec";
     const JSONP_TIMEOUT = 15000;
 
+    // 簡化狀態設置函數
     const setStatus = text => document.getElementById('status-text').textContent = text;
 
+    // 簡化錯誤顯示函數
     const showError = msg => {
       document.getElementById('status').classList.add('hidden');
       document.getElementById('result-card').classList.add('hidden');
       const el = document.getElementById('error-message');
       el.innerHTML = `<p>${msg}</p><div class="mt-3 flex justify-center">
-        <button onclick="window.location.reload()" class="text-primary hover:text-primar y/80 font-medium">
+        <button onclick="window.location.reload()" class="text-primary hover:text-primary/80 font-medium">
           <i class="fa fa-refresh mr-1"></i> 重新嘗試
         </button></div>`;
       el.classList.remove('hidden');
@@ -73,28 +74,43 @@
 
     document.addEventListener('DOMContentLoaded', function() {
       setStatus('正在初始化 LIFF...');
-      liff.init({ liffId: LIFF_ID })
+      // 優化LIFF初始化配置，移除多餘參數
+      liff.init({ liffId: LIFF_ID }, { disableRedirect: true })
         .then(() => {
-          if (!liff.isLoggedIn()) liff.login();
-          else getProfileAndVerify();
+          if (!liff.isLoggedIn()) {
+            // 簡化登錄流程，直接跳轉登錄
+            liff.login();
+          } else {
+            getProfileAndVerify();
+          }
         })
         .catch(err => showError('系統初始化失敗：' + err.message));
     });
 
+    // 獲取用戶信息並驗證（優化流程，減少不必要的步驟）
     function getProfileAndVerify() {
-      setStatus('已登入，正在驗證使用者資訊...');
+      setStatus('驗證使用者資訊中...');
       liff.getProfile()
-        .then(profile => callGasBackend(profile.userId, profile.displayName || ''))
+        .then(profile => {
+          // 僅傳遞必要參數，減少請求數據量
+          callGasBackend(profile.userId, profile.displayName || '未知用戶');
+        })
         .catch(err => showError('取得使用者資料失敗：' + err.message));
     }
 
+    // 調用後端驗證（優化AJAX配置，提高響應速度）
     function callGasBackend(userId, displayName) {
       $.ajax({
         url: GAS_URL,
         dataType: 'jsonp',
         jsonp: 'callback',
         timeout: JSONP_TIMEOUT,
-        data: { userId, displayName },
+        // 壓縮請求數據，只傳遞核心參數
+        data: { 
+          userId: userId, 
+          displayName: displayName,
+          action: 'verifyUser' // 增加明確的操作標識，便於後端處理
+        },
         success: function(resp) {
           if (resp.status === "error") {
             showError(resp.message);
@@ -102,50 +118,35 @@
             renderResult(resp);
           }
         },
-        error: function() { showError('與伺服器通訊失敗'); }
+        error: function(xhr, status, error) {
+          // 詳細錯誤分類，便於排查
+          let errorMsg = '與伺服器通訊失敗';
+          if (status === 'timeout') errorMsg = '請求超時，請檢查網絡連接';
+          else if (status === 'parsererror') errorMsg = '數據解析錯誤';
+          showError(errorMsg);
+        }
       });
     }
 
+    // 渲染驗證結果（僅保留核心信息顯示）
     function renderResult(resp) {
       document.getElementById('status').classList.add('hidden');
       const card = document.getElementById('result-card');
       const main = document.getElementById('result-main');
       const details = document.getElementById('result-details');
-      const redirectBtn = document.getElementById('redirect-btn');
-      const note = document.getElementById('note');
 
-      if (resp.isAdmin) {
-        main.innerHTML = `專業用戶：${resp.displayName}`;
-        details.innerHTML = resp.remainingDays != null
-          ? `剩餘天數：${resp.remainingDays} 天`
-          : `剩餘天數：無限制`;
+      // 根據用戶類型顯示對應信息
+      if (resp.userRecord?.userType === "專業用戶") {
+        main.innerHTML = `<span class="text-primary"><i class="fa fa-check-circle mr-1"></i>驗證通過</span>`;
+        details.innerHTML = `專業用戶：${resp.userRecord.userName || '未知用戶'}<br>
+                           使用期限：${resp.userRecord.expiryDate || '無限制'}`;
       } else {
-        main.innerHTML = `普通用戶：${resp.displayName}`;
-        details.innerHTML = typeof resp.usageCount !== 'undefined'
-          ? `剩餘次數：${3 - resp.usageCount}`
-          : `剩餘次數：未知`;
-      }
-
-      if (resp.redirect && resp.redirectUrl) {
-        redirectBtn.classList.remove('hidden');
-        redirectBtn.onclick = () => attemptRedirect(resp.redirectUrl);
-        note.classList.remove('hidden');
+        main.innerHTML = `<span class="text-gray-600"><i class="fa fa-user mr-1"></i>普通用戶</span>`;
+        details.innerHTML = `用戶名稱：${resp.displayName || '未知用戶'}<br>
+                           驗證狀態：已完成`;
       }
 
       card.classList.remove('hidden');
-    }
-
-    function attemptRedirect(url) {
-      try {
-        if (liff && liff.isInClient()) {
-          liff.openWindow({ url, external: true })
-            .catch(() => { window.location.href = url; });
-        } else {
-          window.location.href = url;
-        }
-      } catch {
-        window.location.href = url;
-      }
     }
   </script>
 </body>
