@@ -102,7 +102,7 @@
         if (remainingDays < 0) {
           return "已過期";
         } else if (remainingDays === 0) {
-          return "最後1天";
+          return "1 天"; // 最後1天統一顯示為"1 天"
         } else {
           return `${remainingDays} 天`;
         }
@@ -168,7 +168,7 @@
       });
     }
 
-    // 渲染驗證結果（修復專業用戶識別，新增剩餘天數顯示）
+    // 渲染驗證結果（調整顯示格式，統一用語）
     function renderResult(resp) {
       document.getElementById('status').classList.add('hidden');
       const card = document.getElementById('result-card');
@@ -185,7 +185,10 @@
         // 專業用戶顯示邏輯
         const userName = resp.userRecord?.userName || resp.displayName || '未知用戶';
         const expiryDate = resp.userRecord?.expiryDate || '';
-        const remainingDays = expiryDate ? calculateRemainingDays(expiryDate) : '無限制';
+        // 計算剩餘天數：有日期則計算，無日期則顯示"無限制"
+        const remainingDays = expiryDate 
+          ? calculateRemainingDays(expiryDate) 
+          : '無限制';
 
         main.innerHTML = `<span class="text-primary"><i class="fa fa-check-circle mr-1"></i>專業用戶驗證通過</span>`;
         details.innerHTML = `用戶名稱：${userName}<br>
@@ -196,7 +199,7 @@
         const userName = resp.displayName || resp.userRecord?.userName || '未知用戶';
         main.innerHTML = `<span class="text-gray-600"><i class="fa fa-user mr-1"></i>普通用戶</span>`;
         details.innerHTML = `用戶名稱：${userName}<br>
-                           驗證狀態：已完成<br>
+                           使用期限：-<br>
                            剩餘天數：-`;
       }
 
