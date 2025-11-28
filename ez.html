@@ -229,6 +229,12 @@
         const userNameEl = document.getElementById('displayUserName');
         userNameEl.textContent = lineDisplayName || "LINE用戶"; // 用"LINE用戶"替代"未設定"，更友好
 
+        // 🌟 核心修改：自動用LINE顯示名稱填充姓名輸入框，避免空值
+        const nameInput = document.getElementById('name');
+        if (lineDisplayName && !nameInput.value) {
+          nameInput.value = lineDisplayName;
+        }
+
         // 5. 立即顯示用戶信息區域，隱藏加載（提升體驗）
         document.getElementById('userInfoContent').style.display = "block";
         hideLoading();
@@ -247,6 +253,11 @@
         const userNameEl = document.getElementById('displayUserName');
         if (lineDisplayName) {
           userNameEl.textContent = lineDisplayName;
+          // 異常時也填充姓名輸入框
+          const nameInput = document.getElementById('name');
+          if (!nameInput.value) {
+            nameInput.value = lineDisplayName;
+          }
         } else {
           userNameEl.textContent = "LINE用戶"; // 避免顯示"未知用戶"
         }
@@ -322,11 +333,6 @@
       }
     }
 
-    // 隱藏加載提示
-    function hideLoading() {
-      document.getElementById('userInfoLoading').style.display = "none";
-    }
-
     // 發送表單數據
     function sendData() {
       const data = {
@@ -334,7 +340,8 @@
         date: document.getElementById('date').value,
         lineId: document.getElementById('lineId').value,
         userId: document.getElementById('userId').value,
-        name: document.getElementById('name').value,
+        // 確保姓名字段不為空，這裡再次驗證
+        name: document.getElementById('name').value.trim() || "LINE用戶",
         phone: document.getElementById('phone').value,
         email: document.getElementById('email').value
       };
@@ -356,6 +363,13 @@
     // 表單提交事件
     document.getElementById('infoForm').addEventListener('submit', function(e) {
       e.preventDefault();
+      
+      // 再次驗證姓名是否為空，確保不會傳送空值
+      const nameInput = document.getElementById('name');
+      if (!nameInput.value.trim()) {
+        nameInput.value = lineDisplayName || "LINE用戶";
+      }
+
       if (!document.getElementById('lineId').value) {
         alert("LINE 用戶ID尚未取得，請重新載入頁面並登入 LINE。");
         return;
