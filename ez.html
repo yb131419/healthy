@@ -201,7 +201,7 @@
       return `${year}-${month}-${day}`;
     }
 
-    // 初始化LIFF並獲取用戶信息（核心優化）
+    // 初始化LIFF並獲取用戶信息（核心優化：登錄時僅獲取資訊，不發送通知）
     async function initLiff() {
       try {
         // 1. 優先初始化LIFF，確保登錄狀態
@@ -239,7 +239,7 @@
         document.getElementById('userInfoContent').style.display = "block";
         hideLoading();
 
-        // 6. 單獨加載用戶狀態（失敗不影響名稱顯示）
+        // 6. 單獨加載用戶狀態（僅查詢，不發送數據/通知）
         if (currentUserId) {
           fetchUserStatus(currentUserId);
         } else {
@@ -276,7 +276,7 @@
       }
     }
 
-    // 從後端獲取用戶狀態（用戶類型、剩餘次數）
+    // 從後端獲取用戶狀態（僅查詢，不觸發通知）
     function fetchUserStatus(userId) {
       const data = {
         action: "getUserStatus",
@@ -298,7 +298,7 @@
       };
     }
 
-    // 處理用戶狀態響應
+    // 處理用戶狀態響應（僅更新頁面，不發送通知）
     function handleUserStatusResponse(response) {
       if (response.status === "success" && response.userRecord) {
         const userRecord = response.userRecord;
@@ -317,15 +317,54 @@
       }
     }
 
-    // 處理表單提交響應
-    function handleResponse(response) {
+    // 🌟 新增：發送LINE通知（僅在資料提交成功後調用）
+    async function sendLineNotification(userName) {
+      try {
+        // 驗證是否可發送消息（確保在LINE環境或支持的LIFF環境）
+        if (!liff.isLoggedIn() || !liff.canSendMessages()) {
+          console.warn("無法發送LINE通知：用戶未登錄或環境不支持");
+          return false;
+        }
+
+        // 通知消息內容（可自定義）
+        const messages = [
+          {
+            type: "text",
+            text: `✅ 親愛的${userName}，您的資料已成功提交！\n\n📁 免費調整方案文件已發送至您的LINE對話框，敬請查收～\n\n如有任何疑問，歡迎隨時聯繫我們！`
+          }
+        ];
+
+        // 發送消息到用戶的LINE對話框
+        await liff.sendMessages(messages);
+        console.log("LINE通知發送成功");
+        return true;
+      } catch (error) {
+        console.error("發送LINE通知失敗：", error);
+        return false;
+      }
+    }
+
+    // 處理表單提交響應（核心修改：提交成功後發送通知）
+    async function handleResponse(response) {
       if (response.status === "success") {
-        alert("✅ 資料已成功送出！\n會用Line贈送免費調整方案！");
-        // 提交成功後更新剩餘次數
+        const userName = document.getElementById('name').value.trim() || "LINE用戶";
+        
+        // 1. 發送LINE通知（非阻塞，不影響後續操作）
+        const notificationSuccess = await sendLineNotification(userName);
+        
+        // 2. 提示用戶（根據通知發送結果調整提示內容）
+        if (notificationSuccess) {
+          alert(`✅ 資料已成功送出！\n\n📱 通知和免費調整方案已發送至您的LINE對話框，敬請查收～`);
+        } else {
+          alert(`✅ 資料已成功送出！\n\n⚠️ 通知發送失敗，方案文件將由管理員手動發送，敬請耐心等候～`);
+        }
+
+        // 3. 提交成功後更新剩餘次數
         if (response.userRecord) {
           document.getElementById('displayRemaining').textContent = response.userRecord.remaining || "0次/天";
         }
-        // 清空表單
+
+        // 4. 清空表單
         document.getElementById('userId').value = "";
         document.getElementById('name').value = "";
         document.getElementById('phone').value = "";
@@ -340,7 +379,7 @@
       document.getElementById('userInfoLoading').style.display = "none";
     }
 
-    // 發送表單數據
+    // 發送表單數據到工作表（僅提交時發送，登錄時不調用）
     function sendData() {
       // 🌟 第三層保障：最終兜底，確保姓名不為空
       const nameInput = document.getElementById('name');
@@ -389,7 +428,7 @@
         return;
       }
 
-      // 所有驗證通過後提交
+      // 所有驗證通過後提交（提交後才會發送數據到工作表和通知）
       sendData();
     });
 
