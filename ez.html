@@ -57,6 +57,14 @@
       color: #fff;
       font-weight: 500;
     }
+    .expired-tag {
+      color: #ff4444;
+      font-weight: 700;
+    }
+    .valid-tag {
+      color: #9acd32;
+      font-weight: 700;
+    }
     .pro-tag {
       background: #7ac70c;
       color: #121212;
@@ -173,11 +181,11 @@
   </style>
 </head>
 <body>
-  <!-- 主要內容（預設隱藏，僅專業用戶可見） -->
+  <!-- 主要內容（預設隱藏，僅有效專業用戶可見） -->
   <main id="mainContent" class="content-hidden">
     <h2>彥彬📘 資料填寫 <br> 免費調整方案 <br> 用戶填寫後 <br>『LINE發送文件』</h2>
 
-    <!-- 用戶信息展示區域 -->
+    <!-- 用戶信息展示區域 - 新增使用期限字段 -->
     <div class="user-info-card">
       <div class="user-info-title">👤 用戶狀態</div>
       <div id="userInfoLoading" class="loading">載入用戶資訊中...</div>
@@ -190,6 +198,12 @@
           <span class="user-info-label">用戶類型：</span>
           <span class="user-info-value" id="displayUserType">
             <span class="pro-tag">專業用戶</span>
+          </span>
+        </div>
+        <div class="user-info-item">
+          <span class="user-info-label">使用期限：</span>
+          <span class="user-info-value" id="displayExpiry">
+            <span class="loading">查詢中...</span>
           </span>
         </div>
         <div class="user-info-item">
@@ -220,14 +234,14 @@
     </form>
   </main>
 
-  <!-- 禁止訪問頁面（預設顯示，非專業用戶停留此頁） -->
+  <!-- 禁止訪問頁面（預設顯示，非專業用戶/過期用戶停留此頁） -->
   <main id="forbiddenContent">
     <div class="forbidden-page">
       <div class="forbidden-icon">❌</div>
-      <h3 class="forbidden-title">未授權訪問</h3>
-      <p class="forbidden-desc">
-        此頁面僅開放給「專業用戶」訪問<br>
-        若您有相關授權，請聯繫管理員升級賬號
+      <h3 class="forbidden-title" id="forbiddenTitle">未授權訪問</h3>
+      <p class="forbidden-desc" id="forbiddenDesc">
+        此頁面僅開放給「有效專業用戶」訪問<br>
+        若您有相關授權，請聯繫管理員確認賬號狀態
       </p>
       <button class="back-btn" onclick="window.close()">關閉頁面</button>
     </div>
@@ -239,7 +253,7 @@
     let currentUserId = "";
     let lineDisplayName = "";
 
-    // 獲取台北時區日期
+    // 獲取台北時區日期（格式化為YYYY-MM-DD）
     function getTaipeiDate() {
       const dtf = new Intl.DateTimeFormat('zh-TW', {
         timeZone: 'Asia/Taipei',
@@ -251,56 +265,84 @@
       return `${year}-${month}-${day}`;
     }
 
+    // 比較兩個日期（YYYY-MM-DD格式），返回true表示date1 <= date2
+    function compareDates(date1, date2) {
+      const d1 = new Date(date1);
+      const d2 = new Date(date2);
+      return d1 <= d2;
+    }
+
+    // 格式化日期顯示（YYYY-MM-DD → YYYY年MM月DD日）
+    function formatDateDisplay(dateStr) {
+      if (!dateStr) return "未設定";
+      const [year, month, day] = dateStr.split('-');
+      return `${year}年${month}月${day}日`;
+    }
+
     // 隱藏加載提示
     function hideLoading() {
       document.getElementById('userInfoLoading').style.display = "none";
     }
 
-    // 切換顯示頁面（核心：控制誰能看到表單）
+    // 切換顯示頁面
     function showMainContent() {
       document.getElementById('forbiddenContent').classList.add('content-hidden');
       document.getElementById('mainContent').classList.remove('content-hidden');
     }
 
-    function showForbiddenContent() {
+    function showForbiddenContent(title = "未授權訪問", desc = "此頁面僅開放給「有效專業用戶」訪問<br>若您有相關授權，請聯繫管理員確認賬號狀態") {
+      document.getElementById('forbiddenTitle').textContent = title;
+      document.getElementById('forbiddenDesc').innerHTML = desc;
       document.getElementById('mainContent').classList.add('content-hidden');
       document.getElementById('forbiddenContent').classList.remove('content-hidden');
     }
 
-    // 驗證用戶類型（關鍵新增功能）
-    async function verifyUserType(userId) {
+    // 驗證用戶狀態（用戶類型 + 使用期限雙重驗證）
+    async function verifyUserStatus(userId) {
       return new Promise((resolve, reject) => {
+        const today = getTaipeiDate();
         const data = {
           action: "getUserStatus",
           userId: userId,
-          date: getTaipeiDate()
+          date: today
         };
 
         const params = new URLSearchParams(data);
-        params.append('callback', 'handleUserTypeVerification');
+        params.append('callback', 'handleUserVerification');
 
-        // 創建臨時腳本用於JSONP請求
+        // 創建JSONP請求
         const script = document.createElement('script');
         script.src = SCRIPT_URL + "?" + params.toString();
         script.id = "verificationScript";
 
-        // 超時處理（5秒未回應判定為驗證失敗）
+        // 5秒超時處理
         const timeout = setTimeout(() => {
           document.body.removeChild(script);
           reject(new Error('驗證超時'));
         }, 5000);
 
-        // 全局回調函數（處理驗證結果）
-        window.handleUserTypeVerification = function(response) {
+        // 驗證回調函數
+        window.handleUserVerification = function(response) {
           clearTimeout(timeout);
           document.body.removeChild(script);
           
           if (response.status === "success" && response.userRecord) {
-            // 驗證通過：必須是專業用戶
-            resolve(response.userRecord.userType === "專業用戶");
+            const user = response.userRecord;
+            // 雙重驗證：1.是專業用戶 2.使用期限有效（未過期）
+            const isProfessional = user.userType === "專業用戶";
+            const expiryDate = user.expiryDate || ""; // 後端返回的使用期限（YYYY-MM-DD）
+            const isExpiryValid = !expiryDate ? false : compareDates(today, expiryDate);
+
+            resolve({
+              isValid: isProfessional && isExpiryValid,
+              userData: user // 返回完整用戶數據用於後續顯示
+            });
           } else {
-            // 未找到用戶記錄或請求失敗，判定為非專業用戶
-            resolve(false);
+            // 未找到用戶記錄或請求失敗，判定為無效
+            resolve({
+              isValid: false,
+              userData: null
+            });
           }
         };
 
@@ -315,40 +357,33 @@
       });
     }
 
-    // 加載用戶詳細狀態（僅專業用戶執行）
-    function fetchUserStatus(userId) {
-      const data = {
-        action: "getUserStatus",
-        userId: userId,
-        date: getTaipeiDate()
-      };
+    // 加載用戶詳細狀態並顯示
+    function displayUserStatus(userData) {
+      const today = getTaipeiDate();
+      const expiryDate = userData.expiryDate || "";
+      const isExpiryValid = compareDates(today, expiryDate);
 
-      const params = new URLSearchParams(data);
-      params.append('callback', 'handleUserStatusResponse');
+      // 填充用戶信息
+      document.getElementById('displayUserName').textContent = userData.name || lineDisplayName || "LINE用戶";
+      document.getElementById('displayRemaining').textContent = userData.remaining || "0次/天";
 
-      const script = document.createElement('script');
-      script.src = SCRIPT_URL + "?" + params.toString();
-      document.body.appendChild(script);
-
-      script.onload = () => document.body.removeChild(script);
-      script.onerror = () => {
-        console.error("用戶狀態加載失敗");
-        document.body.removeChild(script);
-        document.getElementById('displayRemaining').textContent = "0次/天";
-      };
-    }
-
-    // 處理用戶狀態響應
-    function handleUserStatusResponse(response) {
-      if (response.status === "success" && response.userRecord) {
-        const userRecord = response.userRecord;
-        document.getElementById('displayRemaining').textContent = userRecord.remaining || "0次/天";
-        
-        const userTypeEl = document.getElementById('displayUserType');
-        userTypeEl.innerHTML = '<span class="pro-tag">專業用戶</span>';
+      // 顯示使用期限（標記有效期狀態）
+      const expiryEl = document.getElementById('displayExpiry');
+      if (!expiryDate) {
+        expiryEl.innerHTML = "未設定 <span class='expired-tag'>(已過期)</span>";
       } else {
-        document.getElementById('displayRemaining').textContent = "0次/天";
+        const formattedDate = formatDateDisplay(expiryDate);
+        if (isExpiryValid) {
+          expiryEl.innerHTML = `${formattedDate} <span class='valid-tag'>(有效)</span>`;
+        } else {
+          expiryEl.innerHTML = `${formattedDate} <span class='expired-tag'>(已過期)</span>`;
+        }
       }
+
+      // 顯示用戶類型
+      document.getElementById('displayUserType').innerHTML = '<span class="pro-tag">專業用戶</span>';
+      document.getElementById('userInfoContent').style.display = "block";
+      hideLoading();
     }
 
     // 處理表單提交響應
@@ -358,6 +393,7 @@
         if (response.userRecord) {
           document.getElementById('displayRemaining').textContent = response.userRecord.remaining || "0次/天";
         }
+        // 清空表單
         document.getElementById('userId').value = "";
         document.getElementById('name').value = "";
         document.getElementById('phone').value = "";
@@ -393,7 +429,7 @@
       };
     }
 
-    // 初始化LIFF並執行用戶驗證（核心流程修改）
+    // 初始化LIFF並執行完整驗證流程
     async function initLiff() {
       try {
         // 1. 初始化LIFF
@@ -405,7 +441,7 @@
           return;
         }
 
-        // 3. 獲取LINE用戶資訊
+        // 3. 獲取LINE用戶基本信息
         const profile = await Promise.race([
           liff.getProfile(),
           new Promise((_, reject) => setTimeout(() => reject(new Error('超時')), 5000))
@@ -418,33 +454,47 @@
         currentUserId = profile.userId;
         lineDisplayName = profile.displayName?.trim() || "LINE用戶";
 
-        // 4. 關鍵步驟：驗證用戶是否為專業用戶
-        const isProfessional = await verifyUserType(currentUserId);
+        // 4. 核心驗證：用戶類型 + 使用期限
+        const verificationResult = await verifyUserStatus(currentUserId);
         
-        if (!isProfessional) {
-          // 非專業用戶：保持顯示禁止頁面
-          showForbiddenContent();
+        if (!verificationResult.isValid) {
+          // 驗證失敗：區分未授權和已過期
+          const userData = verificationResult.userData;
+          if (userData && userData.userType === "專業用戶") {
+            // 是專業用戶但已過期
+            const expiryDate = formatDateDisplay(userData.expiryDate);
+            showForbiddenContent(
+              "賬號已過期",
+              `您的專業用戶權限已於${expiryDate}過期<br>請聯繫管理員續期後再訪問`
+            );
+          } else {
+            // 非專業用戶
+            showForbiddenContent(
+              "未授權訪問",
+              "此頁面僅開放給「有效專業用戶」訪問<br>若您有相關授權，請聯繫管理員升級並設定使用期限"
+            );
+          }
           return;
         }
 
-        // 5. 專業用戶：顯示主頁面並加載詳細信息
+        // 5. 驗證成功：顯示主頁面並加載用戶詳細信息
         showMainContent();
         
-        // 6. 填充用戶基本信息
-        document.getElementById('displayUserName').textContent = lineDisplayName;
+        // 填充隱藏字段
         document.getElementById('lineId').value = currentUserId;
         document.getElementById('date').value = getTaipeiDate();
-        document.getElementById('userInfoContent').style.display = "block";
-        hideLoading();
-
-        // 7. 加載用戶剩餘次數等詳細狀態
-        fetchUserStatus(currentUserId);
+        
+        // 顯示用戶完整狀態
+        displayUserStatus(verificationResult.userData);
 
       } catch (error) {
         console.error("初始化失敗：", error);
-        // 任何錯誤都判定為未授權（加強安全性）
-        showForbiddenContent();
-        alert("⚠️ 用戶驗證失敗，請聯繫管理員");
+        // 任何錯誤都判定為未授權
+        showForbiddenContent(
+          "驗證失敗",
+          "用戶狀態驗證失敗，請檢查網絡連接或聯繫管理員"
+        );
+        alert("⚠️ 系統錯誤：" + error.message);
       }
     }
 
@@ -461,8 +511,8 @@
     // 頁面加載初始化
     window.onload = initLiff;
 
-    // 全局回調函數
-    window.handleUserStatusResponse = handleUserStatusResponse;
+    // 全局回調函數（用於JSONP）
+    window.handleUserVerification = function() {}; // 動態賦值，避免報錯
     window.handleResponse = handleResponse;
   </script>
 </body>
