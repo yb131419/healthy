@@ -147,7 +147,7 @@
       <div id="userInfoContent" style="display: none;">
         <div class="user-info-item">
           <span class="user-info-label">用戶名稱：</span>
-          <span class="user-info-value" id="displayUserName">-</span>
+          <span class="user-info-value" id="displayUserName">未填寫</span>
         </div>
         <div class="user-info-item">
           <span class="user-info-label">用戶類型：</span>
@@ -227,12 +227,15 @@
 
         // 4. 優先顯示LINE名稱，不依賴後端
         const userNameEl = document.getElementById('displayUserName');
-        userNameEl.textContent = lineDisplayName || "LINE用戶"; // 用"LINE用戶"替代"未設定"，更友好
+        // 修正：如果LINE名稱存在則顯示，否則顯示「未填寫」
+        userNameEl.textContent = lineDisplayName ? lineDisplayName : "未填寫";
 
         // 🌟 第一層保障：自動用LINE顯示名稱填充姓名輸入框（用戶可手動修改）
         const nameInput = document.getElementById('name');
         if (lineDisplayName && !nameInput.value) {
           nameInput.value = lineDisplayName;
+          // 同步更新用戶狀態卡片中的名稱
+          userNameEl.textContent = lineDisplayName;
         }
 
         // 5. 立即顯示用戶信息區域，隱藏加載（提升體驗）
@@ -251,20 +254,16 @@
         
         // 異常處理優化：優先使用已獲取的名稱
         const userNameEl = document.getElementById('displayUserName');
+        const nameInput = document.getElementById('name');
+        
         if (lineDisplayName) {
           userNameEl.textContent = lineDisplayName;
-          // 異常時也填充姓名輸入框
-          const nameInput = document.getElementById('name');
           if (!nameInput.value) {
             nameInput.value = lineDisplayName;
           }
         } else {
-          userNameEl.textContent = "LINE用戶";
-          // 異常時兜底填充默認名稱
-          const nameInput = document.getElementById('name');
-          if (!nameInput.value) {
-            nameInput.value = "LINE用戶";
-          }
+          userNameEl.textContent = "未填寫"; // 修正：異常時顯示「未填寫」而不是隨機文字
+          nameInput.value = ""; // 清空輸入框，避免默認值誤導用戶
         }
 
         // 確保用戶能看到基本信息，僅提示錯誤不阻塞
@@ -344,12 +343,12 @@
       }
     }
 
-    // 處理表單提交響應（核心修改：提交成功後發送通知）
+    // 處理表單提交響應（核心修改：提交成功後才發送通知）
     async function handleResponse(response) {
       if (response.status === "success") {
-        const userName = document.getElementById('name').value.trim() || "LINE用戶";
+        const userName = document.getElementById('name').value.trim() || "用戶";
         
-        // 1. 發送LINE通知（非阻塞，不影響後續操作）
+        // 1. 發送LINE通知（只有提交成功才發送）
         const notificationSuccess = await sendLineNotification(userName);
         
         // 2. 提示用戶（根據通知發送結果調整提示內容）
@@ -369,6 +368,8 @@
         document.getElementById('name').value = "";
         document.getElementById('phone').value = "";
         document.getElementById('email').value = "";
+        // 同步更新用戶狀態卡片中的名稱
+        document.getElementById('displayUserName').textContent = "未填寫";
       } else {
         alert("❌ 發生錯誤：" + response.message);
       }
@@ -381,9 +382,14 @@
 
     // 發送表單數據到工作表（僅提交時發送，登錄時不調用）
     function sendData() {
-      // 🌟 第三層保障：最終兜底，確保姓名不為空
+      // 🌟 第三層保障：最終兜底，確保姓名不為空（表單驗證已過，這裡做雙重保障）
       const nameInput = document.getElementById('name');
-      const finalName = nameInput.value.trim() || "LINE用戶"; // 空值時預設為"LINE用戶"
+      const finalName = nameInput.value.trim();
+      if (!finalName) {
+        alert("❌ 請輸入您的姓名！");
+        nameInput.focus();
+        return;
+      }
 
       const data = {
         pageId: document.getElementById('pageId').value,
@@ -409,11 +415,11 @@
       };
     }
 
-    // 表單提交事件（🌟 第二層保障：提交前強制驗證）
+    // 表單提交事件（🌟 核心修正：加強驗證，確保必填欄位填寫後才提交）
     document.getElementById('infoForm').addEventListener('submit', function(e) {
       e.preventDefault();
 
-      // 驗證姓名是否為空
+      // 1. 驗證姓名是否為空（必填欄位）
       const nameInput = document.getElementById('name');
       const nameValue = nameInput.value.trim();
       if (!nameValue) {
@@ -422,13 +428,14 @@
         return;
       }
 
-      // 驗證LINE ID是否存在
-      if (!document.getElementById('lineId').value) {
+      // 2. 驗證LINE ID是否存在（確保用戶已登錄）
+      const lineIdValue = document.getElementById('lineId').value;
+      if (!lineIdValue) {
         alert("❌ LINE 用戶ID尚未取得，請重新載入頁面並登入 LINE。");
         return;
       }
 
-      // 所有驗證通過後提交（提交後才會發送數據到工作表和通知）
+      // 3. 所有驗證通過後才提交（確保只有填寫完整才發送數據和通知）
       sendData();
     });
 
