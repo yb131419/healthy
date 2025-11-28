@@ -228,7 +228,7 @@
   <main id="mainContent" class="content-hidden">
     <h2>彥彬📘 資料填寫 <br> 免費調整方案 <br> 用戶填寫後 <br>『LINE發送文件』</h2>
 
-    <!-- 用戶信息展示區域 - 新增使用期限顯示 -->
+    <!-- 用戶信息展示區域 - 僅保留用戶名稱、用戶類型、使用期限 -->
     <div class="user-info-card">
       <div class="user-info-title">👤 用戶狀態</div>
       <div id="userInfoLoading" class="loading">載入用戶資訊中...</div>
@@ -248,10 +248,6 @@
           <span class="user-info-value" id="displayExpiry">
             <span class="loading">查詢中...</span>
           </span>
-        </div>
-        <div class="user-info-item">
-          <span class="user-info-label">今日剩餘次數：</span>
-          <span class="user-info-value" id="displayRemaining">-</span>
         </div>
       </div>
     </div>
@@ -422,7 +418,7 @@
       });
     }
 
-    // 加載用戶詳細信息並顯示（重點：專業用戶日期格式強制為 2035/12/31）
+    // 加載用戶詳細信息並顯示（僅保留名稱、類型、期限）
     function displayUserInfo(userData) {
       const today = getTaipeiDate();
       const userType = userData?.userType || "普通用戶";
@@ -457,9 +453,6 @@
           expiryEl.innerHTML = `${formattedExpiry} <span class='expired-tag'>(已過期)</span>`;
         }
       }
-      
-      // 4. 今日剩餘次數
-      document.getElementById('displayRemaining').textContent = userData?.remaining || "0次/天";
 
       // 顯示用戶信息，隱藏加載
       document.getElementById('userInfoContent').style.display = "block";
@@ -470,10 +463,9 @@
     function handleResponse(response) {
       if (response.status === "success") {
         alert("✅ 資料已成功送出！\n會用Line贈送免費調整方案！");
-        // 提交成功後更新剩餘次數和使用期限
+        // 提交成功後更新使用期限
         if (response.userRecord) {
           const userType = response.userRecord.userType || "普通用戶";
-          document.getElementById('displayRemaining').textContent = response.userRecord.remaining || "0次/天";
           
           // 同步更新使用期限（專業用戶格式強制處理）
           if (response.userRecord.expiryDate) {
@@ -566,7 +558,7 @@
         document.getElementById('lineId').value = currentUserId;
         document.getElementById('date').value = getTaipeiDate();
         
-        // 顯示用戶詳細信息（專業用戶日期格式強制為 2035/12/31）
+        // 顯示用戶詳細信息（僅保留名稱、類型、期限）
         displayUserInfo(verificationResult.userData);
 
       } catch (error) {
