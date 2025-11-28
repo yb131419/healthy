@@ -28,6 +28,36 @@
       padding: 32px 28px;
       text-align: center;
     }
+    /* 驗證加載頁面樣式 - 新增 */
+    .verification-page {
+      padding: 40px 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    .verification-icon {
+      font-size: 3rem;
+      color: #9acd32;
+      margin-bottom: 20px;
+      animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse {
+      0% { opacity: 0.6; }
+      50% { opacity: 1; }
+      100% { opacity: 0.6; }
+    }
+    .verification-title {
+      font-size: 1.3rem;
+      color: #9acd32;
+      margin-bottom: 16px;
+      font-weight: 700;
+    }
+    .verification-desc {
+      font-size: 0.95rem;
+      color: #ccc;
+      line-height: 1.6;
+    }
     /* 用戶信息卡片樣式 */
     .user-info-card {
       background: #2a2a2a;
@@ -181,7 +211,19 @@
   </style>
 </head>
 <body>
-  <!-- 主要內容（預設隱藏，僅有效專業用戶可見） -->
+  <!-- 1. 驗證頁面（預設顯示在最前面，用戶打開先看到） -->
+  <main id="verificationContent">
+    <div class="verification-page">
+      <div class="verification-icon">🔍</div>
+      <h3 class="verification-title">用戶身份驗證中...</h3>
+      <p class="verification-desc">
+        正在驗證您的專業用戶權限<br>
+        請稍候，驗證過程不超過5秒
+      </p>
+    </div>
+  </main>
+
+  <!-- 2. 主要內容（驗證成功後顯示） -->
   <main id="mainContent" class="content-hidden">
     <h2>彥彬📘 資料填寫 <br> 免費調整方案 <br> 用戶填寫後 <br>『LINE發送文件』</h2>
 
@@ -234,8 +276,8 @@
     </form>
   </main>
 
-  <!-- 禁止訪問頁面（預設顯示，非專業用戶/過期用戶停留此頁） -->
-  <main id="forbiddenContent">
+  <!-- 3. 禁止訪問頁面（驗證失敗後顯示） -->
+  <main id="forbiddenContent" class="content-hidden">
     <div class="forbidden-page">
       <div class="forbidden-icon">❌</div>
       <h3 class="forbidden-title" id="forbiddenTitle">未授權訪問</h3>
@@ -284,16 +326,20 @@
       document.getElementById('userInfoLoading').style.display = "none";
     }
 
-    // 切換顯示頁面
+    // 切換頁面顯示（核心：控制驗證後的頁面切換）
+    function hideVerificationPage() {
+      document.getElementById('verificationContent').classList.add('content-hidden');
+    }
+
     function showMainContent() {
-      document.getElementById('forbiddenContent').classList.add('content-hidden');
+      hideVerificationPage();
       document.getElementById('mainContent').classList.remove('content-hidden');
     }
 
     function showForbiddenContent(title = "未授權訪問", desc = "此頁面僅開放給「有效專業用戶」訪問<br>若您有相關授權，請聯繫管理員確認賬號狀態") {
+      hideVerificationPage();
       document.getElementById('forbiddenTitle').textContent = title;
       document.getElementById('forbiddenDesc').innerHTML = desc;
-      document.getElementById('mainContent').classList.add('content-hidden');
       document.getElementById('forbiddenContent').classList.remove('content-hidden');
     }
 
@@ -429,13 +475,13 @@
       };
     }
 
-    // 初始化LIFF並執行完整驗證流程
+    // 初始化LIFF並執行完整驗證流程（驗證頁面置前）
     async function initLiff() {
       try {
-        // 1. 初始化LIFF
+        // 1. 初始化LIFF（此時用戶看到的是驗證頁面）
         await liff.init({ liffId: LIFF_ID });
         
-        // 2. 未登入則引導登入
+        // 2. 未登入則引導登入（保持原有邏輯）
         if (!liff.isLoggedIn()) {
           liff.login();
           return;
@@ -454,11 +500,11 @@
         currentUserId = profile.userId;
         lineDisplayName = profile.displayName?.trim() || "LINE用戶";
 
-        // 4. 核心驗證：用戶類型 + 使用期限
+        // 4. 核心驗證：用戶類型 + 使用期限（驗證過程中用戶仍看到驗證頁面）
         const verificationResult = await verifyUserStatus(currentUserId);
         
         if (!verificationResult.isValid) {
-          // 驗證失敗：區分未授權和已過期
+          // 驗證失敗：顯示禁止頁面
           const userData = verificationResult.userData;
           if (userData && userData.userType === "專業用戶") {
             // 是專業用戶但已過期
@@ -489,7 +535,7 @@
 
       } catch (error) {
         console.error("初始化失敗：", error);
-        // 任何錯誤都判定為未授權
+        // 任何錯誤都顯示驗證失敗頁面
         showForbiddenContent(
           "驗證失敗",
           "用戶狀態驗證失敗，請檢查網絡連接或聯繫管理員"
@@ -508,7 +554,7 @@
       sendData();
     });
 
-    // 頁面加載初始化
+    // 頁面加載初始化（直接執行驗證，用戶先看到驗證頁面）
     window.onload = initLiff;
 
     // 全局回調函數（用於JSONP）
