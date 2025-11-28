@@ -28,7 +28,7 @@
       padding: 32px 28px;
       text-align: center;
     }
-    /* 驗證加載頁面樣式 */
+    /* 驗證加載頁面樣式（置頂顯示） */
     .verification-page {
       padding: 40px 20px;
       display: flex;
@@ -87,14 +87,6 @@
       color: #fff;
       font-weight: 500;
     }
-    .expired-tag {
-      color: #ff4444;
-      font-weight: 700;
-    }
-    .valid-tag {
-      color: #9acd32;
-      font-weight: 700;
-    }
     .pro-tag {
       background: #7ac70c;
       color: #121212;
@@ -111,15 +103,35 @@
       font-size: 0.8rem;
       font-weight: 700;
     }
-    /* 過期提示樣式 */
-    .expiry-alert {
-      background: rgba(255,68,68,0.15);
-      border-left: 3px solid #ff4444;
-      padding: 10px 12px;
-      margin-top: 15px;
-      border-radius: 6px;
-      font-size: 0.9rem;
-      color: #ffcccc;
+    /* 禁止訪問頁面樣式 */
+    .forbidden-page {
+      padding: 40px 20px;
+    }
+    .forbidden-icon {
+      font-size: 4rem;
+      color: #ff4444;
+      margin-bottom: 20px;
+    }
+    .forbidden-title {
+      font-size: 1.5rem;
+      color: #ff4444;
+      margin-bottom: 16px;
+      font-weight: 700;
+    }
+    .forbidden-desc {
+      font-size: 1rem;
+      color: #ccc;
+      line-height: 1.6;
+      margin-bottom: 24px;
+    }
+    .back-btn {
+      background: #3a3a3a;
+      color: #eee;
+      box-shadow: none;
+    }
+    .back-btn:hover {
+      background: #4a4a4a;
+      box-shadow: none;
     }
     /* 標題樣式 */
     h2 {
@@ -178,63 +190,26 @@
       background: linear-gradient(135deg, #4a9c00, #7ac70c);
       box-shadow: 0 6px 20px rgba(122,199,12,0.7);
     }
-    /* 禁用按鈕樣式 */
-    button:disabled {
-      background: linear-gradient(135deg, #666, #444);
-      cursor: not-allowed;
-      box-shadow: none;
-      opacity: 0.7;
-    }
     /* 加載提示樣式 */
     .loading {
       color: #9acd32;
       padding: 10px 0;
       font-size: 0.95rem;
     }
-    /* 禁止訪問頁面樣式 */
-    .forbidden-page {
-      padding: 40px 20px;
-    }
-    .forbidden-icon {
-      font-size: 4rem;
-      color: #ff4444;
-      margin-bottom: 20px;
-    }
-    .forbidden-title {
-      font-size: 1.5rem;
-      color: #ff4444;
-      margin-bottom: 16px;
-      font-weight: 700;
-    }
-    .forbidden-desc {
-      font-size: 1rem;
-      color: #ccc;
-      line-height: 1.6;
-      margin-bottom: 24px;
-    }
-    .back-btn {
-      background: #3a3a3a;
-      color: #eee;
-      box-shadow: none;
-    }
-    .back-btn:hover {
-      background: #4a4a4a;
-      box-shadow: none;
-    }
-    /* 內容隱藏類 */
+    /* 內容隱藏類（控制頁面切換） */
     .content-hidden {
       display: none !important;
     }
   </style>
 </head>
 <body>
-  <!-- 1. 驗證頁面（預設顯示在最前面） -->
+  <!-- 1. 驗證頁面（預設顯示在最前面，用戶打開先看到） -->
   <main id="verificationContent">
     <div class="verification-page">
       <div class="verification-icon">🔍</div>
       <h3 class="verification-title">用戶身份驗證中...</h3>
       <p class="verification-desc">
-        正在驗證您的專業用戶權限<br>
+        正在驗證您的訪問權限<br>
         請稍候，驗證過程不超過5秒
       </p>
     </div>
@@ -244,7 +219,7 @@
   <main id="mainContent" class="content-hidden">
     <h2>彥彬📘 資料填寫 <br> 免費調整方案 <br> 用戶填寫後 <br>『LINE發送文件』</h2>
 
-    <!-- 用戶信息展示區域 - 新增過期提示容器 -->
+    <!-- 用戶信息展示區域 -->
     <div class="user-info-card">
       <div class="user-info-title">👤 用戶狀態</div>
       <div id="userInfoLoading" class="loading">載入用戶資訊中...</div>
@@ -256,18 +231,12 @@
         <div class="user-info-item">
           <span class="user-info-label">用戶類型：</span>
           <span class="user-info-value" id="displayUserType">
-            <span class="pro-tag">專業用戶</span>
+            <span class="normal-tag">普通用戶</span>
           </span>
         </div>
         <div class="user-info-item">
-          <span class="user-info-label">使用期限：</span>
-          <span class="user-info-value" id="displayExpiry">
-            <span class="loading">查詢中...</span>
-          </span>
-        </div>
-        <!-- 過期提示容器（預設隱藏） -->
-        <div id="expiryAlert" class="expiry-alert content-hidden">
-          ⚠️ 您的專業用戶權限已過期，請聯繫管理員續期後再提交資料
+          <span class="user-info-label">今日剩餘次數：</span>
+          <span class="user-info-value" id="displayRemaining">-</span>
         </div>
       </div>
     </div>
@@ -289,18 +258,18 @@
       <label for="email">信箱</label>
       <input type="email" id="email" name="email" autocomplete="off" placeholder="請輸入電子郵件" />
 
-      <button type="submit" id="submitBtn">送出</button>
+      <button type="submit">送出</button>
     </form>
   </main>
 
-  <!-- 3. 禁止訪問頁面（僅非專業用戶顯示） -->
+  <!-- 3. 禁止訪問頁面（驗證失敗後顯示） -->
   <main id="forbiddenContent" class="content-hidden">
     <div class="forbidden-page">
       <div class="forbidden-icon">❌</div>
       <h3 class="forbidden-title" id="forbiddenTitle">未授權訪問</h3>
       <p class="forbidden-desc" id="forbiddenDesc">
-        此頁面僅開放給「專業用戶」訪問<br>
-        若您有相關授權，請聯繫管理員確認賬號狀態
+        您的賬號未通過訪問驗證<br>
+        若您有合法授權，請聯繫管理員確認賬號狀態
       </p>
       <button class="back-btn" onclick="window.close()">關閉頁面</button>
     </div>
@@ -311,9 +280,8 @@
     const LIFF_ID = "2008578880-NznKeG2a";
     let currentUserId = "";
     let lineDisplayName = "";
-    let isUserExpired = false; // 標記用戶是否過期
 
-    // 獲取台北時區日期（格式化為YYYY-MM-DD）
+    // 獲取台北時區日期
     function getTaipeiDate() {
       const dtf = new Intl.DateTimeFormat('zh-TW', {
         timeZone: 'Asia/Taipei',
@@ -325,26 +293,7 @@
       return `${year}-${month}-${day}`;
     }
 
-    // 比較兩個日期（YYYY-MM-DD格式），返回true表示date1 <= date2
-    function compareDates(date1, date2) {
-      const d1 = new Date(date1);
-      const d2 = new Date(date2);
-      return d1 <= d2;
-    }
-
-    // 格式化日期顯示（YYYY-MM-DD → YYYY年MM月DD日）
-    function formatDateDisplay(dateStr) {
-      if (!dateStr) return "未設定";
-      const [year, month, day] = dateStr.split('-');
-      return `${year}年${month}月${day}日`;
-    }
-
-    // 隱藏加載提示
-    function hideLoading() {
-      document.getElementById('userInfoLoading').style.display = "none";
-    }
-
-    // 切換頁面顯示
+    // 切換頁面顯示（核心：控制驗證後的頁面切換）
     function hideVerificationPage() {
       document.getElementById('verificationContent').classList.add('content-hidden');
     }
@@ -354,64 +303,49 @@
       document.getElementById('mainContent').classList.remove('content-hidden');
     }
 
-    function showForbiddenContent(title = "未授權訪問", desc = "此頁面僅開放給「專業用戶」訪問<br>若您有相關授權，請聯繫管理員確認賬號狀態") {
+    function showForbiddenContent(title = "未授權訪問", desc = "您的賬號未通過訪問驗證<br>若您有合法授權，請聯繫管理員確認賬號狀態") {
       hideVerificationPage();
       document.getElementById('forbiddenTitle').textContent = title;
       document.getElementById('forbiddenDesc').innerHTML = desc;
       document.getElementById('forbiddenContent').classList.remove('content-hidden');
     }
 
-    // 驗證用戶狀態（僅驗證是否為專業用戶，不限制過期狀態）
-    async function verifyUserStatus(userId) {
+    // 核心驗證函數：驗證用戶是否有訪問權限（可根據需求調整驗證規則）
+    async function verifyUserAccess() {
       return new Promise((resolve, reject) => {
         const today = getTaipeiDate();
         const data = {
           action: "getUserStatus",
-          userId: userId,
+          userId: currentUserId,
           date: today
         };
 
         const params = new URLSearchParams(data);
-        params.append('callback', 'handleUserVerification');
+        params.append('callback', 'handleVerificationResponse');
 
         // 創建JSONP請求
         const script = document.createElement('script');
         script.src = SCRIPT_URL + "?" + params.toString();
         script.id = "verificationScript";
 
-        // 5秒超時處理
+        // 5秒超時處理（避免無限等待）
         const timeout = setTimeout(() => {
           document.body.removeChild(script);
           reject(new Error('驗證超時'));
         }, 5000);
 
         // 驗證回調函數
-        window.handleUserVerification = function(response) {
+        window.handleVerificationResponse = function(response) {
           clearTimeout(timeout);
           document.body.removeChild(script);
           
-          if (response.status === "success" && response.userRecord) {
-            const user = response.userRecord;
-            // 僅驗證是否為專業用戶（不驗證過期狀態，後續單獨處理）
-            const isProfessional = user.userType === "專業用戶";
-            
-            // 計算是否過期
-            const expiryDate = user.expiryDate || "";
-            const isExpiryValid = !expiryDate ? false : compareDates(today, expiryDate);
-
-            resolve({
-              isProfessional: isProfessional, // 是否為專業用戶
-              isExpired: !isExpiryValid,      // 是否過期
-              userData: user                  // 完整用戶數據
-            });
-          } else {
-            // 未找到用戶記錄，判定為非專業用戶
-            resolve({
-              isProfessional: false,
-              isExpired: false,
-              userData: null
-            });
-          }
+          // 驗證規則：1. 後端返回成功 2. 用戶記錄存在（可根據需求擴充，如添加用戶類型、期限驗證）
+          const isVerified = response.status === "success" && response.userRecord;
+          
+          resolve({
+            isVerified: isVerified,
+            userData: response.userRecord || null
+          });
         };
 
         document.body.appendChild(script);
@@ -425,50 +359,35 @@
       });
     }
 
-    // 加載用戶詳細狀態並顯示（處理過期狀態）
-    function displayUserStatus(userData, isExpired) {
-      const today = getTaipeiDate();
-      const expiryDate = userData.expiryDate || "";
-      isUserExpired = isExpired; // 保存過期狀態
-
-      // 填充用戶信息（優先顯示後端存儲的名稱，其次是LINE暱稱）
-      document.getElementById('displayUserName').textContent = userData.name || lineDisplayName || "LINE用戶";
-
-      // 顯示使用期限（標記有效期狀態）
-      const expiryEl = document.getElementById('displayExpiry');
-      if (!expiryDate) {
-        expiryEl.innerHTML = "未設定 <span class='expired-tag'>(已過期)</span>";
-      } else {
-        const formattedDate = formatDateDisplay(expiryDate);
-        if (isExpired) {
-          expiryEl.innerHTML = `${formattedDate} <span class='expired-tag'>(已過期)</span>`;
-        } else {
-          expiryEl.innerHTML = `${formattedDate} <span class='valid-tag'>(有效)</span>`;
-        }
-      }
-
-      // 處理過期提示和按鈕狀態
-      const expiryAlert = document.getElementById('expiryAlert');
-      const submitBtn = document.getElementById('submitBtn');
+    // 加載用戶詳細信息並顯示
+    function displayUserInfo(userData) {
+      // 填充用戶名稱（優先後端數據，其次LINE暱稱）
+      document.getElementById('displayUserName').textContent = userData?.name || lineDisplayName || "LINE用戶";
       
-      if (isExpired) {
-        expiryAlert.classList.remove('content-hidden'); // 顯示過期提示
-        submitBtn.disabled = true; // 禁用提交按鈕
+      // 填充用戶類型
+      const userTypeEl = document.getElementById('displayUserType');
+      if (userData?.userType === "專業用戶") {
+        userTypeEl.innerHTML = '<span class="pro-tag">專業用戶</span>';
       } else {
-        expiryAlert.classList.add('content-hidden'); // 隱藏過期提示
-        submitBtn.disabled = false; // 啟用提交按鈕
+        userTypeEl.innerHTML = '<span class="normal-tag">普通用戶</span>';
       }
+      
+      // 填充剩餘次數
+      document.getElementById('displayRemaining').textContent = userData?.remaining || "0次/天";
 
-      // 顯示用戶類型
-      document.getElementById('displayUserType').innerHTML = '<span class="pro-tag">專業用戶</span>';
+      // 顯示用戶信息，隱藏加載
       document.getElementById('userInfoContent').style.display = "block";
-      hideLoading();
+      document.getElementById('userInfoLoading').style.display = "none";
     }
 
     // 處理表單提交響應
     function handleResponse(response) {
       if (response.status === "success") {
         alert("✅ 資料已成功送出！\n會用Line贈送免費調整方案！");
+        // 提交成功後更新剩餘次數
+        if (response.userRecord) {
+          document.getElementById('displayRemaining').textContent = response.userRecord.remaining || "0次/天";
+        }
         // 清空表單
         document.getElementById('userId').value = "";
         document.getElementById('name').value = "";
@@ -479,14 +398,8 @@
       }
     }
 
-    // 發送表單數據（添加過期檢查）
+    // 發送表單數據
     function sendData() {
-      // 若用戶已過期，直接提示不發送請求
-      if (isUserExpired) {
-        alert("⚠️ 您的專業用戶權限已過期，請聯繫管理員續期後再提交！");
-        return;
-      }
-
       const data = {
         pageId: document.getElementById('pageId').value,
         date: document.getElementById('date').value,
@@ -511,19 +424,19 @@
       };
     }
 
-    // 初始化LIFF並執行完整驗證流程
+    // 初始化LIFF並執行完整驗證流程（驗證頁面置頂）
     async function initLiff() {
       try {
-        // 1. 初始化LIFF（用戶看到驗證頁面）
+        // 1. 初始化LIFF（此時用戶看到的是驗證頁面）
         await liff.init({ liffId: LIFF_ID });
         
-        // 2. 未登入則引導登入
+        // 2. 未登入則引導登入（保持原有邏輯）
         if (!liff.isLoggedIn()) {
           liff.login();
           return;
         }
 
-        // 3. 獲取LINE用戶基本信息（User ID）
+        // 3. 獲取LINE用戶基本信息（用於驗證和顯示）
         const profile = await Promise.race([
           liff.getProfile(),
           new Promise((_, reject) => setTimeout(() => reject(new Error('超時')), 5000))
@@ -533,31 +446,31 @@
           throw new Error('無法獲取用戶ID');
         }
 
-        currentUserId = profile.userId; // 對應專業用戶列表的User ID
+        currentUserId = profile.userId;
         lineDisplayName = profile.displayName?.trim() || "LINE用戶";
 
-        // 4. 核心驗證：是否為專業用戶（單獨處理過期狀態）
-        const verificationResult = await verifyUserStatus(currentUserId);
+        // 4. 核心步驟：執行用戶訪問驗證（驗證不通過則跳轉禁止頁）
+        const verificationResult = await verifyUserAccess();
         
-        if (!verificationResult.isProfessional) {
-          // 非專業用戶：顯示禁止訪問頁面
+        if (!verificationResult.isVerified) {
+          // 驗證失敗：顯示禁止訪問頁面
           showForbiddenContent();
           return;
         }
 
-        // 5. 是專業用戶：顯示主頁面，並展示過期狀態
+        // 5. 驗證成功：顯示主頁面並加載用戶信息
         showMainContent();
         
-        // 填充隱藏字段（Line ID對應專業用戶列表的User ID）
+        // 填充隱藏字段
         document.getElementById('lineId').value = currentUserId;
         document.getElementById('date').value = getTaipeiDate();
         
-        // 顯示用戶完整狀態（包含過期提示）
-        displayUserStatus(verificationResult.userData, verificationResult.isExpired);
+        // 顯示用戶詳細信息
+        displayUserInfo(verificationResult.userData);
 
       } catch (error) {
-        console.error("初始化失敗：", error);
-        // 任何錯誤都顯示驗證失敗頁面
+        console.error("初始化或驗證失敗：", error);
+        // 任何錯誤都判定為驗證失敗，顯示禁止頁面
         showForbiddenContent(
           "驗證失敗",
           "用戶狀態驗證失敗，請檢查網絡連接或聯繫管理員"
@@ -576,11 +489,11 @@
       sendData();
     });
 
-    // 頁面加載初始化
+    // 頁面加載初始化（直接執行驗證流程，用戶先看到驗證頁）
     window.onload = initLiff;
 
     // 全局回調函數（用於JSONP）
-    window.handleUserVerification = function() {}; // 動態賦值，避免報錯
+    window.handleVerificationResponse = function() {}; // 動態賦值，避免報錯
     window.handleResponse = handleResponse;
   </script>
 </body>
