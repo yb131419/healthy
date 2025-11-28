@@ -72,7 +72,7 @@
       el.classList.remove('hidden');
     };
 
-    // 計算剩餘天數（嚴格支持2035/12/31格式）
+    // 計算剩餘天數（嚴格支持2035/12/31格式，僅返回天數/狀態）
     const calculateRemainingDays = (expiryDateStr) => {
       try {
         // 驗證日期格式（2035/12/31）
@@ -101,10 +101,8 @@
 
         if (remainingDays < 0) {
           return "已過期";
-        } else if (remainingDays === 0) {
-          return "1 天"; // 最後1天統一顯示為"1 天"
         } else {
-          return `${remainingDays} 天`;
+          return `${remainingDays} 天`; // 統一返回「X 天」格式，包含最後1天（1 天）
         }
       } catch (error) {
         console.error("計算剩餘天數失敗：", error);
@@ -168,7 +166,7 @@
       });
     }
 
-    // 渲染驗證結果（調整顯示格式，統一用語）
+    // 渲染驗證結果（嚴格按照需求：使用期限顯示日期，剩餘天數顯示天數）
     function renderResult(resp) {
       document.getElementById('status').classList.add('hidden');
       const card = document.getElementById('result-card');
@@ -182,20 +180,19 @@
         (resp.userRecord?.userType && resp.userRecord.userType.includes("專業"));
 
       if (isProUser) {
-        // 專業用戶顯示邏輯
+        // 專業用戶顯示邏輯：嚴格顯示日期和天數
         const userName = resp.userRecord?.userName || resp.displayName || '未知用戶';
-        const expiryDate = resp.userRecord?.expiryDate || '';
-        // 計算剩餘天數：有日期則計算，無日期則顯示"無限制"
-        const remainingDays = expiryDate 
+        const expiryDate = resp.userRecord?.expiryDate || '無限制'; // 有日期顯示日期，無則顯示"無限制"
+        const remainingDays = expiryDate !== '無限制' 
           ? calculateRemainingDays(expiryDate) 
           : '無限制';
 
         main.innerHTML = `<span class="text-primary"><i class="fa fa-check-circle mr-1"></i>專業用戶驗證通過</span>`;
         details.innerHTML = `用戶名稱：${userName}<br>
-                           使用期限：${expiryDate || '無限制'}<br>
+                           使用期限：${expiryDate}<br>
                            剩餘天數：${remainingDays}`;
       } else {
-        // 普通用戶顯示邏輯
+        // 普通用戶顯示邏輯：統一用"-"占位
         const userName = resp.displayName || resp.userRecord?.userName || '未知用戶';
         main.innerHTML = `<span class="text-gray-600"><i class="fa fa-user mr-1"></i>普通用戶</span>`;
         details.innerHTML = `用戶名稱：${userName}<br>
