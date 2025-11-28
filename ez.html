@@ -15,9 +15,9 @@
       color: #eee;
       display: flex;
       justify-content: center;
-      align-items: flex-start;
+      align-items: center;
       min-height: 100vh;
-      padding: 40px 20px;
+      padding: 20px;
     }
     main {
       background: #1f1f1f;
@@ -26,6 +26,7 @@
       width: 100%;
       max-width: 420px;
       padding: 32px 28px;
+      text-align: center;
     }
     /* 用戶信息卡片樣式 */
     .user-info-card {
@@ -35,6 +36,7 @@
       margin-bottom: 28px;
       border-left: 4px solid #9acd32;
       box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      text-align: left;
     }
     .user-info-title {
       font-size: 1.1rem;
@@ -71,21 +73,22 @@
       font-size: 0.8rem;
       font-weight: 700;
     }
-    /* 原有樣式保持不變 */
+    /* 標題樣式 */
     h2 {
       font-weight: 700;
       font-size: 1.8rem;
       margin-bottom: 28px;
-      text-align: center;
       letter-spacing: 1.2px;
       color: #9acd32;
     }
+    /* 表單樣式 */
     form label {
       display: block;
       margin-bottom: 6px;
       font-weight: 500;
       font-size: 1rem;
       color: #ccc;
+      text-align: left;
     }
     input[type="text"],
     input[type="email"],
@@ -129,15 +132,49 @@
     }
     /* 加載提示樣式 */
     .loading {
-      text-align: center;
       color: #9acd32;
       padding: 10px 0;
       font-size: 0.95rem;
     }
+    /* 禁止訪問頁面樣式 */
+    .forbidden-page {
+      padding: 40px 20px;
+    }
+    .forbidden-icon {
+      font-size: 4rem;
+      color: #ff4444;
+      margin-bottom: 20px;
+    }
+    .forbidden-title {
+      font-size: 1.5rem;
+      color: #ff4444;
+      margin-bottom: 16px;
+      font-weight: 700;
+    }
+    .forbidden-desc {
+      font-size: 1rem;
+      color: #ccc;
+      line-height: 1.6;
+      margin-bottom: 24px;
+    }
+    .back-btn {
+      background: #3a3a3a;
+      color: #eee;
+      box-shadow: none;
+    }
+    .back-btn:hover {
+      background: #4a4a4a;
+      box-shadow: none;
+    }
+    /* 內容隱藏類 */
+    .content-hidden {
+      display: none !important;
+    }
   </style>
 </head>
 <body>
-  <main>
+  <!-- 主要內容（預設隱藏，僅專業用戶可見） -->
+  <main id="mainContent" class="content-hidden">
     <h2>彥彬📘 資料填寫 <br> 免費調整方案 <br> 用戶填寫後 <br>『LINE發送文件』</h2>
 
     <!-- 用戶信息展示區域 -->
@@ -147,12 +184,12 @@
       <div id="userInfoContent" style="display: none;">
         <div class="user-info-item">
           <span class="user-info-label">用戶名稱：</span>
-          <span class="user-info-value" id="displayUserName">未填寫</span>
+          <span class="user-info-value" id="displayUserName">-</span>
         </div>
         <div class="user-info-item">
           <span class="user-info-label">用戶類型：</span>
           <span class="user-info-value" id="displayUserType">
-            <span class="normal-tag">普通用戶</span>
+            <span class="pro-tag">專業用戶</span>
           </span>
         </div>
         <div class="user-info-item">
@@ -167,27 +204,40 @@
       <input type="hidden" id="date" name="date" />
       <input type="hidden" id="lineId" name="lineId" />
 
-      <label for="name">姓名 <span style="color: #ff4444;">*</span></label>
-      <input type="text" id="name" name="name" required autocomplete="off" placeholder="請輸入您的真實姓名" />
+      <label for="name">姓名</label>
+      <input type="text" id="name" name="name" required autocomplete="off" placeholder="請輸入您的姓名" />
 
       <label for="phone">電話</label>
-      <input type="tel" id="phone" name="phone" autocomplete="off" placeholder="請輸入聯絡電話" />
+      <input type="tel" id="phone" name="phone" autocomplete="off" placeholder="請輸入電話" />
 
       <label for="userId">Line ID</label>
-      <input type="text" id="userId" name="userId" autocomplete="off" placeholder="請輸入您的Line ID（非必填）" />
+      <input type="text" id="userId" name="userId" autocomplete="off" placeholder="請輸入您的Line ID" />
 
       <label for="email">信箱</label>
-      <input type="email" id="email" name="email" autocomplete="off" placeholder="請輸入電子郵件（非必填）" />
+      <input type="email" id="email" name="email" autocomplete="off" placeholder="請輸入電子郵件" />
 
       <button type="submit">送出</button>
     </form>
   </main>
 
+  <!-- 禁止訪問頁面（預設顯示，非專業用戶停留此頁） -->
+  <main id="forbiddenContent">
+    <div class="forbidden-page">
+      <div class="forbidden-icon">❌</div>
+      <h3 class="forbidden-title">未授權訪問</h3>
+      <p class="forbidden-desc">
+        此頁面僅開放給「專業用戶」訪問<br>
+        若您有相關授權，請聯繫管理員升級賬號
+      </p>
+      <button class="back-btn" onclick="window.close()">關閉頁面</button>
+    </div>
+  </main>
+
   <script>
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbykBtM2_PM7IZ-ZUU4tgTqVa1xGhVQFaZ523FXc4ivdLz_GZ09sdmL6s5zk7SdloFuG/exec";
     const LIFF_ID = "2008578880-NznKeG2a";
-    let currentUserId = ""; // 存儲當前用戶ID
-    let lineDisplayName = ""; // 存儲LINE顯示名稱
+    let currentUserId = "";
+    let lineDisplayName = "";
 
     // 獲取台北時區日期
     function getTaipeiDate() {
@@ -201,75 +251,71 @@
       return `${year}-${month}-${day}`;
     }
 
-    // 初始化LIFF並獲取用戶信息
-    async function initLiff() {
-      try {
-        // 初始化LIFF
-        await liff.init({ liffId: LIFF_ID });
-        
-        if (!liff.isLoggedIn()) {
-          liff.login();
-          return;
-        }
-
-        // 獲取用戶profile（帶超時處理）
-        const profile = await Promise.race([
-          liff.getProfile(),
-          new Promise((_, reject) => setTimeout(() => reject(new Error('超時')), 5000))
-        ]);
-
-        // 處理用戶信息
-        if (profile && profile.displayName) {
-          lineDisplayName = profile.displayName.trim();
-        }
-        currentUserId = profile?.userId || "";
-        document.getElementById('lineId').value = currentUserId;
-
-        // 更新用戶狀態卡片中的名稱（僅前端顯示用）
-        const userNameEl = document.getElementById('displayUserName');
-        userNameEl.textContent = lineDisplayName ? lineDisplayName : "未填寫";
-
-        // 自動填充姓名輸入框（用戶可手動修改）
-        const nameInput = document.getElementById('name');
-        if (lineDisplayName && !nameInput.value) {
-          nameInput.value = lineDisplayName;
-        }
-
-        // 顯示用戶信息區域
-        document.getElementById('userInfoContent').style.display = "block";
-        hideLoading();
-
-        // 加載用戶狀態
-        if (currentUserId) {
-          fetchUserStatus(currentUserId);
-        } else {
-          document.getElementById('displayRemaining').textContent = "0次/天";
-        }
-
-      } catch (error) {
-        console.error("LIFF初始化失敗：", error);
-        
-        // 異常處理：確保前端顯示正常
-        const userNameEl = document.getElementById('displayUserName');
-        const nameInput = document.getElementById('name');
-        
-        if (lineDisplayName) {
-          userNameEl.textContent = lineDisplayName;
-          if (!nameInput.value) {
-            nameInput.value = lineDisplayName;
-          }
-        } else {
-          userNameEl.textContent = "未填寫";
-          nameInput.value = ""; // 清空輸入框，避免默認值誤導
-        }
-
-        document.getElementById('userInfoContent').style.display = "block";
-        document.getElementById('displayRemaining').textContent = "0次/天";
-        hideLoading();
-      }
+    // 隱藏加載提示
+    function hideLoading() {
+      document.getElementById('userInfoLoading').style.display = "none";
     }
 
-    // 獲取用戶狀態（僅查詢）
+    // 切換顯示頁面（核心：控制誰能看到表單）
+    function showMainContent() {
+      document.getElementById('forbiddenContent').classList.add('content-hidden');
+      document.getElementById('mainContent').classList.remove('content-hidden');
+    }
+
+    function showForbiddenContent() {
+      document.getElementById('mainContent').classList.add('content-hidden');
+      document.getElementById('forbiddenContent').classList.remove('content-hidden');
+    }
+
+    // 驗證用戶類型（關鍵新增功能）
+    async function verifyUserType(userId) {
+      return new Promise((resolve, reject) => {
+        const data = {
+          action: "getUserStatus",
+          userId: userId,
+          date: getTaipeiDate()
+        };
+
+        const params = new URLSearchParams(data);
+        params.append('callback', 'handleUserTypeVerification');
+
+        // 創建臨時腳本用於JSONP請求
+        const script = document.createElement('script');
+        script.src = SCRIPT_URL + "?" + params.toString();
+        script.id = "verificationScript";
+
+        // 超時處理（5秒未回應判定為驗證失敗）
+        const timeout = setTimeout(() => {
+          document.body.removeChild(script);
+          reject(new Error('驗證超時'));
+        }, 5000);
+
+        // 全局回調函數（處理驗證結果）
+        window.handleUserTypeVerification = function(response) {
+          clearTimeout(timeout);
+          document.body.removeChild(script);
+          
+          if (response.status === "success" && response.userRecord) {
+            // 驗證通過：必須是專業用戶
+            resolve(response.userRecord.userType === "專業用戶");
+          } else {
+            // 未找到用戶記錄或請求失敗，判定為非專業用戶
+            resolve(false);
+          }
+        };
+
+        document.body.appendChild(script);
+
+        // 請求失敗處理
+        script.onerror = () => {
+          clearTimeout(timeout);
+          document.body.removeChild(script);
+          reject(new Error('驗證請求失敗'));
+        };
+      });
+    }
+
+    // 加載用戶詳細狀態（僅專業用戶執行）
     function fetchUserStatus(userId) {
       const data = {
         action: "getUserStatus",
@@ -288,6 +334,7 @@
       script.onerror = () => {
         console.error("用戶狀態加載失敗");
         document.body.removeChild(script);
+        document.getElementById('displayRemaining').textContent = "0次/天";
       };
     }
 
@@ -297,103 +344,40 @@
         const userRecord = response.userRecord;
         document.getElementById('displayRemaining').textContent = userRecord.remaining || "0次/天";
         
-        // 更新用戶類型
         const userTypeEl = document.getElementById('displayUserType');
-        userTypeEl.innerHTML = userRecord.userType === "專業用戶" 
-          ? '<span class="pro-tag">專業用戶</span>' 
-          : '<span class="normal-tag">普通用戶</span>';
+        userTypeEl.innerHTML = '<span class="pro-tag">專業用戶</span>';
       } else {
-        console.error("獲取用戶狀態失敗：", response?.message);
-      }
-    }
-
-    // 發送LINE通知（僅提交成功後調用）
-    async function sendLineNotification(userName) {
-      try {
-        // 驗證發送條件
-        if (!liff.isLoggedIn() || !liff.canSendMessages()) {
-          console.warn("無法發送LINE通知：環境不支持");
-          return false;
-        }
-
-        // 通知內容
-        const messages = [
-          {
-            type: "text",
-            text: `✅ 親愛的${userName}，您的資料已成功提交！\n\n📁 免費調整方案文件已發送至您的LINE對話框，敬請查收～\n\n如有任何疑問，歡迎隨時聯繫我們！`
-          }
-        ];
-
-        await liff.sendMessages(messages);
-        console.log("LINE通知發送成功");
-        return true;
-      } catch (error) {
-        console.error("發送LINE通知失敗：", error);
-        return false;
+        document.getElementById('displayRemaining').textContent = "0次/天";
       }
     }
 
     // 處理表單提交響應
-    async function handleResponse(response) {
+    function handleResponse(response) {
       if (response.status === "success") {
-        const userName = document.getElementById('name').value.trim();
-        
-        // 發送LINE通知（僅提交成功後）
-        const notificationSuccess = await sendLineNotification(userName);
-        
-        // 提示用戶
-        if (notificationSuccess) {
-          alert(`✅ 資料已成功送出！\n\n📱 通知和免費調整方案已發送至您的LINE對話框，敬請查收～`);
-        } else {
-          alert(`✅ 資料已成功送出！\n\n⚠️ 通知發送失敗，方案文件將由管理員手動發送，敬請耐心等候～`);
-        }
-
-        // 更新剩餘次數
+        alert("✅ 資料已成功送出！\n會用Line贈送免費調整方案！");
         if (response.userRecord) {
           document.getElementById('displayRemaining').textContent = response.userRecord.remaining || "0次/天";
         }
-
-        // 清空表單
-        document.getElementById('infoForm').reset();
-        document.getElementById('lineId').value = currentUserId; // 保留LINE ID
-        document.getElementById('displayUserName').textContent = "未填寫";
+        document.getElementById('userId').value = "";
+        document.getElementById('name').value = "";
+        document.getElementById('phone').value = "";
+        document.getElementById('email').value = "";
       } else {
-        alert("❌ 提交失敗：" + (response.message || "未知錯誤，請稍後再試"));
+        alert("❌ 發生錯誤：" + response.message);
       }
     }
 
-    // 隱藏加載提示
-    function hideLoading() {
-      document.getElementById('userInfoLoading').style.display = "none";
-    }
-
-    // 發送表單數據到工作表（核心修正：確保姓名有效）
+    // 發送表單數據
     function sendData() {
-      const nameInput = document.getElementById('name');
-      const finalName = nameInput.value.trim();
-
-      // 最終姓名驗證（防止空值或無效值）
-      if (!finalName || finalName === "未填寫" || finalName === "LINE用戶") {
-        alert("❌ 請輸入有效的真實姓名！");
-        nameInput.focus();
-        return;
-      }
-
-      // 組裝數據（確保姓名一定是用戶填寫的有效數據）
       const data = {
         pageId: document.getElementById('pageId').value,
         date: document.getElementById('date').value,
-        lineId: document.getElementById('lineId').value || "",
-        userId: document.getElementById('userId').value.trim() || "",
-        name: finalName, // 只傳送用戶填寫的有效姓名
-        phone: document.getElementById('phone').value.trim() || "",
-        email: document.getElementById('email').value.trim() || ""
+        lineId: document.getElementById('lineId').value,
+        userId: document.getElementById('userId').value,
+        name: document.getElementById('name').value,
+        phone: document.getElementById('phone').value,
+        email: document.getElementById('email').value
       };
-
-      // 避免重複提交
-      const submitBtn = document.querySelector('button');
-      submitBtn.disabled = true;
-      submitBtn.textContent = "提交中...";
 
       const params = new URLSearchParams(data);
       params.append('callback', 'handleResponse');
@@ -402,56 +386,80 @@
       script.src = SCRIPT_URL + "?" + params.toString();
       document.body.appendChild(script);
 
-      // 恢復按鈕狀態
-      script.onload = () => {
-        document.body.removeChild(script);
-        submitBtn.disabled = false;
-        submitBtn.textContent = "送出";
-      };
+      script.onload = () => document.body.removeChild(script);
       script.onerror = () => {
-        alert("⚠️ 網絡錯誤，提交失敗，請稍後再試");
+        alert("⚠️ 提交失敗，請稍後再試");
         document.body.removeChild(script);
-        submitBtn.disabled = false;
-        submitBtn.textContent = "送出";
       };
     }
 
-    // 表單提交事件（核心強化驗證）
+    // 初始化LIFF並執行用戶驗證（核心流程修改）
+    async function initLiff() {
+      try {
+        // 1. 初始化LIFF
+        await liff.init({ liffId: LIFF_ID });
+        
+        // 2. 未登入則引導登入
+        if (!liff.isLoggedIn()) {
+          liff.login();
+          return;
+        }
+
+        // 3. 獲取LINE用戶資訊
+        const profile = await Promise.race([
+          liff.getProfile(),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('超時')), 5000))
+        ]);
+
+        if (!profile || !profile.userId) {
+          throw new Error('無法獲取用戶ID');
+        }
+
+        currentUserId = profile.userId;
+        lineDisplayName = profile.displayName?.trim() || "LINE用戶";
+
+        // 4. 關鍵步驟：驗證用戶是否為專業用戶
+        const isProfessional = await verifyUserType(currentUserId);
+        
+        if (!isProfessional) {
+          // 非專業用戶：保持顯示禁止頁面
+          showForbiddenContent();
+          return;
+        }
+
+        // 5. 專業用戶：顯示主頁面並加載詳細信息
+        showMainContent();
+        
+        // 6. 填充用戶基本信息
+        document.getElementById('displayUserName').textContent = lineDisplayName;
+        document.getElementById('lineId').value = currentUserId;
+        document.getElementById('date').value = getTaipeiDate();
+        document.getElementById('userInfoContent').style.display = "block";
+        hideLoading();
+
+        // 7. 加載用戶剩餘次數等詳細狀態
+        fetchUserStatus(currentUserId);
+
+      } catch (error) {
+        console.error("初始化失敗：", error);
+        // 任何錯誤都判定為未授權（加強安全性）
+        showForbiddenContent();
+        alert("⚠️ 用戶驗證失敗，請聯繫管理員");
+      }
+    }
+
+    // 表單提交事件
     document.getElementById('infoForm').addEventListener('submit', function(e) {
       e.preventDefault();
-
-      const nameInput = document.getElementById('name');
-      const nameValue = nameInput.value.trim();
-      const lineIdValue = document.getElementById('lineId').value;
-
-      // 1. 驗證姓名（必填，且不能是無效值）
-      if (!nameValue) {
-        alert("❌ 請輸入您的姓名！");
-        nameInput.focus();
+      if (!currentUserId) {
+        alert("LINE 用戶ID尚未取得，請重新載入頁面並登入 LINE。");
         return;
       }
-      if (nameValue === "未填寫" || nameValue === "LINE用戶") {
-        alert("❌ 請輸入您的真實姓名，不要使用預設名稱！");
-        nameInput.focus();
-        return;
-      }
-
-      // 2. 驗證LINE登錄狀態
-      if (!lineIdValue) {
-        alert("❌ 請先登錄LINE再提交！");
-        liff.login();
-        return;
-      }
-
-      // 3. 所有驗證通過，提交數據（此時才會觸發後續的數據存儲和LINE通知）
       sendData();
     });
 
     // 頁面加載初始化
-    window.onload = () => {
-      document.getElementById('date').value = getTaipeiDate();
-      initLiff();
-    };
+    window.onload = initLiff;
 
     // 全局回調函數
     window.handleUserStatusResponse = handleUserStatusResponse;
