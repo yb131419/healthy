@@ -28,7 +28,7 @@
       padding: 32px 28px;
       text-align: center;
     }
-    /* 驗證加載頁面樣式 - 新增 */
+    /* 驗證加載頁面樣式 */
     .verification-page {
       padding: 40px 20px;
       display: flex;
@@ -211,7 +211,7 @@
   </style>
 </head>
 <body>
-  <!-- 1. 驗證頁面（預設顯示在最前面，用戶打開先看到） -->
+  <!-- 1. 驗證頁面（預設顯示在最前面） -->
   <main id="verificationContent">
     <div class="verification-page">
       <div class="verification-icon">🔍</div>
@@ -227,7 +227,7 @@
   <main id="mainContent" class="content-hidden">
     <h2>彥彬📘 資料填寫 <br> 免費調整方案 <br> 用戶填寫後 <br>『LINE發送文件』</h2>
 
-    <!-- 用戶信息展示區域 - 新增使用期限字段 -->
+    <!-- 用戶信息展示區域 - 移除次數相關字段，保留核心信息 -->
     <div class="user-info-card">
       <div class="user-info-title">👤 用戶狀態</div>
       <div id="userInfoLoading" class="loading">載入用戶資訊中...</div>
@@ -247,10 +247,6 @@
           <span class="user-info-value" id="displayExpiry">
             <span class="loading">查詢中...</span>
           </span>
-        </div>
-        <div class="user-info-item">
-          <span class="user-info-label">今日剩餘次數：</span>
-          <span class="user-info-value" id="displayRemaining">-</span>
         </div>
       </div>
     </div>
@@ -326,7 +322,7 @@
       document.getElementById('userInfoLoading').style.display = "none";
     }
 
-    // 切換頁面顯示（核心：控制驗證後的頁面切換）
+    // 切換頁面顯示
     function hideVerificationPage() {
       document.getElementById('verificationContent').classList.add('content-hidden');
     }
@@ -343,7 +339,7 @@
       document.getElementById('forbiddenContent').classList.remove('content-hidden');
     }
 
-    // 驗證用戶狀態（用戶類型 + 使用期限雙重驗證）
+    // 驗證用戶狀態（僅驗證：專業用戶類型 + 使用期限有效，取消次數驗證）
     async function verifyUserStatus(userId) {
       return new Promise((resolve, reject) => {
         const today = getTaipeiDate();
@@ -374,14 +370,14 @@
           
           if (response.status === "success" && response.userRecord) {
             const user = response.userRecord;
-            // 雙重驗證：1.是專業用戶 2.使用期限有效（未過期）
+            // 核心驗證邏輯：1.是專業用戶 2.使用期限有效（未過期）
             const isProfessional = user.userType === "專業用戶";
             const expiryDate = user.expiryDate || ""; // 後端返回的使用期限（YYYY-MM-DD）
             const isExpiryValid = !expiryDate ? false : compareDates(today, expiryDate);
 
             resolve({
               isValid: isProfessional && isExpiryValid,
-              userData: user // 返回完整用戶數據用於後續顯示
+              userData: user // 返回完整用戶數據（User ID、名稱、使用期限）
             });
           } else {
             // 未找到用戶記錄或請求失敗，判定為無效
@@ -403,15 +399,14 @@
       });
     }
 
-    // 加載用戶詳細狀態並顯示
+    // 加載用戶詳細狀態並顯示（移除次數相關代碼）
     function displayUserStatus(userData) {
       const today = getTaipeiDate();
       const expiryDate = userData.expiryDate || "";
       const isExpiryValid = compareDates(today, expiryDate);
 
-      // 填充用戶信息
+      // 填充用戶信息（優先顯示後端存儲的名稱，其次是LINE暱稱）
       document.getElementById('displayUserName').textContent = userData.name || lineDisplayName || "LINE用戶";
-      document.getElementById('displayRemaining').textContent = userData.remaining || "0次/天";
 
       // 顯示使用期限（標記有效期狀態）
       const expiryEl = document.getElementById('displayExpiry');
@@ -432,13 +427,10 @@
       hideLoading();
     }
 
-    // 處理表單提交響應
+    // 處理表單提交響應（移除次數更新相關代碼）
     function handleResponse(response) {
       if (response.status === "success") {
         alert("✅ 資料已成功送出！\n會用Line贈送免費調整方案！");
-        if (response.userRecord) {
-          document.getElementById('displayRemaining').textContent = response.userRecord.remaining || "0次/天";
-        }
         // 清空表單
         document.getElementById('userId').value = "";
         document.getElementById('name').value = "";
@@ -475,19 +467,19 @@
       };
     }
 
-    // 初始化LIFF並執行完整驗證流程（驗證頁面置前）
+    // 初始化LIFF並執行完整驗證流程（取消次數相關邏輯）
     async function initLiff() {
       try {
-        // 1. 初始化LIFF（此時用戶看到的是驗證頁面）
+        // 1. 初始化LIFF（用戶看到驗證頁面）
         await liff.init({ liffId: LIFF_ID });
         
-        // 2. 未登入則引導登入（保持原有邏輯）
+        // 2. 未登入則引導登入
         if (!liff.isLoggedIn()) {
           liff.login();
           return;
         }
 
-        // 3. 獲取LINE用戶基本信息
+        // 3. 獲取LINE用戶基本信息（User ID）
         const profile = await Promise.race([
           liff.getProfile(),
           new Promise((_, reject) => setTimeout(() => reject(new Error('超時')), 5000))
@@ -497,14 +489,14 @@
           throw new Error('無法獲取用戶ID');
         }
 
-        currentUserId = profile.userId;
+        currentUserId = profile.userId; // 對應專業用戶列表的User ID
         lineDisplayName = profile.displayName?.trim() || "LINE用戶";
 
-        // 4. 核心驗證：用戶類型 + 使用期限（驗證過程中用戶仍看到驗證頁面）
+        // 4. 核心驗證：用戶類型（專業用戶）+ 使用期限（有效）
         const verificationResult = await verifyUserStatus(currentUserId);
         
         if (!verificationResult.isValid) {
-          // 驗證失敗：顯示禁止頁面
+          // 驗證失敗：區分未授權和已過期
           const userData = verificationResult.userData;
           if (userData && userData.userType === "專業用戶") {
             // 是專業用戶但已過期
@@ -523,14 +515,14 @@
           return;
         }
 
-        // 5. 驗證成功：顯示主頁面並加載用戶詳細信息
+        // 5. 驗證成功：直接登錄，顯示主頁面和用戶狀態（包含使用期限）
         showMainContent();
         
-        // 填充隱藏字段
+        // 填充隱藏字段（Line ID對應專業用戶列表的User ID）
         document.getElementById('lineId').value = currentUserId;
         document.getElementById('date').value = getTaipeiDate();
         
-        // 顯示用戶完整狀態
+        // 顯示用戶完整狀態（名稱、用戶類型、使用期限）
         displayUserStatus(verificationResult.userData);
 
       } catch (error) {
@@ -554,7 +546,7 @@
       sendData();
     });
 
-    // 頁面加載初始化（直接執行驗證，用戶先看到驗證頁面）
+    // 頁面加載初始化
     window.onload = initLiff;
 
     // 全局回調函數（用於JSONP）
