@@ -72,6 +72,46 @@
       el.classList.remove('hidden');
     };
 
+    // 計算剩餘天數（嚴格支持2035/12/31格式）
+    const calculateRemainingDays = (expiryDateStr) => {
+      try {
+        // 驗證日期格式（2035/12/31）
+        const dateRegex = /^\d{4}\/\d{2}\/\d{2}$/;
+        if (!dateRegex.test(expiryDateStr)) {
+          return "格式錯誤";
+        }
+
+        // 解析日期（拆分年/月/日）
+        const [year, month, day] = expiryDateStr.split('/').map(Number);
+        const expiryDate = new Date(year, month - 1, day); // 月份從0開始，需減1
+        const today = new Date();
+
+        // 驗證日期有效性
+        if (isNaN(expiryDate.getTime())) {
+          return "日期無效";
+        }
+
+        // 只比較日期部分（忽略時間）
+        expiryDate.setHours(0, 0, 0, 0);
+        today.setHours(0, 0, 0, 0);
+
+        // 計算剩餘天數
+        const timeDiff = expiryDate - today;
+        const remainingDays = Math.ceil(timeDiff / (1000 * 3600 * 24));
+
+        if (remainingDays < 0) {
+          return "已過期";
+        } else if (remainingDays === 0) {
+          return "最後1天";
+        } else {
+          return `${remainingDays} 天`;
+        }
+      } catch (error) {
+        console.error("計算剩餘天數失敗：", error);
+        return "計算錯誤";
+      }
+    };
+
     document.addEventListener('DOMContentLoaded', function() {
       setStatus('正在初始化 LIFF...');
       // 優化LIFF初始化配置，移除多餘參數
@@ -128,22 +168,36 @@
       });
     }
 
-    // 渲染驗證結果（僅保留核心信息顯示）
+    // 渲染驗證結果（修復專業用戶識別，新增剩餘天數顯示）
     function renderResult(resp) {
       document.getElementById('status').classList.add('hidden');
       const card = document.getElementById('result-card');
       const main = document.getElementById('result-main');
       const details = document.getElementById('result-details');
 
-      // 根據用戶類型顯示對應信息
-      if (resp.userRecord?.userType === "專業用戶") {
-        main.innerHTML = `<span class="text-primary"><i class="fa fa-check-circle mr-1"></i>驗證通過</span>`;
-        details.innerHTML = `專業用戶：${resp.userRecord.userName || '未知用戶'}<br>
-                           使用期限：${resp.userRecord.expiryDate || '無限制'}`;
+      // 優化用戶類型判斷（支援多種可能的返回字段）
+      const isProUser = 
+        resp.userRecord?.userType === "專業用戶" || 
+        resp.isAdmin === true || 
+        (resp.userRecord?.userType && resp.userRecord.userType.includes("專業"));
+
+      if (isProUser) {
+        // 專業用戶顯示邏輯
+        const userName = resp.userRecord?.userName || resp.displayName || '未知用戶';
+        const expiryDate = resp.userRecord?.expiryDate || '';
+        const remainingDays = expiryDate ? calculateRemainingDays(expiryDate) : '無限制';
+
+        main.innerHTML = `<span class="text-primary"><i class="fa fa-check-circle mr-1"></i>專業用戶驗證通過</span>`;
+        details.innerHTML = `用戶名稱：${userName}<br>
+                           使用期限：${expiryDate || '無限制'}<br>
+                           剩餘天數：${remainingDays}`;
       } else {
+        // 普通用戶顯示邏輯
+        const userName = resp.displayName || resp.userRecord?.userName || '未知用戶';
         main.innerHTML = `<span class="text-gray-600"><i class="fa fa-user mr-1"></i>普通用戶</span>`;
-        details.innerHTML = `用戶名稱：${resp.displayName || '未知用戶'}<br>
-                           驗證狀態：已完成`;
+        details.innerHTML = `用戶名稱：${userName}<br>
+                           驗證狀態：已完成<br>
+                           剩餘天數：-`;
       }
 
       card.classList.remove('hidden');
