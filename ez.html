@@ -27,7 +27,7 @@
       max-width: 420px;
       padding: 32px 28px;
     }
-    /* 新增：用戶信息卡片樣式 */
+    /* 用戶信息卡片樣式 */
     .user-info-card {
       background: #2a2a2a;
       border-radius: 10px;
@@ -140,7 +140,7 @@
   <main>
     <h2>彥彬📘 資料填寫 <br> 免費調整方案 <br> 用戶填寫後 <br>『LINE發送文件』</h2>
 
-    <!-- 新增：用戶信息展示區域 -->
+    <!-- 用戶信息展示區域 -->
     <div class="user-info-card">
       <div class="user-info-title">👤 用戶狀態</div>
       <div id="userInfoLoading" class="loading">載入用戶資訊中...</div>
@@ -168,16 +168,16 @@
       <input type="hidden" id="lineId" name="lineId" />
 
       <label for="name">姓名 <span style="color: #ff4444;">*</span></label>
-      <input type="text" id="name" name="name" required autocomplete="off" placeholder="請輸入您的姓名" />
+      <input type="text" id="name" name="name" required autocomplete="off" placeholder="請輸入您的真實姓名" />
 
       <label for="phone">電話</label>
-      <input type="tel" id="phone" name="phone" autocomplete="off" placeholder="請輸入電話" />
+      <input type="tel" id="phone" name="phone" autocomplete="off" placeholder="請輸入聯絡電話" />
 
       <label for="userId">Line ID</label>
-      <input type="text" id="userId" name="userId" autocomplete="off" placeholder="請輸入您的Line ID" />
+      <input type="text" id="userId" name="userId" autocomplete="off" placeholder="請輸入您的Line ID（非必填）" />
 
       <label for="email">信箱</label>
-      <input type="email" id="email" name="email" autocomplete="off" placeholder="請輸入電子郵件" />
+      <input type="email" id="email" name="email" autocomplete="off" placeholder="請輸入電子郵件（非必填）" />
 
       <button type="submit">送出</button>
     </form>
@@ -186,7 +186,7 @@
   <script>
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbykBtM2_PM7IZ-ZUU4tgTqVa1xGhVQFaZ523FXc4ivdLz_GZ09sdmL6s5zk7SdloFuG/exec";
     const LIFF_ID = "2008578880-NznKeG2a";
-    let currentUserId = ""; // 存儲當前用戶ID，用於獲取狀態
+    let currentUserId = ""; // 存儲當前用戶ID
     let lineDisplayName = ""; // 存儲LINE顯示名稱
 
     // 獲取台北時區日期
@@ -201,10 +201,10 @@
       return `${year}-${month}-${day}`;
     }
 
-    // 初始化LIFF並獲取用戶信息（核心優化：登錄時僅獲取資訊，不發送通知）
+    // 初始化LIFF並獲取用戶信息
     async function initLiff() {
       try {
-        // 1. 優先初始化LIFF，確保登錄狀態
+        // 初始化LIFF
         await liff.init({ liffId: LIFF_ID });
         
         if (!liff.isLoggedIn()) {
@@ -212,37 +212,34 @@
           return;
         }
 
-        // 2. 強化profile獲取：增加超時處理，確保不阻塞
+        // 獲取用戶profile（帶超時處理）
         const profile = await Promise.race([
           liff.getProfile(),
           new Promise((_, reject) => setTimeout(() => reject(new Error('超時')), 5000))
         ]);
 
-        // 3. 確保獲取到有效數據後再賦值
+        // 處理用戶信息
         if (profile && profile.displayName) {
-          lineDisplayName = profile.displayName.trim(); // 去空格，避免空字符串
+          lineDisplayName = profile.displayName.trim();
         }
         currentUserId = profile?.userId || "";
         document.getElementById('lineId').value = currentUserId;
 
-        // 4. 優先顯示LINE名稱，不依賴後端
+        // 更新用戶狀態卡片中的名稱（僅前端顯示用）
         const userNameEl = document.getElementById('displayUserName');
-        // 修正：如果LINE名稱存在則顯示，否則顯示「未填寫」
         userNameEl.textContent = lineDisplayName ? lineDisplayName : "未填寫";
 
-        // 🌟 第一層保障：自動用LINE顯示名稱填充姓名輸入框（用戶可手動修改）
+        // 自動填充姓名輸入框（用戶可手動修改）
         const nameInput = document.getElementById('name');
         if (lineDisplayName && !nameInput.value) {
           nameInput.value = lineDisplayName;
-          // 同步更新用戶狀態卡片中的名稱
-          userNameEl.textContent = lineDisplayName;
         }
 
-        // 5. 立即顯示用戶信息區域，隱藏加載（提升體驗）
+        // 顯示用戶信息區域
         document.getElementById('userInfoContent').style.display = "block";
         hideLoading();
 
-        // 6. 單獨加載用戶狀態（僅查詢，不發送數據/通知）
+        // 加載用戶狀態
         if (currentUserId) {
           fetchUserStatus(currentUserId);
         } else {
@@ -250,9 +247,9 @@
         }
 
       } catch (error) {
-        console.error("LIFF初始化或獲取資料失敗：", error);
+        console.error("LIFF初始化失敗：", error);
         
-        // 異常處理優化：優先使用已獲取的名稱
+        // 異常處理：確保前端顯示正常
         const userNameEl = document.getElementById('displayUserName');
         const nameInput = document.getElementById('name');
         
@@ -262,20 +259,17 @@
             nameInput.value = lineDisplayName;
           }
         } else {
-          userNameEl.textContent = "未填寫"; // 修正：異常時顯示「未填寫」而不是隨機文字
-          nameInput.value = ""; // 清空輸入框，避免默認值誤導用戶
+          userNameEl.textContent = "未填寫";
+          nameInput.value = ""; // 清空輸入框，避免默認值誤導
         }
 
-        // 確保用戶能看到基本信息，僅提示錯誤不阻塞
         document.getElementById('userInfoContent').style.display = "block";
         document.getElementById('displayRemaining').textContent = "0次/天";
         hideLoading();
-        
-        console.warn("提示：部分用戶狀態無法加載，不影響基本使用");
       }
     }
 
-    // 從後端獲取用戶狀態（僅查詢，不觸發通知）
+    // 獲取用戶狀態（僅查詢）
     function fetchUserStatus(userId) {
       const data = {
         action: "getUserStatus",
@@ -297,35 +291,32 @@
       };
     }
 
-    // 處理用戶狀態響應（僅更新頁面，不發送通知）
+    // 處理用戶狀態響應
     function handleUserStatusResponse(response) {
       if (response.status === "success" && response.userRecord) {
         const userRecord = response.userRecord;
-        // 更新剩餘次數
         document.getElementById('displayRemaining').textContent = userRecord.remaining || "0次/天";
         
-        // 更新用戶類型標籤
+        // 更新用戶類型
         const userTypeEl = document.getElementById('displayUserType');
-        if (userRecord.userType === "專業用戶") {
-          userTypeEl.innerHTML = '<span class="pro-tag">專業用戶</span>';
-        } else {
-          userTypeEl.innerHTML = '<span class="normal-tag">普通用戶</span>';
-        }
+        userTypeEl.innerHTML = userRecord.userType === "專業用戶" 
+          ? '<span class="pro-tag">專業用戶</span>' 
+          : '<span class="normal-tag">普通用戶</span>';
       } else {
-        console.error("獲取用戶狀態失敗：", response?.message || "未知錯誤");
+        console.error("獲取用戶狀態失敗：", response?.message);
       }
     }
 
-    // 🌟 新增：發送LINE通知（僅在資料提交成功後調用）
+    // 發送LINE通知（僅提交成功後調用）
     async function sendLineNotification(userName) {
       try {
-        // 驗證是否可發送消息（確保在LINE環境或支持的LIFF環境）
+        // 驗證發送條件
         if (!liff.isLoggedIn() || !liff.canSendMessages()) {
-          console.warn("無法發送LINE通知：用戶未登錄或環境不支持");
+          console.warn("無法發送LINE通知：環境不支持");
           return false;
         }
 
-        // 通知消息內容（可自定義）
+        // 通知內容
         const messages = [
           {
             type: "text",
@@ -333,7 +324,6 @@
           }
         ];
 
-        // 發送消息到用戶的LINE對話框
         await liff.sendMessages(messages);
         console.log("LINE通知發送成功");
         return true;
@@ -343,35 +333,32 @@
       }
     }
 
-    // 處理表單提交響應（核心修改：提交成功後才發送通知）
+    // 處理表單提交響應
     async function handleResponse(response) {
       if (response.status === "success") {
-        const userName = document.getElementById('name').value.trim() || "用戶";
+        const userName = document.getElementById('name').value.trim();
         
-        // 1. 發送LINE通知（只有提交成功才發送）
+        // 發送LINE通知（僅提交成功後）
         const notificationSuccess = await sendLineNotification(userName);
         
-        // 2. 提示用戶（根據通知發送結果調整提示內容）
+        // 提示用戶
         if (notificationSuccess) {
           alert(`✅ 資料已成功送出！\n\n📱 通知和免費調整方案已發送至您的LINE對話框，敬請查收～`);
         } else {
           alert(`✅ 資料已成功送出！\n\n⚠️ 通知發送失敗，方案文件將由管理員手動發送，敬請耐心等候～`);
         }
 
-        // 3. 提交成功後更新剩餘次數
+        // 更新剩餘次數
         if (response.userRecord) {
           document.getElementById('displayRemaining').textContent = response.userRecord.remaining || "0次/天";
         }
 
-        // 4. 清空表單
-        document.getElementById('userId').value = "";
-        document.getElementById('name').value = "";
-        document.getElementById('phone').value = "";
-        document.getElementById('email').value = "";
-        // 同步更新用戶狀態卡片中的名稱
+        // 清空表單
+        document.getElementById('infoForm').reset();
+        document.getElementById('lineId').value = currentUserId; // 保留LINE ID
         document.getElementById('displayUserName').textContent = "未填寫";
       } else {
-        alert("❌ 發生錯誤：" + response.message);
+        alert("❌ 提交失敗：" + (response.message || "未知錯誤，請稍後再試"));
       }
     }
 
@@ -380,26 +367,33 @@
       document.getElementById('userInfoLoading').style.display = "none";
     }
 
-    // 發送表單數據到工作表（僅提交時發送，登錄時不調用）
+    // 發送表單數據到工作表（核心修正：確保姓名有效）
     function sendData() {
-      // 🌟 第三層保障：最終兜底，確保姓名不為空（表單驗證已過，這裡做雙重保障）
       const nameInput = document.getElementById('name');
       const finalName = nameInput.value.trim();
-      if (!finalName) {
-        alert("❌ 請輸入您的姓名！");
+
+      // 最終姓名驗證（防止空值或無效值）
+      if (!finalName || finalName === "未填寫" || finalName === "LINE用戶") {
+        alert("❌ 請輸入有效的真實姓名！");
         nameInput.focus();
         return;
       }
 
+      // 組裝數據（確保姓名一定是用戶填寫的有效數據）
       const data = {
         pageId: document.getElementById('pageId').value,
         date: document.getElementById('date').value,
-        lineId: document.getElementById('lineId').value,
-        userId: document.getElementById('userId').value,
-        name: finalName, // 使用最終驗證後的姓名
-        phone: document.getElementById('phone').value,
-        email: document.getElementById('email').value
+        lineId: document.getElementById('lineId').value || "",
+        userId: document.getElementById('userId').value.trim() || "",
+        name: finalName, // 只傳送用戶填寫的有效姓名
+        phone: document.getElementById('phone').value.trim() || "",
+        email: document.getElementById('email').value.trim() || ""
       };
+
+      // 避免重複提交
+      const submitBtn = document.querySelector('button');
+      submitBtn.disabled = true;
+      submitBtn.textContent = "提交中...";
 
       const params = new URLSearchParams(data);
       params.append('callback', 'handleResponse');
@@ -408,34 +402,48 @@
       script.src = SCRIPT_URL + "?" + params.toString();
       document.body.appendChild(script);
 
-      script.onload = () => document.body.removeChild(script);
-      script.onerror = () => {
-        alert("⚠️ 提交失敗，請稍後再試");
+      // 恢復按鈕狀態
+      script.onload = () => {
         document.body.removeChild(script);
+        submitBtn.disabled = false;
+        submitBtn.textContent = "送出";
+      };
+      script.onerror = () => {
+        alert("⚠️ 網絡錯誤，提交失敗，請稍後再試");
+        document.body.removeChild(script);
+        submitBtn.disabled = false;
+        submitBtn.textContent = "送出";
       };
     }
 
-    // 表單提交事件（🌟 核心修正：加強驗證，確保必填欄位填寫後才提交）
+    // 表單提交事件（核心強化驗證）
     document.getElementById('infoForm').addEventListener('submit', function(e) {
       e.preventDefault();
 
-      // 1. 驗證姓名是否為空（必填欄位）
       const nameInput = document.getElementById('name');
       const nameValue = nameInput.value.trim();
+      const lineIdValue = document.getElementById('lineId').value;
+
+      // 1. 驗證姓名（必填，且不能是無效值）
       if (!nameValue) {
         alert("❌ 請輸入您的姓名！");
-        nameInput.focus(); // 聚焦到姓名字段
+        nameInput.focus();
+        return;
+      }
+      if (nameValue === "未填寫" || nameValue === "LINE用戶") {
+        alert("❌ 請輸入您的真實姓名，不要使用預設名稱！");
+        nameInput.focus();
         return;
       }
 
-      // 2. 驗證LINE ID是否存在（確保用戶已登錄）
-      const lineIdValue = document.getElementById('lineId').value;
+      // 2. 驗證LINE登錄狀態
       if (!lineIdValue) {
-        alert("❌ LINE 用戶ID尚未取得，請重新載入頁面並登入 LINE。");
+        alert("❌ 請先登錄LINE再提交！");
+        liff.login();
         return;
       }
 
-      // 3. 所有驗證通過後才提交（確保只有填寫完整才發送數據和通知）
+      // 3. 所有驗證通過，提交數據（此時才會觸發後續的數據存儲和LINE通知）
       sendData();
     });
 
@@ -445,7 +453,7 @@
       initLiff();
     };
 
-    // 全局函數：用於JSONP回調（必須掛載到window）
+    // 全局回調函數
     window.handleUserStatusResponse = handleUserStatusResponse;
     window.handleResponse = handleResponse;
   </script>
