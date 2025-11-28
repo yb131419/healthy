@@ -167,7 +167,7 @@
       <input type="hidden" id="date" name="date" />
       <input type="hidden" id="lineId" name="lineId" />
 
-      <label for="name">姓名</label>
+      <label for="name">姓名 <span style="color: #ff4444;">*</span></label>
       <input type="text" id="name" name="name" required autocomplete="off" placeholder="請輸入您的姓名" />
 
       <label for="phone">電話</label>
@@ -229,7 +229,7 @@
         const userNameEl = document.getElementById('displayUserName');
         userNameEl.textContent = lineDisplayName || "LINE用戶"; // 用"LINE用戶"替代"未設定"，更友好
 
-        // 🌟 核心修改：自動用LINE顯示名稱填充姓名輸入框，避免空值
+        // 🌟 第一層保障：自動用LINE顯示名稱填充姓名輸入框（用戶可手動修改）
         const nameInput = document.getElementById('name');
         if (lineDisplayName && !nameInput.value) {
           nameInput.value = lineDisplayName;
@@ -259,7 +259,12 @@
             nameInput.value = lineDisplayName;
           }
         } else {
-          userNameEl.textContent = "LINE用戶"; // 避免顯示"未知用戶"
+          userNameEl.textContent = "LINE用戶";
+          // 異常時兜底填充默認名稱
+          const nameInput = document.getElementById('name');
+          if (!nameInput.value) {
+            nameInput.value = "LINE用戶";
+          }
         }
 
         // 確保用戶能看到基本信息，僅提示錯誤不阻塞
@@ -267,7 +272,6 @@
         document.getElementById('displayRemaining').textContent = "0次/天";
         hideLoading();
         
-        // 輕量提示：不彈窗干擾，僅在控制台打印詳細錯誤
         console.warn("提示：部分用戶狀態無法加載，不影響基本使用");
       }
     }
@@ -291,7 +295,6 @@
       script.onerror = () => {
         console.error("用戶狀態加載失敗");
         document.body.removeChild(script);
-        // 失敗時保持原有顯示，不覆蓋
       };
     }
 
@@ -310,7 +313,6 @@
           userTypeEl.innerHTML = '<span class="normal-tag">普通用戶</span>';
         }
       } else {
-        // 響應失敗時，保持默認值，不影響用戶體驗
         console.error("獲取用戶狀態失敗：", response?.message || "未知錯誤");
       }
     }
@@ -333,15 +335,23 @@
       }
     }
 
+    // 隱藏加載提示
+    function hideLoading() {
+      document.getElementById('userInfoLoading').style.display = "none";
+    }
+
     // 發送表單數據
     function sendData() {
+      // 🌟 第三層保障：最終兜底，確保姓名不為空
+      const nameInput = document.getElementById('name');
+      const finalName = nameInput.value.trim() || "LINE用戶"; // 空值時預設為"LINE用戶"
+
       const data = {
         pageId: document.getElementById('pageId').value,
         date: document.getElementById('date').value,
         lineId: document.getElementById('lineId').value,
         userId: document.getElementById('userId').value,
-        // 確保姓名字段不為空，這裡再次驗證
-        name: document.getElementById('name').value.trim() || "LINE用戶",
+        name: finalName, // 使用最終驗證後的姓名
         phone: document.getElementById('phone').value,
         email: document.getElementById('email').value
       };
@@ -360,20 +370,26 @@
       };
     }
 
-    // 表單提交事件
+    // 表單提交事件（🌟 第二層保障：提交前強制驗證）
     document.getElementById('infoForm').addEventListener('submit', function(e) {
       e.preventDefault();
-      
-      // 再次驗證姓名是否為空，確保不會傳送空值
-      const nameInput = document.getElementById('name');
-      if (!nameInput.value.trim()) {
-        nameInput.value = lineDisplayName || "LINE用戶";
-      }
 
-      if (!document.getElementById('lineId').value) {
-        alert("LINE 用戶ID尚未取得，請重新載入頁面並登入 LINE。");
+      // 驗證姓名是否為空
+      const nameInput = document.getElementById('name');
+      const nameValue = nameInput.value.trim();
+      if (!nameValue) {
+        alert("❌ 請輸入您的姓名！");
+        nameInput.focus(); // 聚焦到姓名字段
         return;
       }
+
+      // 驗證LINE ID是否存在
+      if (!document.getElementById('lineId').value) {
+        alert("❌ LINE 用戶ID尚未取得，請重新載入頁面並登入 LINE。");
+        return;
+      }
+
+      // 所有驗證通過後提交
       sendData();
     });
 
