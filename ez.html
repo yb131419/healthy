@@ -111,6 +111,16 @@
       font-size: 0.8rem;
       font-weight: 700;
     }
+    /* 過期提示樣式 */
+    .expiry-alert {
+      background: rgba(255,68,68,0.15);
+      border-left: 3px solid #ff4444;
+      padding: 10px 12px;
+      margin-top: 15px;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      color: #ffcccc;
+    }
     /* 標題樣式 */
     h2 {
       font-weight: 700;
@@ -167,6 +177,13 @@
     button:hover {
       background: linear-gradient(135deg, #4a9c00, #7ac70c);
       box-shadow: 0 6px 20px rgba(122,199,12,0.7);
+    }
+    /* 禁用按鈕樣式 */
+    button:disabled {
+      background: linear-gradient(135deg, #666, #444);
+      cursor: not-allowed;
+      box-shadow: none;
+      opacity: 0.7;
     }
     /* 加載提示樣式 */
     .loading {
@@ -227,7 +244,7 @@
   <main id="mainContent" class="content-hidden">
     <h2>彥彬📘 資料填寫 <br> 免費調整方案 <br> 用戶填寫後 <br>『LINE發送文件』</h2>
 
-    <!-- 用戶信息展示區域 - 移除次數相關字段，保留核心信息 -->
+    <!-- 用戶信息展示區域 - 新增過期提示容器 -->
     <div class="user-info-card">
       <div class="user-info-title">👤 用戶狀態</div>
       <div id="userInfoLoading" class="loading">載入用戶資訊中...</div>
@@ -247,6 +264,10 @@
           <span class="user-info-value" id="displayExpiry">
             <span class="loading">查詢中...</span>
           </span>
+        </div>
+        <!-- 過期提示容器（預設隱藏） -->
+        <div id="expiryAlert" class="expiry-alert content-hidden">
+          ⚠️ 您的專業用戶權限已過期，請聯繫管理員續期後再提交資料
         </div>
       </div>
     </div>
@@ -268,17 +289,17 @@
       <label for="email">信箱</label>
       <input type="email" id="email" name="email" autocomplete="off" placeholder="請輸入電子郵件" />
 
-      <button type="submit">送出</button>
+      <button type="submit" id="submitBtn">送出</button>
     </form>
   </main>
 
-  <!-- 3. 禁止訪問頁面（驗證失敗後顯示） -->
+  <!-- 3. 禁止訪問頁面（僅非專業用戶顯示） -->
   <main id="forbiddenContent" class="content-hidden">
     <div class="forbidden-page">
       <div class="forbidden-icon">❌</div>
       <h3 class="forbidden-title" id="forbiddenTitle">未授權訪問</h3>
       <p class="forbidden-desc" id="forbiddenDesc">
-        此頁面僅開放給「有效專業用戶」訪問<br>
+        此頁面僅開放給「專業用戶」訪問<br>
         若您有相關授權，請聯繫管理員確認賬號狀態
       </p>
       <button class="back-btn" onclick="window.close()">關閉頁面</button>
@@ -290,6 +311,7 @@
     const LIFF_ID = "2008578880-NznKeG2a";
     let currentUserId = "";
     let lineDisplayName = "";
+    let isUserExpired = false; // 標記用戶是否過期
 
     // 獲取台北時區日期（格式化為YYYY-MM-DD）
     function getTaipeiDate() {
@@ -332,14 +354,14 @@
       document.getElementById('mainContent').classList.remove('content-hidden');
     }
 
-    function showForbiddenContent(title = "未授權訪問", desc = "此頁面僅開放給「有效專業用戶」訪問<br>若您有相關授權，請聯繫管理員確認賬號狀態") {
+    function showForbiddenContent(title = "未授權訪問", desc = "此頁面僅開放給「專業用戶」訪問<br>若您有相關授權，請聯繫管理員確認賬號狀態") {
       hideVerificationPage();
       document.getElementById('forbiddenTitle').textContent = title;
       document.getElementById('forbiddenDesc').innerHTML = desc;
       document.getElementById('forbiddenContent').classList.remove('content-hidden');
     }
 
-    // 驗證用戶狀態（僅驗證：專業用戶類型 + 使用期限有效，取消次數驗證）
+    // 驗證用戶狀態（僅驗證是否為專業用戶，不限制過期狀態）
     async function verifyUserStatus(userId) {
       return new Promise((resolve, reject) => {
         const today = getTaipeiDate();
@@ -370,19 +392,23 @@
           
           if (response.status === "success" && response.userRecord) {
             const user = response.userRecord;
-            // 核心驗證邏輯：1.是專業用戶 2.使用期限有效（未過期）
+            // 僅驗證是否為專業用戶（不驗證過期狀態，後續單獨處理）
             const isProfessional = user.userType === "專業用戶";
-            const expiryDate = user.expiryDate || ""; // 後端返回的使用期限（YYYY-MM-DD）
+            
+            // 計算是否過期
+            const expiryDate = user.expiryDate || "";
             const isExpiryValid = !expiryDate ? false : compareDates(today, expiryDate);
 
             resolve({
-              isValid: isProfessional && isExpiryValid,
-              userData: user // 返回完整用戶數據（User ID、名稱、使用期限）
+              isProfessional: isProfessional, // 是否為專業用戶
+              isExpired: !isExpiryValid,      // 是否過期
+              userData: user                  // 完整用戶數據
             });
           } else {
-            // 未找到用戶記錄或請求失敗，判定為無效
+            // 未找到用戶記錄，判定為非專業用戶
             resolve({
-              isValid: false,
+              isProfessional: false,
+              isExpired: false,
               userData: null
             });
           }
@@ -399,11 +425,11 @@
       });
     }
 
-    // 加載用戶詳細狀態並顯示（移除次數相關代碼）
-    function displayUserStatus(userData) {
+    // 加載用戶詳細狀態並顯示（處理過期狀態）
+    function displayUserStatus(userData, isExpired) {
       const today = getTaipeiDate();
       const expiryDate = userData.expiryDate || "";
-      const isExpiryValid = compareDates(today, expiryDate);
+      isUserExpired = isExpired; // 保存過期狀態
 
       // 填充用戶信息（優先顯示後端存儲的名稱，其次是LINE暱稱）
       document.getElementById('displayUserName').textContent = userData.name || lineDisplayName || "LINE用戶";
@@ -414,11 +440,23 @@
         expiryEl.innerHTML = "未設定 <span class='expired-tag'>(已過期)</span>";
       } else {
         const formattedDate = formatDateDisplay(expiryDate);
-        if (isExpiryValid) {
-          expiryEl.innerHTML = `${formattedDate} <span class='valid-tag'>(有效)</span>`;
-        } else {
+        if (isExpired) {
           expiryEl.innerHTML = `${formattedDate} <span class='expired-tag'>(已過期)</span>`;
+        } else {
+          expiryEl.innerHTML = `${formattedDate} <span class='valid-tag'>(有效)</span>`;
         }
+      }
+
+      // 處理過期提示和按鈕狀態
+      const expiryAlert = document.getElementById('expiryAlert');
+      const submitBtn = document.getElementById('submitBtn');
+      
+      if (isExpired) {
+        expiryAlert.classList.remove('content-hidden'); // 顯示過期提示
+        submitBtn.disabled = true; // 禁用提交按鈕
+      } else {
+        expiryAlert.classList.add('content-hidden'); // 隱藏過期提示
+        submitBtn.disabled = false; // 啟用提交按鈕
       }
 
       // 顯示用戶類型
@@ -427,7 +465,7 @@
       hideLoading();
     }
 
-    // 處理表單提交響應（移除次數更新相關代碼）
+    // 處理表單提交響應
     function handleResponse(response) {
       if (response.status === "success") {
         alert("✅ 資料已成功送出！\n會用Line贈送免費調整方案！");
@@ -441,8 +479,14 @@
       }
     }
 
-    // 發送表單數據
+    // 發送表單數據（添加過期檢查）
     function sendData() {
+      // 若用戶已過期，直接提示不發送請求
+      if (isUserExpired) {
+        alert("⚠️ 您的專業用戶權限已過期，請聯繫管理員續期後再提交！");
+        return;
+      }
+
       const data = {
         pageId: document.getElementById('pageId').value,
         date: document.getElementById('date').value,
@@ -467,7 +511,7 @@
       };
     }
 
-    // 初始化LIFF並執行完整驗證流程（取消次數相關邏輯）
+    // 初始化LIFF並執行完整驗證流程
     async function initLiff() {
       try {
         // 1. 初始化LIFF（用戶看到驗證頁面）
@@ -492,38 +536,24 @@
         currentUserId = profile.userId; // 對應專業用戶列表的User ID
         lineDisplayName = profile.displayName?.trim() || "LINE用戶";
 
-        // 4. 核心驗證：用戶類型（專業用戶）+ 使用期限（有效）
+        // 4. 核心驗證：是否為專業用戶（單獨處理過期狀態）
         const verificationResult = await verifyUserStatus(currentUserId);
         
-        if (!verificationResult.isValid) {
-          // 驗證失敗：區分未授權和已過期
-          const userData = verificationResult.userData;
-          if (userData && userData.userType === "專業用戶") {
-            // 是專業用戶但已過期
-            const expiryDate = formatDateDisplay(userData.expiryDate);
-            showForbiddenContent(
-              "賬號已過期",
-              `您的專業用戶權限已於${expiryDate}過期<br>請聯繫管理員續期後再訪問`
-            );
-          } else {
-            // 非專業用戶
-            showForbiddenContent(
-              "未授權訪問",
-              "此頁面僅開放給「有效專業用戶」訪問<br>若您有相關授權，請聯繫管理員升級並設定使用期限"
-            );
-          }
+        if (!verificationResult.isProfessional) {
+          // 非專業用戶：顯示禁止訪問頁面
+          showForbiddenContent();
           return;
         }
 
-        // 5. 驗證成功：直接登錄，顯示主頁面和用戶狀態（包含使用期限）
+        // 5. 是專業用戶：顯示主頁面，並展示過期狀態
         showMainContent();
         
         // 填充隱藏字段（Line ID對應專業用戶列表的User ID）
         document.getElementById('lineId').value = currentUserId;
         document.getElementById('date').value = getTaipeiDate();
         
-        // 顯示用戶完整狀態（名稱、用戶類型、使用期限）
-        displayUserStatus(verificationResult.userData);
+        // 顯示用戶完整狀態（包含過期提示）
+        displayUserStatus(verificationResult.userData, verificationResult.isExpired);
 
       } catch (error) {
         console.error("初始化失敗：", error);
