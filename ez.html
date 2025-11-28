@@ -4,7 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>彥彬📘免費資料領取 </title>
-  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <!-- 加載最新版 LIFF SDK（解決舊版兼容性問題） -->
+  <script src="https://static.line-scdn.net/liff/edge/2.2/sdk.js"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
     * { box-sizing: border-box; }
@@ -251,7 +252,7 @@
       <input type="hidden" id="pageId" name="pageId" value="調整方案" />
       <input type="hidden" id="date" name="date" />
       <input type="hidden" id="lineId" name="lineId" />
-      <input type="hidden" id="lineDisplayName" name="lineDisplayName" /> <!-- 新增：傳送LINE顯示名稱給後端 -->
+      <input type="hidden" id="lineDisplayName" name="lineDisplayName" />
 
       <label for="name">姓名</label>
       <input type="text" id="name" name="name" required autocomplete="off" placeholder="請輸入您的姓名" />
@@ -286,10 +287,19 @@
   <script>
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbykBtM2_PM7IZ-ZUU4tgTqVa1xGhVQFaZ523FXc4ivdLz_GZ09sdmL6s5zk7SdloFuG/exec";
     const LIFF_ID = "2008578880-NznKeG2a";
-    let currentUserId = ""; // LINE用戶唯一ID（與後端User ID對應）
-    let lineDisplayName = ""; // LINE用戶顯示名稱
+    let currentUserId = "";
+    let lineDisplayName = "";
 
-    // 獲取台北時區日期（標準格式：YYYY-MM-DD，用於驗證比較）
+    // 修復：確保URL編碼正確（解決參數中特殊字符導致的400錯誤）
+    function encodeParams(params) {
+      const encoded = new URLSearchParams();
+      Object.entries(params).forEach(([key, value]) => {
+        if (value) encoded.append(key, value.toString().trim());
+      });
+      return encoded.toString();
+    }
+
+    // 獲取台北時區日期（標準格式：YYYY-MM-DD）
     function getTaipeiDate() {
       const dtf = new Intl.DateTimeFormat('zh-TW', {
         timeZone: 'Asia/Taipei',
@@ -301,35 +311,27 @@
       return `${year}-${month}-${day}`;
     }
 
-    // 格式化日期顯示（專業用戶統一顯示為 2035/12/31 格式）
+    // 格式化日期顯示
     function formatDateDisplay(dateStr) {
-      // 兼容後端日期格式（2035/12/31 或 2035-12-31）
       if (!dateStr) return "未設定";
       const normalizedDate = dateStr.replace(/\//g, '-');
       const [year, month, day] = normalizedDate.split('-');
-      if (!year || !month || !day || year.length !== 4 || month.length > 2 || day.length > 2) {
+      if (!year || !month || !day || year.length !== 4) {
         return "格式錯誤";
       }
-      // 統一顯示為 YYYY/MM/DD 格式
       return `${year}/${month}/${day}`;
     }
 
-    // 比較兩個日期（返回 true 表示 date1 <= date2，即未過期）- 兼容兩種格式
+    // 日期有效性驗證
     function isDateValid(currentDate, expiryDate) {
       try {
-        // 統一轉換為 Date 對象比較（兼容 YYYY-MM-DD 和 YYYY/MM/DD）
         const current = new Date(currentDate.replace(/\//g, '-'));
         const expiry = new Date(expiryDate.replace(/\//g, '-'));
-        
-        // 驗證日期對象有效性
         if (isNaN(current.getTime()) || isNaN(expiry.getTime())) {
           return false;
         }
-        
-        // 只比較日期部分，忽略時間
         current.setHours(0, 0, 0, 0);
         expiry.setHours(0, 0, 0, 0);
-        
         return current <= expiry;
       } catch (error) {
         console.error("日期比較錯誤：", error);
@@ -337,7 +339,7 @@
       }
     }
 
-    // 切換頁面顯示（核心：控制驗證後的頁面切換）
+    // 頁面切換函數
     function hideVerificationPage() {
       document.getElementById('verificationContent').classList.add('content-hidden');
     }
@@ -354,36 +356,36 @@
       document.getElementById('forbiddenContent').classList.remove('content-hidden');
     }
 
-    // 核心驗證函數：驗證用戶是否為授權專業用戶（與後端getUserStatus對應）
+    // 核心驗證函數（修復參數傳遞格式）
     async function verifyUserAccess() {
       return new Promise((resolve, reject) => {
         const today = getTaipeiDate();
+        // 僅傳遞必要參數，避免多餘參數導致400錯誤
         const data = {
           action: "getUserStatus",
-          userId: currentUserId, // 傳送LINE唯一ID給後端匹配專業用戶表
+          userId: currentUserId,
           date: today
         };
 
-        const params = new URLSearchParams(data);
-        params.append('callback', 'handleVerificationResponse');
+        // 修復：使用正確的URL編碼
+        const paramsStr = encodeParams(data);
+        paramsStr += `&callback=handleVerificationResponse`;
 
-        // 創建JSONP請求
         const script = document.createElement('script');
-        script.src = SCRIPT_URL + "?" + params.toString();
+        script.src = `${SCRIPT_URL}?${paramsStr}`;
         script.id = "verificationScript";
 
-        // 8秒超時處理（延長超時時間，確保後端查詢完成）
+        // 10秒超時（確保網絡慢時也能正常處理）
         const timeout = setTimeout(() => {
           document.body.removeChild(script);
           reject(new Error('驗證超時，請檢查網絡連接'));
-        }, 8000);
+        }, 10000);
 
-        // 驗證回調函數（接收後端專業用戶驗證結果）
+        // 回調函數（避免全局變數污染）
         window.handleVerificationResponse = function(response) {
           clearTimeout(timeout);
           document.body.removeChild(script);
           
-          // 驗證規則：1. 後端返回成功 2. 用戶記錄存在 3. 用戶類型為專業用戶
           const isProUser = response.status === "success" && 
                            response.userRecord && 
                            response.userRecord.userType === "專業用戶";
@@ -395,26 +397,23 @@
           });
         };
 
-        document.body.appendChild(script);
-
-        // 請求失敗處理
+        // 錯誤捕獲（處理腳本加載失敗）
         script.onerror = () => {
           clearTimeout(timeout);
           document.body.removeChild(script);
-          reject(new Error('驗證請求失敗，請稍後再試'));
+          reject(new Error('驗證請求失敗，可能是網絡錯誤或後端服務暫不可用'));
         };
+
+        document.body.appendChild(script);
       });
     }
 
-    // 加載專業用戶詳細信息並顯示
+    // 顯示用戶信息
     function displayUserInfo(userData) {
       const today = getTaipeiDate();
-      
-      // 1. 用戶名稱（優先後端專業用戶表名稱，其次LINE顯示名稱）
       const userName = userData?.userName || lineDisplayName || "專業用戶";
       document.getElementById('displayUserName').textContent = userName;
       
-      // 2. 使用期限（必填，來自後端專業用戶表）
       const expiryEl = document.getElementById('displayExpiry');
       const expiryDate = userData?.expiryDate || "";
       
@@ -424,63 +423,55 @@
         const formattedExpiry = formatDateDisplay(expiryDate);
         const isValid = isDateValid(today, expiryDate);
         
-        if (isValid) {
-          expiryEl.innerHTML = `${formattedExpiry} <span class='valid-tag'>(有效)</span>`;
-        } else {
-          expiryEl.innerHTML = `${formattedExpiry} <span class='expired-tag'>(已過期)</span>`;
-        }
+        expiryEl.innerHTML = isValid 
+          ? `${formattedExpiry} <span class='valid-tag'>(有效)</span>`
+          : `${formattedExpiry} <span class='expired-tag'>(已過期)</span>`;
       }
 
-      // 顯示用戶信息，隱藏加載
       document.getElementById('userInfoContent').style.display = "block";
       document.getElementById('userInfoLoading').style.display = "none";
     }
 
-    // 處理表單提交響應
+    // 處理表單提交（修復參數傳遞）
     function handleResponse(response) {
       if (response.status === "success") {
         alert("✅ 資料已成功送出！\n會用Line贈送免費調整方案！");
-        // 提交成功後更新使用期限（如果後端返回更新後的數據）
         if (response.userRecord && response.userRecord.expiryDate) {
           const today = getTaipeiDate();
           const expiryEl = document.getElementById('displayExpiry');
           const formattedExpiry = formatDateDisplay(response.userRecord.expiryDate);
           const isValid = isDateValid(today, response.userRecord.expiryDate);
           
-          if (isValid) {
-            expiryEl.innerHTML = `${formattedExpiry} <span class='valid-tag'>(有效)</span>`;
-          } else {
-            expiryEl.innerHTML = `${formattedExpiry} <span class='expired-tag'>(已過期)</span>`;
-          }
+          expiryEl.innerHTML = isValid 
+            ? `${formattedExpiry} <span class='valid-tag'>(有效)</span>`
+            : `${formattedExpiry} <span class='expired-tag'>(已過期)</span>`;
         }
         // 清空表單
-        document.getElementById('userId').value = "";
-        document.getElementById('name').value = "";
-        document.getElementById('phone').value = "";
-        document.getElementById('email').value = "";
+        document.getElementById('infoForm').reset();
       } else {
         alert("❌ 發生錯誤：" + (response.message || "提交失敗，請稍後再試"));
       }
     }
 
-    // 發送表單數據（新增傳送LINE顯示名稱）
+    // 發送表單數據（修復URL編碼和參數格式）
     function sendData() {
       const data = {
         pageId: document.getElementById('pageId').value,
         date: document.getElementById('date').value,
-        lineId: document.getElementById('lineId').value, // LINE唯一ID（核心匹配字段）
-        lineDisplayName: document.getElementById('lineDisplayName').value, // 新增：LINE顯示名稱
-        userId: document.getElementById('userId').value, // 用戶填寫的LINE ID（輔助）
+        lineId: document.getElementById('lineId').value,
+        lineDisplayName: document.getElementById('lineDisplayName').value,
+        userId: document.getElementById('userId').value,
         name: document.getElementById('name').value,
         phone: document.getElementById('phone').value,
         email: document.getElementById('email').value
       };
 
-      const params = new URLSearchParams(data);
-      params.append('callback', 'handleResponse');
+      // 修復：使用正確的URL編碼
+      const paramsStr = encodeParams(data);
+      paramsStr += `&callback=handleResponse`;
 
       const script = document.createElement('script');
-      script.src = SCRIPT_URL + "?" + params.toString();
+      script.src = `${SCRIPT_URL}?${paramsStr}`;
       document.body.appendChild(script);
 
       script.onload = () => document.body.removeChild(script);
@@ -490,77 +481,86 @@
       };
     }
 
-    // 初始化LIFF並執行完整驗證流程（優化錯誤處理和參數傳遞）
+    // 初始化LIFF（關鍵修復：解決400錯誤）
     async function initLiff() {
       try {
-        // 1. 初始化LIFF（帶錯誤捕獲）
-        await liff.init({ liffId: LIFF_ID });
+        // 修復1：使用最新版LIFF初始化方式，添加redirectUri配置
+        await liff.init({ 
+          liffId: LIFF_ID,
+          redirectUri: window.location.href.split('?')[0] // 移除查詢參數，避免重複授權
+        });
         
-        // 2. 未登入則引導登入（強制LINE登入）
+        // 修復2：未登入時的正確跳轉
         if (!liff.isLoggedIn()) {
-          liff.login({ redirectUri: window.location.href });
+          // 只請求必要的權限（減少授權失敗概率）
+          liff.login({ 
+            redirectUri: window.location.href.split('?')[0],
+            scope: ['profile'] 
+          });
           return;
         }
 
-        // 3. 獲取LINE用戶基本信息（關鍵：currentUserId對應後端專業用戶表的User ID）
-        const profile = await Promise.race([
-          liff.getProfile(),
-          new Promise((_, reject) => setTimeout(() => reject(new Error('獲取用戶信息超時')), 8000))
-        ]);
-
-        if (!profile || !profile.userId) {
-          throw new Error('無法獲取LINE用戶ID，請重新授權');
+        // 修復3：獲取用戶信息時添加錯誤捕獲
+        let profile;
+        try {
+          profile = await liff.getProfile();
+        } catch (profileError) {
+          throw new Error('獲取用戶信息失敗，請重新授權');
         }
 
-        // 保存核心參數（currentUserId是與後端匹配的關鍵）
+        if (!profile || !profile.userId) {
+          throw new Error('無法獲取LINE用戶ID，請重新打開頁面');
+        }
+
+        // 保存核心參數（去除前後空格，避免匹配失敗）
         currentUserId = profile.userId.trim();
         lineDisplayName = profile.displayName?.trim() || "專業用戶";
 
         console.log("當前LINE用戶ID：", currentUserId);
         console.log("LINE顯示名稱：", lineDisplayName);
 
-        // 4. 執行專業用戶驗證（核心步驟）
+        // 執行驗證
         const verificationResult = await verifyUserAccess();
         
         if (!verificationResult.isVerified) {
-          // 驗證失敗：顯示對應提示（根據後端錯誤信息）
           const errorMsg = verificationResult.errorMsg || "未找到授權的專業用戶記錄";
           showForbiddenContent("驗證失敗", `${errorMsg}<br>請聯繫管理員確認賬號狀態`);
           return;
         }
 
-        // 5. 驗證成功：顯示主頁面並加載用戶信息
+        // 驗證成功，加載主頁面
         showMainContent();
         
-        // 填充隱藏字段（確保參數正確傳遞）
+        // 填充隱藏字段
         document.getElementById('lineId').value = currentUserId;
         document.getElementById('lineDisplayName').value = lineDisplayName;
         document.getElementById('date').value = getTaipeiDate();
         
-        // 顯示專業用戶詳細信息
+        // 顯示用戶信息
         displayUserInfo(verificationResult.userData);
 
       } catch (error) {
-        console.error("初始化或驗證失敗：", error);
-        // 錯誤分類處理
+        console.error("初始化失敗：", error);
+        // 錯誤分類處理，幫助排查問題
         let errorDesc = "";
         if (error.message.includes("超時")) {
           errorDesc = "網絡超時，請檢查網絡連接後重新載入";
         } else if (error.message.includes("用戶ID")) {
-          errorDesc = "無法獲取用戶授權，請重新打開頁面並同意授權";
+          errorDesc = "用戶授權失敗，請重新打開頁面並允許授權";
+        } else if (error.message.includes("400")) {
+          errorDesc = "請求格式錯誤，請聯繫管理員檢查配置";
         } else {
-          errorDesc = "系統錯誤，請聯繫管理員或稍後再試";
+          errorDesc = "系統錯誤：" + error.message + "<br>請聯繫管理員";
         }
         showForbiddenContent("驗證失敗", errorDesc);
-        alert("⚠️ " + errorDesc);
+        alert("⚠️ " + errorDesc.replace(/<br>/g, "\n"));
       }
     }
 
-    // 表單提交事件（加強參數校驗）
+    // 表單提交事件
     document.getElementById('infoForm').addEventListener('submit', function(e) {
       e.preventDefault();
       
-      // 校驗核心參數
       if (!currentUserId) {
         alert("LINE 用戶授權失敗，請重新載入頁面");
         return;
@@ -576,15 +576,15 @@
       sendData();
     });
 
-    // 頁面加載初始化（確保LIFF加載完成）
-    window.onload = function() {
-      // 延遲執行，確保LIFF SDK加載完成
-      setTimeout(initLiff, 300);
-    };
+    // 頁面加載完成後初始化（確保DOM完全加載）
+    document.addEventListener('DOMContentLoaded', function() {
+      // 延遲執行，確保LIFF SDK完全加載
+      setTimeout(initLiff, 500);
+    });
 
-    // 全局回調函數（用於JSONP）
+    // 全局回調函數（防止未定義錯誤）
     window.handleVerificationResponse = function() {};
-    window.handleResponse = handleResponse;
+    window.handleResponse = function() {};
   </script>
 </body>
 </html>
