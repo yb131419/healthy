@@ -290,6 +290,9 @@
     let currentUserId = "";
     let lineDisplayName = "";
 
+    // 嚴格日期格式正則（僅支持2035/12/31）
+    const DATE_FORMAT_REGEX = /^\d{4}\/\d{2}\/\d{2}$/;
+
     // 修復：確保URL編碼正確（解決參數中特殊字符導致的400錯誤）
     function encodeParams(params) {
       const encoded = new URLSearchParams();
@@ -299,7 +302,7 @@
       return encoded.toString();
     }
 
-    // 獲取台北時區日期（標準格式：YYYY-MM-DD）
+    // 獲取台北時區日期（標準格式：YYYY-MM-DD，用於表單提交日期）
     function getTaipeiDate() {
       const dtf = new Intl.DateTimeFormat('zh-TW', {
         timeZone: 'Asia/Taipei',
@@ -311,27 +314,59 @@
       return `${year}-${month}-${day}`;
     }
 
-    // 格式化日期顯示
+    // 格式化日期顯示（嚴格保持2035/12/31格式，不轉換分隔符）
     function formatDateDisplay(dateStr) {
       if (!dateStr) return "未設定";
-      const normalizedDate = dateStr.replace(/\//g, '-');
-      const [year, month, day] = normalizedDate.split('-');
-      if (!year || !month || !day || year.length !== 4) {
-        return "格式錯誤";
+      
+      // 先去除前後空格
+      const trimmedDate = dateStr.trim();
+      
+      // 驗證是否符合嚴格格式
+      if (!DATE_FORMAT_REGEX.test(trimmedDate)) {
+        return "格式錯誤（需為2035/12/31）";
       }
-      return `${year}/${month}/${day}`;
+      
+      // 驗證日期數值有效性（年、月、日範圍）
+      const [year, month, day] = trimmedDate.split('/').map(Number);
+      if (year < 1900 || year > 2100) return "年份無效";
+      if (month < 1 || month > 12) return "月份無效";
+      
+      // 計算當月最大天數
+      const lastDayOfMonth = new Date(year, month, 0).getDate();
+      if (day < 1 || day > lastDayOfMonth) return `日期無效（${year}年${month}月最大${lastDayOfMonth}天）`;
+      
+      // 格式正確，直接返回原格式
+      return trimmedDate;
     }
 
-    // 日期有效性驗證
+    // 日期有效性驗證（嚴格基於2035/12/31格式）
     function isDateValid(currentDate, expiryDate) {
       try {
-        const current = new Date(currentDate.replace(/\//g, '-'));
-        const expiry = new Date(expiryDate.replace(/\//g, '-'));
-        if (isNaN(current.getTime()) || isNaN(expiry.getTime())) {
+        // 驗證過期日期格式
+        if (!DATE_FORMAT_REGEX.test(expiryDate.trim())) {
+          console.error("過期日期格式錯誤，需為2035/12/31：", expiryDate);
           return false;
         }
-        current.setHours(0, 0, 0, 0);
+
+        // 轉換為Date對象（注意：split('/')保持正確順序）
+        const [expYear, expMonth, expDay] = expiryDate.trim().split('/').map(Number);
+        const expiry = new Date(expYear, expMonth - 1, expDay); // 月份從0開始，需減1
+        
+        // 轉換當前日期（currentDate為YYYY-MM-DD格式）
+        const [currYear, currMonth, currDay] = currentDate.split('-').map(Number);
+        const current = new Date(currYear, currMonth - 1, currDay);
+
+        // 驗證日期對象是否有效
+        if (isNaN(expiry.getTime()) || isNaN(current.getTime())) {
+          console.error("日期解析失敗：", currentDate, expiryDate);
+          return false;
+        }
+
+        // 只比較日期部分（忽略時間）
         expiry.setHours(0, 0, 0, 0);
+        current.setHours(0, 0, 0, 0);
+
+        // 判斷是否未過期（今天 <= 到期日）
         return current <= expiry;
       } catch (error) {
         console.error("日期比較錯誤：", error);
@@ -369,10 +404,10 @@
 
         // 修復：使用正確的URL編碼
         const paramsStr = encodeParams(data);
-        paramsStr += `&callback=handleVerificationResponse`;
+        const finalUrl = `${SCRIPT_URL}?${paramsStr}&callback=handleVerificationResponse`;
 
         const script = document.createElement('script');
-        script.src = `${SCRIPT_URL}?${paramsStr}`;
+        script.src = finalUrl;
         script.id = "verificationScript";
 
         // 10秒超時（確保網絡慢時也能正常處理）
@@ -385,6 +420,18 @@
         window.handleVerificationResponse = function(response) {
           clearTimeout(timeout);
           document.body.removeChild(script);
+          
+          // 額外驗證後端返回的日期格式
+          if (response.status === "success" && response.userRecord && response.userRecord.expiryDate) {
+            const expiryDate = response.userRecord.expiryDate.trim();
+            if (!DATE_FORMAT_REGEX.test(expiryDate)) {
+              resolve({
+                isVerified: false,
+                errorMsg: `後端返回的使用期限格式錯誤（${expiryDate}），需為2035/12/31，請聯繫管理員修正`
+              });
+              return;
+            }
+          }
           
           const isProUser = response.status === "success" && 
                            response.userRecord && 
@@ -408,7 +455,7 @@
       });
     }
 
-    // 顯示用戶信息
+    // 顯示用戶信息（嚴格格式顯示）
     function displayUserInfo(userData) {
       const today = getTaipeiDate();
       const userName = userData?.userName || lineDisplayName || "專業用戶";
@@ -421,11 +468,15 @@
         expiryEl.innerHTML = "未設定 <span class='expired-tag'>(已過期)</span>";
       } else {
         const formattedExpiry = formatDateDisplay(expiryDate);
-        const isValid = isDateValid(today, expiryDate);
-        
-        expiryEl.innerHTML = isValid 
-          ? `${formattedExpiry} <span class='valid-tag'>(有效)</span>`
-          : `${formattedExpiry} <span class='expired-tag'>(已過期)</span>`;
+        // 如果格式化後顯示錯誤，直接顯示錯誤信息
+        if (formattedExpiry.includes("錯誤") || formattedExpiry.includes("無效")) {
+          expiryEl.innerHTML = `${formattedExpiry} <span class='expired-tag'>(無效)</span>`;
+        } else {
+          const isValid = isDateValid(today, expiryDate);
+          expiryEl.innerHTML = isValid 
+            ? `${formattedExpiry} <span class='valid-tag'>(有效)</span>`
+            : `${formattedExpiry} <span class='expired-tag'>(已過期)</span>`;
+        }
       }
 
       document.getElementById('userInfoContent').style.display = "block";
@@ -440,11 +491,15 @@
           const today = getTaipeiDate();
           const expiryEl = document.getElementById('displayExpiry');
           const formattedExpiry = formatDateDisplay(response.userRecord.expiryDate);
-          const isValid = isDateValid(today, response.userRecord.expiryDate);
           
-          expiryEl.innerHTML = isValid 
-            ? `${formattedExpiry} <span class='valid-tag'>(有效)</span>`
-            : `${formattedExpiry} <span class='expired-tag'>(已過期)</span>`;
+          if (formattedExpiry.includes("錯誤") || formattedExpiry.includes("無效")) {
+            expiryEl.innerHTML = `${formattedExpiry} <span class='expired-tag'>(無效)</span>`;
+          } else {
+            const isValid = isDateValid(today, response.userRecord.expiryDate);
+            expiryEl.innerHTML = isValid 
+              ? `${formattedExpiry} <span class='valid-tag'>(有效)</span>`
+              : `${formattedExpiry} <span class='expired-tag'>(已過期)</span>`;
+          }
         }
         // 清空表單
         document.getElementById('infoForm').reset();
@@ -468,10 +523,10 @@
 
       // 修復：使用正確的URL編碼
       const paramsStr = encodeParams(data);
-      paramsStr += `&callback=handleResponse`;
+      const finalUrl = `${SCRIPT_URL}?${paramsStr}&callback=handleResponse`;
 
       const script = document.createElement('script');
-      script.src = `${SCRIPT_URL}?${paramsStr}`;
+      script.src = finalUrl;
       document.body.appendChild(script);
 
       script.onload = () => document.body.removeChild(script);
