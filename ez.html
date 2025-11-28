@@ -103,6 +103,15 @@
       font-size: 0.8rem;
       font-weight: 700;
     }
+    /* 過期/有效標籤樣式 */
+    .expired-tag {
+      color: #ff4444;
+      font-weight: 700;
+    }
+    .valid-tag {
+      color: #9acd32;
+      font-weight: 700;
+    }
     /* 禁止訪問頁面樣式 */
     .forbidden-page {
       padding: 40px 20px;
@@ -219,7 +228,7 @@
   <main id="mainContent" class="content-hidden">
     <h2>彥彬📘 資料填寫 <br> 免費調整方案 <br> 用戶填寫後 <br>『LINE發送文件』</h2>
 
-    <!-- 用戶信息展示區域 -->
+    <!-- 用戶信息展示區域 - 新增使用期限顯示 -->
     <div class="user-info-card">
       <div class="user-info-title">👤 用戶狀態</div>
       <div id="userInfoLoading" class="loading">載入用戶資訊中...</div>
@@ -232,6 +241,12 @@
           <span class="user-info-label">用戶類型：</span>
           <span class="user-info-value" id="displayUserType">
             <span class="normal-tag">普通用戶</span>
+          </span>
+        </div>
+        <div class="user-info-item">
+          <span class="user-info-label">使用期限：</span>
+          <span class="user-info-value" id="displayExpiry">
+            <span class="loading">查詢中...</span>
           </span>
         </div>
         <div class="user-info-item">
@@ -281,7 +296,7 @@
     let currentUserId = "";
     let lineDisplayName = "";
 
-    // 獲取台北時區日期
+    // 獲取台北時區日期（標準格式：YYYY-MM-DD）
     function getTaipeiDate() {
       const dtf = new Intl.DateTimeFormat('zh-TW', {
         timeZone: 'Asia/Taipei',
@@ -291,6 +306,42 @@
       });
       const [{value: year},,{value: month},,{value: day}] = dtf.formatToParts(new Date());
       return `${year}-${month}-${day}`;
+    }
+
+    // 格式化日期顯示（YYYY-MM-DD → YYYY年MM月DD日）
+    function formatDateDisplay(dateStr) {
+      if (!dateStr) return "未設定";
+      // 兼容各種日期格式（如：YYYY/MM/DD、YYYY-MM-DD）
+      const normalizedDate = dateStr.replace(/\//g, '-');
+      const [year, month, day] = normalizedDate.split('-');
+      // 驗證日期格式合法性
+      if (!year || !month || !day || year.length !== 4 || month.length > 2 || day.length > 2) {
+        return "格式錯誤";
+      }
+      return `${year}年${month}月${day}日`;
+    }
+
+    // 比較兩個日期（返回 true 表示 date1 <= date2，即未過期）
+    function isDateValid(currentDate, expiryDate) {
+      try {
+        // 統一轉換為 Date 對象比較（兼容各種格式）
+        const current = new Date(currentDate.replace(/\//g, '-'));
+        const expiry = new Date(expiryDate.replace(/\//g, '-'));
+        
+        // 驗證日期對象有效性
+        if (isNaN(current.getTime()) || isNaN(expiry.getTime())) {
+          return false;
+        }
+        
+        // 只比較日期部分，忽略時間
+        current.setHours(0, 0, 0, 0);
+        expiry.setHours(0, 0, 0, 0);
+        
+        return current <= expiry;
+      } catch (error) {
+        console.error("日期比較錯誤：", error);
+        return false;
+      }
     }
 
     // 切換頁面顯示（核心：控制驗證後的頁面切換）
@@ -310,7 +361,7 @@
       document.getElementById('forbiddenContent').classList.remove('content-hidden');
     }
 
-    // 核心驗證函數：驗證用戶是否有訪問權限（可根據需求調整驗證規則）
+    // 核心驗證函數：驗證用戶是否有訪問權限
     async function verifyUserAccess() {
       return new Promise((resolve, reject) => {
         const today = getTaipeiDate();
@@ -339,7 +390,7 @@
           clearTimeout(timeout);
           document.body.removeChild(script);
           
-          // 驗證規則：1. 後端返回成功 2. 用戶記錄存在（可根據需求擴充，如添加用戶類型、期限驗證）
+          // 驗證規則：1. 後端返回成功 2. 用戶記錄存在
           const isVerified = response.status === "success" && response.userRecord;
           
           resolve({
@@ -359,12 +410,14 @@
       });
     }
 
-    // 加載用戶詳細信息並顯示
+    // 加載用戶詳細信息並顯示（重點修復使用期限顯示）
     function displayUserInfo(userData) {
-      // 填充用戶名稱（優先後端數據，其次LINE暱稱）
+      const today = getTaipeiDate();
+      
+      // 1. 用戶名稱（優先後端數據，其次LINE暱稱）
       document.getElementById('displayUserName').textContent = userData?.name || lineDisplayName || "LINE用戶";
       
-      // 填充用戶類型
+      // 2. 用戶類型
       const userTypeEl = document.getElementById('displayUserType');
       if (userData?.userType === "專業用戶") {
         userTypeEl.innerHTML = '<span class="pro-tag">專業用戶</span>';
@@ -372,7 +425,27 @@
         userTypeEl.innerHTML = '<span class="normal-tag">普通用戶</span>';
       }
       
-      // 填充剩餘次數
+      // 3. 使用期限（核心修復部分）
+      const expiryEl = document.getElementById('displayExpiry');
+      const expiryDate = userData?.expiryDate || "";
+      
+      if (!expiryDate) {
+        // 無期限數據時的顯示
+        expiryEl.innerHTML = "未設定 <span class='expired-tag'>(已過期)</span>";
+      } else {
+        // 格式化顯示日期
+        const formattedExpiry = formatDateDisplay(expiryDate);
+        // 正確判斷是否過期
+        const isValid = isDateValid(today, expiryDate);
+        
+        if (isValid) {
+          expiryEl.innerHTML = `${formattedExpiry} <span class='valid-tag'>(有效)</span>`;
+        } else {
+          expiryEl.innerHTML = `${formattedExpiry} <span class='expired-tag'>(已過期)</span>`;
+        }
+      }
+      
+      // 4. 今日剩餘次數
       document.getElementById('displayRemaining').textContent = userData?.remaining || "0次/天";
 
       // 顯示用戶信息，隱藏加載
@@ -387,6 +460,19 @@
         // 提交成功後更新剩餘次數
         if (response.userRecord) {
           document.getElementById('displayRemaining').textContent = response.userRecord.remaining || "0次/天";
+          // 同步更新使用期限（如果後端返回了更新後的期限）
+          if (response.userRecord.expiryDate) {
+            const today = getTaipeiDate();
+            const expiryEl = document.getElementById('displayExpiry');
+            const formattedExpiry = formatDateDisplay(response.userRecord.expiryDate);
+            const isValid = isDateValid(today, response.userRecord.expiryDate);
+            
+            if (isValid) {
+              expiryEl.innerHTML = `${formattedExpiry} <span class='valid-tag'>(有效)</span>`;
+            } else {
+              expiryEl.innerHTML = `${formattedExpiry} <span class='expired-tag'>(已過期)</span>`;
+            }
+          }
         }
         // 清空表單
         document.getElementById('userId').value = "";
@@ -424,19 +510,19 @@
       };
     }
 
-    // 初始化LIFF並執行完整驗證流程（驗證頁面置頂）
+    // 初始化LIFF並執行完整驗證流程
     async function initLiff() {
       try {
         // 1. 初始化LIFF（此時用戶看到的是驗證頁面）
         await liff.init({ liffId: LIFF_ID });
         
-        // 2. 未登入則引導登入（保持原有邏輯）
+        // 2. 未登入則引導登入
         if (!liff.isLoggedIn()) {
           liff.login();
           return;
         }
 
-        // 3. 獲取LINE用戶基本信息（用於驗證和顯示）
+        // 3. 獲取LINE用戶基本信息
         const profile = await Promise.race([
           liff.getProfile(),
           new Promise((_, reject) => setTimeout(() => reject(new Error('超時')), 5000))
@@ -449,7 +535,7 @@
         currentUserId = profile.userId;
         lineDisplayName = profile.displayName?.trim() || "LINE用戶";
 
-        // 4. 核心步驟：執行用戶訪問驗證（驗證不通過則跳轉禁止頁）
+        // 4. 執行用戶訪問驗證
         const verificationResult = await verifyUserAccess();
         
         if (!verificationResult.isVerified) {
@@ -465,7 +551,7 @@
         document.getElementById('lineId').value = currentUserId;
         document.getElementById('date').value = getTaipeiDate();
         
-        // 顯示用戶詳細信息
+        // 顯示用戶詳細信息（包含修復後的使用期限）
         displayUserInfo(verificationResult.userData);
 
       } catch (error) {
@@ -489,11 +575,11 @@
       sendData();
     });
 
-    // 頁面加載初始化（直接執行驗證流程，用戶先看到驗證頁）
+    // 頁面加載初始化
     window.onload = initLiff;
 
     // 全局回調函數（用於JSONP）
-    window.handleVerificationResponse = function() {}; // 動態賦值，避免報錯
+    window.handleVerificationResponse = function() {};
     window.handleResponse = handleResponse;
   </script>
 </body>
