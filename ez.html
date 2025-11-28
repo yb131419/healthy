@@ -296,7 +296,7 @@
     let currentUserId = "";
     let lineDisplayName = "";
 
-    // 獲取台北時區日期（標準格式：YYYY-MM-DD）
+    // 獲取台北時區日期（標準格式：YYYY-MM-DD，用於驗證比較）
     function getTaipeiDate() {
       const dtf = new Intl.DateTimeFormat('zh-TW', {
         timeZone: 'Asia/Taipei',
@@ -308,23 +308,35 @@
       return `${year}-${month}-${day}`;
     }
 
-    // 格式化日期顯示（YYYY-MM-DD → YYYY年MM月DD日）
-    function formatDateDisplay(dateStr) {
+    // 格式化日期顯示（專業用戶強制顯示為 2035/12/31 格式，其他用戶正常格式化）
+    function formatDateDisplay(dateStr, userType) {
+      // 專業用戶特殊處理：如果日期是 2035-12-31 或 2035/12/31，統一顯示為 2035/12/31
+      const isProUser = userType === "專業用戶";
+      const targetDate = "2035/12/31";
+      
+      if (isProUser) {
+        // 判斷是否是目標日期（兼容兩種格式）
+        const normalizedInput = dateStr?.replace(/\//g, '-') || "";
+        if (normalizedInput === "2035-12-31") {
+          return targetDate;
+        }
+      }
+
+      // 非專業用戶或其他日期：正常格式化
       if (!dateStr) return "未設定";
-      // 兼容各種日期格式（如：YYYY/MM/DD、YYYY-MM-DD）
       const normalizedDate = dateStr.replace(/\//g, '-');
       const [year, month, day] = normalizedDate.split('-');
-      // 驗證日期格式合法性
       if (!year || !month || !day || year.length !== 4 || month.length > 2 || day.length > 2) {
         return "格式錯誤";
       }
-      return `${year}年${month}月${day}日`;
+      // 普通用戶顯示為 YYYY/MM/DD 格式（與專業用戶目標格式統一）
+      return `${year}/${month}/${day}`;
     }
 
-    // 比較兩個日期（返回 true 表示 date1 <= date2，即未過期）
+    // 比較兩個日期（返回 true 表示 date1 <= date2，即未過期）- 兼容兩種格式
     function isDateValid(currentDate, expiryDate) {
       try {
-        // 統一轉換為 Date 對象比較（兼容各種格式）
+        // 統一轉換為 Date 對象比較（兼容 YYYY-MM-DD 和 YYYY/MM/DD）
         const current = new Date(currentDate.replace(/\//g, '-'));
         const expiry = new Date(expiryDate.replace(/\//g, '-'));
         
@@ -410,22 +422,23 @@
       });
     }
 
-    // 加載用戶詳細信息並顯示（重點修復使用期限顯示）
+    // 加載用戶詳細信息並顯示（重點：專業用戶日期格式強制為 2035/12/31）
     function displayUserInfo(userData) {
       const today = getTaipeiDate();
+      const userType = userData?.userType || "普通用戶";
       
       // 1. 用戶名稱（優先後端數據，其次LINE暱稱）
       document.getElementById('displayUserName').textContent = userData?.name || lineDisplayName || "LINE用戶";
       
       // 2. 用戶類型
       const userTypeEl = document.getElementById('displayUserType');
-      if (userData?.userType === "專業用戶") {
+      if (userType === "專業用戶") {
         userTypeEl.innerHTML = '<span class="pro-tag">專業用戶</span>';
       } else {
         userTypeEl.innerHTML = '<span class="normal-tag">普通用戶</span>';
       }
       
-      // 3. 使用期限（核心修復部分）
+      // 3. 使用期限（核心修改：專業用戶強制顯示 2035/12/31 格式）
       const expiryEl = document.getElementById('displayExpiry');
       const expiryDate = userData?.expiryDate || "";
       
@@ -433,9 +446,9 @@
         // 無期限數據時的顯示
         expiryEl.innerHTML = "未設定 <span class='expired-tag'>(已過期)</span>";
       } else {
-        // 格式化顯示日期
-        const formattedExpiry = formatDateDisplay(expiryDate);
-        // 正確判斷是否過期
+        // 格式化顯示日期（專業用戶特殊處理）
+        const formattedExpiry = formatDateDisplay(expiryDate, userType);
+        // 正確判斷是否過期（兼容兩種格式）
         const isValid = isDateValid(today, expiryDate);
         
         if (isValid) {
@@ -457,14 +470,16 @@
     function handleResponse(response) {
       if (response.status === "success") {
         alert("✅ 資料已成功送出！\n會用Line贈送免費調整方案！");
-        // 提交成功後更新剩餘次數
+        // 提交成功後更新剩餘次數和使用期限
         if (response.userRecord) {
+          const userType = response.userRecord.userType || "普通用戶";
           document.getElementById('displayRemaining').textContent = response.userRecord.remaining || "0次/天";
-          // 同步更新使用期限（如果後端返回了更新後的期限）
+          
+          // 同步更新使用期限（專業用戶格式強制處理）
           if (response.userRecord.expiryDate) {
             const today = getTaipeiDate();
             const expiryEl = document.getElementById('displayExpiry');
-            const formattedExpiry = formatDateDisplay(response.userRecord.expiryDate);
+            const formattedExpiry = formatDateDisplay(response.userRecord.expiryDate, userType);
             const isValid = isDateValid(today, response.userRecord.expiryDate);
             
             if (isValid) {
@@ -551,7 +566,7 @@
         document.getElementById('lineId').value = currentUserId;
         document.getElementById('date').value = getTaipeiDate();
         
-        // 顯示用戶詳細信息（包含修復後的使用期限）
+        // 顯示用戶詳細信息（專業用戶日期格式強制為 2035/12/31）
         displayUserInfo(verificationResult.userData);
 
       } catch (error) {
