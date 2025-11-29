@@ -55,6 +55,7 @@
     const LIFF_ID = "2008578880-NznKeG2a";
     const GAS_URL = "https://script.google.com/macros/s/AKfycbykBtM2_PM7IZ-ZUU4tgTqVa1xGhVQFaZ523FXc4ivdLz_GZ09sdmL6s5zk7SdloFuG/exec";
     const JSONP_TIMEOUT = 15000;
+    const PERMANENT_EXPIRY_DATE = "9999/12/31"; // 用於標識永久有效的日期（自定義規範）
 
     // 簡化狀態設置函數
     const setStatus = text => document.getElementById('status-text').textContent = text;
@@ -71,22 +72,54 @@
       el.classList.remove('hidden');
     };
 
-    // 格式化剩餘天數（完全對應後端返回：數字天數或「永久有效」）
-    const formatRemainingDays = (remainingDays) => {
+    // 核心：基於使用期限日期計算剩餘天數（完全日期驅動）
+    const calculateRemainingDaysByDate = (expiryDateStr) => {
       try {
-        if (typeof remainingDays === 'number') {
-          if (remainingDays < 0) return "已過期";
-          else if (remainingDays === 0) return "最後1天";
-          else return `${remainingDays} 天`;
-        } else if (typeof remainingDays === 'string') {
-          // 對應後端返回的「永久有效」文字
-          return remainingDays === "永久有效" ? "永久有效" : remainingDays;
-        } else {
-          return "未知";
+        // 1. 判斷是否為永久有效（使用自定義日期標識）
+        if (expiryDateStr === PERMANENT_EXPIRY_DATE) {
+          return { displayDate: "永久有效", remainingDays: "永久有效" };
         }
+
+        // 2. 驗證並標準化日期格式（支持 yyyy/mm/dd 和 yyyy-mm-dd）
+        const dateRegex = /^\d{4}[-\/]\d{2}[-\/]\d{2}$/;
+        if (!dateRegex.test(expiryDateStr)) {
+          return { displayDate: "格式錯誤", remainingDays: "格式錯誤" };
+        }
+
+        // 3. 統一轉換為 '/' 分隔，便於解析
+        const normalizedDateStr = expiryDateStr.replace(/-/g, '/');
+        const [year, month, day] = normalizedDateStr.split('/').map(Number);
+        
+        // 4. 創建日期對象（UTC時間避免時區偏差）
+        const expiryDate = new Date(Date.UTC(year, month - 1, day));
+        const today = new Date();
+        const todayUTC = new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()));
+
+        // 5. 驗證日期有效性
+        if (isNaN(expiryDate.getTime())) {
+          return { displayDate: "日期無效", remainingDays: "日期無效" };
+        }
+
+        // 6. 計算剩餘天數
+        const timeDiff = expiryDate - todayUTC;
+        const remainingDays = Math.ceil(timeDiff / (1000 * 3600 * 24));
+
+        // 7. 格式化顯示結果
+        const formattedDate = `${year}/${String(month).padStart(2, '0')}/${String(day).padStart(2, '0')}`;
+        let remainingDaysText;
+        
+        if (remainingDays < 0) {
+          remainingDaysText = "已過期";
+        } else if (remainingDays === 0) {
+          remainingDaysText = "最後1天";
+        } else {
+          remainingDaysText = `${remainingDays} 天`;
+        }
+
+        return { displayDate: formattedDate, remainingDays: remainingDaysText };
       } catch (error) {
-        console.error("格式化剩餘天數失敗：", error);
-        return "未知";
+        console.error("基於日期計算剩餘天數失敗：", error, "日期字符串：", expiryDateStr);
+        return { displayDate: "計算錯誤", remainingDays: "計算錯誤" };
       }
     };
 
@@ -113,7 +146,7 @@
         .catch(err => showError('取得使用者資料失敗：' + err.message));
     }
 
-    // 調用後端驗證
+    // 調用後端驗證（新增請求參數，要求後端返回使用期限日期）
     function callGasBackend(userId, displayName) {
       $.ajax({
         url: GAS_URL,
@@ -123,7 +156,8 @@
         data: { 
           userId: userId, 
           displayName: displayName,
-          action: 'verifyUser'
+          action: 'verifyUser',
+          needExpiryDate: true // 告訴後端需要返回使用期限日期
         },
         success: function(resp) {
           console.log("後端返回完整數據：", resp); // 調試用
@@ -143,34 +177,35 @@
       });
     }
 
-    // 渲染驗證結果（核心修正：完全對應後端返回格式）
+    // 渲染驗證結果（完全基於使用期限日期）
     function renderResult(resp) {
       document.getElementById('status').classList.add('hidden');
       const card = document.getElementById('result-card');
       const main = document.getElementById('result-main');
       const details = document.getElementById('result-details');
 
-      // 1. 從頂級字段獲取數據（後端返回的 isAdmin 對應專業用戶）
-      const isProUser = resp.isAdmin === true; // 明確布爾值判斷
+      // 1. 獲取核心數據（確保從後端正確字段获取使用期限日期）
+      const isProUser = resp.isAdmin === true;
       const userName = resp.displayName || '未知用戶';
-      const remainingDays = resp.remainingDays; // 直接使用後端計算好的剩餘天數
-      const usageCount = resp.usageCount;
+      // 優先從 resp.expiryDate 获取，兼容後端可能的字段名
+      const expiryDateStr = resp.expiryDate || resp.endDate || resp.expireDate || '';
 
-      console.log("驗證結果：", { isProUser, remainingDays, usageCount }); // 調試用
+      console.log("核心數據：", { isProUser, expiryDateStr }); // 調試用
 
       if (isProUser) {
-        // 專業用戶：顯示「永久有效」或具體天數（不再顯示「無限制」）
-        const formattedDays = formatRemainingDays(remainingDays);
+        // 2. 專業用戶：基於使用期限日期計算並顯示
+        const { displayDate, remainingDays } = calculateRemainingDaysByDate(expiryDateStr);
         main.innerHTML = `<span class="text-primary"><i class="fa fa-check-circle mr-1"></i>專業用戶驗證通過</span>`;
         details.innerHTML = `用戶名稱：${userName}<br>
-                           使用類型：專業用戶<br>
-                           剩餘天數：${formattedDays}`;
+                           使用期限：${displayDate}<br>
+                           剩餘天數：${remainingDays}`;
       } else {
-        // 普通用戶：顯示剩餘次數
-        const remainingTimes = usageCount !== undefined ? (3 - usageCount) : "未知";
+        // 3. 普通用戶：顯示剩餘次數
+        const usageCount = resp.usageCount || 0;
+        const remainingTimes = Math.max(0, 3 - usageCount); // 確保不為負數
         main.innerHTML = `<span class="text-gray-600"><i class="fa fa-user mr-1"></i>普通用戶</span>`;
         details.innerHTML = `用戶名稱：${userName}<br>
-                           使用類型：普通用戶<br>
+                           使用期限：-<br>
                            剩餘次數：${remainingTimes} 次`;
       }
 
