@@ -47,7 +47,6 @@
       <div id="result-card" class="hidden border border-gray-100 rounded p-4 mb-3 text-center">
         <div id="result-main" class="text-lg font-medium mb-2"></div>
         <div id="result-details" class="text-sm text-gray-700 mb-3"></div>
-        <!-- 刪除跳轉按鈕和備註 -->
       </div>
     </div>
   </div>
@@ -72,51 +71,51 @@
       el.classList.remove('hidden');
     };
 
-    // 計算剩餘天數（嚴格支持2035/12/31格式，僅返回天數/狀態）
+    // 增強版計算剩餘天數（支持多種日期格式，更穩健的計算）
     const calculateRemainingDays = (expiryDateStr) => {
       try {
-        // 驗證日期格式（2035/12/31）
-        const dateRegex = /^\d{4}\/\d{2}\/\d{2}$/;
+        // 支援 2035/12/31 和 2035-12-31 兩種格式
+        const dateRegex = /^\d{4}[-\/]\d{2}[-\/]\d{2}$/;
         if (!dateRegex.test(expiryDateStr)) {
           return "格式錯誤";
         }
 
-        // 解析日期（拆分年/月/日）
-        const [year, month, day] = expiryDateStr.split('/').map(Number);
-        const expiryDate = new Date(year, month - 1, day); // 月份從0開始，需減1
+        // 統一轉換為 '/' 分隔，便於解析
+        const normalizedDateStr = expiryDateStr.replace(/-/g, '/');
+        const [year, month, day] = normalizedDateStr.split('/').map(Number);
+        
+        // 創建日期對象（使用UTC時間避免時區偏差）
+        const expiryDate = new Date(Date.UTC(year, month - 1, day));
         const today = new Date();
+        const todayUTC = new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()));
 
         // 驗證日期有效性
         if (isNaN(expiryDate.getTime())) {
           return "日期無效";
         }
 
-        // 只比較日期部分（忽略時間）
-        expiryDate.setHours(0, 0, 0, 0);
-        today.setHours(0, 0, 0, 0);
-
-        // 計算剩餘天數
-        const timeDiff = expiryDate - today;
+        // 計算剩餘天數（UTC時間計算，避免跨時區錯誤）
+        const timeDiff = expiryDate - todayUTC;
         const remainingDays = Math.ceil(timeDiff / (1000 * 3600 * 24));
 
         if (remainingDays < 0) {
           return "已過期";
+        } else if (remainingDays === 0) {
+          return "最後1天"; // 當天到期顯示更直觀的提示
         } else {
-          return `${remainingDays} 天`; // 統一返回「X 天」格式，包含最後1天（1 天）
+          return `${remainingDays} 天`;
         }
       } catch (error) {
-        console.error("計算剩餘天數失敗：", error);
+        console.error("計算剩餘天數失敗：", error, "日期字符串：", expiryDateStr);
         return "計算錯誤";
       }
     };
 
     document.addEventListener('DOMContentLoaded', function() {
       setStatus('正在初始化 LIFF...');
-      // 優化LIFF初始化配置，移除多餘參數
       liff.init({ liffId: LIFF_ID }, { disableRedirect: true })
         .then(() => {
           if (!liff.isLoggedIn()) {
-            // 簡化登錄流程，直接跳轉登錄
             liff.login();
           } else {
             getProfileAndVerify();
@@ -125,31 +124,30 @@
         .catch(err => showError('系統初始化失敗：' + err.message));
     });
 
-    // 獲取用戶信息並驗證（優化流程，減少不必要的步驟）
+    // 獲取用戶信息並驗證
     function getProfileAndVerify() {
       setStatus('驗證使用者資訊中...');
       liff.getProfile()
         .then(profile => {
-          // 僅傳遞必要參數，減少請求數據量
           callGasBackend(profile.userId, profile.displayName || '未知用戶');
         })
         .catch(err => showError('取得使用者資料失敗：' + err.message));
     }
 
-    // 調用後端驗證（優化AJAX配置，提高響應速度）
+    // 調用後端驗證
     function callGasBackend(userId, displayName) {
       $.ajax({
         url: GAS_URL,
         dataType: 'jsonp',
         jsonp: 'callback',
         timeout: JSONP_TIMEOUT,
-        // 壓縮請求數據，只傳遞核心參數
         data: { 
           userId: userId, 
           displayName: displayName,
-          action: 'verifyUser' // 增加明確的操作標識，便於後端處理
+          action: 'verifyUser'
         },
         success: function(resp) {
+          console.log("後端返回數據：", resp); // 新增日誌，便於調試
           if (resp.status === "error") {
             showError(resp.message);
           } else {
@@ -157,33 +155,40 @@
           }
         },
         error: function(xhr, status, error) {
-          // 詳細錯誤分類，便於排查
           let errorMsg = '與伺服器通訊失敗';
           if (status === 'timeout') errorMsg = '請求超時，請檢查網絡連接';
           else if (status === 'parsererror') errorMsg = '數據解析錯誤';
           showError(errorMsg);
+          console.error("AJAX錯誤：", status, error);
         }
       });
     }
 
-    // 渲染驗證結果（嚴格按照需求：使用期限顯示日期，剩餘天數顯示天數）
+    // 渲染驗證結果（增強字段檢查）
     function renderResult(resp) {
       document.getElementById('status').classList.add('hidden');
       const card = document.getElementById('result-card');
       const main = document.getElementById('result-main');
       const details = document.getElementById('result-details');
 
-      // 優化用戶類型判斷（支援多種可能的返回字段）
+      // 增強用戶類型判斷，增加日誌便於調試
+      const userRecord = resp.userRecord || {};
+      console.log("用戶記錄：", userRecord);
+      
       const isProUser = 
-        resp.userRecord?.userType === "專業用戶" || 
+        userRecord.userType === "專業用戶" || 
         resp.isAdmin === true || 
-        (resp.userRecord?.userType && resp.userRecord.userType.includes("專業"));
+        (userRecord.userType && userRecord.userType.includes("專業"));
 
+      const userName = userRecord.userName || resp.displayName || '未知用戶';
+      
       if (isProUser) {
-        // 專業用戶顯示邏輯：嚴格顯示日期和天數
-        const userName = resp.userRecord?.userName || resp.displayName || '未知用戶';
-        const expiryDate = resp.userRecord?.expiryDate || '無限制'; // 有日期顯示日期，無則顯示"無限制"
-        const remainingDays = expiryDate !== '無限制' 
+        // 優先從 userRecord 獲取到期日期，兼容不同的字段名
+        const expiryDate = userRecord.expiryDate || userRecord.endDate || userRecord.expireDate || '無限制';
+        
+        console.log("到期日期：", expiryDate); // 列印到期日期，便於調試
+        
+        const remainingDays = expiryDate !== '無限制' && expiryDate 
           ? calculateRemainingDays(expiryDate) 
           : '無限制';
 
@@ -192,8 +197,6 @@
                            使用期限：${expiryDate}<br>
                            剩餘天數：${remainingDays}`;
       } else {
-        // 普通用戶顯示邏輯：統一用"-"占位
-        const userName = resp.displayName || resp.userRecord?.userName || '未知用戶';
         main.innerHTML = `<span class="text-gray-600"><i class="fa fa-user mr-1"></i>普通用戶</span>`;
         details.innerHTML = `用戶名稱：${userName}<br>
                            使用期限：-<br>
