@@ -34,6 +34,7 @@
       .symptom-card-hover { transition: all 0.2s ease; }
       .symptom-card-hover:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
       .factor-tag { font-size: 0.75rem; padding: 0.15rem 0.35rem; border-radius: 4px; }
+      .factor-btn-active { transform: scale(1.05); box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
     }
     @keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
     @keyframes slideDown { from { transform: translateY(-20px); opacity: 0 } to { transform: translateY(0); opacity: 1 } }
@@ -79,20 +80,41 @@
           </div>
         </div>
 
-        <!-- 症狀過濾與統計 -->
-        <div class="bg-neutral rounded-lg p-4 mb-6 flex flex-col md:flex-row gap-4 items-center justify-between">
-          <div class="flex flex-wrap gap-2">
-            <button id="select-all" class="bg-primary text-white px-4 py-2 rounded-md text-sm hover:bg-primary/90 transition">
-              <i class="fa fa-check-square-o mr-1"></i>全選
+        <!-- 症狀過濾與統計 - 已修改為七大要素分類選項 -->
+        <div class="bg-neutral rounded-lg p-4 mb-6">
+          <div class="flex flex-wrap gap-2 mb-4">
+            <button id="filter-all" class="bg-primary text-white px-4 py-2 rounded-md text-sm hover:bg-primary/90 transition factor-btn-active">
+              <i class="fa fa-th-list mr-1"></i>顯示全部
             </button>
-            <button id="deselect-all" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-md text-sm hover:bg-gray-300 transition">
-              <i class="fa fa-square-o mr-1"></i>取消全選
+            <!-- 七大要素分類按鈕 -->
+            <button data-factor="气血" class="bg-blue-500 text-white px-4 py-2 rounded-md text-sm hover:bg-blue-600 transition">
+              <i class="fa fa-tag mr-1"></i>氣血不足
             </button>
-            <button id="filter-selected" class="bg-blue-500 text-white px-4 py-2 rounded-md text-sm hover:bg-blue-600 transition">
+            <button data-factor="微循环" class="bg-green-500 text-white px-4 py-2 rounded-md text-sm hover:bg-green-600 transition">
+              <i class="fa fa-tag mr-1"></i>微循環不通
+            </button>
+            <button data-factor="毒素" class="bg-yellow-500 text-white px-4 py-2 rounded-md text-sm hover:bg-yellow-600 transition">
+              <i class="fa fa-tag mr-1"></i>毒素
+            </button>
+            <button data-factor="血脂" class="bg-orange-500 text-white px-4 py-2 rounded-md text-sm hover:bg-orange-600 transition">
+              <i class="fa fa-tag mr-1"></i>血脂粘稠
+            </button>
+            <button data-factor="寒凉湿" class="bg-purple-500 text-white px-4 py-2 rounded-md text-sm hover:bg-purple-600 transition">
+              <i class="fa fa-tag mr-1"></i>寒涼濕症
+            </button>
+            <button data-factor="免疫" class="bg-pink-500 text-white px-4 py-2 rounded-md text-sm hover:bg-pink-600 transition">
+              <i class="fa fa-tag mr-1"></i>免疫
+            </button>
+            <button data-factor="情绪" class="bg-indigo-500 text-white px-4 py-2 rounded-md text-sm hover:bg-indigo-600 transition">
+              <i class="fa fa-tag mr-1"></i>情緒
+            </button>
+          </div>
+          <div class="flex flex-wrap gap-2 mb-2">
+            <button id="filter-selected" class="bg-gray-700 text-white px-4 py-2 rounded-md text-sm hover:bg-gray-800 transition">
               <i class="fa fa-filter mr-1"></i>只看已選
             </button>
           </div>
-          <div class="text-gray-700 text-sm">
+          <div class="text-gray-700 text-sm mt-2">
             已勾選: <span id="selected-count" class="font-bold text-primary">0</span>/100 個症狀
           </div>
         </div>
@@ -143,13 +165,16 @@
       情绪: { className: 'bg-indigo-100 text-indigo-800', label: '情緒' }
     };
 
-    // 時間長短選項
+    // 時間長短選項（已延長週期）
     const durationOptions = [
       { value: '', label: '請選擇時間' },
       { value: '1w', label: '1周內' },
       { value: '1-3m', label: '1-3個月' },
       { value: '3-6m', label: '3-6個月' },
-      { value: '6m+', label: '6個月以上' }
+      { value: '6m-1y', label: '6個月-1年' },
+      { value: '1-2y', label: '1-2年' },
+      { value: '2-5y', label: '2-5年' },
+      { value: '5y+', label: '5年以上' }
     ];
 
     // 症狀輕重選項
@@ -359,10 +384,16 @@
             `<option value="${option.value}">${option.label}</option>`
           ).join('');
 
-          // 建立症狀卡片
+          // 建立症狀卡片，並存儲相關要素信息
           const card = document.createElement('div');
           card.className = 'symptom-card bg-white border border-gray-200 rounded-lg p-4 symptom-card-hover';
           card.dataset.seq = symptom.seq;
+          // 存儲相關要素，用於過濾
+          card.dataset.factors = Object.entries(factorStyles)
+            .filter(([key]) => symptom[key] === "○")
+            .map(([key]) => key)
+            .join(',');
+          
           card.innerHTML = `
             <div class="flex items-start gap-3">
               <!-- 勾選框 -->
@@ -452,63 +483,81 @@
       return checkedCount;
     }
 
-    // 全選/取消全選/過濾功能
-    function initControlButtons() {
-      // 全選
-      document.getElementById('select-all').addEventListener('click', function() {
-        const checkboxes = document.querySelectorAll('.symptom-checkbox');
-        checkboxes.forEach(checkbox => {
-          if (!checkbox.checked) {
-            checkbox.checked = true;
-            // 觸發change事件
-            checkbox.dispatchEvent(new Event('change'));
+    // 初始化過濾按鈕事件（核心修改點）
+    function initFilterButtons() {
+      const filterButtons = document.querySelectorAll('[data-factor], #filter-all');
+      let currentFilter = 'all'; // 預設顯示全部
+      let showOnlySelected = false; // 預設不僅看已選
+
+      // 綁定要素過濾按鈕事件
+      filterButtons.forEach(button => {
+        button.addEventListener('click', function() {
+          // 更新按鈕活躍狀態
+          filterButtons.forEach(btn => btn.classList.remove('factor-btn-active'));
+          this.classList.add('factor-btn-active');
+          
+          // 設置當前過濾條件
+          if (this.id === 'filter-all') {
+            currentFilter = 'all';
+          } else {
+            currentFilter = this.dataset.factor;
           }
+          
+          // 應用過濾
+          applyFilters();
         });
       });
 
-      // 取消全選
-      document.getElementById('deselect-all').addEventListener('click', function() {
-        const checkboxes = document.querySelectorAll('.symptom-checkbox');
-        checkboxes.forEach(checkbox => {
-          if (checkbox.checked) {
-            checkbox.checked = false;
-            // 觸發change事件
-            checkbox.dispatchEvent(new Event('change'));
-          }
-        });
-      });
-
-      // 只看已選
-      let filterActive = false;
+      // 綁定只看已選按鈕事件
       document.getElementById('filter-selected').addEventListener('click', function() {
-        const cards = document.querySelectorAll('.symptom-card');
-        const checkboxes = document.querySelectorAll('.symptom-checkbox');
+        showOnlySelected = !showOnlySelected;
         
-        filterActive = !filterActive;
-        
-        if (filterActive) {
-          this.classList.remove('bg-blue-500');
-          this.classList.add('bg-red-500');
-          this.innerHTML = '<i class="fa fa-filter mr-1"></i>顯示全部';
-          
-          // 隱藏未勾選的卡片
-          cards.forEach((card, index) => {
-            if (!checkboxes[index].checked) {
-              card.classList.add('hidden');
-            }
-          });
+        // 更新按鈕樣式
+        if (showOnlySelected) {
+          this.classList.remove('bg-gray-700', 'hover:bg-gray-800');
+          this.classList.add('bg-red-600', 'hover:bg-red-700');
+          this.innerHTML = '<i class="fa fa-filter mr-1"></i>顯示全部已勾選';
         } else {
-          this.classList.remove('bg-red-500');
-          this.classList.add('bg-blue-500');
+          this.classList.remove('bg-red-600', 'hover:bg-red-700');
+          this.classList.add('bg-gray-700', 'hover:bg-gray-800');
           this.innerHTML = '<i class="fa fa-filter mr-1"></i>只看已選';
-          
-          // 顯示所有卡片
-          cards.forEach(card => {
-            card.classList.remove('hidden');
-          });
         }
+        
+        // 應用過濾
+        applyFilters();
       });
 
+      // 應用過濾條件
+      function applyFilters() {
+        const symptomCards = document.querySelectorAll('.symptom-card');
+        
+        symptomCards.forEach(card => {
+          let shouldShow = true;
+          
+          // 要素過濾
+          if (currentFilter !== 'all') {
+            const cardFactors = card.dataset.factors.split(',');
+            shouldShow = cardFactors.includes(currentFilter);
+          }
+          
+          // 已選過濾（如果開啟）
+          if (showOnlySelected && shouldShow) {
+            const checkbox = card.querySelector('.symptom-checkbox');
+            shouldShow = checkbox.checked;
+          }
+          
+          // 顯示或隱藏卡片
+          if (shouldShow) {
+            card.classList.remove('hidden');
+          } else {
+            card.classList.add('hidden');
+          }
+        });
+      }
+    }
+
+    // 初始化控制按鈕（保留提交和關閉模態框功能）
+    function initControlButtons() {
       // 提交按鈕
       document.getElementById('submit-checklist').addEventListener('click', function() {
         const selectedCount = updateSelectedCount();
@@ -626,10 +675,11 @@
         }
       });
       
-      // 關閉過濾
-      const filterBtn = document.getElementById('filter-selected');
-      if (filterBtn.classList.contains('bg-red-500')) {
-        filterBtn.click();
+      // 重置過濾狀態
+      document.getElementById('filter-all').click();
+      const filterSelectedBtn = document.getElementById('filter-selected');
+      if (filterSelectedBtn.classList.contains('bg-red-600')) {
+        filterSelectedBtn.click();
       }
     }
 
@@ -650,7 +700,8 @@
         // 渲染症狀卡片
         const renderSuccess = renderSymptomCards();
         if (renderSuccess) {
-          // 初始化控制按鈕
+          // 初始化過濾按鈕和控制按鈕
+          initFilterButtons();
           initControlButtons();
           
           // 滾動到自檢表區域
@@ -794,4 +845,4 @@
     }
   </script>
 </body>
-</html> 
+</html>
