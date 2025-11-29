@@ -2,8 +2,8 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8" />
-  <title>🧬 彥彬 自檢表系統</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>🧬 彥彬 自檢表系統 - 專業健康評估平台</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0" />
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -14,13 +14,26 @@
       theme: {
         extend: {
           colors: { 
-            primary: '#00B900', 
-            secondary: '#E8F4EA',
-            lightBg: '#f8faf9',
-            accent: '#008000',
-            neutral: '#f3f4f6'
+            primary: '#008C76', // 高級深綠（替代原有淺綠）
+            secondary: '#E8F9F7', // 輕柔輔色
+            accent: '#FFD700', // 金色點綴（提升高級感）
+            dark: '#1A202C',
+            lightBg: '#F9FAFB',
+            neutral: '#F3F4F6',
+            cardBg: '#FFFFFF',
+            textPrimary: '#1E293B',
+            textSecondary: '#64748B'
           },
-          fontFamily: { sans: ['Noto Sans TC', 'sans-serif'] }
+          fontFamily: { 
+            sans: ['Noto Sans TC', 'sans-serif', 'system-ui'],
+            display: ['Noto Sans TC', 'sans-serif', 'system-ui']
+          },
+          boxShadow: {
+            'elevation-1': '0 2px 8px rgba(0, 0, 0, 0.06)',
+            'elevation-2': '0 4px 16px rgba(0, 0, 0, 0.08)',
+            'elevation-3': '0 8px 24px rgba(0, 0, 0, 0.12)',
+            'elevation-hover': '0 12px 32px rgba(0, 0, 0, 0.15)',
+          }
         }
       }
     };
@@ -28,121 +41,200 @@
 
   <style type="text/tailwindcss">
     @layer utilities {
-      .fade-in { animation: fadeIn 0.45s ease-in-out; }
-      .slide-down { animation: slideDown 0.5s ease-out; }
-      .scale-in { animation: scaleIn 0.3s ease-out; }
-      .symptom-card-hover { transition: all 0.2s ease; }
-      .symptom-card-hover:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
-      .factor-tag { font-size: 0.75rem; padding: 0.15rem 0.35rem; border-radius: 4px; }
-      .factor-btn-active { transform: scale(1.05); box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+      .fade-in { animation: fadeIn 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
+      .slide-up { animation: slideUp 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); }
+      .scale-in { animation: scaleIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); }
+      .pulse-subtle { animation: pulseSubtle 2s infinite; }
+      .gradient-text { background-clip: text; -webkit-background-clip: text; color: transparent; }
+      .card-hover { transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
+      .btn-hover { transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1); }
+      .factor-tag { font-size: 0.75rem; padding: 0.2rem 0.4rem; border-radius: 6px; font-weight: 500; }
+      .input-focus { @apply focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all; }
     }
-    @keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
-    @keyframes slideDown { from { transform: translateY(-20px); opacity: 0 } to { transform: translateY(0); opacity: 1 } }
-    @keyframes scaleIn { from { transform: scale(0.98); opacity: 0 } to { transform: scale(1); opacity: 1 } }
+
+    @keyframes fadeIn { 
+      from { opacity: 0; } 
+      to { opacity: 1; } 
+    }
+    @keyframes slideUp { 
+      from { transform: translateY(30px); opacity: 0; } 
+      to { transform: translateY(0); opacity: 1; } 
+    }
+    @keyframes scaleIn { 
+      from { transform: scale(0.96); opacity: 0; } 
+      to { transform: scale(1); opacity: 1; } 
+    }
+    @keyframes pulseSubtle {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.8; }
+    }
+
+    /* 自定義滾動條（提升高級感） */
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: #F1F5F9; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
+
+    body {
+      font-feature-settings: "palt";
+      letter-spacing: 0.02em;
+    }
   </style>
 </head>
-<body class="bg-lightBg min-h-screen flex flex-col p-4">
-  <div class="max-w-4xl w-full bg-white rounded-xl shadow-md overflow-hidden fade-in self-center">
-    <div class="bg-primary p-6 text-white text-center">
-      <i class="fa fa-heartbeat text-4xl mb-3"></i>
-      <h1 class="text-2xl font-bold">🧬 彥彬 自檢表系統</h1>
+<body class="bg-lightBg min-h-screen flex flex-col p-4 md:p-8">
+  <!-- 頁面容器（限制最大寬度，提升居中體驗） -->
+  <div class="max-w-5xl w-full bg-cardBg rounded-2xl shadow-elevation-2 overflow-hidden fade-in self-center">
+    <!-- 頂部標題區域（高級漸變+精緻佈局） -->
+    <div class="bg-gradient-to-r from-primary to-[#006658] p-8 md:p-10 text-white text-center relative overflow-hidden">
+      <!-- 裝飾元素（提升質感） -->
+      <div class="absolute top-0 left-0 w-32 h-32 bg-white/5 rounded-full -translate-x-1/2 -translate-y-1/2"></div>
+      <div class="absolute bottom-0 right-0 w-48 h-48 bg-white/5 rounded-full translate-x-1/3 translate-y-1/3"></div>
+      
+      <div class="relative z-10">
+        <div class="inline-flex items-center justify-center w-16 h-16 bg-white/10 backdrop-blur-sm rounded-full mb-4 pulse-subtle">
+          <i class="fa fa-heartbeat text-3xl text-accent"></i>
+        </div>
+        <h1 class="text-3xl md:text-4xl font-bold mb-2 tracking-wide">🧬 彥彬 自檢表系統</h1>
+        <p class="text-white/90 text-lg md:text-xl font-light">專業健康評估 · 精準對應七大健康要素</p>
+      </div>
     </div>
 
-    <div class="p-6">
-      <div id="status" class="flex items-center justify-center py-6 text-gray-700 text-center">
+    <!-- 主要內容區域 -->
+    <div class="p-6 md:p-8">
+      <!-- 加載狀態（精緻化） -->
+      <div id="status" class="flex items-center justify-center py-10 text-textPrimary text-center">
         <div class="text-center">
-          <div class="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary mb-3"></div>
-          <p id="status-text">正在初始化 LIFF...</p>
+          <div class="inline-block animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-primary mb-4"></div>
+          <p id="status-text" class="text-lg">正在初始化系統，請稍候...</p>
         </div>
       </div>
 
-      <div id="error-message" class="hidden bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4"></div>
-
-      <div id="result-card" class="hidden bg-secondary/50 border border-primary/20 rounded-lg p-5 mb-6 text-center slide-down">
-        <div id="result-main" class="text-lg font-medium mb-2"></div>
-        <div id="result-details" class="text-sm text-gray-700 mb-3"></div>
+      <!-- 錯誤提示（高級化樣式） -->
+      <div id="error-message" class="hidden bg-red-50 border border-red-100 text-red-700 px-6 py-4 rounded-xl mb-6 shadow-sm">
+        <div class="flex items-start">
+          <i class="fa fa-exclamation-circle text-red-500 mt-1 mr-3 text-xl"></i>
+          <div id="error-content"></div>
+        </div>
       </div>
 
-      <!-- 自檢表區域 - 預設隱藏，驗證通過後自動顯示 -->
+      <!-- 用戶驗證結果卡片（高級化設計） -->
+      <div id="result-card" class="hidden bg-gradient-to-r from-secondary to-[#F0FAF8] border border-primary/15 rounded-2xl p-6 mb-8 text-center slide-up relative overflow-hidden">
+        <!-- 裝飾元素 -->
+        <div class="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full translate-x-1/2 -translate-y-1/2"></div>
+        
+        <div class="relative z-10">
+          <div id="result-main" class="text-xl md:text-2xl font-bold mb-3 text-textPrimary"></div>
+          <div id="result-details" class="text-base text-textSecondary space-y-1.5 md:space-y-2">
+            <!-- 用戶信息將動態填充 -->
+          </div>
+          
+          <!-- 分隔線（精緻化） -->
+          <div class="w-24 h-0.5 bg-primary/20 mx-auto my-4"></div>
+          
+          <p class="text-sm text-textSecondary/80">
+            <i class="fa fa-info-circle text-primary mr-1"></i>
+            請根據自身狀況如實填寫，系統將為您提供專業參考
+          </p>
+        </div>
+      </div>
+
+      <!-- 自檢表區域 - 預設隱藏 -->
       <div id="checklist-section" class="hidden scale-in">
-        <!-- 自檢表標題區域 -->
-        <div class="mb-6 text-center">
-          <h2 class="text-2xl font-bold text-primary mb-2">自檢表填寫區域</h2>
-          <p class="text-gray-600">請根據自身情況勾選對應症狀，並填寫症狀相關資訊</p>
-          <div class="mt-4 flex flex-wrap justify-center gap-2 text-sm text-gray-700">
-            <span class="bg-blue-100 text-blue-800 factor-tag">氣血不足</span>
-            <span class="bg-green-100 text-green-800 factor-tag">微循環不通</span>
-            <span class="bg-yellow-100 text-yellow-800 factor-tag">毒素</span>
-            <span class="bg-orange-100 text-orange-800 factor-tag">血脂粘稠</span>
-            <span class="bg-purple-100 text-purple-800 factor-tag">寒涼濕症</span>
-            <span class="bg-pink-100 text-pink-800 factor-tag">免疫</span>
-            <span class="bg-indigo-100 text-indigo-800 factor-tag">情緒</span>
+        <!-- 自檢表標題區域（高級排版） -->
+        <div class="mb-8 text-center">
+          <h2 class="text-2xl md:text-3xl font-bold text-textPrimary mb-3">
+            <span class="gradient-text bg-gradient-to-r from-primary to-[#006658]">自檢表填寫區域</span>
+          </h2>
+          <p class="text-textSecondary max-w-2xl mx-auto mb-6">
+            請根據自身情況勾選對應症狀，並填寫症狀相關資訊，幫助我們更精確地評估您的健康狀態
+          </p>
+          
+          <!-- 七大要素標籤（高級化樣式） -->
+          <div class="mt-4 flex flex-wrap justify-center gap-2.5 text-sm">
+            <span class="bg-blue-50 text-blue-700 factor-tag">氣血不足</span>
+            <span class="bg-green-50 text-green-700 factor-tag">微循環不通</span>
+            <span class="bg-yellow-50 text-yellow-700 factor-tag">毒素</span>
+            <span class="bg-orange-50 text-orange-700 factor-tag">血脂粘稠</span>
+            <span class="bg-purple-50 text-purple-700 factor-tag">寒涼濕症</span>
+            <span class="bg-pink-50 text-pink-700 factor-tag">免疫</span>
+            <span class="bg-indigo-50 text-indigo-700 factor-tag">情緒</span>
           </div>
         </div>
 
-        <!-- 症狀過濾與統計 - 已修改為七大要素分類選項 -->
-        <div class="bg-neutral rounded-lg p-4 mb-6">
-          <div class="flex flex-wrap gap-2 mb-4">
-            <button id="filter-all" class="bg-primary text-white px-4 py-2 rounded-md text-sm hover:bg-primary/90 transition factor-btn-active">
-              <i class="fa fa-th-list mr-1"></i>顯示全部
+        <!-- 症狀過濾與統計（高級化佈局） -->
+        <div class="bg-neutral rounded-2xl p-5 mb-8 shadow-elevation-1">
+          <!-- 過濾按鈕區域（優化排版） -->
+          <div class="flex flex-wrap gap-3 mb-5">
+            <button id="filter-all" class="bg-primary text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-[#007A69] transition btn-hover shadow-elevation-1">
+              <i class="fa fa-th-list mr-1.5"></i>顯示全部
             </button>
-            <!-- 七大要素分類按鈕 -->
-            <button data-factor="气血" class="bg-blue-500 text-white px-4 py-2 rounded-md text-sm hover:bg-blue-600 transition">
-              <i class="fa fa-tag mr-1"></i>氣血不足
+            
+            <!-- 七大要素分類按鈕（高級化樣式） -->
+            <button data-factor="气血" class="bg-blue-600 text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-blue-700 transition btn-hover shadow-elevation-1">
+              <i class="fa fa-tag mr-1.5"></i>氣血不足
             </button>
-            <button data-factor="微循环" class="bg-green-500 text-white px-4 py-2 rounded-md text-sm hover:bg-green-600 transition">
-              <i class="fa fa-tag mr-1"></i>微循環不通
+            <button data-factor="微循环" class="bg-green-600 text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-green-700 transition btn-hover shadow-elevation-1">
+              <i class="fa fa-tag mr-1.5"></i>微循環不通
             </button>
-            <button data-factor="毒素" class="bg-yellow-500 text-white px-4 py-2 rounded-md text-sm hover:bg-yellow-600 transition">
-              <i class="fa fa-tag mr-1"></i>毒素
+            <button data-factor="毒素" class="bg-yellow-600 text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-yellow-700 transition btn-hover shadow-elevation-1">
+              <i class="fa fa-tag mr-1.5"></i>毒素
             </button>
-            <button data-factor="血脂" class="bg-orange-500 text-white px-4 py-2 rounded-md text-sm hover:bg-orange-600 transition">
-              <i class="fa fa-tag mr-1"></i>血脂粘稠
+            <button data-factor="血脂" class="bg-orange-600 text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-orange-700 transition btn-hover shadow-elevation-1">
+              <i class="fa fa-tag mr-1.5"></i>血脂粘稠
             </button>
-            <button data-factor="寒凉湿" class="bg-purple-500 text-white px-4 py-2 rounded-md text-sm hover:bg-purple-600 transition">
-              <i class="fa fa-tag mr-1"></i>寒涼濕症
+            <button data-factor="寒凉湿" class="bg-purple-600 text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-purple-700 transition btn-hover shadow-elevation-1">
+              <i class="fa fa-tag mr-1.5"></i>寒涼濕症
             </button>
-            <button data-factor="免疫" class="bg-pink-500 text-white px-4 py-2 rounded-md text-sm hover:bg-pink-600 transition">
-              <i class="fa fa-tag mr-1"></i>免疫
+            <button data-factor="免疫" class="bg-pink-600 text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-pink-700 transition btn-hover shadow-elevation-1">
+              <i class="fa fa-tag mr-1.5"></i>免疫
             </button>
-            <button data-factor="情绪" class="bg-indigo-500 text-white px-4 py-2 rounded-md text-sm hover:bg-indigo-600 transition">
-              <i class="fa fa-tag mr-1"></i>情緒
-            </button>
-          </div>
-          <div class="flex flex-wrap gap-2 mb-2">
-            <button id="filter-selected" class="bg-gray-700 text-white px-4 py-2 rounded-md text-sm hover:bg-gray-800 transition">
-              <i class="fa fa-filter mr-1"></i>只看已選
+            <button data-factor="情绪" class="bg-indigo-600 text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-indigo-700 transition btn-hover shadow-elevation-1">
+              <i class="fa fa-tag mr-1.5"></i>情緒
             </button>
           </div>
-          <div class="text-gray-700 text-sm mt-2">
-            已勾選: <span id="selected-count" class="font-bold text-primary">0</span>/100 個症狀
+          
+          <!-- 輔助按鈕與統計信息（優化排版） -->
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <button id="filter-selected" class="bg-gray-700 text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-800 transition btn-hover shadow-elevation-1">
+              <i class="fa fa-filter mr-1.5"></i>只看已選
+            </button>
+            
+            <div class="text-textPrimary text-base font-medium">
+              已勾選: <span id="selected-count" class="font-bold text-primary text-xl">0</span>/100 個症狀
+            </div>
           </div>
         </div>
 
-        <!-- 症狀清單容器 -->
-        <div id="symptoms-container" class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-8">
+        <!-- 症狀清單容器（寬屏3列布局，提升空間利用率） -->
+        <div id="symptoms-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-10">
           <!-- JS動態生成症狀卡片 -->
         </div>
 
-        <!-- 提交按鈕 -->
-        <div class="text-center mt-8 mb-4">
-          <button id="submit-checklist" class="bg-primary hover:bg-primary/90 text-white font-bold py-3 px-8 rounded-lg shadow-md transition transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-primary/50">
+        <!-- 提交按鈕（高級化設計） -->
+        <div class="text-center mt-10 mb-6">
+          <button id="submit-checklist" class="bg-gradient-to-r from-primary to-[#006658] hover:from-[#007A69] hover:to-[#00594D] text-white font-bold py-4 px-10 rounded-xl shadow-elevation-2 transition btn-hover transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-primary/50">
             <i class="fa fa-paper-plane mr-2"></i>提交自檢表
           </button>
+          
+          <p class="text-xs text-textSecondary/70 mt-3">
+            提交後將生成專業參考報告，請確保所填信息真實有效
+          </p>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- 提交成功模態框 -->
-  <div id="success-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden fade-in">
-    <div class="bg-white rounded-xl p-8 max-w-md w-full mx-4 text-center">
-      <div class="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
-        <i class="fa fa-check text-3xl text-primary"></i>
+  <!-- 提交成功模態框（高級化設計） -->
+  <div id="success-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 hidden fade-in">
+    <div class="bg-cardBg rounded-2xl p-8 max-w-md w-full mx-4 text-center shadow-elevation-3 transform transition-all hover:shadow-elevation-hover">
+      <div class="inline-flex items-center justify-center w-20 h-20 bg-green-100 rounded-full mb-6">
+        <i class="fa fa-check text-4xl text-primary"></i>
       </div>
-      <h3 class="text-xl font-bold text-gray-800 mb-2">提交成功！</h3>
-      <p class="text-gray-600 mb-6">您的自檢表已順利提交，感謝您的填寫</p>
-      <button id="close-modal" class="bg-primary hover:bg-primary/90 text-white font-bold py-2 px-6 rounded-lg transition">
+      <h3 class="text-2xl font-bold text-textPrimary mb-3">提交成功！</h3>
+      <p class="text-textSecondary mb-8">
+        您的自檢表已順利提交，我們將為您生成專業健康參考報告
+      </p>
+      <button id="close-modal" class="bg-primary hover:bg-[#007A69] text-white font-bold py-3 px-8 rounded-lg transition btn-hover shadow-elevation-1 w-full">
         確認
       </button>
     </div>
@@ -156,16 +248,16 @@
 
     // 七大健康要素對應樣式
     const factorStyles = {
-      气血: { className: 'bg-blue-100 text-blue-800', label: '氣血不足' },
-      微循环: { className: 'bg-green-100 text-green-800', label: '微循環不通' },
-      毒素: { className: 'bg-yellow-100 text-yellow-800', label: '毒素' },
-      血脂: { className: 'bg-orange-100 text-orange-800', label: '血脂粘稠' },
-      寒凉湿: { className: 'bg-purple-100 text-purple-800', label: '寒涼濕症' },
-      免疫: { className: 'bg-pink-100 text-pink-800', label: '免疫' },
-      情绪: { className: 'bg-indigo-100 text-indigo-800', label: '情緒' }
+      气血: { className: 'bg-blue-50 text-blue-700', label: '氣血不足' },
+      微循环: { className: 'bg-green-50 text-green-700', label: '微循環不通' },
+      毒素: { className: 'bg-yellow-50 text-yellow-700', label: '毒素' },
+      血脂: { className: 'bg-orange-50 text-orange-700', label: '血脂粘稠' },
+      寒凉湿: { className: 'bg-purple-50 text-purple-700', label: '寒涼濕症' },
+      免疫: { className: 'bg-pink-50 text-pink-700', label: '免疫' },
+      情绪: { className: 'bg-indigo-50 text-indigo-700', label: '情緒' }
     };
 
-    // 時間長短選項（已延長週期）
+    // 時間長短選項
     const durationOptions = [
       { value: '', label: '請選擇時間' },
       { value: '1w', label: '1周內' },
@@ -185,7 +277,7 @@
       { value: 'severe', label: '嚴重（經常影響）' }
     ];
 
-    // 完整症狀數據（包含七大要素對應關係）
+    // 完整症狀數據
     const fullSymptomData = [
       {seq: 1, symptom: "記憶力下降", 气血: "○", 微循环: "", 毒素: "", 血脂: "", 寒凉湿: "", 免疫: "", 情绪: ""},
       {seq: 2, symptom: "思維斷電", 气血: "○", 微循环: "", 毒素: "", 血脂: "", 寒凉湿: "", 免疫: "", 情绪: ""},
@@ -295,17 +387,18 @@
       if (statusText) statusText.textContent = text;
     };
 
-    // 錯誤顯示函數
+    // 錯誤顯示函數（高級化提示）
     const showError = msg => {
       document.getElementById('status').classList.add('hidden');
       document.getElementById('result-card').classList.add('hidden');
       document.getElementById('checklist-section').classList.add('hidden');
       
       const el = document.getElementById('error-message');
-      if (el) {
-        el.innerHTML = `<p>${msg}</p><div class="mt-3 flex justify-center">
-          <button onclick="window.location.reload()" class="text-primary hover:text-primary/80 font-medium">
-            <i class="fa fa-refresh mr-1"></i> 重新嘗試
+      const contentEl = document.getElementById('error-content');
+      if (el && contentEl) {
+        contentEl.innerHTML = `<p class="font-medium">${msg}</p><div class="mt-4 flex justify-center">
+          <button onclick="window.location.reload()" class="text-primary hover:text-[#007A69] font-medium flex items-center gap-1.5">
+            <i class="fa fa-refresh"></i> 重新嘗試
           </button></div>`;
         el.classList.remove('hidden');
       }
@@ -341,9 +434,11 @@
         let remainingDaysText;
         
         if (remainingDays < 0) {
-          remainingDaysText = "已過期";
+          remainingDaysText = "<span class='text-red-500 font-medium'>已過期</span>";
         } else if (remainingDays === 0) {
-          remainingDaysText = "最後1天";
+          remainingDaysText = "<span class='text-orange-500 font-medium'>最後1天</span>";
+        } else if (remainingDays <= 30) {
+          remainingDaysText = `<span class='text-orange-500 font-medium'>${remainingDays} 天</span>`;
         } else {
           remainingDaysText = `${remainingDays} 天`;
         }
@@ -355,7 +450,7 @@
       }
     };
 
-    // 渲染症狀卡片
+    // 渲染症狀卡片（高級化設計）
     function renderSymptomCards() {
       try {
         const container = document.getElementById('symptoms-container');
@@ -366,7 +461,7 @@
 
         container.innerHTML = '';
 
-        fullSymptomData.forEach(symptom => {
+        fullSymptomData.forEach((symptom, index) => {
           // 收集相關的健康要素
           const relatedFactors = [];
           Object.entries(factorStyles).forEach(([key, style]) => {
@@ -375,7 +470,7 @@
             }
           });
 
-          // 建立下拉選單選項HTML
+          // 建立下拉選單選項HTML（高級化樣式）
           const durationOptionsHtml = durationOptions.map(option => 
             `<option value="${option.value}">${option.label}</option>`
           ).join('');
@@ -384,48 +479,53 @@
             `<option value="${option.value}">${option.label}</option>`
           ).join('');
 
-          // 建立症狀卡片，並存儲相關要素信息
+          // 建立症狀卡片（高級化設計）
           const card = document.createElement('div');
-          card.className = 'symptom-card bg-white border border-gray-200 rounded-lg p-4 symptom-card-hover';
+          card.className = 'symptom-card bg-cardBg border border-gray-100 rounded-xl p-4 shadow-elevation-1 card-hover';
           card.dataset.seq = symptom.seq;
-          // 存儲相關要素，用於過濾
           card.dataset.factors = Object.entries(factorStyles)
             .filter(([key]) => symptom[key] === "○")
             .map(([key]) => key)
             .join(',');
           
+          // 延遲動畫，創建瀑布流效果
+          card.style.opacity = '0';
+          card.style.transform = 'translateY(20px)';
+          card.style.transition = 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)';
+          card.style.transitionDelay = `${index * 15}ms`;
+          
           card.innerHTML = `
             <div class="flex items-start gap-3">
-              <!-- 勾選框 -->
+              <!-- 勾選框（高級化樣式） -->
               <div class="flex-shrink-0 mt-1">
-                <input type="checkbox" id="symptom-${symptom.seq}" class="symptom-checkbox h-5 w-5 text-primary rounded border-gray-300 focus:ring-primary" data-seq="${symptom.seq}">
+                <input type="checkbox" id="symptom-${symptom.seq}" class="symptom-checkbox h-5 w-5 text-primary rounded border-gray-300 input-focus" data-seq="${symptom.seq}">
               </div>
               
               <!-- 症狀內容 -->
               <div class="flex-1">
                 <div class="flex justify-between items-start mb-2">
-                  <label for="symptom-${symptom.seq}" class="text-gray-800 font-medium cursor-pointer">
-                    <span class="text-primary mr-1">[${symptom.seq}]</span>${symptom.symptom}
+                  <label for="symptom-${symptom.seq}" class="text-textPrimary font-medium cursor-pointer">
+                    <span class="text-primary mr-1.5 font-semibold">[${symptom.seq}]</span>${symptom.symptom}
                   </label>
                 </div>
                 
                 <!-- 相關健康要素 -->
-                <div class="flex flex-wrap gap-1 mb-3">
-                  ${relatedFactors.length > 0 ? relatedFactors.join('') : '<span class="factor-tag bg-gray-100 text-gray-500">無相關要素</span>'}
+                <div class="flex flex-wrap gap-1.5 mb-3">
+                  ${relatedFactors.length > 0 ? relatedFactors.join('') : '<span class="factor-tag bg-gray-50 text-gray-500">無相關要素</span>'}
                 </div>
                 
-                <!-- 詳細資訊（預設隱藏，勾選後顯示） -->
+                <!-- 詳細資訊（高級化樣式） -->
                 <div class="symptom-details hidden mt-3 pt-3 border-t border-gray-100">
                   <div class="grid grid-cols-2 gap-3">
                     <div>
-                      <label class="block text-sm text-gray-600 mb-1">時間長短</label>
-                      <select class="duration-select w-full border border-gray-300 rounded-md px-2 py-1 text-sm focus:ring-primary focus:border-primary">
+                      <label class="block text-sm text-textSecondary mb-1.5">時間長短</label>
+                      <select class="duration-select w-full border border-gray-200 rounded-lg px-3 py-2 text-sm input-focus bg-white">
                         ${durationOptionsHtml}
                       </select>
                     </div>
                     <div>
-                      <label class="block text-sm text-gray-600 mb-1">症狀輕重</label>
-                      <select class="severity-select w-full border border-gray-300 rounded-md px-2 py-1 text-sm focus:ring-primary focus:border-primary">
+                      <label class="block text-sm text-textSecondary mb-1.5">症狀輕重</label>
+                      <select class="severity-select w-full border border-gray-200 rounded-lg px-3 py-2 text-sm input-focus bg-white">
                         ${severityOptionsHtml}
                       </select>
                     </div>
@@ -436,6 +536,12 @@
           `;
 
           container.appendChild(card);
+          
+          // 觸發動畫
+          setTimeout(() => {
+            card.style.opacity = '1';
+            card.style.transform = 'translateY(0)';
+          }, 50);
         });
 
         // 綁定勾選框事件
@@ -458,10 +564,10 @@
           
           if (this.checked) {
             details.classList.remove('hidden');
-            card.classList.add('border-primary/50', 'bg-secondary/30');
+            card.classList.add('border-primary/30', 'bg-secondary/20', 'shadow-elevation-2');
           } else {
             details.classList.add('hidden');
-            card.classList.remove('border-primary/50', 'bg-secondary/30');
+            card.classList.remove('border-primary/30', 'bg-secondary/20', 'shadow-elevation-2');
             
             // 重置選擇
             const durationSelect = card.querySelector('.duration-select');
@@ -483,7 +589,7 @@
       return checkedCount;
     }
 
-    // 初始化過濾按鈕事件（核心修改點）
+    // 初始化過濾按鈕事件
     function initFilterButtons() {
       const filterButtons = document.querySelectorAll('[data-factor], #filter-all');
       let currentFilter = 'all'; // 預設顯示全部
@@ -493,8 +599,8 @@
       filterButtons.forEach(button => {
         button.addEventListener('click', function() {
           // 更新按鈕活躍狀態
-          filterButtons.forEach(btn => btn.classList.remove('factor-btn-active'));
-          this.classList.add('factor-btn-active');
+          filterButtons.forEach(btn => btn.classList.remove('shadow-elevation-2', 'scale-105'));
+          this.classList.add('shadow-elevation-2', 'scale-105');
           
           // 設置當前過濾條件
           if (this.id === 'filter-all') {
@@ -515,12 +621,12 @@
         // 更新按鈕樣式
         if (showOnlySelected) {
           this.classList.remove('bg-gray-700', 'hover:bg-gray-800');
-          this.classList.add('bg-red-600', 'hover:bg-red-700');
-          this.innerHTML = '<i class="fa fa-filter mr-1"></i>顯示全部已勾選';
+          this.classList.add('bg-red-600', 'hover:bg-red-700', 'shadow-elevation-2');
+          this.innerHTML = '<i class="fa fa-filter mr-1.5"></i>顯示全部已勾選';
         } else {
-          this.classList.remove('bg-red-600', 'hover:bg-red-700');
+          this.classList.remove('bg-red-600', 'hover:bg-red-700', 'shadow-elevation-2');
           this.classList.add('bg-gray-700', 'hover:bg-gray-800');
-          this.innerHTML = '<i class="fa fa-filter mr-1"></i>只看已選';
+          this.innerHTML = '<i class="fa fa-filter mr-1.5"></i>只看已選';
         }
         
         // 應用過濾
@@ -546,23 +652,32 @@
             shouldShow = checkbox.checked;
           }
           
-          // 顯示或隱藏卡片
+          // 顯示或隱藏卡片（平滑過渡）
           if (shouldShow) {
-            card.classList.remove('hidden');
+            card.style.display = 'block';
+            setTimeout(() => {
+              card.style.opacity = '1';
+              card.style.transform = 'translateY(0)';
+            }, 10);
           } else {
-            card.classList.add('hidden');
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(10px)';
+            setTimeout(() => {
+              card.style.display = 'none';
+            }, 300);
           }
         });
       }
     }
 
-    // 初始化控制按鈕（保留提交和關閉模態框功能）
+    // 初始化控制按鈕
     function initControlButtons() {
       // 提交按鈕
       document.getElementById('submit-checklist').addEventListener('click', function() {
         const selectedCount = updateSelectedCount();
         
         if (selectedCount === 0) {
+          // 高級化提示框（可替換為自定義模態框）
           alert('請至少勾選一個症狀');
           return;
         }
@@ -570,6 +685,7 @@
         // 驗證已選症狀是否都填寫了詳細資訊
         const checkedCheckboxes = document.querySelectorAll('.symptom-checkbox:checked');
         let isValid = true;
+        let firstInvalidCard = null;
         
         checkedCheckboxes.forEach(checkbox => {
           const card = checkbox.closest('.symptom-card');
@@ -578,31 +694,39 @@
           
           if (!duration || !severity) {
             isValid = false;
-            // 高亮未填寫的卡片
+            if (!firstInvalidCard) firstInvalidCard = card;
+            
+            // 高亮未填寫的卡片（高級化動畫）
             card.classList.add('border-red-500');
+            card.style.transform = 'scale(1.03)';
             setTimeout(() => {
               card.classList.remove('border-red-500');
-            }, 2000);
+              card.style.transform = '';
+            }, 1500);
           }
         });
         
         if (!isValid) {
           alert('部分已選症狀未填寫完整資訊，請檢查後再提交');
+          // 滾動到第一個未填寫的卡片
+          if (firstInvalidCard) {
+            firstInvalidCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
           return;
         }
         
         // 收集提交數據
         const submitData = collectSubmitData();
         
-        // 調用後端提交（這裡可以根據實際需求修改）
+        // 調用後端提交
         submitChecklistData(submitData);
       });
 
       // 關閉模態框
       document.getElementById('close-modal').addEventListener('click', function() {
         document.getElementById('success-modal').classList.add('hidden');
-        // 可以選擇重置表單或留在當頁
-        // resetChecklist();
+        // 重置表單
+        resetChecklist();
       });
     }
 
@@ -644,7 +768,10 @@
     function submitChecklistData(data) {
       console.log("提交自檢表數據：", data);
       
-      // 這裡可以根據實際需求修改提交方式
+      // 顯示加載狀態
+      setStatus('正在提交數據...');
+      document.getElementById('status').classList.remove('hidden');
+      
       $.ajax({
         url: GAS_URL,
         dataType: 'jsonp',
@@ -656,11 +783,13 @@
         },
         success: function(resp) {
           console.log("提交成功：", resp);
+          document.getElementById('status').classList.add('hidden');
           document.getElementById('success-modal').classList.remove('hidden');
         },
         error: function(xhr, status, error) {
           console.error("提交失敗：", status, error);
-          alert('提交失敗，請稍後再試');
+          document.getElementById('status').classList.add('hidden');
+          showError('提交失敗，請稍後再試（錯誤：' + status + '）');
         }
       });
     }
@@ -695,7 +824,7 @@
 
         // 移除hidden類，確保顯示
         checklistSection.classList.remove('hidden');
-        checklistSection.style.display = 'block'; // 強制顯示，防止CSS影響
+        checklistSection.style.display = 'block';
         
         // 渲染症狀卡片
         const renderSuccess = renderSymptomCards();
@@ -724,7 +853,7 @@
       console.log("頁面加載完成，開始初始化");
 
       // 初始化 LIFF
-      setStatus('正在初始化 LIFF...');
+      setStatus('正在初始化系統，請稍候...');
       liff.init({ liffId: LIFF_ID }, { disableRedirect: true })
         .then(() => {
           console.log("LIFF 初始化成功");
@@ -788,7 +917,7 @@
       });
     }
 
-    // 渲染驗證結果和自檢表
+    // 渲染驗證結果和自檢表（高級化展示）
     function renderResult(resp) {
       console.log("開始渲染驗證結果和自檢表");
       
@@ -807,30 +936,36 @@
 
       if (isProUser) {
         const { displayDate, remainingDays } = calculateRemainingDaysByDate(expiryDateStr);
-        main.innerHTML = `<span class="text-primary"><i class="fa fa-check-circle mr-1"></i>專業用戶驗證通過</span>`;
-        details.innerHTML = `用戶名稱：${userName}<br>
-                           使用期限：${displayDate}<br>
-                           剩餘天數：${remainingDays}`;
+        main.innerHTML = `<span class="text-primary"><i class="fa fa-check-circle mr-2"></i>專業用戶驗證通過</span>`;
+        details.innerHTML = `
+          <div><i class="fa fa-user-circle text-primary mr-1.5"></i>用戶名稱：<span class="font-medium">${userName}</span></div>
+          <div><i class="fa fa-calendar-check-o text-primary mr-1.5"></i>使用期限：<span class="font-medium">${displayDate}</span></div>
+          <div><i class="fa fa-clock-o text-primary mr-1.5"></i>剩餘天數：${remainingDays}</div>
+        `;
       } else {
         const usageCount = resp.usageCount || 0;
         const remainingTimes = Math.max(0, 3 - usageCount);
         
         // 普通用戶剩餘次數為0時，顯示錯誤信息
         if (remainingTimes <= 0) {
-          main.innerHTML = `<span class="text-orange-600"><i class="fa fa-exclamation-circle mr-1"></i>普通用戶使用次數已用完</span>`;
-          details.innerHTML = `用戶名稱：${userName}<br>
-                             使用期限：-<br>
-                             剩餘次數：${remainingTimes} 次<br>
-                             提示：請聯繫管理員升級為專業用戶繼續使用`;
+          main.innerHTML = `<span class="text-orange-600"><i class="fa fa-exclamation-circle mr-2"></i>普通用戶使用次數已用完</span>`;
+          details.innerHTML = `
+            <div><i class="fa fa-user-circle text-orange-600 mr-1.5"></i>用戶名稱：<span class="font-medium">${userName}</span></div>
+            <div><i class="fa fa-calendar-o text-orange-600 mr-1.5"></i>使用期限：<span class="font-medium">-</span></div>
+            <div><i class="fa fa-refresh text-orange-600 mr-1.5"></i>剩餘次數：<span class="text-red-500 font-medium">${remainingTimes} 次</span></div>
+            <div><i class="fa fa-info-circle text-orange-600 mr-1.5"></i>提示：請聯繫管理員升級為專業用戶</div>
+          `;
           
           // 顯示結果卡片
           card.classList.remove('hidden');
           return; // 終止執行，不顯示自檢表
         } else {
-          main.innerHTML = `<span class="text-gray-600"><i class="fa fa-user mr-1"></i>普通用戶驗證通過</span>`;
-          details.innerHTML = `用戶名稱：${userName}<br>
-                             使用期限：-<br>
-                             剩餘次數：${remainingTimes} 次`;
+          main.innerHTML = `<span class="text-textPrimary"><i class="fa fa-user mr-2"></i>普通用戶驗證通過</span>`;
+          details.innerHTML = `
+            <div><i class="fa fa-user-circle text-textPrimary mr-1.5"></i>用戶名稱：<span class="font-medium">${userName}</span></div>
+            <div><i class="fa fa-calendar-o text-textPrimary mr-1.5"></i>使用期限：<span class="font-medium">-</span></div>
+            <div><i class="fa fa-refresh text-textPrimary mr-1.5"></i>剩餘次數：<span class="font-medium text-primary">${remainingTimes} 次</span></div>
+          `;
         }
       }
 
@@ -841,7 +976,7 @@
       // 顯示自檢表區域
       setTimeout(() => {
         forceShowChecklist();
-      }, 100);
+      }, 300);
     }
   </script>
 </body>
