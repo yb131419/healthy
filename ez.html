@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8" />
-  <title>🧬 彥彬 自檢表系統</title>
+  <title>🧬 彥彬 健康自檢表系統</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
@@ -16,11 +16,21 @@
           colors: { 
             primary: '#00B900', 
             secondary: '#E8F4EA',
+            tertiary: '#D4EDDA',
             lightBg: '#f8faf9',
             accent: '#008000',
-            neutral: '#f3f4f6'
+            neutral: '#f3f4f6',
+            healthBlue: '#3B82F6',
+            healthTeal: '#0D9488',
+            healthOrange: '#F97316',
+            healthGray: '#6B7280'
           },
-          fontFamily: { sans: ['Noto Sans TC', 'sans-serif'] }
+          fontFamily: { sans: ['Noto Sans TC', 'sans-serif', 'system-ui'] },
+          boxShadow: {
+            'card': '0 4px 15px rgba(0,0,0,0.05)',
+            'card-hover': '0 6px 20px rgba(0,185,0,0.12)',
+            'btn': '0 2px 8px rgba(0,185,0,0.2)'
+          }
         }
       }
     };
@@ -31,45 +41,167 @@
       .fade-in { animation: fadeIn 0.45s ease-in-out; }
       .slide-down { animation: slideDown 0.5s ease-out; }
       .scale-in { animation: scaleIn 0.3s ease-out; }
+      .slide-up { animation: slideUp 0.5s ease-out; }
+      .pulse-light { animation: pulseLight 2s infinite; }
       .symptom-card-hover { transition: all 0.2s ease; }
-      .symptom-card-hover:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+      .symptom-card-hover:hover { transform: translateY(-2px); box-shadow: var(--tw-shadow-card-hover); }
       .factor-tag { font-size: 0.75rem; padding: 0.15rem 0.35rem; border-radius: 4px; }
       .factor-btn-active { transform: scale(1.05); box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+      .input-focus { @apply focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all; }
+      .btn-primary { @apply bg-primary text-white font-medium rounded-lg shadow-btn hover:bg-primary/90 active:scale-98 transition-all; }
+      .btn-secondary { @apply bg-white border border-primary text-primary font-medium rounded-lg hover:bg-secondary transition-all; }
     }
+
     @keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
     @keyframes slideDown { from { transform: translateY(-20px); opacity: 0 } to { transform: translateY(0); opacity: 1 } }
+    @keyframes slideUp { from { transform: translateY(20px); opacity: 0 } to { transform: translateY(0); opacity: 1 } }
     @keyframes scaleIn { from { transform: scale(0.98); opacity: 0 } to { transform: scale(1); opacity: 1 } }
+    @keyframes pulseLight { 0%, 100% { opacity: 1; } 50% { opacity: 0.8; } }
   </style>
 </head>
-<body class="bg-lightBg min-h-screen flex flex-col p-4">
-  <div class="max-w-4xl w-full bg-white rounded-xl shadow-md overflow-hidden fade-in self-center">
-    <div class="bg-primary p-6 text-white text-center">
-      <i class="fa fa-heartbeat text-4xl mb-3"></i>
-      <h1 class="text-2xl font-bold">🧬 彥彬 自檢表系統</h1>
+<body class="bg-lightBg min-h-screen flex flex-col p-4 font-sans">
+  <div class="max-w-4xl w-full bg-white rounded-xl shadow-card overflow-hidden fade-in self-center">
+    <!-- 頂部標題欄 -->
+    <div class="bg-gradient-to-r from-primary to-accent p-6 text-white text-center">
+      <i class="fa fa-heartbeat text-4xl mb-3 pulse-light"></i>
+      <h1 class="text-2xl md:text-2.5xl font-bold">🧬 彥彬 健康自檢表系統</h1>
+      <p class="mt-2 opacity-90 text-sm md:text-base">專業健康評估，守護您的身心健康</p>
     </div>
 
-    <div class="p-6">
-      <div id="status" class="flex items-center justify-center py-6 text-gray-700 text-center">
+    <div class="p-6 md:p-8">
+      <!-- 加載狀態 -->
+      <div id="status" class="flex items-center justify-center py-10 text-gray-700 text-center">
         <div class="text-center">
-          <div class="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary mb-3"></div>
-          <p id="status-text">正在初始化 LIFF...</p>
+          <div class="inline-block animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-primary mb-4"></div>
+          <p id="status-text" class="text-lg">正在初始化系統...</p>
         </div>
       </div>
 
-      <div id="error-message" class="hidden bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4"></div>
-
-      <div id="result-card" class="hidden bg-secondary/50 border border-primary/20 rounded-lg p-5 mb-6 text-center slide-down">
-        <div id="result-main" class="text-lg font-medium mb-2"></div>
-        <div id="result-details" class="text-sm text-gray-700 mb-3"></div>
+      <!-- 錯誤信息 -->
+      <div id="error-message" class="hidden bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6 flex items-center">
+        <i class="fa fa-exclamation-circle mr-2 text-red-500"></i>
+        <span id="error-content"></span>
       </div>
 
-      <!-- 自檢表區域 - 預設隱藏，驗證通過後自動顯示 -->
+      <!-- 用戶驗證結果卡片 -->
+      <div id="result-card" class="hidden bg-tertiary border border-primary/30 rounded-xl p-5 mb-6 text-center slide-down">
+        <div id="result-main" class="text-lg md:text-xl font-medium mb-3 flex items-center justify-center">
+          <i class="fa fa-check-circle mr-2 text-primary"></i>
+          <span></span>
+        </div>
+        <div id="result-details" class="text-sm md:text-base text-gray-700 grid grid-cols-1 md:grid-cols-3 gap-2 justify-items-center">
+          <!-- 動態填充用戶信息 -->
+        </div>
+      </div>
+
+      <!-- 用戶基本資料填寫區域 -->
+      <div id="profile-form" class="hidden bg-white rounded-xl shadow-card p-6 mb-8 slide-up">
+        <h2 class="text-xl md:text-2xl font-bold text-primary mb-4 flex items-center">
+          <i class="fa fa-user-circle mr-2"></i>基本資料填寫
+        </h2>
+        <p class="text-healthGray mb-6 text-sm md:text-base">請填寫您的基本健康資訊，以便提供更精確的評估結果</p>
+        
+        <form id="user-profile-form" class="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <!-- 姓名 -->
+          <div class="form-group">
+            <label for="fullname" class="block text-gray-700 mb-2 font-medium">姓名 <span class="text-red-500">*</span></label>
+            <input type="text" id="fullname" name="fullname" required
+              class="w-full px-4 py-2 border border-gray-300 rounded-lg input-focus"
+              placeholder="請輸入您的真實姓名">
+          </div>
+
+          <!-- 年齡 -->
+          <div class="form-group">
+            <label for="age" class="block text-gray-700 mb-2 font-medium">年齡 <span class="text-red-500">*</span></label>
+            <input type="number" id="age" name="age" required min="0" max="120"
+              class="w-full px-4 py-2 border border-gray-300 rounded-lg input-focus"
+              placeholder="請輸入年齡">
+          </div>
+
+          <!-- 性別 -->
+          <div class="form-group">
+            <label class="block text-gray-700 mb-2 font-medium">性別 <span class="text-red-500">*</span></label>
+            <div class="flex gap-4">
+              <label class="inline-flex items-center">
+                <input type="radio" name="gender" value="男" required
+                  class="text-primary focus:ring-primary h-4 w-4">
+                <span class="ml-2 text-gray-700">男</span>
+              </label>
+              <label class="inline-flex items-center">
+                <input type="radio" name="gender" value="女"
+                  class="text-primary focus:ring-primary h-4 w-4">
+                <span class="ml-2 text-gray-700">女</span>
+              </label>
+              <label class="inline-flex items-center">
+                <input type="radio" name="gender" value="其他"
+                  class="text-primary focus:ring-primary h-4 w-4">
+                <span class="ml-2 text-gray-700">其他</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- 身高 (cm) -->
+          <div class="form-group">
+            <label for="height" class="block text-gray-700 mb-2 font-medium">身高 (cm) <span class="text-red-500">*</span></label>
+            <input type="number" id="height" name="height" required min="50" max="250"
+              class="w-full px-4 py-2 border border-gray-300 rounded-lg input-focus"
+              placeholder="請輸入身高（公分）">
+          </div>
+
+          <!-- 體重 (kg) -->
+          <div class="form-group">
+            <label for="weight" class="block text-gray-700 mb-2 font-medium">體重 (kg) <span class="text-red-500">*</span></label>
+            <input type="number" id="weight" name="weight" required min="10" max="300" step="0.1"
+              class="w-full px-4 py-2 border border-gray-300 rounded-lg input-focus"
+              placeholder="請輸入體重（公斤）">
+          </div>
+
+          <!-- 血壓 -->
+          <div class="form-group">
+            <label for="blood-pressure" class="block text-gray-700 mb-2 font-medium">血壓 (mmHg) <span class="text-red-500">*</span></label>
+            <input type="text" id="blood-pressure" name="bloodPressure" required
+              class="w-full px-4 py-2 border border-gray-300 rounded-lg input-focus"
+              placeholder="例如：120/80">
+          </div>
+
+          <!-- 血糖 (mmol/L) -->
+          <div class="form-group">
+            <label for="blood-sugar" class="block text-gray-700 mb-2 font-medium">空腹血糖 (mmol/L)</label>
+            <input type="number" id="blood-sugar" name="bloodSugar" min="2" max="30" step="0.1"
+              class="w-full px-4 py-2 border border-gray-300 rounded-lg input-focus"
+              placeholder="請輸入空腹血糖值（選填）">
+          </div>
+
+          <!-- 職業 -->
+          <div class="form-group">
+            <label for="occupation" class="block text-gray-700 mb-2 font-medium">職業 <span class="text-red-500">*</span></label>
+            <input type="text" id="occupation" name="occupation" required
+              class="w-full px-4 py-2 border border-gray-300 rounded-lg input-focus"
+              placeholder="請輸入您的職業">
+          </div>
+
+          <!-- 提交按鈕 -->
+          <div class="md:col-span-2 flex justify-center mt-6">
+            <button type="submit" class="btn-primary py-3 px-10 text-lg">
+              <i class="fa fa-arrow-right mr-2"></i>下一步，開始自檢
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- 自檢表區域 - 預設隱藏 -->
       <div id="checklist-section" class="hidden scale-in">
         <!-- 自檢表標題區域 -->
-        <div class="mb-6 text-center">
-          <h2 class="text-2xl font-bold text-primary mb-2">自檢表填寫區域</h2>
-          <p class="text-gray-600">請根據自身情況勾選對應症狀，並填寫症狀相關資訊</p>
-          <div class="mt-4 flex flex-wrap justify-center gap-2 text-sm text-gray-700">
+        <div class="mb-8 text-center">
+          <h2 class="text-2xl md:text-2.5xl font-bold text-primary mb-3 flex items-center justify-center">
+            <i class="fa fa-stethoscope mr-2"></i>健康自檢表
+          </h2>
+          <p class="text-healthGray text-sm md:text-base max-w-2xl mx-auto">
+            請根據自身情況勾選對應症狀，並填寫症狀相關資訊，幫助我們更精確地評估您的健康狀況
+          </p>
+          
+          <!-- 健康要素標籤 -->
+          <div class="mt-5 flex flex-wrap justify-center gap-2 text-sm">
             <span class="bg-blue-100 text-blue-800 factor-tag">氣血不足</span>
             <span class="bg-green-100 text-green-800 factor-tag">微循環不通</span>
             <span class="bg-yellow-100 text-yellow-800 factor-tag">毒素</span>
@@ -80,9 +212,9 @@
           </div>
         </div>
 
-        <!-- 症狀過濾與統計 - 已修改為七大要素分類選項 -->
-        <div class="bg-neutral rounded-lg p-4 mb-6">
-          <div class="flex flex-wrap gap-2 mb-4">
+        <!-- 症狀過濾與統計 -->
+        <div class="bg-neutral rounded-xl p-5 mb-8">
+          <div class="flex flex-wrap gap-3 mb-5">
             <button id="filter-all" class="bg-primary text-white px-4 py-2 rounded-md text-sm hover:bg-primary/90 transition factor-btn-active">
               <i class="fa fa-th-list mr-1"></i>顯示全部
             </button>
@@ -109,24 +241,27 @@
               <i class="fa fa-tag mr-1"></i>情緒
             </button>
           </div>
-          <div class="flex flex-wrap gap-2 mb-2">
+          
+          <div class="flex flex-wrap gap-3 mb-4">
             <button id="filter-selected" class="bg-gray-700 text-white px-4 py-2 rounded-md text-sm hover:bg-gray-800 transition">
               <i class="fa fa-filter mr-1"></i>只看已選
             </button>
           </div>
-          <div class="text-gray-700 text-sm mt-2">
-            已勾選: <span id="selected-count" class="font-bold text-primary">0</span>/100 個症狀
+          
+          <div class="text-gray-700 text-sm p-3 bg-white rounded-lg border border-gray-200">
+            <i class="fa fa-info-circle text-primary mr-1"></i>
+            已勾選: <span id="selected-count" class="font-bold text-primary text-base">0</span>/100 個症狀
           </div>
         </div>
 
         <!-- 症狀清單容器 -->
-        <div id="symptoms-container" class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-8">
+        <div id="symptoms-container" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10">
           <!-- JS動態生成症狀卡片 -->
         </div>
 
         <!-- 提交按鈕 -->
         <div class="text-center mt-8 mb-4">
-          <button id="submit-checklist" class="bg-primary hover:bg-primary/90 text-white font-bold py-3 px-8 rounded-lg shadow-md transition transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-primary/50">
+          <button id="submit-checklist" class="btn-primary py-3 px-12 text-lg">
             <i class="fa fa-paper-plane mr-2"></i>提交自檢表
           </button>
         </div>
@@ -136,14 +271,16 @@
 
   <!-- 提交成功模態框 -->
   <div id="success-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden fade-in">
-    <div class="bg-white rounded-xl p-8 max-w-md w-full mx-4 text-center">
-      <div class="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
-        <i class="fa fa-check text-3xl text-primary"></i>
+    <div class="bg-white rounded-2xl p-8 max-w-md w-full mx-4 text-center slide-up">
+      <div class="inline-flex items-center justify-center w-20 h-20 bg-green-100 rounded-full mb-6">
+        <i class="fa fa-check text-4xl text-primary"></i>
       </div>
-      <h3 class="text-xl font-bold text-gray-800 mb-2">提交成功！</h3>
-      <p class="text-gray-600 mb-6">您的自檢表已順利提交，感謝您的填寫</p>
-      <button id="close-modal" class="bg-primary hover:bg-primary/90 text-white font-bold py-2 px-6 rounded-lg transition">
-        確認
+      <h3 class="text-2xl font-bold text-gray-800 mb-3">提交成功！</h3>
+      <p class="text-gray-600 mb-7 text-base">
+        您的健康自檢表已順利提交，我們將盡快為您生成健康評估報告
+      </p>
+      <button id="close-modal" class="btn-primary py-2 px-8 text-lg">
+        完成
       </button>
     </div>
   </div>
@@ -153,6 +290,9 @@
     const GAS_URL = "https://script.google.com/macros/s/AKfycbykBtM2_PM7IZ-ZUU4tgTqVa1xGhVQFaZ523FXc4ivdLz_GZ09sdmL6s5zk7SdloFuG/exec";
     const JSONP_TIMEOUT = 15000;
     const PERMANENT_EXPIRY_DATE = "9999/12/31";
+
+    // 存儲用戶基本資料
+    let userProfileData = {};
 
     // 七大健康要素對應樣式
     const factorStyles = {
@@ -165,7 +305,7 @@
       情绪: { className: 'bg-indigo-100 text-indigo-800', label: '情緒' }
     };
 
-    // 時間長短選項（已延長週期）
+    // 時間長短選項
     const durationOptions = [
       { value: '', label: '請選擇時間' },
       { value: '1w', label: '1周內' },
@@ -185,7 +325,7 @@
       { value: 'severe', label: '嚴重（經常影響）' }
     ];
 
-    // 完整症狀數據（包含七大要素對應關係）
+    // 完整症狀數據
     const fullSymptomData = [
       {seq: 1, symptom: "記憶力下降", 气血: "○", 微循环: "", 毒素: "", 血脂: "", 寒凉湿: "", 免疫: "", 情绪: ""},
       {seq: 2, symptom: "思維斷電", 气血: "○", 微循环: "", 毒素: "", 血脂: "", 寒凉湿: "", 免疫: "", 情绪: ""},
@@ -299,15 +439,14 @@
     const showError = msg => {
       document.getElementById('status').classList.add('hidden');
       document.getElementById('result-card').classList.add('hidden');
+      document.getElementById('profile-form').classList.add('hidden');
       document.getElementById('checklist-section').classList.add('hidden');
       
-      const el = document.getElementById('error-message');
-      if (el) {
-        el.innerHTML = `<p>${msg}</p><div class="mt-3 flex justify-center">
-          <button onclick="window.location.reload()" class="text-primary hover:text-primary/80 font-medium">
-            <i class="fa fa-refresh mr-1"></i> 重新嘗試
-          </button></div>`;
-        el.classList.remove('hidden');
+      const errorEl = document.getElementById('error-message');
+      const errorContent = document.getElementById('error-content');
+      if (errorEl && errorContent) {
+        errorContent.textContent = msg;
+        errorEl.classList.remove('hidden');
       }
     };
 
@@ -384,11 +523,10 @@
             `<option value="${option.value}">${option.label}</option>`
           ).join('');
 
-          // 建立症狀卡片，並存儲相關要素信息
+          // 建立症狀卡片
           const card = document.createElement('div');
-          card.className = 'symptom-card bg-white border border-gray-200 rounded-lg p-4 symptom-card-hover';
+          card.className = 'symptom-card bg-white border border-gray-200 rounded-xl p-4 shadow-card symptom-card-hover';
           card.dataset.seq = symptom.seq;
-          // 存儲相關要素，用於過濾
           card.dataset.factors = Object.entries(factorStyles)
             .filter(([key]) => symptom[key] === "○")
             .map(([key]) => key)
@@ -414,18 +552,18 @@
                   ${relatedFactors.length > 0 ? relatedFactors.join('') : '<span class="factor-tag bg-gray-100 text-gray-500">無相關要素</span>'}
                 </div>
                 
-                <!-- 詳細資訊（預設隱藏，勾選後顯示） -->
+                <!-- 詳細資訊 -->
                 <div class="symptom-details hidden mt-3 pt-3 border-t border-gray-100">
                   <div class="grid grid-cols-2 gap-3">
                     <div>
                       <label class="block text-sm text-gray-600 mb-1">時間長短</label>
-                      <select class="duration-select w-full border border-gray-300 rounded-md px-2 py-1 text-sm focus:ring-primary focus:border-primary">
+                      <select class="duration-select w-full border border-gray-300 rounded-md px-2 py-1 text-sm input-focus">
                         ${durationOptionsHtml}
                       </select>
                     </div>
                     <div>
                       <label class="block text-sm text-gray-600 mb-1">症狀輕重</label>
-                      <select class="severity-select w-full border border-gray-300 rounded-md px-2 py-1 text-sm focus:ring-primary focus:border-primary">
+                      <select class="severity-select w-full border border-gray-300 rounded-md px-2 py-1 text-sm input-focus">
                         ${severityOptionsHtml}
                       </select>
                     </div>
@@ -458,10 +596,10 @@
           
           if (this.checked) {
             details.classList.remove('hidden');
-            card.classList.add('border-primary/50', 'bg-secondary/30');
+            card.classList.add('border-primary/50', 'bg-secondary/30', 'shadow-card-hover');
           } else {
             details.classList.add('hidden');
-            card.classList.remove('border-primary/50', 'bg-secondary/30');
+            card.classList.remove('border-primary/50', 'bg-secondary/30', 'shadow-card-hover');
             
             // 重置選擇
             const durationSelect = card.querySelector('.duration-select');
@@ -483,11 +621,11 @@
       return checkedCount;
     }
 
-    // 初始化過濾按鈕事件（核心修改點）
+    // 初始化過濾按鈕事件
     function initFilterButtons() {
       const filterButtons = document.querySelectorAll('[data-factor], #filter-all');
-      let currentFilter = 'all'; // 預設顯示全部
-      let showOnlySelected = false; // 預設不僅看已選
+      let currentFilter = 'all';
+      let showOnlySelected = false;
 
       // 綁定要素過濾按鈕事件
       filterButtons.forEach(button => {
@@ -497,11 +635,7 @@
           this.classList.add('factor-btn-active');
           
           // 設置當前過濾條件
-          if (this.id === 'filter-all') {
-            currentFilter = 'all';
-          } else {
-            currentFilter = this.dataset.factor;
-          }
+          currentFilter = this.id === 'filter-all' ? 'all' : this.dataset.factor;
           
           // 應用過濾
           applyFilters();
@@ -540,23 +674,19 @@
             shouldShow = cardFactors.includes(currentFilter);
           }
           
-          // 已選過濾（如果開啟）
+          // 已選過濾
           if (showOnlySelected && shouldShow) {
             const checkbox = card.querySelector('.symptom-checkbox');
             shouldShow = checkbox.checked;
           }
           
           // 顯示或隱藏卡片
-          if (shouldShow) {
-            card.classList.remove('hidden');
-          } else {
-            card.classList.add('hidden');
-          }
+          card.classList.toggle('hidden', !shouldShow);
         });
       }
     }
 
-    // 初始化控制按鈕（保留提交和關閉模態框功能）
+    // 初始化控制按鈕
     function initControlButtons() {
       // 提交按鈕
       document.getElementById('submit-checklist').addEventListener('click', function() {
@@ -578,10 +708,9 @@
           
           if (!duration || !severity) {
             isValid = false;
-            // 高亮未填寫的卡片
-            card.classList.add('border-red-500');
+            card.classList.add('border-red-500', 'animate-pulse');
             setTimeout(() => {
-              card.classList.remove('border-red-500');
+              card.classList.remove('border-red-500', 'animate-pulse');
             }, 2000);
           }
         });
@@ -594,7 +723,7 @@
         // 收集提交數據
         const submitData = collectSubmitData();
         
-        // 調用後端提交（這裡可以根據實際需求修改）
+        // 提交數據
         submitChecklistData(submitData);
       });
 
@@ -612,6 +741,7 @@
         userId: liff.getDecodedIDToken()?.sub || '',
         displayName: liff.getProfile()?.displayName || '未知用戶',
         submitTime: new Date().toISOString(),
+        userProfile: userProfileData, // 加入用戶基本資料
         selectedSymptoms: []
       };
 
@@ -644,7 +774,6 @@
     function submitChecklistData(data) {
       console.log("提交自檢表數據：", data);
       
-      // 這裡可以根據實際需求修改提交方式
       $.ajax({
         url: GAS_URL,
         dataType: 'jsonp',
@@ -665,58 +794,75 @@
       });
     }
 
-    // 重置自檢表
-    function resetChecklist() {
-      const checkboxes = document.querySelectorAll('.symptom-checkbox');
-      checkboxes.forEach(checkbox => {
-        if (checkbox.checked) {
-          checkbox.checked = false;
-          checkbox.dispatchEvent(new Event('change'));
-        }
-      });
+    // 初始化基本資料表單
+    function initProfileForm() {
+      const form = document.getElementById('user-profile-form');
       
-      // 重置過濾狀態
-      document.getElementById('filter-all').click();
-      const filterSelectedBtn = document.getElementById('filter-selected');
-      if (filterSelectedBtn.classList.contains('bg-red-600')) {
-        filterSelectedBtn.click();
-      }
-    }
-
-    // 強制顯示自檢表區域
-    function forceShowChecklist() {
-      try {
-        const checklistSection = document.getElementById('checklist-section');
-        if (!checklistSection) {
-          console.error("自檢表區域元素未找到");
-          alert("自檢表加載失敗，請刷新頁面重試");
-          return false;
+      form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        // 收集表單數據
+        userProfileData = {
+          fullname: document.getElementById('fullname').value.trim(),
+          age: document.getElementById('age').value.trim(),
+          gender: document.querySelector('input[name="gender"]:checked')?.value || '',
+          height: document.getElementById('height').value.trim(),
+          weight: document.getElementById('weight').value.trim(),
+          bloodPressure: document.getElementById('blood-pressure').value.trim(),
+          bloodSugar: document.getElementById('blood-sugar').value.trim() || '',
+          occupation: document.getElementById('occupation').value.trim()
+        };
+        
+        // 簡單驗證
+        if (!userProfileData.fullname) {
+          alert('請輸入姓名');
+          return;
         }
-
-        // 移除hidden類，確保顯示
-        checklistSection.classList.remove('hidden');
-        checklistSection.style.display = 'block'; // 強制顯示，防止CSS影響
+        
+        if (!userProfileData.age || isNaN(userProfileData.age) || userProfileData.age < 0 || userProfileData.age > 120) {
+          alert('請輸入有效的年齡');
+          return;
+        }
+        
+        if (!userProfileData.gender) {
+          alert('請選擇性別');
+          return;
+        }
+        
+        if (!userProfileData.height || isNaN(userProfileData.height) || userProfileData.height < 50 || userProfileData.height > 250) {
+          alert('請輸入有效的身高');
+          return;
+        }
+        
+        if (!userProfileData.weight || isNaN(userProfileData.weight) || userProfileData.weight < 10 || userProfileData.weight > 300) {
+          alert('請輸入有效的體重');
+          return;
+        }
+        
+        if (!userProfileData.bloodPressure.match(/^\d+\/\d+$/)) {
+          alert('請輸入有效的血壓格式（例如：120/80）');
+          return;
+        }
+        
+        if (!userProfileData.occupation) {
+          alert('請輸入職業');
+          return;
+        }
+        
+        // 隱藏基本資料表單，顯示自檢表
+        document.getElementById('profile-form').classList.add('hidden');
+        document.getElementById('checklist-section').classList.remove('hidden');
         
         // 渲染症狀卡片
-        const renderSuccess = renderSymptomCards();
-        if (renderSuccess) {
-          // 初始化過濾按鈕和控制按鈕
-          initFilterButtons();
-          initControlButtons();
-          
-          // 滾動到自檢表區域
-          setTimeout(() => {
-            checklistSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          }, 100);
-        }
+        renderSymptomCards();
+        initFilterButtons();
+        initControlButtons();
         
-        console.log("自檢表區域已強制顯示");
-        return true;
-      } catch (error) {
-        console.error("強制顯示自檢表出錯：", error);
-        alert("自檢表顯示失敗，請刷新頁面重試");
-        return false;
-      }
+        // 滾動到自檢表區域
+        setTimeout(() => {
+          document.getElementById('checklist-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 300);
+      });
     }
 
     // 頁面加載完成後初始化
@@ -724,7 +870,7 @@
       console.log("頁面加載完成，開始初始化");
 
       // 初始化 LIFF
-      setStatus('正在初始化 LIFF...');
+      setStatus('正在初始化系統...');
       liff.init({ liffId: LIFF_ID }, { disableRedirect: true })
         .then(() => {
           console.log("LIFF 初始化成功");
@@ -788,9 +934,9 @@
       });
     }
 
-    // 渲染驗證結果和自檢表
+    // 渲染驗證結果
     function renderResult(resp) {
-      console.log("開始渲染驗證結果和自檢表");
+      console.log("開始渲染驗證結果");
       
       // 隱藏狀態和錯誤信息
       document.getElementById('status').classList.add('hidden');
@@ -798,8 +944,8 @@
 
       // 渲染結果卡片
       const card = document.getElementById('result-card');
-      const main = document.getElementById('result-main');
-      const details = document.getElementById('result-details');
+      const mainSpan = document.querySelector('#result-main span');
+      const detailsDiv = document.getElementById('result-details');
 
       const isProUser = resp.isAdmin === true;
       const userName = resp.displayName || '未知用戶';
@@ -807,41 +953,73 @@
 
       if (isProUser) {
         const { displayDate, remainingDays } = calculateRemainingDaysByDate(expiryDateStr);
-        main.innerHTML = `<span class="text-primary"><i class="fa fa-check-circle mr-1"></i>專業用戶驗證通過</span>`;
-        details.innerHTML = `用戶名稱：${userName}<br>
-                           使用期限：${displayDate}<br>
-                           剩餘天數：${remainingDays}`;
+        mainSpan.innerHTML = `<span class="text-primary">專業用戶驗證通過</span>`;
+        detailsDiv.innerHTML = `
+          <div class="flex items-center justify-center">
+            <i class="fa fa-user text-primary mr-2"></i>
+            <span>用戶名稱：${userName}</span>
+          </div>
+          <div class="flex items-center justify-center">
+            <i class="fa fa-calendar text-primary mr-2"></i>
+            <span>使用期限：${displayDate}</span>
+          </div>
+          <div class="flex items-center justify-center">
+            <i class="fa fa-clock-o text-primary mr-2"></i>
+            <span>剩餘天數：${remainingDays}</span>
+          </div>
+        `;
       } else {
         const usageCount = resp.usageCount || 0;
         const remainingTimes = Math.max(0, 3 - usageCount);
         
         // 普通用戶剩餘次數為0時，顯示錯誤信息
         if (remainingTimes <= 0) {
-          main.innerHTML = `<span class="text-orange-600"><i class="fa fa-exclamation-circle mr-1"></i>普通用戶使用次數已用完</span>`;
-          details.innerHTML = `用戶名稱：${userName}<br>
-                             使用期限：-<br>
-                             剩餘次數：${remainingTimes} 次<br>
-                             提示：請聯繫管理員升級為專業用戶繼續使用`;
+          mainSpan.innerHTML = `<span class="text-orange-600">普通用戶使用次數已用完</span>`;
+          detailsDiv.innerHTML = `
+            <div class="flex items-center justify-center">
+              <i class="fa fa-user text-orange-600 mr-2"></i>
+              <span>用戶名稱：${userName}</span>
+            </div>
+            <div class="flex items-center justify-center">
+              <i class="fa fa-calendar text-orange-600 mr-2"></i>
+              <span>使用期限：-</span>
+            </div>
+            <div class="flex items-center justify-center">
+              <i class="fa fa-exclamation-triangle text-orange-600 mr-2"></i>
+              <span>提示：請聯繫管理員升級</span>
+            </div>
+          `;
           
           // 顯示結果卡片
           card.classList.remove('hidden');
-          return; // 終止執行，不顯示自檢表
+          return;
         } else {
-          main.innerHTML = `<span class="text-gray-600"><i class="fa fa-user mr-1"></i>普通用戶驗證通過</span>`;
-          details.innerHTML = `用戶名稱：${userName}<br>
-                             使用期限：-<br>
-                             剩餘次數：${remainingTimes} 次`;
+          mainSpan.innerHTML = `<span class="text-gray-600">普通用戶驗證通過</span>`;
+          detailsDiv.innerHTML = `
+            <div class="flex items-center justify-center">
+              <i class="fa fa-user text-gray-600 mr-2"></i>
+              <span>用戶名稱：${userName}</span>
+            </div>
+            <div class="flex items-center justify-center">
+              <i class="fa fa-calendar text-gray-600 mr-2"></i>
+              <span>使用期限：-</span>
+            </div>
+            <div class="flex items-center justify-center">
+              <i class="fa fa-refresh text-gray-600 mr-2"></i>
+              <span>剩餘次數：${remainingTimes} 次</span>
+            </div>
+          `;
         }
       }
 
-      // 顯示結果卡片
+      // 顯示結果卡片和基本資料表單
       card.classList.remove('hidden');
-      console.log("結果卡片已顯示");
-
-      // 顯示自檢表區域
-      setTimeout(() => {
-        forceShowChecklist();
-      }, 100);
+      document.getElementById('profile-form').classList.remove('hidden');
+      
+      // 初始化基本資料表單
+      initProfileForm();
+      
+      console.log("結果卡片和基本資料表單已顯示");
     }
   </script>
 </body>
