@@ -16,7 +16,9 @@
           colors: { 
             primary: '#00B900', 
             secondary: '#E8F4EA',
-            lightBg: '#f8faf9'
+            lightBg: '#f8faf9',
+            accent: '#008000',
+            neutral: '#f3f4f6'
           },
           fontFamily: { sans: ['Noto Sans TC', 'sans-serif'] }
         }
@@ -28,16 +30,19 @@
     @layer utilities {
       .fade-in { animation: fadeIn 0.45s ease-in-out; }
       .slide-down { animation: slideDown 0.5s ease-out; }
-      .table-hover-row:hover { background-color: theme('colors.secondary'); }
       .scale-in { animation: scaleIn 0.3s ease-out; }
+      .symptom-card-hover { transition: all 0.2s ease; }
+      .symptom-card-hover:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+      .factor-tag { font-size: 0.75rem; padding: 0.15rem 0.35rem; border-radius: 4px; }
+      .factor-btn-active { transform: scale(1.05); box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
     }
     @keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
     @keyframes slideDown { from { transform: translateY(-20px); opacity: 0 } to { transform: translateY(0); opacity: 1 } }
     @keyframes scaleIn { from { transform: scale(0.98); opacity: 0 } to { transform: scale(1); opacity: 1 } }
   </style>
 </head>
-<body class="bg-lightBg min-h-screen flex items-center justify-center p-4">
-  <div class="max-w-4xl w-full bg-white rounded-xl shadow-md overflow-hidden fade-in">
+<body class="bg-lightBg min-h-screen flex flex-col p-4">
+  <div class="max-w-4xl w-full bg-white rounded-xl shadow-md overflow-hidden fade-in self-center">
     <div class="bg-primary p-6 text-white text-center">
       <i class="fa fa-heartbeat text-4xl mb-3"></i>
       <h1 class="text-2xl font-bold">🧬 彥彬 自檢表系統</h1>
@@ -63,91 +68,83 @@
         <!-- 自檢表標題區域 -->
         <div class="mb-6 text-center">
           <h2 class="text-2xl font-bold text-primary mb-2">自檢表填寫區域</h2>
-          <p class="text-gray-600">請根據自身情況參考以下表格進行健康自檢</p>
-        </div>
-
-        <!-- 身體語言簡表 -->
-        <div class="mb-8">
-          <h3 class="text-xl font-bold text-gray-800 mb-3 flex items-center">
-            <i class="fa fa-list-alt text-primary mr-2"></i>身體語言簡表
-          </h3>
-          <div class="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
-            <table class="w-full border-collapse">
-              <thead class="bg-primary text-white">
-                <tr>
-                  <th class="p-2 border border-gray-300 text-center">序號</th>
-                  <th class="p-2 border border-gray-300 text-center">症狀</th>
-                  <th class="p-2 border border-gray-300 text-center">序號</th>
-                  <th class="p-2 border border-gray-300 text-center">症狀</th>
-                  <th class="p-2 border border-gray-300 text-center">序號</th>
-                  <th class="p-2 border border-gray-300 text-center">症狀</th>
-                  <th class="p-2 border border-gray-300 text-center">序號</th>
-                  <th class="p-2 border border-gray-300 text-center">症狀</th>
-                  <th class="p-2 border border-gray-300 text-center">序號</th>
-                  <th class="p-2 border border-gray-300 text-center">症狀</th>
-                </tr>
-              </thead>
-              <tbody class="bg-white" id="body-language-tbody">
-                <!-- JS動態生成內容 -->
-              </tbody>
-            </table>
+          <p class="text-gray-600">請根據自身情況勾選對應症狀，並填寫症狀相關資訊</p>
+          <div class="mt-4 flex flex-wrap justify-center gap-2 text-sm text-gray-700">
+            <span class="bg-blue-100 text-blue-800 factor-tag">氣血不足</span>
+            <span class="bg-green-100 text-green-800 factor-tag">微循環不通</span>
+            <span class="bg-yellow-100 text-yellow-800 factor-tag">毒素</span>
+            <span class="bg-orange-100 text-orange-800 factor-tag">血脂粘稠</span>
+            <span class="bg-purple-100 text-purple-800 factor-tag">寒涼濕症</span>
+            <span class="bg-pink-100 text-pink-800 factor-tag">免疫</span>
+            <span class="bg-indigo-100 text-indigo-800 factor-tag">情緒</span>
           </div>
         </div>
 
-        <!-- 症狀與健康要素確認表（一） -->
-        <div class="mb-8">
-          <h3 class="text-xl font-bold text-gray-800 mb-3 flex items-center">
-            <i class="fa fa-check-square-o text-primary mr-2"></i>症狀與健康要素確認表（一）
-          </h3>
-          <div class="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
-            <table class="w-full border-collapse">
-              <thead class="bg-primary text-white">
-                <tr>
-                  <th class="p-2 border border-gray-300 text-center">序號</th>
-                  <th class="p-2 border border-gray-300 text-center">症狀</th>
-                  <th class="p-2 border border-gray-300 text-center">氣血(氣血不足)</th>
-                  <th class="p-2 border border-gray-300 text-center">微循環不通</th>
-                  <th class="p-2 border border-gray-300 text-center">毒素</th>
-                  <th class="p-2 border border-gray-300 text-center">血脂粘稠</th>
-                  <th class="p-2 border border-gray-300 text-center">寒涼濕症</th>
-                  <th class="p-2 border border-gray-300 text-center">免疫</th>
-                  <th class="p-2 border border-gray-300 text-center">情緒</th>
-                </tr>
-              </thead>
-              <tbody class="bg-white" id="checklist1-tbody">
-                <!-- JS動態生成內容 -->
-              </tbody>
-            </table>
+        <!-- 症狀過濾與統計 - 已修改為七大要素分類選項 -->
+        <div class="bg-neutral rounded-lg p-4 mb-6">
+          <div class="flex flex-wrap gap-2 mb-4">
+            <button id="filter-all" class="bg-primary text-white px-4 py-2 rounded-md text-sm hover:bg-primary/90 transition factor-btn-active">
+              <i class="fa fa-th-list mr-1"></i>顯示全部
+            </button>
+            <!-- 七大要素分類按鈕 -->
+            <button data-factor="气血" class="bg-blue-500 text-white px-4 py-2 rounded-md text-sm hover:bg-blue-600 transition">
+              <i class="fa fa-tag mr-1"></i>氣血不足
+            </button>
+            <button data-factor="微循环" class="bg-green-500 text-white px-4 py-2 rounded-md text-sm hover:bg-green-600 transition">
+              <i class="fa fa-tag mr-1"></i>微循環不通
+            </button>
+            <button data-factor="毒素" class="bg-yellow-500 text-white px-4 py-2 rounded-md text-sm hover:bg-yellow-600 transition">
+              <i class="fa fa-tag mr-1"></i>毒素
+            </button>
+            <button data-factor="血脂" class="bg-orange-500 text-white px-4 py-2 rounded-md text-sm hover:bg-orange-600 transition">
+              <i class="fa fa-tag mr-1"></i>血脂粘稠
+            </button>
+            <button data-factor="寒凉湿" class="bg-purple-500 text-white px-4 py-2 rounded-md text-sm hover:bg-purple-600 transition">
+              <i class="fa fa-tag mr-1"></i>寒涼濕症
+            </button>
+            <button data-factor="免疫" class="bg-pink-500 text-white px-4 py-2 rounded-md text-sm hover:bg-pink-600 transition">
+              <i class="fa fa-tag mr-1"></i>免疫
+            </button>
+            <button data-factor="情绪" class="bg-indigo-500 text-white px-4 py-2 rounded-md text-sm hover:bg-indigo-600 transition">
+              <i class="fa fa-tag mr-1"></i>情緒
+            </button>
+          </div>
+          <div class="flex flex-wrap gap-2 mb-2">
+            <button id="filter-selected" class="bg-gray-700 text-white px-4 py-2 rounded-md text-sm hover:bg-gray-800 transition">
+              <i class="fa fa-filter mr-1"></i>只看已選
+            </button>
+          </div>
+          <div class="text-gray-700 text-sm mt-2">
+            已勾選: <span id="selected-count" class="font-bold text-primary">0</span>/100 個症狀
           </div>
         </div>
 
-        <!-- 症狀與健康要素確認表（二） -->
-        <div class="mb-6">
-          <h3 class="text-xl font-bold text-gray-800 mb-3 flex items-center">
-            <i class="fa fa-check-square-o text-primary mr-2"></i>症狀與健康要素確認表（二）
-          </h3>
-          <div class="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
-            <table class="w-full border-collapse">
-              <thead class="bg-primary text-white">
-                <tr>
-                  <th class="p-2 border border-gray-300 text-center">序號</th>
-                  <th class="p-2 border border-gray-300 text-center">症狀</th>
-                  <th class="p-2 border border-gray-300 text-center">氣血(氣血不足)</th>
-                  <th class="p-2 border border-gray-300 text-center">微循環不通</th>
-                  <th class="p-2 border border-gray-300 text-center">毒素</th>
-                  <th class="p-2 border border-gray-300 text-center">血脂粘稠</th>
-                  <th class="p-2 border border-gray-300 text-center">寒涼濕症</th>
-                  <th class="p-2 border border-gray-300 text-center">免疫</th>
-                  <th class="p-2 border border-gray-300 text-center">情緒</th>
-                </tr>
-              </thead>
-              <tbody class="bg-white" id="checklist2-tbody">
-                <!-- JS動態生成內容 -->
-              </tbody>
-            </table>
-          </div>
+        <!-- 症狀清單容器 -->
+        <div id="symptoms-container" class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-8">
+          <!-- JS動態生成症狀卡片 -->
+        </div>
+
+        <!-- 提交按鈕 -->
+        <div class="text-center mt-8 mb-4">
+          <button id="submit-checklist" class="bg-primary hover:bg-primary/90 text-white font-bold py-3 px-8 rounded-lg shadow-md transition transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-primary/50">
+            <i class="fa fa-paper-plane mr-2"></i>提交自檢表
+          </button>
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- 提交成功模態框 -->
+  <div id="success-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden fade-in">
+    <div class="bg-white rounded-xl p-8 max-w-md w-full mx-4 text-center">
+      <div class="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
+        <i class="fa fa-check text-3xl text-primary"></i>
+      </div>
+      <h3 class="text-xl font-bold text-gray-800 mb-2">提交成功！</h3>
+      <p class="text-gray-600 mb-6">您的自檢表已順利提交，感謝您的填寫</p>
+      <button id="close-modal" class="bg-primary hover:bg-primary/90 text-white font-bold py-2 px-6 rounded-lg transition">
+        確認
+      </button>
     </div>
   </div>
 
@@ -157,31 +154,39 @@
     const JSONP_TIMEOUT = 15000;
     const PERMANENT_EXPIRY_DATE = "9999/12/31";
 
-    // 自檢表數據
-    const bodyLanguageSymptoms = [
-      ["1", "記憶力下降"], ["2", "思維斷電"], ["3", "反應遲鈍"], ["4", "嗜睡"], ["5", "多夢"],
-      ["6", "頭暈"], ["7", "頭疼"], ["8", "頭麻"], ["9", "暈車"], ["10", "失眠"],
-      ["11", "頭面油膩"], ["12", "脫髮"], ["13", "頭髮稀少"], ["14", "易打哈欠"], ["15", "常嘆氣"],
-      ["16", "眼乾澀"], ["17", "眼癢"], ["18", "眼痛"], ["19", "視力模糊"], ["20", "眼屎多"],
-      ["21", "眼怕光流淚"], ["22", "麥粒腫"], ["23", "聽力下降"], ["24", "耳癢"], ["25", "耳鳴"],
-      ["26", "耳痛"], ["27", "耳屎多"], ["28", "耳內潮濕"], ["29", "打鼾"], ["30", "鼻塞"],
-      ["31", "愛打噴嚏"], ["32", "常流黃涕"], ["33", "鼻炎"], ["34", "感冒時間長"], ["35", "嗓子干"],
-      ["36", "喉嚨癢"], ["37", "喉嚨痛"], ["38", "咳嗽"], ["39", "痰多"], ["40", "呼吸困難"],
-      ["41", "口苦"], ["42", "口干"], ["43", "口臭"], ["44", "口腔潰瘍"], ["45", "舌潰瘍"],
-      ["46", "嘴唇麻"], ["47", "舌硬"], ["48", "胸悶氣短"], ["49", "心慌心悸"], ["50", "心絞痛"],
-      ["51", "指甲凹陷"], ["52", "半月痕少"], ["53", "手腳脫皮"], ["54", "手腳出汗"], ["55", "手腳涼"],
-      ["56", "手腳熱"], ["57", "手足麻木"], ["58", "四肢乏力"], ["59", "靜脈曲張"], ["60", "關節痛"],
-      ["61", "肩酸痛"], ["62", "頸椎痛"], ["63", "腰酸痛"], ["64", "尿渾濁"], ["65", "尿多沫"],
-      ["66", "尿有怪味"], ["67", "夜尿多"], ["68", "便秘"], ["69", "大便不成形"], ["70", "便溏不淨"],
-      ["71", "高血脂"], ["72", "高血壓"], ["73", "高血糖"], ["74", "低血糖"], ["75", "低血壓"],
-      ["76", "經期頭痛"], ["77", "月經量少"], ["78", "經期時長"], ["79", "經期推后"], ["80", "月經有血塊"],
-      ["81", "乳腺增生"], ["82", "經期腰痛"], ["83", "經期提前"], ["84", "月經量多"], ["85", "不愛說話"],
-      ["86", "惡心"], ["87", "胃脹"], ["88", "胃酸"], ["89", "胃痛"], ["90", "消化不良"],
-      ["91", "肥胖"], ["92", "皮膚癢"], ["93", "濕疹"], ["94", "各種過敏"], ["95", "痤瘡"],
-      ["96", "脂肪瘤"], ["97", "身體異味"], ["98", "淋巴結大"], ["99", "黑痣變大變多"], ["100", "形體消瘦"]
+    // 七大健康要素對應樣式
+    const factorStyles = {
+      气血: { className: 'bg-blue-100 text-blue-800', label: '氣血不足' },
+      微循环: { className: 'bg-green-100 text-green-800', label: '微循環不通' },
+      毒素: { className: 'bg-yellow-100 text-yellow-800', label: '毒素' },
+      血脂: { className: 'bg-orange-100 text-orange-800', label: '血脂粘稠' },
+      寒凉湿: { className: 'bg-purple-100 text-purple-800', label: '寒涼濕症' },
+      免疫: { className: 'bg-pink-100 text-pink-800', label: '免疫' },
+      情绪: { className: 'bg-indigo-100 text-indigo-800', label: '情緒' }
+    };
+
+    // 時間長短選項（已延長週期）
+    const durationOptions = [
+      { value: '', label: '請選擇時間' },
+      { value: '1w', label: '1周內' },
+      { value: '1-3m', label: '1-3個月' },
+      { value: '3-6m', label: '3-6個月' },
+      { value: '6m-1y', label: '6個月-1年' },
+      { value: '1-2y', label: '1-2年' },
+      { value: '2-5y', label: '2-5年' },
+      { value: '5y+', label: '5年以上' }
     ];
 
-    const healthChecklist1 = [
+    // 症狀輕重選項
+    const severityOptions = [
+      { value: '', label: '請選擇輕重' },
+      { value: 'mild', label: '輕微（不影響生活）' },
+      { value: 'moderate', label: '中等（偶爾影響）' },
+      { value: 'severe', label: '嚴重（經常影響）' }
+    ];
+
+    // 完整症狀數據（包含七大要素對應關係）
+    const fullSymptomData = [
       {seq: 1, symptom: "記憶力下降", 气血: "○", 微循环: "", 毒素: "", 血脂: "", 寒凉湿: "", 免疫: "", 情绪: ""},
       {seq: 2, symptom: "思維斷電", 气血: "○", 微循环: "", 毒素: "", 血脂: "", 寒凉湿: "", 免疫: "", 情绪: ""},
       {seq: 3, symptom: "反應遲鈍", 气血: "○", 微循环: "", 毒素: "", 血脂: "", 寒凉湿: "", 免疫: "", 情绪: ""},
@@ -231,10 +236,7 @@
       {seq: 47, symptom: "舌硬", 气血: "", 微循环: "○", 毒素: "", 血脂: "", 寒凉湿: "", 免疫: "", 情绪: ""},
       {seq: 48, symptom: "胸悶氣短", 气血: "", 微循环: "○", 毒素: "○", 血脂: "", 寒凉湿: "", 免疫: "", 情绪: ""},
       {seq: 49, symptom: "心慌心悸", 气血: "", 微循环: "○", 毒素: "○", 血脂: "", 寒凉湿: "", 免疫: "", 情绪: ""},
-      {seq: 50, symptom: "心絞痛", 气血: "", 微循环: "○", 毒素: "○", 血脂: "", 寒凉湿: "", 免疫: "", 情绪: ""}
-    ];
-
-    const healthChecklist2 = [
+      {seq: 50, symptom: "心絞痛", 气血: "", 微循环: "○", 毒素: "○", 血脂: "", 寒凉湿: "", 免疫: "", 情绪: ""},
       {seq: 51, symptom: "指甲凹陷", 气血: "○", 微循环: "", 毒素: "", 血脂: "", 寒凉湿: "", 免疫: "", 情绪: ""},
       {seq: 52, symptom: "半月痕少", 气血: "○", 微循环: "", 毒素: "", 血脂: "", 寒凉湿: "", 免疫: "", 情绪: ""},
       {seq: 53, symptom: "手腳脫皮", 气血: "", 微循环: "", 毒素: "○", 血脂: "", 寒凉湿: "", 免疫: "", 情绪: ""},
@@ -286,92 +288,6 @@
       {seq: 99, symptom: "黑痣變大變多", 气血: "", 微循环: "", 毒素: "○", 血脂: "", 寒凉湿: "", 免疫: "○", 情绪: ""},
       {seq: 100, symptom: "形體消瘦", 气血: "○", 微循环: "", 毒素: "", 血脂: "", 寒凉湿: "", 免疫: "", 情绪: ""}
     ];
-
-    // 渲染身體語言簡表 - 確保數據正確渲染
-    function renderBodyLanguageTable() {
-      try {
-        const tbody = document.getElementById('body-language-tbody');
-        if (!tbody) {
-          console.error("身體語言簡表 tbody 元素未找到");
-          return false;
-        }
-        
-        let rows = '';
-        if (bodyLanguageSymptoms.length < 100) {
-          console.error("身體語言簡表數據不足 100 條");
-          tbody.innerHTML = `<tr><td colspan="10" class="p-4 text-center text-red-500">數據加載錯誤</td></tr>`;
-          return false;
-        }
-
-        for (let i = 0; i < 20; i++) {
-          const items = [
-            bodyLanguageSymptoms[i],
-            bodyLanguageSymptoms[i + 20],
-            bodyLanguageSymptoms[i + 40],
-            bodyLanguageSymptoms[i + 60],
-            bodyLanguageSymptoms[i + 80]
-          ];
-          rows += `<tr class="table-hover-row">`;
-          items.forEach(item => {
-            rows += `<td class="p-2 border border-gray-300 text-center">${item[0]}</td>`;
-            rows += `<td class="p-2 border border-gray-300 text-left">${item[1]}</td>`;
-          });
-          rows += `</tr>`;
-        }
-        tbody.innerHTML = rows;
-        console.log("身體語言簡表渲染完成");
-        return true;
-      } catch (error) {
-        console.error("渲染身體語言簡表出錯：", error);
-        const tbody = document.getElementById('body-language-tbody');
-        if (tbody) {
-          tbody.innerHTML = `<tr><td colspan="10" class="p-4 text-center text-red-500">渲染錯誤：${error.message}</td></tr>`;
-        }
-        return false;
-      }
-    }
-
-    // 渲染健康要素確認表 - 確保數據正確渲染
-    function renderHealthChecklistTable(data, tbodyId) {
-      try {
-        const tbody = document.getElementById(tbodyId);
-        if (!tbody) {
-          console.error(`健康要素確認表 tbody 元素 ${tbodyId} 未找到`);
-          return false;
-        }
-        
-        if (!data || data.length === 0) {
-          console.error(`健康要素確認表數據為空`);
-          tbody.innerHTML = `<tr><td colspan="9" class="p-4 text-center text-red-500">數據加載錯誤</td></tr>`;
-          return false;
-        }
-
-        let rows = '';
-        data.forEach(item => {
-          rows += `<tr class="table-hover-row">
-            <td class="p-2 border border-gray-300 text-center">${item.seq}</td>
-            <td class="p-2 border border-gray-300 text-left">${item.symptom}</td>
-            <td class="p-2 border border-gray-300 text-center">${item.气血}</td>
-            <td class="p-2 border border-gray-300 text-center">${item.微循环}</td>
-            <td class="p-2 border border-gray-300 text-center">${item.毒素}</td>
-            <td class="p-2 border border-gray-300 text-center">${item.血脂}</td>
-            <td class="p-2 border border-gray-300 text-center">${item.寒凉湿}</td>
-            <td class="p-2 border border-gray-300 text-center">${item.免疫}</td>
-            <td class="p-2 border border-gray-300 text-center">${item.情绪}</td>
-          </tr>`;
-        });
-        tbody.innerHTML = rows;
-        console.log(`${tbodyId} 渲染完成，共 ${data.length} 條數據`);
-        return true;
-      } catch (error) {
-        console.error(`渲染 ${tbodyId} 出錯：`, error);
-        const tbody = document.getElementById(tbodyId);
-        if (tbody) {
-          tbody.innerHTML = `<tr><td colspan="9" class="p-4 text-center text-red-500">渲染錯誤：${error.message}</td></tr>`;
-        }
-        return false;
-      }
-    }
 
     // 狀態設置函數
     const setStatus = text => {
@@ -439,6 +355,334 @@
       }
     };
 
+    // 渲染症狀卡片
+    function renderSymptomCards() {
+      try {
+        const container = document.getElementById('symptoms-container');
+        if (!container) {
+          console.error("症狀容器未找到");
+          return false;
+        }
+
+        container.innerHTML = '';
+
+        fullSymptomData.forEach(symptom => {
+          // 收集相關的健康要素
+          const relatedFactors = [];
+          Object.entries(factorStyles).forEach(([key, style]) => {
+            if (symptom[key] === "○") {
+              relatedFactors.push(`<span class="factor-tag ${style.className}">${style.label}</span>`);
+            }
+          });
+
+          // 建立下拉選單選項HTML
+          const durationOptionsHtml = durationOptions.map(option => 
+            `<option value="${option.value}">${option.label}</option>`
+          ).join('');
+
+          const severityOptionsHtml = severityOptions.map(option => 
+            `<option value="${option.value}">${option.label}</option>`
+          ).join('');
+
+          // 建立症狀卡片，並存儲相關要素信息
+          const card = document.createElement('div');
+          card.className = 'symptom-card bg-white border border-gray-200 rounded-lg p-4 symptom-card-hover';
+          card.dataset.seq = symptom.seq;
+          // 存儲相關要素，用於過濾
+          card.dataset.factors = Object.entries(factorStyles)
+            .filter(([key]) => symptom[key] === "○")
+            .map(([key]) => key)
+            .join(',');
+          
+          card.innerHTML = `
+            <div class="flex items-start gap-3">
+              <!-- 勾選框 -->
+              <div class="flex-shrink-0 mt-1">
+                <input type="checkbox" id="symptom-${symptom.seq}" class="symptom-checkbox h-5 w-5 text-primary rounded border-gray-300 focus:ring-primary" data-seq="${symptom.seq}">
+              </div>
+              
+              <!-- 症狀內容 -->
+              <div class="flex-1">
+                <div class="flex justify-between items-start mb-2">
+                  <label for="symptom-${symptom.seq}" class="text-gray-800 font-medium cursor-pointer">
+                    <span class="text-primary mr-1">[${symptom.seq}]</span>${symptom.symptom}
+                  </label>
+                </div>
+                
+                <!-- 相關健康要素 -->
+                <div class="flex flex-wrap gap-1 mb-3">
+                  ${relatedFactors.length > 0 ? relatedFactors.join('') : '<span class="factor-tag bg-gray-100 text-gray-500">無相關要素</span>'}
+                </div>
+                
+                <!-- 詳細資訊（預設隱藏，勾選後顯示） -->
+                <div class="symptom-details hidden mt-3 pt-3 border-t border-gray-100">
+                  <div class="grid grid-cols-2 gap-3">
+                    <div>
+                      <label class="block text-sm text-gray-600 mb-1">時間長短</label>
+                      <select class="duration-select w-full border border-gray-300 rounded-md px-2 py-1 text-sm focus:ring-primary focus:border-primary">
+                        ${durationOptionsHtml}
+                      </select>
+                    </div>
+                    <div>
+                      <label class="block text-sm text-gray-600 mb-1">症狀輕重</label>
+                      <select class="severity-select w-full border border-gray-300 rounded-md px-2 py-1 text-sm focus:ring-primary focus:border-primary">
+                        ${severityOptionsHtml}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          `;
+
+          container.appendChild(card);
+        });
+
+        // 綁定勾選框事件
+        bindCheckboxEvents();
+        console.log("症狀卡片渲染完成");
+        return true;
+      } catch (error) {
+        console.error("渲染症狀卡片出錯：", error);
+        return false;
+      }
+    }
+
+    // 綁定勾選框事件
+    function bindCheckboxEvents() {
+      const checkboxes = document.querySelectorAll('.symptom-checkbox');
+      checkboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+          const card = this.closest('.symptom-card');
+          const details = card.querySelector('.symptom-details');
+          
+          if (this.checked) {
+            details.classList.remove('hidden');
+            card.classList.add('border-primary/50', 'bg-secondary/30');
+          } else {
+            details.classList.add('hidden');
+            card.classList.remove('border-primary/50', 'bg-secondary/30');
+            
+            // 重置選擇
+            const durationSelect = card.querySelector('.duration-select');
+            const severitySelect = card.querySelector('.severity-select');
+            if (durationSelect) durationSelect.value = '';
+            if (severitySelect) severitySelect.value = '';
+          }
+          
+          // 更新已選計數
+          updateSelectedCount();
+        });
+      });
+    }
+
+    // 更新已選計數
+    function updateSelectedCount() {
+      const checkedCount = document.querySelectorAll('.symptom-checkbox:checked').length;
+      document.getElementById('selected-count').textContent = checkedCount;
+      return checkedCount;
+    }
+
+    // 初始化過濾按鈕事件（核心修改點）
+    function initFilterButtons() {
+      const filterButtons = document.querySelectorAll('[data-factor], #filter-all');
+      let currentFilter = 'all'; // 預設顯示全部
+      let showOnlySelected = false; // 預設不僅看已選
+
+      // 綁定要素過濾按鈕事件
+      filterButtons.forEach(button => {
+        button.addEventListener('click', function() {
+          // 更新按鈕活躍狀態
+          filterButtons.forEach(btn => btn.classList.remove('factor-btn-active'));
+          this.classList.add('factor-btn-active');
+          
+          // 設置當前過濾條件
+          if (this.id === 'filter-all') {
+            currentFilter = 'all';
+          } else {
+            currentFilter = this.dataset.factor;
+          }
+          
+          // 應用過濾
+          applyFilters();
+        });
+      });
+
+      // 綁定只看已選按鈕事件
+      document.getElementById('filter-selected').addEventListener('click', function() {
+        showOnlySelected = !showOnlySelected;
+        
+        // 更新按鈕樣式
+        if (showOnlySelected) {
+          this.classList.remove('bg-gray-700', 'hover:bg-gray-800');
+          this.classList.add('bg-red-600', 'hover:bg-red-700');
+          this.innerHTML = '<i class="fa fa-filter mr-1"></i>顯示全部已勾選';
+        } else {
+          this.classList.remove('bg-red-600', 'hover:bg-red-700');
+          this.classList.add('bg-gray-700', 'hover:bg-gray-800');
+          this.innerHTML = '<i class="fa fa-filter mr-1"></i>只看已選';
+        }
+        
+        // 應用過濾
+        applyFilters();
+      });
+
+      // 應用過濾條件
+      function applyFilters() {
+        const symptomCards = document.querySelectorAll('.symptom-card');
+        
+        symptomCards.forEach(card => {
+          let shouldShow = true;
+          
+          // 要素過濾
+          if (currentFilter !== 'all') {
+            const cardFactors = card.dataset.factors.split(',');
+            shouldShow = cardFactors.includes(currentFilter);
+          }
+          
+          // 已選過濾（如果開啟）
+          if (showOnlySelected && shouldShow) {
+            const checkbox = card.querySelector('.symptom-checkbox');
+            shouldShow = checkbox.checked;
+          }
+          
+          // 顯示或隱藏卡片
+          if (shouldShow) {
+            card.classList.remove('hidden');
+          } else {
+            card.classList.add('hidden');
+          }
+        });
+      }
+    }
+
+    // 初始化控制按鈕（保留提交和關閉模態框功能）
+    function initControlButtons() {
+      // 提交按鈕
+      document.getElementById('submit-checklist').addEventListener('click', function() {
+        const selectedCount = updateSelectedCount();
+        
+        if (selectedCount === 0) {
+          alert('請至少勾選一個症狀');
+          return;
+        }
+        
+        // 驗證已選症狀是否都填寫了詳細資訊
+        const checkedCheckboxes = document.querySelectorAll('.symptom-checkbox:checked');
+        let isValid = true;
+        
+        checkedCheckboxes.forEach(checkbox => {
+          const card = checkbox.closest('.symptom-card');
+          const duration = card.querySelector('.duration-select').value;
+          const severity = card.querySelector('.severity-select').value;
+          
+          if (!duration || !severity) {
+            isValid = false;
+            // 高亮未填寫的卡片
+            card.classList.add('border-red-500');
+            setTimeout(() => {
+              card.classList.remove('border-red-500');
+            }, 2000);
+          }
+        });
+        
+        if (!isValid) {
+          alert('部分已選症狀未填寫完整資訊，請檢查後再提交');
+          return;
+        }
+        
+        // 收集提交數據
+        const submitData = collectSubmitData();
+        
+        // 調用後端提交（這裡可以根據實際需求修改）
+        submitChecklistData(submitData);
+      });
+
+      // 關閉模態框
+      document.getElementById('close-modal').addEventListener('click', function() {
+        document.getElementById('success-modal').classList.add('hidden');
+        // 可以選擇重置表單或留在當頁
+        // resetChecklist();
+      });
+    }
+
+    // 收集提交數據
+    function collectSubmitData() {
+      const result = {
+        userId: liff.getDecodedIDToken()?.sub || '',
+        displayName: liff.getProfile()?.displayName || '未知用戶',
+        submitTime: new Date().toISOString(),
+        selectedSymptoms: []
+      };
+
+      const checkedCheckboxes = document.querySelectorAll('.symptom-checkbox:checked');
+      checkedCheckboxes.forEach(checkbox => {
+        const seq = checkbox.dataset.seq;
+        const card = checkbox.closest('.symptom-card');
+        const symptomName = card.querySelector('label').textContent.replace(/^\[\d+\]/, '').trim();
+        const duration = card.querySelector('.duration-select').value;
+        const severity = card.querySelector('.severity-select').value;
+        
+        // 轉換為易讀的文字
+        const durationText = durationOptions.find(opt => opt.value === duration)?.label || '';
+        const severityText = severityOptions.find(opt => opt.value === severity)?.label || '';
+        
+        result.selectedSymptoms.push({
+          seq: parseInt(seq),
+          symptom: symptomName,
+          duration: duration,
+          durationText: durationText,
+          severity: severity,
+          severityText: severityText
+        });
+      });
+
+      return result;
+    }
+
+    // 提交自檢表數據到後端
+    function submitChecklistData(data) {
+      console.log("提交自檢表數據：", data);
+      
+      // 這裡可以根據實際需求修改提交方式
+      $.ajax({
+        url: GAS_URL,
+        dataType: 'jsonp',
+        jsonp: 'callback',
+        timeout: JSONP_TIMEOUT,
+        data: {
+          action: 'submitChecklist',
+          data: JSON.stringify(data)
+        },
+        success: function(resp) {
+          console.log("提交成功：", resp);
+          document.getElementById('success-modal').classList.remove('hidden');
+        },
+        error: function(xhr, status, error) {
+          console.error("提交失敗：", status, error);
+          alert('提交失敗，請稍後再試');
+        }
+      });
+    }
+
+    // 重置自檢表
+    function resetChecklist() {
+      const checkboxes = document.querySelectorAll('.symptom-checkbox');
+      checkboxes.forEach(checkbox => {
+        if (checkbox.checked) {
+          checkbox.checked = false;
+          checkbox.dispatchEvent(new Event('change'));
+        }
+      });
+      
+      // 重置過濾狀態
+      document.getElementById('filter-all').click();
+      const filterSelectedBtn = document.getElementById('filter-selected');
+      if (filterSelectedBtn.classList.contains('bg-red-600')) {
+        filterSelectedBtn.click();
+      }
+    }
+
     // 強制顯示自檢表區域
     function forceShowChecklist() {
       try {
@@ -453,10 +697,18 @@
         checklistSection.classList.remove('hidden');
         checklistSection.style.display = 'block'; // 強制顯示，防止CSS影響
         
-        // 滾動到自檢表區域
-        setTimeout(() => {
-          checklistSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }, 100);
+        // 渲染症狀卡片
+        const renderSuccess = renderSymptomCards();
+        if (renderSuccess) {
+          // 初始化過濾按鈕和控制按鈕
+          initFilterButtons();
+          initControlButtons();
+          
+          // 滾動到自檢表區域
+          setTimeout(() => {
+            checklistSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }, 100);
+        }
         
         console.log("自檢表區域已強制顯示");
         return true;
@@ -536,7 +788,7 @@
       });
     }
 
-    // 渲染驗證結果和自檢表（核心修正）
+    // 渲染驗證結果和自檢表
     function renderResult(resp) {
       console.log("開始渲染驗證結果和自檢表");
       
@@ -586,26 +838,10 @@
       card.classList.remove('hidden');
       console.log("結果卡片已顯示");
 
-      // 渲染自檢表數據（同步執行，確保數據渲染完成）
-      console.log("開始渲染自檢表數據");
-      const render1 = renderBodyLanguageTable();
-      const render2 = renderHealthChecklistTable(healthChecklist1, 'checklist1-tbody');
-      const render3 = renderHealthChecklistTable(healthChecklist2, 'checklist2-tbody');
-
-      // 無論渲染是否成功，都嘗試顯示自檢表區域
-      if (render1 && render2 && render3) {
-        console.log("所有自檢表數據渲染成功，準備顯示");
-        // 延遲短時間後顯示，確保DOM更新完成
-        setTimeout(() => {
-          forceShowChecklist();
-        }, 100);
-      } else {
-        console.warn("部分自檢表數據渲染失敗，嘗試強制顯示");
-        // 即使部分渲染失敗，也嘗試顯示
-        setTimeout(() => {
-          forceShowChecklist();
-        }, 100);
-      }
+      // 顯示自檢表區域
+      setTimeout(() => {
+        forceShowChecklist();
+      }, 100);
     }
   </script>
 </body>
