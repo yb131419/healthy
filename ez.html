@@ -71,43 +71,22 @@
       el.classList.remove('hidden');
     };
 
-    // 增強版計算剩餘天數（支持多種日期格式，更穩健的計算）
-    const calculateRemainingDays = (expiryDateStr) => {
+    // 格式化剩餘天數（完全對應後端返回：數字天數或「永久有效」）
+    const formatRemainingDays = (remainingDays) => {
       try {
-        // 支援 2035/12/31 和 2035-12-31 兩種格式
-        const dateRegex = /^\d{4}[-\/]\d{2}[-\/]\d{2}$/;
-        if (!dateRegex.test(expiryDateStr)) {
-          return "格式錯誤";
-        }
-
-        // 統一轉換為 '/' 分隔，便於解析
-        const normalizedDateStr = expiryDateStr.replace(/-/g, '/');
-        const [year, month, day] = normalizedDateStr.split('/').map(Number);
-        
-        // 創建日期對象（使用UTC時間避免時區偏差）
-        const expiryDate = new Date(Date.UTC(year, month - 1, day));
-        const today = new Date();
-        const todayUTC = new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()));
-
-        // 驗證日期有效性
-        if (isNaN(expiryDate.getTime())) {
-          return "日期無效";
-        }
-
-        // 計算剩餘天數（UTC時間計算，避免跨時區錯誤）
-        const timeDiff = expiryDate - todayUTC;
-        const remainingDays = Math.ceil(timeDiff / (1000 * 3600 * 24));
-
-        if (remainingDays < 0) {
-          return "已過期";
-        } else if (remainingDays === 0) {
-          return "最後1天"; // 當天到期顯示更直觀的提示
+        if (typeof remainingDays === 'number') {
+          if (remainingDays < 0) return "已過期";
+          else if (remainingDays === 0) return "最後1天";
+          else return `${remainingDays} 天`;
+        } else if (typeof remainingDays === 'string') {
+          // 對應後端返回的「永久有效」文字
+          return remainingDays === "永久有效" ? "永久有效" : remainingDays;
         } else {
-          return `${remainingDays} 天`;
+          return "未知";
         }
       } catch (error) {
-        console.error("計算剩餘天數失敗：", error, "日期字符串：", expiryDateStr);
-        return "計算錯誤";
+        console.error("格式化剩餘天數失敗：", error);
+        return "未知";
       }
     };
 
@@ -147,7 +126,7 @@
           action: 'verifyUser'
         },
         success: function(resp) {
-          console.log("後端返回數據：", resp); // 新增日誌，便於調試
+          console.log("後端返回完整數據：", resp); // 調試用
           if (resp.status === "error") {
             showError(resp.message);
           } else {
@@ -164,43 +143,35 @@
       });
     }
 
-    // 渲染驗證結果（增強字段檢查）
+    // 渲染驗證結果（核心修正：完全對應後端返回格式）
     function renderResult(resp) {
       document.getElementById('status').classList.add('hidden');
       const card = document.getElementById('result-card');
       const main = document.getElementById('result-main');
       const details = document.getElementById('result-details');
 
-      // 增強用戶類型判斷，增加日誌便於調試
-      const userRecord = resp.userRecord || {};
-      console.log("用戶記錄：", userRecord);
-      
-      const isProUser = 
-        userRecord.userType === "專業用戶" || 
-        resp.isAdmin === true || 
-        (userRecord.userType && userRecord.userType.includes("專業"));
+      // 1. 從頂級字段獲取數據（後端返回的 isAdmin 對應專業用戶）
+      const isProUser = resp.isAdmin === true; // 明確布爾值判斷
+      const userName = resp.displayName || '未知用戶';
+      const remainingDays = resp.remainingDays; // 直接使用後端計算好的剩餘天數
+      const usageCount = resp.usageCount;
 
-      const userName = userRecord.userName || resp.displayName || '未知用戶';
-      
+      console.log("驗證結果：", { isProUser, remainingDays, usageCount }); // 調試用
+
       if (isProUser) {
-        // 優先從 userRecord 獲取到期日期，兼容不同的字段名
-        const expiryDate = userRecord.expiryDate || userRecord.endDate || userRecord.expireDate || '無限制';
-        
-        console.log("到期日期：", expiryDate); // 列印到期日期，便於調試
-        
-        const remainingDays = expiryDate !== '無限制' && expiryDate 
-          ? calculateRemainingDays(expiryDate) 
-          : '無限制';
-
+        // 專業用戶：顯示「永久有效」或具體天數（不再顯示「無限制」）
+        const formattedDays = formatRemainingDays(remainingDays);
         main.innerHTML = `<span class="text-primary"><i class="fa fa-check-circle mr-1"></i>專業用戶驗證通過</span>`;
         details.innerHTML = `用戶名稱：${userName}<br>
-                           使用期限：${expiryDate}<br>
-                           剩餘天數：${remainingDays}`;
+                           使用類型：專業用戶<br>
+                           剩餘天數：${formattedDays}`;
       } else {
+        // 普通用戶：顯示剩餘次數
+        const remainingTimes = usageCount !== undefined ? (3 - usageCount) : "未知";
         main.innerHTML = `<span class="text-gray-600"><i class="fa fa-user mr-1"></i>普通用戶</span>`;
         details.innerHTML = `用戶名稱：${userName}<br>
-                           使用期限：-<br>
-                           剩餘天數：-`;
+                           使用類型：普通用戶<br>
+                           剩餘次數：${remainingTimes} 次`;
       }
 
       card.classList.remove('hidden');
