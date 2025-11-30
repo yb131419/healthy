@@ -94,8 +94,8 @@ body{font-feature-settings:"palt";letter-spacing:0.02em;}
 <input type="text" id="user-bp" class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm input-focus bg-white" placeholder="選填，例如：120/80">
 </div>
 <div class="space-y-2">
-<label class="block text-sm font-medium text-textPrimary">血糖 (mmol/L)</label>
-<input type="number" id="user-glucose" min="2" max="30" step="0.1" class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm input-focus bg-white" placeholder="選填，空腹血糖值">
+<label class="block text-sm font-medium text-textPrimary">糖化血色素 (%)</label>
+<input type="number" id="user-glucose" min="3" max="15" step="0.1" class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm input-focus bg-white" placeholder="選填，例如：5.7">
 </div>
 <div class="space-y-2">
 <label class="block text-sm font-medium text-textPrimary">職業</label>
@@ -178,6 +178,16 @@ body{font-feature-settings:"palt";letter-spacing:0.02em;}
 </div>
 <h3 class="text-xl font-bold text-textPrimary mb-2">提交成功！</h3>
 <p class="text-textSecondary mb-6">您的自檢表已順利提交，我們將為您生成專業健康參考報告</p>
+<!-- 新增分享圖片區域 -->
+<div id="share-image-container" class="border border-gray-100 rounded-xl p-4 mb-5 bg-neutral/50">
+<h4 class="text-base font-medium text-textPrimary mb-3">分享報告圖片（選填）</h4>
+<div class="flex justify-center mb-3">
+<img id="report-image" src="https://picsum.photos/seed/healthreport/300/200" alt="健康報告預覽圖" class="rounded-lg max-w-full h-auto shadow-elevation-1">
+</div>
+<button id="share-image-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition btn-hover shadow-elevation-1">
+<i class="fa fa-share-alt mr-1.5"></i>分享圖片到手機
+</button>
+</div>
 <button id="close-modal" class="bg-primary hover:bg-[#007A69] text-white font-bold py-2.5 px-6 rounded-lg transition btn-hover shadow-elevation-1 w-full">
 確認
 </button>
@@ -292,6 +302,7 @@ const fullSymptomData=[
 {seq:98,symptom:"淋巴結大",气血:"",微循环:"",毒素:"○",血脂:"",寒凉湿:"",免疫:"○",情绪:""},
 {seq:99,symptom:"黑痣變大變多",气血:"",微循环:"",毒素:"○",血脂:"",寒凉湿:"",免疫:"○",情绪:""},
 {seq:100,symptom:"形體消瘦",气血:"○",微循环:"",毒素:"",血脂:"",寒凉湿:"",免疫:"",情绪:""}];
+
 const setStatus=text=>{const statusText=document.getElementById('status-text');if(statusText)statusText.textContent=text;};
 const showError=msg=>{
 document.getElementById('status').classList.add('hidden');
@@ -528,6 +539,30 @@ return;
 const submitData=collectSubmitData();
 submitChecklistData(submitData);
 });
+// 分享圖片按鈕事件
+document.getElementById('share-image-btn').addEventListener('click',function(){
+const imageUrl=document.getElementById('report-image').src;
+if(navigator.share&&imageUrl){
+// 原生分享API
+navigator.share({
+title:'我的健康自檢報告',
+text:'這是我的健康自檢報告，一起關注健康！',
+url:imageUrl
+}).catch(err=>{
+console.error('分享失敗：',err);
+alert('分享失敗，請手動保存圖片後分享');
+});
+}else{
+// 兼容處理：創建臨時下載鏈接
+const link=document.createElement('a');
+link.href=imageUrl;
+link.download='健康自檢報告.jpg';
+document.body.appendChild(link);
+link.click();
+document.body.removeChild(link);
+alert('已開始下載圖片，您可以手動分享給好友');
+}
+});
 document.getElementById('close-modal').addEventListener('click',function(){
 document.getElementById('success-modal').classList.add('hidden');
 resetChecklist();
@@ -538,7 +573,7 @@ document.getElementById('user-info-section').classList.remove('hidden');
 function collectSubmitData(){
 const result={
 userId:liff.getDecodedIDToken()?.sub||'',
-displayName:liff.getProfile()?.displayName||'未知用戶',
+displayName:liff.getProfile()?.displayName||'用戶',
 submitTime:new Date().toISOString(),
 userBasicInfo:window.userBasicInfo||{},
 selectedSymptoms:[]
@@ -577,6 +612,9 @@ success:function(resp){
 console.log("提交成功：",resp);
 document.getElementById('status').classList.add('hidden');
 document.getElementById('success-modal').classList.remove('hidden');
+// 可替換為真實報告圖片URL（這裡使用隨機圖片示例）
+const reportImage=document.getElementById('report-image');
+reportImage.src=`https://picsum.photos/seed/${data.userId||Date.now()}/300/200`;
 },
 error:function(xhr,status,error){
 console.error("提交失敗：",status,error);
@@ -627,7 +665,7 @@ else{console.log("用戶已登錄，開始驗證信息");getProfileAndVerify();}
 function getProfileAndVerify(){
 setStatus('驗證使用者資訊中...');
 liff.getProfile()
-.then(profile=>{console.log("獲取用戶信息成功：",profile);callGasBackend(profile.userId,profile.displayName||'未知用戶');})
+.then(profile=>{console.log("獲取用戶信息成功：",profile);callGasBackend(profile.userId,profile.displayName||'用戶');})
 .catch(err=>{console.error("獲取使用者資料失敗：",err);showError('取得使用者資料失敗：'+err.message);});
 }
 function callGasBackend(userId,displayName){
@@ -660,7 +698,7 @@ const card=document.getElementById('result-card');
 const main=document.getElementById('result-main');
 const details=document.getElementById('result-details');
 const isProUser=resp.isAdmin===true;
-const userName=resp.displayName||'未知用戶';
+const userName=resp.displayName||'用戶';
 const expiryDateStr=resp.expiryDate||resp.endDate||resp.expireDate||'';
 if(isProUser){
 const{displayDate,remainingDays}=calculateRemainingDaysByDate(expiryDateStr);
