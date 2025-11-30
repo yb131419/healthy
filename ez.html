@@ -29,7 +29,10 @@ body{font-feature-settings:"palt";letter-spacing:0.02em;}
 #symptoms-container{gap:2px;}
 .btn-hover{transform:scale(1.02);}
 .result-summary{font-size:0.9rem;}
+.info-grid{grid-template-columns:repeat(2,1fr);gap:0.5rem;}
 }
+.info-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:0.75rem;}
+.info-item{display:flex;justify-content:space-between;}
 </style>
 </head>
 <body class="bg-lightBg min-h-screen flex flex-col p-2 md:p-4">
@@ -640,7 +643,7 @@ document.getElementById('user-info-section').classList.remove('hidden');
 function collectSubmitData(){
 const liffProfile=liff.getProfile()||{};
 return{
-action:'submitChecklist', // 關鍵修復：添加提交動作標識
+action:'submitChecklist',
 userId:liff.getDecodedIDToken()?.sub||'',
 displayName:liffProfile.displayName||document.getElementById('user-name').value.trim()||'用戶',
 submitTime:new Date().toISOString(),
@@ -678,7 +681,7 @@ $.ajax({
 url:GAS_URL,
 dataType:'jsonp',
 jsonp:'callback',
-jsonpCallback:'submitCallback', // 新增：固定回調函數名避免衝突
+jsonpCallback:'submitCallback',
 timeout:JSONP_TIMEOUT,
 data:data,
 success:function(resp){
@@ -704,10 +707,21 @@ function renderReportSummary(reportData){
 const {formattedUserInfo, factorSymptoms, summaryText}=reportData;
 const summaryContent=document.getElementById('summary-content');
 summaryContent.dataset.summary=summaryText;
+// 基本資料一行兩列顯示
 let html=`<div class="font-medium text-primary mb-1.5">👤 基本資料</div>`;
-Object.entries(formattedUserInfo).forEach(([key,value])=>{
-html+=`<div class="flex justify-between"><span class="text-textSecondary">${key}：</span><span class="font-medium">${value}</span></div>`;
+html+=`<div class="info-grid">`;
+let infoEntries=Object.entries(formattedUserInfo);
+// 移除提交時間，單獨顯示
+const submitTimeEntry=infoEntries.find(([key])=>key==='提交時間');
+infoEntries=infoEntries.filter(([key])=>key!=='提交時間');
+// 渲染一行兩列的基本資料
+infoEntries.forEach(([key,value])=>{
+html+=`<div class="info-item"><span class="text-textSecondary">${key}：</span><span class="font-medium">${value}</span></div>`;
 });
+html+=`</div>`;
+// 單獨顯示提交時間
+html+=`<div class="mt-1.5 text-sm"><span class="text-textSecondary">提交時間：</span><span class="font-medium">${submitTimeEntry[1]}</span></div>`;
+
 html+=`<div class="font-medium text-primary mt-3 mb-1.5">🩺 七大健康要素評估</div>`;
 Object.entries(factorSymptoms).forEach(([factorKey,factors])=>{
 const factorName=factorStyles[factorKey].label;
@@ -782,7 +796,7 @@ $.ajax({
 url:GAS_URL,
 dataType:'jsonp',
 jsonp:'callback',
-jsonpCallback:'verifyCallback', // 新增：固定回調函數名避免衝突
+jsonpCallback:'verifyCallback',
 timeout:JSONP_TIMEOUT,
 data:{
 userId:userId,
@@ -848,7 +862,6 @@ details.innerHTML=`
 card.classList.remove('hidden');
 setTimeout(()=>{forceShowUserInfo();},300);
 }
-// 新增：定義全局回調函數（解決JSONP回調找不到的問題）
 window.submitCallback=function(resp){console.log("submitCallback:",resp);return resp;};
 window.verifyCallback=function(resp){console.log("verifyCallback:",resp);return resp;};
 </script>
