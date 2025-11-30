@@ -310,190 +310,118 @@ const fullSymptomData=[
 {seq:99,symptom:"黑痣變大變多",气血:"",微循环:"",毒素:"○",血脂:"",寒凉湿:"",免疫:"○",情绪:""},
 {seq:100,symptom:"形體消瘦",气血:"○",微循环:"",毒素:"",血脂:"",寒凉湿:"",免疫:"",情绪:""}];
 
-const setStatus=text=>{const statusText=document.getElementById('status-text');if(statusText)statusText.textContent=text;};
+const setStatus=text=>{const e=document.getElementById('status-text');e&&(e.textContent=text);};
 const showError=msg=>{
 document.getElementById('status').classList.add('hidden');
 document.getElementById('result-card').classList.add('hidden');
 document.getElementById('user-info-section').classList.add('hidden');
 document.getElementById('checklist-section').classList.add('hidden');
-const el=document.getElementById('error-message');
-const contentEl=document.getElementById('error-content');
-if(el&&contentEl){
-contentEl.innerHTML=`<p class="font-medium">${msg}</p><div class="mt-3 flex justify-center"><button onclick="window.location.reload()" class="text-primary hover:text-[#007A69] font-medium flex items-center gap-1"><i class="fa fa-refresh"></i> 重新嘗試</button></div>`;
-el.classList.remove('hidden');
-}
+const e=document.getElementById('error-message'),c=document.getElementById('error-content');
+e&&c&&(c.innerHTML=`<p class="font-medium">${msg}</p><div class="mt-3 flex justify-center"><button onclick="window.location.reload()" class="text-primary hover:text-[#007A69] font-medium flex items-center gap-1"><i class="fa fa-refresh"></i> 重新嘗試</button></div>`,e.classList.remove('hidden'));
 };
 const calculateRemainingDaysByDate=expiryDateStr=>{
 try{
 if(expiryDateStr===PERMANENT_EXPIRY_DATE)return{displayDate:"永久有效",remainingDays:"永久有效"};
-const dateRegex=/^\d{4}[-\/]\d{2}[-\/]\d{2}$/;
-if(!dateRegex.test(expiryDateStr))return{displayDate:"格式錯誤",remainingDays:"格式錯誤"};
-const normalizedDateStr=expiryDateStr.replace(/-/g,'/');
-const[year,month,day]=normalizedDateStr.split('/').map(Number);
-const expiryDate=new Date(Date.UTC(year,month-1,day));
-const today=new Date();
-const todayUTC=new Date(Date.UTC(today.getFullYear(),today.getMonth(),today.getDate()));
-if(isNaN(expiryDate.getTime()))return{displayDate:"日期無效",remainingDays:"日期無效"};
-const timeDiff=expiryDate-todayUTC;
-const remainingDays=Math.ceil(timeDiff/(1000*3600*24));
-const formattedDate=`${year}/${String(month).padStart(2,'0')}/${String(day).padStart(2,'0')}`;
-let remainingDaysText;
-if(remainingDays<0)remainingDaysText="<span class='text-red-500 font-medium'>已過期</span>";
-else if(remainingDays===0)remainingDaysText="<span class='text-orange-500 font-medium'>最後1天</span>";
-else if(remainingDays<=30)remainingDaysText=`<span class='text-orange-500 font-medium'>${remainingDays} 天</span>`;
-else remainingDaysText=`${remainingDays} 天`;
-return{displayDate:formattedDate,remainingDays:remainingDaysText};
-}catch(error){
-console.error("計算剩餘天數失敗：",error,expiryDateStr);
-return{displayDate:"計算錯誤",remainingDays:"計算錯誤"};
-}
+const r=/^\d{4}[-\/]\d{2}[-\/]\d{2}$/;
+if(!r.test(expiryDateStr))return{displayDate:"格式錯誤",remainingDays:"格式錯誤"};
+const d=expiryDateStr.replace(/-/g,'/').split('/').map(Number),ed=new Date(Date.UTC(d[0],d[1]-1,d[2])),td=new Date(),tutc=new Date(Date.UTC(td.getFullYear(),td.getMonth(),td.getDate()));
+if(isNaN(ed.getTime()))return{displayDate:"日期無效",remainingDays:"日期無效"};
+const tdiff=ed-tutc,rd=Math.ceil(tdiff/(1000*3600*24)),fd=`${d[0]}/${String(d[1]).padStart(2,'0')}/${String(d[2]).padStart(2,'0')}`;
+let rt;
+if(rd<0)rt="<span class='text-red-500 font-medium'>已過期</span>";
+else if(rd===0)rt="<span class='text-orange-500 font-medium'>最後1天</span>";
+else if(rd<=30)rt=`<span class='text-orange-500 font-medium'>${rd} 天</span>`;
+else rt=`${rd} 天`;
+return{displayDate:fd,remainingDays:rt};
+}catch(e){console.error("計算剩餘天數失敗：",e,expiryDateStr);return{displayDate:"計算錯誤",remainingDays:"計算錯誤"}};
 };
 
 function renderSymptomCards(){
 try{
-const container=document.getElementById('symptoms-container');
-if(!container)return false;
-container.innerHTML='';
-fullSymptomData.forEach((symptom,index)=>{
-const relatedFactors=[];
-Object.entries(factorStyles).forEach(([key,style])=>{if(symptom[key]==="○")relatedFactors.push(`<span class="factor-tag ${style.className}">${style.label}</span>`);});
-const durationOptionsHtml=durationOptions.map(option=>`<option value="${option.value}">${option.label}</option>`).join('');
-const severityOptionsHtml=severityOptions.map(option=>`<option value="${option.value}">${option.label}</option>`).join('');
-const card=document.createElement('div');
-card.className='symptom-card bg-cardBg border border-gray-100 rounded-xl p-2 shadow-elevation-1 card-hover';
-card.dataset.seq=symptom.seq;
-card.dataset.factors=Object.entries(factorStyles).filter(([key])=>symptom[key]==="○").map(([key])=>key).join(',');
-card.style.opacity='0';
-card.style.transform='translateY(20px)';
-card.style.transition='all 0.3s cubic-bezier(0.34,1.56,0.64,1)';
-card.style.transitionDelay=`${index*15}ms`;
-card.innerHTML=`
+const c=document.getElementById('symptoms-container');
+if(!c)return false;
+c.innerHTML='';
+fullSymptomData.forEach((s,i)=>{
+const rf=[],doh=durationOptions.map(o=>`<option value="${o.value}">${o.label}</option>`).join(''),soh=severityOptions.map(o=>`<option value="${o.value}">${o.label}</option>`).join('');
+Object.entries(factorStyles).forEach(([k,st])=>s[k]==="○"&&rf.push(`<span class="factor-tag ${st.className}">${st.label}</span>`));
+const cd=document.createElement('div');
+cd.className='symptom-card bg-cardBg border border-gray-100 rounded-xl p-2 shadow-elevation-1 card-hover';
+cd.dataset.seq=s.seq;
+cd.dataset.factors=Object.entries(factorStyles).filter(([k])=>s[k]==="○").map(([k])=>k).join(',');
+cd.style.opacity='0';
+cd.style.transform='translateY(20px)';
+cd.style.transition='all 0.3s cubic-bezier(0.34,1.56,0.64,1)';
+cd.style.transitionDelay=`${i*15}ms`;
+cd.innerHTML=`
 <div class="flex items-start gap-2">
-<div class="flex-shrink-0 mt-1">
-<input type="checkbox" id="symptom-${symptom.seq}" class="symptom-checkbox h-4 w-4 text-primary rounded border-gray-300 input-focus" data-seq="${symptom.seq}">
-</div>
+<div class="flex-shrink-0 mt-1"><input type="checkbox" id="symptom-${s.seq}" class="symptom-checkbox h-4 w-4 text-primary rounded border-gray-300 input-focus" data-seq="${s.seq}"></div>
 <div class="flex-1">
-<div class="flex justify-between items-start mb-1">
-<label for="symptom-${symptom.seq}" class="text-textPrimary font-medium cursor-pointer text-sm">
-<span class="text-primary mr-1 font-semibold">[${symptom.seq}]</span>${symptom.symptom}
-</label>
-</div>
-<div class="flex flex-wrap gap-1 mb-1">
-${relatedFactors.length>0?relatedFactors.join(''):'<span class="factor-tag bg-gray-50 text-gray-500">無相關要素</span>'}
-</div>
+<div class="flex justify-between items-start mb-1"><label for="symptom-${s.seq}" class="text-textPrimary font-medium cursor-pointer text-sm"><span class="text-primary mr-1 font-semibold">[${s.seq}]</span>${s.symptom}</label></div>
+<div class="flex flex-wrap gap-1 mb-1">${rf.length>0?rf.join(''):'<span class="factor-tag bg-gray-50 text-gray-500">無相關要素</span>'}</div>
 <div class="symptom-details hidden mt-2 pt-2 border-t border-gray-100">
 <div class="grid grid-cols-2 gap-2">
-<div><label class="block text-xs text-textSecondary mb-1">時間長短</label>
-<select class="duration-select w-full border border-gray-200 rounded-lg px-2 py-1 text-xs input-focus bg-white">${durationOptionsHtml}</select></div>
-<div>
-<label class="block text-xs text-textSecondary mb-1">症狀輕重</label>
-<select class="severity-select w-full border border-gray-200 rounded-lg px-2 py-1 text-xs input-focus bg-white">${severityOptionsHtml}</select>
-<div class="severity-note">備注：輕微(不影響生活)、中等(偶爾影響)、嚴重(明顯影響)</div>
-</div>
-</div>
-</div>
-</div>
-</div>
-`;
-container.appendChild(card);
-setTimeout(()=>{card.style.opacity='1';card.style.transform='translateY(0)';},50);
+<div><label class="block text-xs text-textSecondary mb-1">時間長短</label><select class="duration-select w-full border border-gray-200 rounded-lg px-2 py-1 text-xs input-focus bg-white">${doh}</select></div>
+<div><label class="block text-xs text-textSecondary mb-1">症狀輕重</label><select class="severity-select w-full border border-gray-200 rounded-lg px-2 py-1 text-xs input-focus bg-white">${soh}</select><div class="severity-note">備注：輕微(不影響生活)、中等(偶爾影響)、嚴重(明顯影響)</div></div>
+</div></div></div></div>`;
+c.appendChild(cd);
+setTimeout(()=>{cd.style.opacity='1';cd.style.transform='translateY(0)';},50);
 });
 bindCheckboxEvents();
 return true;
-}catch(error){console.error("渲染症狀卡片出錯：",error);return false;}
+}catch(e){console.error("渲染症狀卡片出錯：",e);return false;}
 }
 
 function bindCheckboxEvents(){
-document.querySelectorAll('.symptom-checkbox').forEach(checkbox=>{
-checkbox.addEventListener('change',function(){
-const card=this.closest('.symptom-card');
-const details=card.querySelector('.symptom-details');
-if(this.checked){
-details.classList.remove('hidden');
-card.classList.add('border-primary/30','bg-secondary/20','shadow-elevation-2');
-}else{
-details.classList.add('hidden');
-card.classList.remove('border-primary/30','bg-secondary/20','shadow-elevation-2');
-card.querySelector('.duration-select').value='';
-card.querySelector('.severity-select').value='';
-}
+document.querySelectorAll('.symptom-checkbox').forEach(cb=>{
+cb.addEventListener('change',function(){
+const cd=this.closest('.symptom-card'),dt=cd.querySelector('.symptom-details');
+this.checked?(dt.classList.remove('hidden'),cd.classList.add('border-primary/30','bg-secondary/20','shadow-elevation-2')):(dt.classList.add('hidden'),cd.classList.remove('border-primary/30','bg-secondary/20','shadow-elevation-2'),cd.querySelector('.duration-select').value='',cd.querySelector('.severity-select').value='');
 updateSelectedCount();
 });
 });
 }
 
 function updateSelectedCount(){
-const checkedCount=document.querySelectorAll('.symptom-checkbox:checked').length;
-document.getElementById('selected-count').textContent=checkedCount;
-return checkedCount;
+const cnt=document.querySelectorAll('.symptom-checkbox:checked').length;
+document.getElementById('selected-count').textContent=cnt;
+return cnt;
 }
 
 function initFilterButtons(){
-const filterButtons=document.querySelectorAll('[data-factor], #filter-all');
-let currentFilter='all';
-let showOnlySelected=false;
-filterButtons.forEach(button=>{
-button.addEventListener('click',function(){
-filterButtons.forEach(btn=>btn.classList.remove('shadow-elevation-2','scale-105'));
+const fb=document.querySelectorAll('[data-factor], #filter-all');
+let cf='all',sos=false;
+fb.forEach(b=>{
+b.addEventListener('click',function(){
+fb.forEach(bt=>bt.classList.remove('shadow-elevation-2','scale-105'));
 this.classList.add('shadow-elevation-2','scale-105');
-currentFilter=this.id==='filter-all'?'all':this.dataset.factor;
+cf=this.id==='filter-all'?'all':this.dataset.factor;
 applyFilters();
 });
 });
 document.getElementById('filter-selected').addEventListener('click',function(){
-showOnlySelected=!showOnlySelected;
-if(showOnlySelected){
-this.classList.remove('bg-gray-700','hover:bg-gray-800');
-this.classList.add('bg-red-600','hover:bg-red-700','shadow-elevation-2');
-this.innerHTML='<i class="fa fa-filter mr-1"></i>顯示全部已勾選';
-}else{
-this.classList.remove('bg-red-600','hover:bg-red-700','shadow-elevation-2');
-this.classList.add('bg-gray-700','hover:bg-gray-800');
-this.innerHTML='<i class="fa fa-filter mr-1"></i>只看已選';
-}
+sos=!sos;
+if(sos){this.classList.remove('bg-gray-700','hover:bg-gray-800');this.classList.add('bg-red-600','hover:bg-red-700','shadow-elevation-2');this.innerHTML='<i class="fa fa-filter mr-1"></i>顯示全部已勾選';}
+else{this.classList.remove('bg-red-600','hover:bg-red-700','shadow-elevation-2');this.classList.add('bg-gray-700','hover:bg-gray-800');this.innerHTML='<i class="fa fa-filter mr-1"></i>只看已選';}
 applyFilters();
 });
 function applyFilters(){
-document.querySelectorAll('.symptom-card').forEach(card=>{
-let shouldShow=true;
-if(currentFilter!=='all'){
-const cardFactors=card.dataset.factors.split(',');
-shouldShow=cardFactors.includes(currentFilter);
-}
-if(showOnlySelected&&shouldShow){
-shouldShow=card.querySelector('.symptom-checkbox').checked;
-}
-if(shouldShow){
-card.style.display='block';
-setTimeout(()=>{card.style.opacity='1';card.style.transform='translateY(0)';},10);
-}else{
-card.style.opacity='0';
-card.style.transform='translateY(10px)';
-setTimeout(()=>{card.style.display='none';},300);
-}
+document.querySelectorAll('.symptom-card').forEach(cd=>{
+let ss=true;
+if(cf!=='all'){const cfs=cd.dataset.factors.split(',');ss=cfs.includes(cf);}
+if(sos&&ss)ss=cd.querySelector('.symptom-checkbox').checked;
+if(ss){cd.style.display='block';setTimeout(()=>{cd.style.opacity='1';cd.style.transform='translateY(0)';},10);}
+else{cd.style.opacity='0';cd.style.transform='translateY(10px)';setTimeout(()=>{cd.style.display='none';},300);}
 });
 }
 }
 
 function organizeReportData(submitData){
-const {userBasicInfo, selectedSymptoms, displayName, submitTime}=submitData;
-const factorSymptoms={气血:[],微循环:[],毒素:[],血脂:[],寒凉湿:[],免疫:[],情绪:[]};
-selectedSymptoms.forEach(symptom=>{
-const originalSymptom=fullSymptomData.find(s=>s.seq===symptom.seq);
-if(originalSymptom){
-Object.keys(factorSymptoms).forEach(factor=>{
-if(originalSymptom[factor]==="○"){
-factorSymptoms[factor].push({
-name:symptom.symptom,
-duration:symptom.durationText,
-severity:symptom.severityText
+const {userBasicInfo,selectedSymptoms,displayName,submitTime}=submitData,fs={气血:[],微循环:[],毒素:[],血脂:[],寒凉湿:[],免疫:[],情绪:[]};
+selectedSymptoms.forEach(s=>{
+const os=fullSymptomData.find(ss=>ss.seq===s.seq);
+os&&Object.keys(fs).forEach(f=>os[f]==="○"&&fs[f].push({name:s.symptom,duration:s.durationText,severity:s.severityText}));
 });
-}
-});
-}
-});
-const filteredFactorSymptoms=Object.fromEntries(Object.entries(factorSymptoms).filter(([_,factors])=>factors.length>0));
-const formattedUserInfo={
+const ffs=Object.fromEntries(Object.entries(fs).filter(([_,f])=>f.length>0)),fui={
 姓名:userBasicInfo.name||'未填寫',
 年齡:userBasicInfo.age?`${userBasicInfo.age}歲`:'未填寫',
 性別:userBasicInfo.gender==='male'?'男':userBasicInfo.gender==='female'?'女':'未填寫',
@@ -504,38 +432,28 @@ const formattedUserInfo={
 職業:userBasicInfo.job||'未填寫',
 提交時間:new Date(submitTime).toLocaleString('zh-TW',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'})
 };
-let summaryText=`🧬 彥彬健康自檢報告\n\n`;
-summaryText+=`👤 用戶：${displayName}\n`;
-summaryText+=`📅 提交時間：${formattedUserInfo.提交時間}\n\n`;
-summaryText+=`📋 基本資料：\n`;
-Object.entries(formattedUserInfo).forEach(([key,value])=>{if(key!=='提交時間')summaryText+=`  ${key}：${value}\n`;});
-const totalSelected=Object.values(filteredFactorSymptoms).reduce((sum,factors)=>sum+factors.length,0);
-summaryText+=`\n📊 統計資訊：\n`;
-summaryText+=`  總選取症狀數：${totalSelected} 項\n\n`;
-summaryText+=`🩺 七大健康要素評估：\n`;
-Object.entries(filteredFactorSymptoms).forEach(([factorKey,factors])=>{
-const factorName=factorStyles[factorKey].label;
-summaryText+=`\n【${factorName}】(${factors.length}項)：\n`;
-factors.forEach((item,index)=>{
-summaryText+=`  ${index+1}. ${item.name}\n`;
-summaryText+=`     ⏱️ 時間：${item.duration}\n`;
-summaryText+=`     ⚠️ 程度：${item.severity}\n`;
+let st=`🧬 彥彬健康自檢報告\n\n👤 用戶：${displayName}\n📅 提交時間：${fui.提交時間}\n\n📋 基本資料：\n`;
+Object.entries(fui).forEach(([k,v])=>k!=='提交時間'&&(st+=`  ${k}：${v}\n`));
+const ts=Object.values(ffs).reduce((s,f)=>s+f.length,0);
+st+=`\n📊 統計資訊：\n  總選取症狀數：${ts} 項\n\n🩺 七大健康要素評估：\n`;
+Object.entries(ffs).forEach(([fk,f])=>{
+const fn=factorStyles[fk].label;
+st+=`\n【${fn}】(${f.length}項)：\n`;
+f.forEach((i,idx)=>st+=`  ${idx+1}. ${i.name}\n     ⏱️ 時間：${i.duration}\n     ⚠️ 程度：${i.severity}\n`);
 });
-});
-summaryText+=`\n💡 建議：根據自檢結果關注對應健康問題，必要時諮詢專業醫師`;
-return {formattedUserInfo,factorSymptoms:filteredFactorSymptoms,summaryText};
+st+=`\n💡 建議：根據自檢結果關注對應健康問題，必要時諮詢專業醫師`;
+return {formattedUserInfo:fui,factorSymptoms:ffs,summaryText:st};
 }
 
 function initControlButtons(){
+// 下一步按鈕
 document.getElementById('next-to-checklist').addEventListener('click',function(){
-const name=document.getElementById('user-name').value.trim();
-const age=document.getElementById('user-age').value.trim();
-const gender=document.getElementById('user-gender').value;
-if(!name){alert('請輸入姓名');document.getElementById('user-name').focus();return;}
-if(!age||isNaN(age)||age<0||age>120){alert('請輸入有效年齡');document.getElementById('user-age').focus();return;}
-if(!gender){alert('請選擇性別');document.getElementById('user-gender').focus();return;}
+const n=document.getElementById('user-name').value.trim(),a=document.getElementById('user-age').value.trim(),g=document.getElementById('user-gender').value;
+if(!n){alert('請輸入姓名');document.getElementById('user-name').focus();return;}
+if(!a||isNaN(a)||a<0||a>120){alert('請輸入有效年齡');document.getElementById('user-age').focus();return;}
+if(!g){alert('請選擇性別');document.getElementById('user-gender').focus();return;}
 window.userBasicInfo={
-name:name,age:parseInt(age),gender:gender,
+name:n,age:parseInt(a),gender:g,
 height:document.getElementById('user-height').value?parseInt(document.getElementById('user-height').value):null,
 weight:document.getElementById('user-weight').value?parseFloat(document.getElementById('user-weight').value):null,
 bp:document.getElementById('user-bp').value.trim()||null,
@@ -549,6 +467,7 @@ initFilterButtons();
 document.getElementById('checklist-section').scrollIntoView({behavior:'smooth'});
 });
 
+// 返回按鈕
 document.getElementById('back-to-info').addEventListener('click',function(){
 document.getElementById('checklist-section').classList.add('hidden');
 document.getElementById('user-info-section').classList.remove('hidden');
@@ -565,163 +484,107 @@ document.getElementById('user-job').value=window.userBasicInfo.job||'';
 document.getElementById('user-info-section').scrollIntoView({behavior:'smooth'});
 });
 
+// 提交按鈕
 document.getElementById('submit-checklist').addEventListener('click',function(){
-const selectedCount=updateSelectedCount();
-if(selectedCount===0){alert('請至少勾選一個症狀');return;}
-let isValid=true;
-let firstInvalidCard=null;
-document.querySelectorAll('.symptom-checkbox:checked').forEach(checkbox=>{
-const card=checkbox.closest('.symptom-card');
-const duration=card.querySelector('.duration-select').value;
-const severity=card.querySelector('.severity-select').value;
-if(!duration||!severity){
-isValid=false;
-if(!firstInvalidCard)firstInvalidCard=card;
-card.classList.add('border-red-500');
-card.style.transform='scale(1.03)';
-setTimeout(()=>{card.classList.remove('border-red-500');card.style.transform='';},1500);
-}
+const sc=updateSelectedCount();
+if(sc===0){alert('請至少勾選一個症狀');return;}
+let iv=true,fic=null;
+document.querySelectorAll('.symptom-checkbox:checked').forEach(cb=>{
+const cd=cb.closest('.symptom-card'),d=cd.querySelector('.duration-select').value,s=cd.querySelector('.severity-select').value;
+if(!d||!s){iv=false;fic=fic||cd;cd.classList.add('border-red-500');cd.style.transform='scale(1.03)';setTimeout(()=>{cd.classList.remove('border-red-500');cd.style.transform='';},1500);}
 });
-if(!isValid){
-alert('部分已選症狀未填寫完整資訊，請檢查後再提交');
-if(firstInvalidCard)firstInvalidCard.scrollIntoView({behavior:'smooth',block:'center'});
-return;
-}
-const submitData=collectSubmitData();
-submitChecklistData(submitData);
+if(!iv){alert('部分已選症狀未填寫完整資訊，請檢查後再提交');fic&&fic.scrollIntoView({behavior:'smooth',block:'center'});return;}
+const sd=collectSubmitData();
+submitChecklistData(sd);
 });
 
-// 修復分享功能核心代碼
-document.getElementById('native-share-btn').addEventListener('click',async function(){
+// 核心修復：分享按鈕（解決點擊無回應）
+const shareBtn=document.getElementById('native-share-btn');
+if(shareBtn){
+shareBtn.addEventListener('click',async function(e){
+e.stopPropagation();// 阻止事件冒泡
 try{
-const summaryText=document.getElementById('summary-content').dataset.summary;
-const reportContent=document.getElementById('summary-content');
-const modalContent=document.querySelector('#success-modal .modal-content');
+// 1. 先檢查必要依賴和元素
+if(!window.html2canvas){alert('分享功能依賴缺失，請刷新頁面重試');return;}
+const scEl=document.getElementById('summary-content'),mc=document.querySelector('#success-modal .modal-content');
+if(!scEl||!mc){alert('報告內容未找到');return;}
+const st=scEl.dataset.summary;
+if(!st){alert('報告數據異常');return;}
 
-// 移除之前的關閉按鈕
-const existingShareCloseBtn=modalContent.querySelector('.share-close-btn');
-if(existingShareCloseBtn)existingShareCloseBtn.remove();
+// 2. 移除舊按鈕+顯示加載狀態
+const escb=mc.querySelector('.share-close-btn');
+escb&&escb.remove();
+shareBtn.disabled=true;
+shareBtn.innerHTML='<i class="fa fa-spinner fa-spin mr-1"></i> 處理中...';
 
-// 關鍵修復：創建臨時容器確保截圖完整性
-const tempContainer=document.createElement('div');
-tempContainer.style.position='fixed';
-tempContainer.style.top='0';
-tempContainer.style.left='0';
-tempContainer.style.width='100%';
-tempContainer.style.height='auto';
-tempContainer.style.zIndex='-1';
-tempContainer.style.backgroundColor='#ffffff';
-tempContainer.innerHTML=reportContent.innerHTML;
-document.body.appendChild(tempContainer);
-
-// 確保DOM完全渲染
-await new Promise(resolve=>setTimeout(resolve,800));
-
-// 優化html2canvas配置（解決截圖失敗核心問題）
-const canvas=await html2canvas(tempContainer,{
-scale:1.5, // 適當分辨率平衡質量和大小
+// 3. 簡化截圖邏輯（直接截原容器，避免臨時DOM問題）
+scEl.style.backgroundColor='#ffffff';
+scEl.style.padding='16px';
+const canvas=await html2canvas(scEl,{
+scale:1.2,// 降低分辨率減少卡頓
 useCORS:true,
 allowTaint:true,
 logging:false,
-scrollY:0,
-scrollX:0,
 backgroundColor:'#ffffff',
-width:tempContainer.offsetWidth,
-height:tempContainer.offsetHeight,
-windowWidth:tempContainer.offsetWidth,
-windowHeight:tempContainer.offsetHeight,
-x:0,
-y:0,
-dpi:72 // 降低DPI減小文件體積
+width:scEl.offsetWidth,
+height:scEl.offsetHeight
 });
 
-// 移除臨時容器
-document.body.removeChild(tempContainer);
-
-// 關鍵修復：使用Blob API正確轉換
-let imgBlob;
-try{
-// 優先使用toBlob（更穩定）
-imgBlob=await new Promise((resolve)=>{
-canvas.toBlob(blob=>resolve(blob),'image/png',0.7); // 壓縮質量至0.7
-});
-if(!imgBlob)throw new Error('Blob創建失敗');
-}catch{
-// 降级方案：使用toDataURL轉換
-const dataUrl=canvas.toDataURL('image/png',0.7);
-const res=await fetch(dataUrl);
-imgBlob=await res.blob();
-}
-
+// 4. 轉換圖片（簡化Blob處理）
+const dataUrl=canvas.toDataURL('image/png',0.6);
+const imgBlob=await (await fetch(dataUrl)).blob();
 const fileName=`彥彬健康自檢報告_${new Date().toLocaleDateString()}.png`;
 const file=new File([imgBlob],fileName,{type:'image/png'});
 
-// 關鍵修復：完善分享API檢測和錯誤處理
-if(navigator.share&&navigator.canShare&&typeof navigator.canShare==='function'){
+// 5. 分享邏輯（增強兼容性檢測）
+if(navigator.share&&typeof navigator.share==='function'){
 try{
-const shareData={
-title:'🧬 彥彬健康自檢報告',
-text:summaryText,
-files:file.size>0?[file]:[]
-};
-// 檢查是否支持文件分享
-const canShareFiles=await navigator.canShare(shareData);
-if(canShareFiles&&shareData.files.length>0){
+const shareData={title:'🧬 彥彬健康自檢報告',text:st,files:[file]};
+// 兼容不同瀏覽器的canShare實現
+const canShare=navigator.canShare?await navigator.canShare(shareData):true;
+if(canShare){
 await navigator.share(shareData);
 alert('分享成功！');
 }else{
-// 不支持文件分享時只分享文字
+// 不支持文件分享則分享文字
 await navigator.share({title:shareData.title,text:shareData.text});
-alert('文字分享成功！報告圖片已自動下載');
-downloadImage(canvas.toDataURL('image/png',0.7),fileName);
+alert('文字分享成功，報告圖片已下載');
+downloadImage(dataUrl,fileName);
 }
-}catch(error){
-console.error('分享失敗：',error);
-// 用戶取消分享不提示錯誤
-if(error.name!=='AbortError'){
-downloadImage(canvas.toDataURL('image/png',0.7),fileName);
-alert(`分享失敗：${error.message}，已自動下載報告圖片`);
+}catch(err){
+console.error('分享失敗：',err);
+// 用戶取消不提示
+if(err.name!=='AbortError'){
+downloadImage(dataUrl,fileName);
+alert(`分享失敗：${err.message||'未知錯誤'}，已自動下載報告`);
 }
 }
 }else{
-// 不支持原生分享時直接下載+複製文字
-downloadImage(canvas.toDataURL('image/png',0.7),fileName);
+// 不支持原生分享：下載+複製文字
+downloadImage(dataUrl,fileName);
 try{
-await navigator.clipboard.writeText(summaryText);
-alert('您的瀏覽器不支持原生分享，已自動下載報告圖片並複製文字內容');
-}catch(clipboardErr){
-alert('您的瀏覽器不支持原生分享，已自動下載報告圖片，請手動複製文字內容');
+await navigator.clipboard.writeText(st);
+alert('瀏覽器不支持分享，已下載報告並複製文字內容');
+}catch(cbErr){
+alert('瀏覽器不支持分享，已下載報告，請手動複製文字內容');
 }
 }
-}catch(error){
-console.error('分享處理失敗：',error);
-try{
-// 最終降级方案：確保用戶能獲取數據
-downloadImage(canvas.toDataURL('image/png',0.7),fileName);
-await navigator.clipboard.writeText(summaryText);
-alert('分享功能出現異常，已自動下載報告圖片並複製文字內容');
-}catch(finalErr){
-alert('分享功能異常，請手動複製以下報告內容：\n\n'+summaryText);
-}
+}catch(err){
+console.error('分享總體錯誤：',err);
+// 最終降级：確保用戶能獲取數據
+downloadImage(dataUrl||canvas.toDataURL('image/png',0.6),fileName||`健康報告_${new Date().getTime()}.png`);
+alert('分享功能異常，已自動下載報告圖片');
 }finally{
+// 恢復按鈕狀態
+shareBtn.disabled=false;
+shareBtn.innerHTML='<i class="fa fa-share-alt mr-1"></i> 分享報告';
 // 添加關閉按鈕
-addShareCloseButton(modalContent);
+addShareCloseButton(mc);
 }
 });
-
-function addShareCloseButton(modalContent){
-const shareCloseBtn=document.createElement('button');
-shareCloseBtn.className='share-close-btn mt-3 w-full py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors';
-shareCloseBtn.innerHTML='<i class="fa fa-times mr-1"></i> 關閉分享結果';
-shareCloseBtn.addEventListener('click',function(){
-document.getElementById('success-modal').classList.add('hidden');
-resetChecklist();
-document.getElementById('user-info-section').scrollIntoView({behavior:'smooth'});
-});
-const shareBtn=document.getElementById('native-share-btn');
-modalContent.insertBefore(shareCloseBtn,shareBtn.nextSibling);
 }
 
+// 下載圖片工具函數
 function downloadImage(dataUrl,fileName){
 const link=document.createElement('a');
 link.href=dataUrl;
@@ -729,19 +592,33 @@ link.download=fileName;
 link.style.display='none';
 document.body.appendChild(link);
 link.click();
-setTimeout(()=>document.body.removeChild(link),200);
+setTimeout(()=>document.body.removeChild(link),300);
+}
+
+// 添加關閉按鈕
+function addShareCloseButton(modalContent){
+const btn=document.createElement('button');
+btn.className='share-close-btn mt-3 w-full py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors';
+btn.innerHTML='<i class="fa fa-times mr-1"></i> 關閉';
+btn.addEventListener('click',function(){
+document.getElementById('success-modal').classList.add('hidden');
+resetChecklist();
+document.getElementById('user-info-section').scrollIntoView({behavior:'smooth'});
+});
+modalContent.appendChild(btn);
 }
 }
 
 function collectSubmitData(){
 const liffProfile=liff.getProfile()||{};
-const selectedSymptoms=Array.from(document.querySelectorAll('.symptom-checkbox:checked')).map(checkbox=>{
-const seq=checkbox.dataset.seq;
-const card=checkbox.closest('.symptom-card');
-const symptomName=card.querySelector('label').textContent.replace(/^\[\d+\]/,'').trim();
-const durationText=card.querySelector('.duration-select option:checked').textContent;
-const severityText=card.querySelector('.severity-select option:checked').textContent;
-return{seq:parseInt(seq),symptom:symptomName,durationText:durationText,severityText:severityText};
+const selectedSymptoms=Array.from(document.querySelectorAll('.symptom-checkbox:checked')).map(cb=>{
+const seq=cb.dataset.seq,cd=cb.closest('.symptom-card');
+return{
+seq:parseInt(seq),
+symptom:cd.querySelector('label').textContent.replace(/^\[\d+\]/,'').trim(),
+durationText:cd.querySelector('.duration-select option:checked').textContent,
+severityText:cd.querySelector('.severity-select option:checked').textContent
+};
 });
 return{
 action:'submitChecklist',
@@ -761,8 +638,8 @@ selectedSymptoms:JSON.stringify(selectedSymptoms)
 }
 
 function submitChecklistData(data){
-console.log("提交自檢表數據：",data);
-setStatus('正在提交數據...');
+console.log("提交數據：",data);
+setStatus('提交中...');
 document.getElementById('status').classList.remove('hidden');
 $.ajax({
 url:GAS_URL,
@@ -772,96 +649,80 @@ jsonpCallback:'submitCallback',
 timeout:JSONP_TIMEOUT,
 data:data,
 success:function(resp){
-console.log("提交成功：",resp);
 document.getElementById('status').classList.add('hidden');
-const reportData=organizeReportData({
-...data,
-userBasicInfo:window.userBasicInfo,
-selectedSymptoms:JSON.parse(data.selectedSymptoms)
-});
-renderReportSummary(reportData);
-const modalContent=document.querySelector('#success-modal .modal-content');
-if(modalContent&&!modalContent.querySelector('.close-modal-btn')){
-const closeBtn=document.createElement('button');
-closeBtn.className='close-modal-btn mt-4 w-full py-2 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 transition-colors';
-closeBtn.innerHTML='<i class="fa fa-times mr-1"></i> 關閉報告';
-closeBtn.addEventListener('click',function(){
+const rd=organizeReportData({...data,userBasicInfo:window.userBasicInfo,selectedSymptoms:JSON.parse(data.selectedSymptoms)});
+renderReportSummary(rd);
+const mc=document.querySelector('#success-modal .modal-content');
+if(mc&&!mc.querySelector('.close-modal-btn')){
+const cb=document.createElement('button');
+cb.className='close-modal-btn mt-4 w-full py-2 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 transition-colors';
+cb.innerHTML='<i class="fa fa-times mr-1"></i> 關閉報告';
+cb.addEventListener('click',function(){
 document.getElementById('success-modal').classList.add('hidden');
 resetChecklist();
 document.getElementById('user-info-section').scrollIntoView({behavior:'smooth'});
 });
-modalContent.appendChild(closeBtn);
+mc.appendChild(cb);
 }
 document.getElementById('success-modal').classList.remove('hidden');
 setTimeout(()=>{
-const modalContent=document.querySelector('#success-modal .modal-content');
-if(modalContent)modalContent.style.maxHeight='80vh';
-const reportContainer=document.getElementById('report-summary');
-if(reportContainer)reportContainer.style.maxHeight='60vh';
+mc&&(mc.style.maxHeight='80vh');
+document.getElementById('report-summary')&&(document.getElementById('report-summary').style.maxHeight='60vh');
 },100);
 },
-error:function(xhr,status,error){
-console.error("提交失敗：",status,error);
+error:function(xhr,status,err){
+console.error("提交失敗：",status,err);
 document.getElementById('status').classList.add('hidden');
-showError('提交失敗，請稍後再試（錯誤：'+status+'）');
+showError('提交失敗，請稍後再試（'+status+'）');
 }
 });
 }
 
 function renderReportSummary(reportData){
-const {formattedUserInfo, factorSymptoms, summaryText}=reportData;
-const summaryContent=document.getElementById('summary-content');
-const reportSummary=document.getElementById('report-summary');
-summaryContent.dataset.summary=summaryText;
-const totalSelectedSymptoms=Object.values(factorSymptoms).reduce((sum,factors)=>sum+factors.length,0);
+const {formattedUserInfo,factorSymptoms,summaryText}=reportData;
+const sc=document.getElementById('summary-content'),rs=document.getElementById('report-summary');
+sc.dataset.summary=summaryText;
+const ts=Object.values(factorSymptoms).reduce((s,f)=>s+f.length,0);
 
-reportSummary.style.maxHeight='60vh';
-reportSummary.style.overflowY='auto';
-reportSummary.style.padding='16px';
-reportSummary.style.boxSizing='border-box';
-reportSummary.style.margin='0 auto';
+// 基礎樣式確保截圖正常
+rs.style.maxHeight='60vh';
+rs.style.overflowY='auto';
+rs.style.padding='16px';
+rs.style.boxSizing='border-box';
+sc.style.width='100%';
+sc.style.backgroundColor='#ffffff';
+sc.style.padding='16px';
 
-summaryContent.style.width='100%';
-summaryContent.style.boxSizing='border-box';
-summaryContent.style.backgroundColor='#ffffff';
-summaryContent.style.padding='16px'; // 增加內邊距確保截圖完整
-
-let html=`<div class="font-medium text-primary mb-1.5">👤 基本資料</div>`;
-html+=`<div class="info-grid">`;
-let infoEntries=Object.entries(formattedUserInfo);
-const submitTimeEntry=infoEntries.find(([key])=>key==='提交時間');
-infoEntries=infoEntries.filter(([key])=>key!=='提交時間');
-infoEntries.forEach(([key,value])=>{
-const label=key==='血糖'?'血糖（糖化血色素）':key;
-html+=`<div class="info-item"><span class="text-textSecondary">${label}：</span><span class="font-medium">${value}</span></div>`;
+// 構建HTML
+let html=`<div class="font-medium text-primary mb-1.5">👤 基本資料</div><div class="info-grid">`;
+const infoEntries=Object.entries(formattedUserInfo),stEntry=infoEntries.find(([k])=>k==='提交時間');
+infoEntries.forEach(([k,v])=>{
+if(k!=='提交時間'){
+const label=k==='血糖'?'血糖（糖化血色素）':k;
+html+=`<div class="info-item"><span class="text-textSecondary">${label}：</span><span class="font-medium">${v}</span></div>`;
+}
 });
 html+=`</div>`;
-html+=`<div class="mt-1.5 text-sm"><span class="text-textSecondary">提交時間：</span><span class="font-medium">${submitTimeEntry[1]}</span></div>`;
-html+=`<div class="mt-2 text-sm"><span class="text-textSecondary">總選取症狀數：</span><span class="font-medium text-primary">${totalSelectedSymptoms} 項</span></div>`;
+html+=`<div class="mt-1.5 text-sm"><span class="text-textSecondary">提交時間：</span><span class="font-medium">${stEntry[1]}</span></div>`;
+html+=`<div class="mt-2 text-sm"><span class="text-textSecondary">總選取症狀數：</span><span class="font-medium text-primary">${ts} 項</span></div>`;
 html+=`<div class="font-medium text-primary mt-3 mb-1.5">🩺 七大健康要素評估</div>`;
-Object.entries(factorSymptoms).forEach(([factorKey,factors])=>{
-const factorName=factorStyles[factorKey].label;
-html+=`<div class="mt-2"><div class="font-medium">【${factorName}】（${factors.length}項）</div>`;
-html+=`<div class="ml-2 mt-1 space-y-1">`;
-factors.forEach((item,index)=>{
-html+=`<div class="text-xs">${index+1}. ${item.name} <span class="text-textSecondary">(${item.duration} · ${item.severity})</span></div>`;
-});
+Object.entries(factorSymptoms).forEach(([fk,f])=>{
+const fn=factorStyles[fk].label;
+html+=`<div class="mt-2"><div class="font-medium">【${fn}】（${f.length}項）</div><div class="ml-2 mt-1 space-y-1">`;
+f.forEach((i,idx)=>html+=`<div class="text-xs">${idx+1}. ${i.name} <span class="text-textSecondary">(${i.duration} · ${i.severity})</span></div>`);
 html+=`</div></div>`;
 });
-summaryContent.innerHTML=html;
+sc.innerHTML=html;
 
-setTimeout(()=>{
-reportSummary.style.height=summaryContent.offsetHeight+30+'px';
-},200);
+// 調整高度確保完整顯示
+setTimeout(()=>{rs.style.height=sc.offsetHeight+30+'px';},150);
 }
 
 function resetChecklist(){
-document.querySelectorAll('.symptom-checkbox').forEach(checkbox=>{
-if(checkbox.checked){checkbox.checked=false;checkbox.dispatchEvent(new Event('change'));}
-});
+document.querySelectorAll('.symptom-checkbox').forEach(cb=>{cb.checked&&(cb.checked=false,cb.dispatchEvent(new Event('change')));});
 document.getElementById('filter-all').click();
-const filterSelectedBtn=document.getElementById('filter-selected');
-if(filterSelectedBtn.classList.contains('bg-red-600'))filterSelectedBtn.click();
+const fsBtn=document.getElementById('filter-selected');
+fsBtn.classList.contains('bg-red-600')&&fsBtn.click();
 window.userBasicInfo=null;
 document.getElementById('user-name').value='';
 document.getElementById('user-age').value='';
@@ -875,28 +736,33 @@ document.getElementById('user-job').value='';
 
 function forceShowUserInfo(){
 try{
-const userInfoSection=document.getElementById('user-info-section');
-if(!userInfoSection){alert("頁面加載失敗，請刷新頁面重試");return false;}
-userInfoSection.classList.remove('hidden');
+const uis=document.getElementById('user-info-section');
+if(!uis){alert("頁面加載失敗，請刷新");return false;}
+uis.classList.remove('hidden');
 initControlButtons();
 return true;
-}catch(error){console.error("顯示用戶資訊出錯：",error);alert("頁面加載失敗，請刷新頁面重試");return false;}
+}catch(e){console.error("顯示用戶資訊出錯：",e);alert("頁面加載失敗，請刷新");return false;}
 }
 
+// 頁面加載初始化（確保所有DOM加載完成後再綁定事件）
 document.addEventListener('DOMContentLoaded',function(){
 console.log("頁面加載完成，初始化系統");
-setStatus('正在初始化系統，請稍候...');
+setStatus('正在初始化...');
+// 確保LIFF加載完成
+if(!window.liff){
+showError('LINE LIFF初始化失敗，請檢查網絡或重新打開頁面');
+return;
+}
 liff.init({liffId:LIFF_ID},{disableRedirect:true})
 .then(()=>{
 console.log("LIFF初始化成功");
-if(!liff.isLoggedIn()){liff.login();}
-else{getProfileAndVerify();}
+liff.isLoggedIn()?getProfileAndVerify():liff.login();
 })
 .catch(err=>{
 console.error("LIFF初始化失敗：",err);
-if(err.message.includes('expired')||err.message.includes('token')||err.message.includes('authentication')||err.message.includes('invalid')){
-setStatus('令牌無效，重新登錄中...');
-setTimeout(()=>{liff.login();},1000);
+if(err.message.includes('expired')||err.message.includes('token')||err.message.includes('auth')){
+setStatus('令牌無效，重新登錄...');
+setTimeout(()=>liff.login(),1000);
 }else{
 showError('系統初始化失敗：'+err.message);
 }
@@ -904,30 +770,26 @@ showError('系統初始化失敗：'+err.message);
 });
 
 function getProfileAndVerify(){
-setStatus('驗證使用者資訊中...');
+setStatus('驗證用戶資訊...');
 liff.getProfile()
 .then(profile=>{
-console.log("獲取LINE用戶資料成功：",profile);
+console.log("獲取LINE資料成功：",profile);
 callGasBackend(profile.userId,profile.displayName||'LINE用戶');
 })
 .catch(err=>{
-console.error("獲取LINE用戶資料失敗：",err);
-const tokenErrorKeywords=['expired','token','authentication','invalid','session','auth'];
-const isTokenError=tokenErrorKeywords.some(keyword=>err.message.toLowerCase().includes(keyword.toLowerCase()));
-if(isTokenError){
-setStatus('令牌已過期或無效，重新登錄中...');
-if(liff.isLoggedIn())liff.logout().then(()=>{
-setTimeout(()=>{liff.login();},1000);
-}).catch(()=>{liff.login();});
-else{setTimeout(()=>{liff.login();},1000);}
+console.error("獲取LINE資料失敗：",err);
+const tokenErrs=['expired','token','auth','invalid','session'];
+const isTokenErr=tokenErrs.some(k=>err.message.toLowerCase().includes(k));
+if(isTokenErr){
+setStatus('令牌過期，重新登錄...');
+liff.isLoggedIn()?liff.logout().then(()=>setTimeout(()=>liff.login(),1000)).catch(()=>liff.login()):setTimeout(()=>liff.login(),1000);
 }else{
-showError('取得使用者資料失敗：'+err.message);
+showError('取得用戶資料失敗：'+err.message);
 }
 });
 }
 
 function callGasBackend(userId,displayName){
-console.log("調用後端驗證用戶：",userId,displayName);
 $.ajax({
 url:GAS_URL,
 dataType:'jsonp',
@@ -936,66 +798,58 @@ jsonpCallback:'verifyCallback',
 timeout:JSONP_TIMEOUT,
 data:{userId:userId,displayName:displayName,action:'verifyUser',needExpiryDate:true},
 success:function(resp){
-console.log("後端返回數據：",resp);
-if(resp.status==="error")showError(resp.message);
-else renderResult(resp);
+console.log("後端返回：",resp);
+resp.status==="error"?showError(resp.message):renderResult(resp);
 },
-error:function(xhr,status,error){
-console.error("AJAX錯誤：",status,error);
-let errorMsg='與伺服器通訊失敗';
-if(status==='timeout')errorMsg='請求超時，請檢查網絡連接';
-else if(status==='parsererror')errorMsg='數據解析錯誤';
-showError(errorMsg);
+error:function(xhr,status,err){
+console.error("AJAX錯誤：",status,err);
+const errMsg=status==='timeout'?'請求超時，檢查網絡':status==='parsererror'?'數據解析錯誤':'與伺服器通訊失敗';
+showError(errMsg);
 }
 });
 }
 
 function renderResult(resp){
-console.log("渲染驗證結果",resp);
 document.getElementById('status').classList.add('hidden');
 document.getElementById('error-message').classList.add('hidden');
-const card=document.getElementById('result-card');
-const main=document.getElementById('result-main');
-const details=document.getElementById('result-details');
-const isProUser=resp.isAdmin===true;
-const userName=resp.displayName||'用戶';
-const expiryDateStr=resp.expiryDate||resp.endDate||resp.expireDate||'';
-if(isProUser){
-const{displayDate,remainingDays}=calculateRemainingDaysByDate(expiryDateStr);
+const card=document.getElementById('result-card'),main=document.getElementById('result-main'),details=document.getElementById('result-details');
+const isPro=resp.isAdmin===true,un=resp.displayName||'用戶',ed=resp.expiryDate||resp.endDate||resp.expireDate||'';
+if(isPro){
+const{displayDate,remainingDays}=calculateRemainingDaysByDate(ed);
 main.innerHTML=`<span class="text-primary"><i class="fa fa-check-circle mr-1.5"></i>專業用戶驗證通過</span>`;
 details.innerHTML=`
-<div><i class="fa fa-user-circle text-primary mr-1"></i>用戶名稱：<span class="font-medium">${userName}</span></div>
+<div><i class="fa fa-user-circle text-primary mr-1"></i>用戶名稱：<span class="font-medium">${un}</span></div>
 <div><i class="fa fa-calendar-check-o text-primary mr-1"></i>使用期限：<span class="font-medium">${displayDate}</span></div>
 <div><i class="fa fa-clock-o text-primary mr-1"></i>剩餘天數：${remainingDays}</div>
 `;
 }else{
-const usageCount=resp.usageCount||0;
-const remainingTimes=Math.max(0,3-usageCount);
-if(remainingTimes<=0){
+const uc=resp.usageCount||0,rt=Math.max(0,3-uc);
+if(rt<=0){
 main.innerHTML=`<span class="text-orange-600"><i class="fa fa-exclamation-circle mr-1.5"></i>普通用戶使用次數已用完</span>`;
 details.innerHTML=`
-<div><i class="fa fa-user-circle text-orange-600 mr-1"></i>用戶名稱：<span class="font-medium">${userName}</span></div>
+<div><i class="fa fa-user-circle text-orange-600 mr-1"></i>用戶名稱：<span class="font-medium">${un}</span></div>
 <div><i class="fa fa-calendar-o text-orange-600 mr-1"></i>使用期限：<span class="font-medium">-</span></div>
-<div><i class="fa fa-refresh text-orange-600 mr-1"></i>剩餘次數：<span class="text-red-500 font-medium">${remainingTimes} 次</span></div>
-<div><i class="fa fa-info-circle text-orange-600 mr-1"></i>提示：請聯繫管理員升級為專業用戶</div>
+<div><i class="fa fa-refresh text-orange-600 mr-1"></i>剩餘次數：<span class="text-red-500 font-medium">${rt} 次</span></div>
+<div><i class="fa fa-info-circle text-orange-600 mr-1"></i>提示：請聯繫管理員升級</div>
 `;
 card.classList.remove('hidden');
 return;
 }else{
 main.innerHTML=`<span class="text-textPrimary"><i class="fa fa-user mr-1.5"></i>普通用戶驗證通過</span>`;
 details.innerHTML=`
-<div><i class="fa fa-user-circle text-textPrimary mr-1"></i>用戶名稱：<span class="font-medium">${userName}</span></div>
+<div><i class="fa fa-user-circle text-textPrimary mr-1"></i>用戶名稱：<span class="font-medium">${un}</span></div>
 <div><i class="fa fa-calendar-o text-textPrimary mr-1"></i>使用期限：<span class="font-medium">-</span></div>
-<div><i class="fa fa-refresh text-textPrimary mr-1"></i>剩餘次數：<span class="font-medium text-primary">${remainingTimes} 次</span></div>
+<div><i class="fa fa-refresh text-textPrimary mr-1"></i>剩餘次數：<span class="font-medium text-primary">${rt} 次</span></div>
 `;
 }
 }
 card.classList.remove('hidden');
-setTimeout(()=>{forceShowUserInfo();},300);
+setTimeout(()=>forceShowUserInfo(),300);
 }
 
-window.submitCallback=function(resp){console.log("submitCallback:",resp);return resp;};
-window.verifyCallback=function(resp){console.log("verifyCallback:",resp);return resp;};
+// 全局回調函數
+window.submitCallback=resp=>{console.log("submitCallback:",resp);return resp;};
+window.verifyCallback=resp=>{console.log("verifyCallback:",resp);return resp;};
 </script>
 </body>
 </html>
