@@ -178,13 +178,20 @@ body{font-feature-settings:"palt";letter-spacing:0.02em;}
 </div>
 <h3 class="text-xl font-bold text-textPrimary mb-2">提交成功！</h3>
 <p class="text-textSecondary mb-4">已為您整理健康報告，可直接分享到 LINE 群組</p>
-<!-- 報告摘要區域 -->
-<div id="report-summary" class="border border-gray-100 rounded-xl p-4 mb-5 bg-neutral/50 text-left">
+<!-- 報告摘要區域 - 響應式優化 -->
+<div id="report-summary" class="border border-gray-100 rounded-xl p-4 mb-5 bg-neutral/50 text-left overflow-auto max-h-[300px]">
 <h4 class="text-base font-medium text-textPrimary mb-3 flex items-center"><i class="fa fa-file-text-o text-primary mr-2"></i>健康報告摘要</h4>
 <div id="summary-content" class="text-sm space-y-2"></div>
 </div>
-<!-- 分享按鈕 -->
-<div class="flex gap-3 mb-5">
+<!-- 報告圖片區域 - 響應式優化 -->
+<div class="mb-5">
+<h4 class="text-base font-medium text-textPrimary mb-3">報告圖片</h4>
+<div class="relative w-full aspect-[3/2] rounded-lg overflow-hidden shadow-elevation-1 mb-3">
+<img id="report-image" src="" alt="健康報告圖片" class="w-full h-full object-cover">
+</div>
+</div>
+<!-- 分享按鈕 - 響應式布局 -->
+<div class="flex flex-col sm:flex-row gap-3 mb-5">
 <button id="share-line-btn" class="flex-1 bg-[#00C300] hover:bg-[#00A800] text-white font-medium py-2.5 px-4 rounded-lg transition btn-hover shadow-elevation-1 flex items-center justify-center">
 <i class="fa fa-line-chart mr-1.5"></i>分享到 LINE 群組
 </button>
@@ -478,9 +485,7 @@ setTimeout(()=>{card.style.display='none';},300);
 function organizeReportData(submitData){
 const {userBasicInfo, selectedSymptoms, displayName, submitTime}=submitData;
 // 分類七大要素對應的症狀
-const factorSymptoms={
-气血:[],微循环:[],毒素:[],血脂:[],寒凉湿:[],免疫:[],情绪:[]
-};
+const factorSymptoms={气血:[],微循环:[],毒素:[],血脂:[],寒凉湿:[],免疫:[],情绪:[]};
 // 匹配症狀與要素
 selectedSymptoms.forEach(symptom=>{
 const originalSymptom=fullSymptomData.find(s=>s.seq===symptom.seq);
@@ -534,12 +539,9 @@ summaryText+=`\n【${factorName}】：無相關症狀\n`;
 }
 });
 summaryText+=`\n💡 建議：根據自檢結果關注對應健康問題，必要時諮詢專業醫師`;
-return {
-formattedUserInfo,
-factorSymptoms,
-summaryText,
-reportImageUrl:`https://picsum.photos/seed/${submitData.userId||Date.now()}/600/400`
-};
+// 生成高解析度報告圖片URL
+const reportImageUrl=`https://picsum.photos/seed/${submitData.userId||Date.now()}/1200/800`;
+return {formattedUserInfo,factorSymptoms,summaryText,reportImageUrl};
 }
 
 // 初始化控制按鈕
@@ -688,7 +690,6 @@ data:{
 action:'submitChecklist',
 data:JSON.stringify({
 ...data,
-// 後端工作表顯示LINE用戶名稱（替換原來的"用戶"）
 displayName:data.displayName||'未知用戶'
 })
 },
@@ -708,14 +709,18 @@ showError('提交失敗，請稍後再試（錯誤：'+status+'）');
 });
 }
 
-// 渲染報告摘要
+// 渲染報告摘要和圖片
 function renderReportSummary(reportData){
 const {formattedUserInfo, factorSymptoms, summaryText, reportImageUrl}=reportData;
 const summaryContent=document.getElementById('summary-content');
+const reportImage=document.getElementById('report-image');
 // 設置數據屬性用於分享
 summaryContent.dataset.summary=summaryText;
 summaryContent.dataset.image=reportImageUrl;
-// 渲染HTML內容
+// 設置報告圖片（響應式顯示）
+reportImage.src=reportImageUrl;
+reportImage.alt=`${formattedUserInfo.姓名}的健康自檢報告`;
+// 渲染摘要HTML內容
 let html=`<div class="font-medium text-primary mb-2">👤 基本資料</div>`;
 Object.entries(formattedUserInfo).forEach(([key,value])=>{
 html+=`<div class="flex justify-between"><span class="text-textSecondary">${key}：</span><span class="font-medium">${value}</span></div>`;
@@ -802,7 +807,7 @@ jsonp:'callback',
 timeout:JSONP_TIMEOUT,
 data:{
 userId:userId,
-displayName:displayName, // 傳遞LINE用戶名稱到後端
+displayName:displayName,
 action:'verifyUser',
 needExpiryDate:true
 },
