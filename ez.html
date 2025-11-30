@@ -622,7 +622,7 @@ url:window.location.href
 alert('原生分享成功！');
 }).catch((error)=>{
 console.error('原生分享失敗：',error);
-alert('原生分享失敗，請手動複製分享');
+alert('原生分享失敗，請手動複製報告內容');
 });
 }else{
 alert('您的設備不支持原生分享，請手動複製報告內容');
@@ -640,6 +640,7 @@ document.getElementById('user-info-section').classList.remove('hidden');
 function collectSubmitData(){
 const liffProfile=liff.getProfile()||{};
 return{
+action:'submitChecklist', // 關鍵修復：添加提交動作標識
 userId:liff.getDecodedIDToken()?.sub||'',
 displayName:liffProfile.displayName||document.getElementById('user-name').value.trim()||'用戶',
 submitTime:new Date().toISOString(),
@@ -677,12 +678,17 @@ $.ajax({
 url:GAS_URL,
 dataType:'jsonp',
 jsonp:'callback',
+jsonpCallback:'submitCallback', // 新增：固定回調函數名避免衝突
 timeout:JSONP_TIMEOUT,
 data:data,
 success:function(resp){
 console.log("提交成功：",resp);
 document.getElementById('status').classList.add('hidden');
-const reportData=organizeReportData(data);
+const reportData=organizeReportData({
+...data,
+userBasicInfo:window.userBasicInfo,
+selectedSymptoms:JSON.parse(data.selectedSymptoms)
+});
 renderReportSummary(reportData);
 document.getElementById('success-modal').classList.remove('hidden');
 },
@@ -776,6 +782,7 @@ $.ajax({
 url:GAS_URL,
 dataType:'jsonp',
 jsonp:'callback',
+jsonpCallback:'verifyCallback', // 新增：固定回調函數名避免衝突
 timeout:JSONP_TIMEOUT,
 data:{
 userId:userId,
@@ -841,6 +848,9 @@ details.innerHTML=`
 card.classList.remove('hidden');
 setTimeout(()=>{forceShowUserInfo();},300);
 }
+// 新增：定義全局回調函數（解決JSONP回調找不到的問題）
+window.submitCallback=function(resp){console.log("submitCallback:",resp);return resp;};
+window.verifyCallback=function(resp){console.log("verifyCallback:",resp);return resp;};
 </script>
 </body>
 </html>
