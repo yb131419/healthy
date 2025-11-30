@@ -445,6 +445,37 @@ st+=`\n💡 建議：根據自檢結果關注對應健康問題，必要時諮�
 return {formattedUserInfo:fui,factorSymptoms:ffs,summaryText:st};
 }
 
+// 下載圖片工具函數（獨立提取，確保穩定）
+function downloadImage(dataUrl,fileName){
+try{
+const link=document.createElement('a');
+link.href=dataUrl;
+link.download=fileName||`彥彬健康自檢報告_${new Date().toLocaleDateString()}.png`;
+link.style.display='none';
+document.body.appendChild(link);
+link.click();
+setTimeout(()=>document.body.removeChild(link),300);
+return true;
+}catch(e){
+console.error('下載失敗：',e);
+alert('下載失敗，請手動截圖保存');
+return false;
+}
+}
+
+// 添加關閉按鈕
+function addShareCloseButton(modalContent){
+const btn=document.createElement('button');
+btn.className='share-close-btn mt-3 w-full py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors';
+btn.innerHTML='<i class="fa fa-times mr-1"></i> 關閉';
+btn.addEventListener('click',function(){
+document.getElementById('success-modal').classList.add('hidden');
+resetChecklist();
+document.getElementById('user-info-section').scrollIntoView({behavior:'smooth'});
+});
+modalContent.appendChild(btn);
+}
+
 function initControlButtons(){
 // 下一步按鈕
 document.getElementById('next-to-checklist').addEventListener('click',function(){
@@ -498,114 +529,174 @@ const sd=collectSubmitData();
 submitChecklistData(sd);
 });
 
-// 核心修復：分享按鈕（解決點擊無回應）
+// 核心修復：分享按鈕（解決報告未找到、LINE分享問題）
 const shareBtn=document.getElementById('native-share-btn');
 if(shareBtn){
 shareBtn.addEventListener('click',async function(e){
-e.stopPropagation();// 阻止事件冒泡
+e.stopPropagation();e.preventDefault();
+let scEl,mc,st,canvas,dataUrl,fileName;
 try{
-// 1. 先檢查必要依賴和元素
-if(!window.html2canvas){alert('分享功能依賴缺失，請刷新頁面重試');return;}
-const scEl=document.getElementById('summary-content'),mc=document.querySelector('#success-modal .modal-content');
-if(!scEl||!mc){alert('報告內容未找到');return;}
-const st=scEl.dataset.summary;
-if(!st){alert('報告數據異常');return;}
+// 1. 增強DOM元素獲取（添加重試機制）
+scEl=document.getElementById('summary-content');
+mc=document.querySelector('#success-modal .modal-content')||document.getElementById('success-modal');
+if(!scEl||!mc){
+// 嘗試直接從DOM查詢報告內容
+const rs=document.getElementById('report-summary');
+if(rs)scEl=rs.querySelector('.summary-content')||rs;
+if(!scEl){
+alert('報告內容加載中，請稍候再試');
+setTimeout(()=>this.click(),500);
+return;
+}
+}
 
-// 2. 移除舊按鈕+顯示加載狀態
+// 2. 確保報告數據存在
+st=scEl.dataset.summary||document.getElementById('summary-content')?.dataset.summary;
+if(!st){
+// 重新構建摘要文本（降级方案）
+const reportData=window.reportData||{};
+st=reportData.summaryText||'🧬 彥彬健康自檢報告\n\n未能加載完整數據，建議下載圖片查看詳情';
+}
+
+// 3. 移除舊按鈕+顯示加載狀態
 const escb=mc.querySelector('.share-close-btn');
 escb&&escb.remove();
 shareBtn.disabled=true;
 shareBtn.innerHTML='<i class="fa fa-spinner fa-spin mr-1"></i> 處理中...';
 
-// 3. 簡化截圖邏輯（直接截原容器，避免臨時DOM問題）
+// 4. 確保html2canvas加載完成
+if(!window.html2canvas){
+alert('正在加載分享所需組件，請稍候...');
+// 動態加載html2canvas
+const script=document.createElement('script');
+script.src='https://html2canvas.hertzen.com/dist/html2canvas.min.js';
+script.onload=()=>this.click();
+script.onerror=()=>{throw new Error('組件加載失敗');};
+document.head.appendChild(script);
+return;
+}
+
+// 5. 優化截圖配置（確保LINE兼容）
 scEl.style.backgroundColor='#ffffff';
 scEl.style.padding='16px';
-const canvas=await html2canvas(scEl,{
-scale:1.2,// 降低分辨率減少卡頓
+scEl.style.width='100%';
+scEl.style.boxSizing='border-box';
+canvas=await html2canvas(scEl,{
+scale:1.0,// 降低分辨率確保LINE兼容
 useCORS:true,
 allowTaint:true,
 logging:false,
 backgroundColor:'#ffffff',
-width:scEl.offsetWidth,
+width:Math.min(scEl.offsetWidth,800),// 限制最大寬度
 height:scEl.offsetHeight
 });
 
-// 4. 轉換圖片（簡化Blob處理）
-const dataUrl=canvas.toDataURL('image/png',0.6);
+// 6. 圖片處理（LINE兼容格式）
+dataUrl=canvas.toDataURL('image/png',0.5);
+fileName=`彥彬健康自檢報告_${new Date().toLocaleDateString()}.png`;
 const imgBlob=await (await fetch(dataUrl)).blob();
-const fileName=`彥彬健康自檢報告_${new Date().toLocaleDateString()}.png`;
-const file=new File([imgBlob],fileName,{type:'image/png'});
+// 確保文件大小符合LINE要求（<5MB）
+let file;
+if(imgBlob.size>5*1024*1024){
+alert('圖片體積過大，正在壓縮...');
+dataUrl=canvas.toDataURL('image/png',0.3);
+const compressedBlob=await (await fetch(dataUrl)).blob();
+file=new File([compressedBlob],fileName,{type:'image/png'});
+}else{
+file=new File([imgBlob],fileName,{type:'image/png'});
+}
 
-// 5. 分享邏輯（增強兼容性檢測）
+// 7. LINE優化分享邏輯
 if(navigator.share&&typeof navigator.share==='function'){
 try{
-const shareData={title:'🧬 彥彬健康自檢報告',text:st,files:[file]};
-// 兼容不同瀏覽器的canShare實現
+// 專門針對LINE的分享數據格式
+const shareData={
+title:'🧬 彥彬健康自檢報告',
+text:st.length>100?st.substring(0,100)+'...':st,
+files:[file]
+};
+
+// 兼容LINE的canShare檢測
 const canShare=navigator.canShare?await navigator.canShare(shareData):true;
 if(canShare){
 await navigator.share(shareData);
-alert('分享成功！');
+alert('分享成功！已發送到LINE群組/好友');
 }else{
-// 不支持文件分享則分享文字
+// 降级：先分享文字，再下載圖片
 await navigator.share({title:shareData.title,text:shareData.text});
-alert('文字分享成功，報告圖片已下載');
+alert('文字已分享，圖片將自動下載');
 downloadImage(dataUrl,fileName);
 }
 }catch(err){
-console.error('分享失敗：',err);
+console.error('LINE分享失敗：',err);
 // 用戶取消不提示
 if(err.name!=='AbortError'){
+// 強制下載，確保用戶能獲取
 downloadImage(dataUrl,fileName);
-alert(`分享失敗：${err.message||'未知錯誤'}，已自動下載報告`);
+alert(`分享失敗：${err.message||'未知錯誤'}，已自動下載報告圖片`);
 }
 }
 }else{
-// 不支持原生分享：下載+複製文字
+// 不支持原生分享：直接下載+複製文字
 downloadImage(dataUrl,fileName);
 try{
 await navigator.clipboard.writeText(st);
-alert('瀏覽器不支持分享，已下載報告並複製文字內容');
+alert('已下載報告圖片，文字內容已複製到剪貼板\n可手動粘貼到LINE分享');
 }catch(cbErr){
-alert('瀏覽器不支持分享，已下載報告，請手動複製文字內容');
+alert('已下載報告圖片，請手動複製文字內容到LINE分享');
 }
 }
 }catch(err){
 console.error('分享總體錯誤：',err);
-// 最終降级：確保用戶能獲取數據
-downloadImage(dataUrl||canvas.toDataURL('image/png',0.6),fileName||`健康報告_${new Date().getTime()}.png`);
-alert('分享功能異常，已自動下載報告圖片');
+// 最終降级方案：無論如何都要下載
+downloadImage(dataUrl||canvas.toDataURL('image/png',0.3),fileName||`健康報告_${new Date().getTime()}.png`);
+alert('分享功能異常，已強制下載報告圖片');
 }finally{
 // 恢復按鈕狀態
 shareBtn.disabled=false;
-shareBtn.innerHTML='<i class="fa fa-share-alt mr-1"></i> 分享報告';
+shareBtn.innerHTML='<i class="fa fa-share-alt mr-1"></i> 分享到LINE';
 // 添加關閉按鈕
 addShareCloseButton(mc);
 }
 });
 }
 
-// 下載圖片工具函數
-function downloadImage(dataUrl,fileName){
-const link=document.createElement('a');
-link.href=dataUrl;
-link.download=fileName;
-link.style.display='none';
-document.body.appendChild(link);
-link.click();
-setTimeout(()=>document.body.removeChild(link),300);
-}
-
-// 添加關閉按鈕
-function addShareCloseButton(modalContent){
-const btn=document.createElement('button');
-btn.className='share-close-btn mt-3 w-full py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors';
-btn.innerHTML='<i class="fa fa-times mr-1"></i> 關閉';
-btn.addEventListener('click',function(){
-document.getElementById('success-modal').classList.add('hidden');
-resetChecklist();
-document.getElementById('user-info-section').scrollIntoView({behavior:'smooth'});
+// 單獨添加下載按鈕功能（獨立入口，確保可靠）
+const downloadBtn=document.getElementById('download-report-btn');
+if(downloadBtn){
+downloadBtn.addEventListener('click',async function(){
+try{
+this.disabled=true;
+this.innerHTML='<i class="fa fa-spinner fa-spin mr-1"></i> 下載中...';
+const scEl=document.getElementById('summary-content')||document.querySelector('#report-summary .summary-content');
+if(!scEl)throw new Error('報告內容未找到');
+if(!window.html2canvas){
+alert('正在加載下載所需組件...');
+await new Promise((resolve,reject)=>{
+const script=document.createElement('script');
+script.src='https://html2canvas.hertzen.com/dist/html2canvas.min.js';
+script.onload=resolve;
+script.onerror=reject;
+document.head.appendChild(script);
 });
-modalContent.appendChild(btn);
+}
+scEl.style.backgroundColor='#ffffff';
+scEl.style.padding='16px';
+const canvas=await html2canvas(scEl,{scale:1.0,useCORS:true,backgroundColor:'#ffffff'});
+const dataUrl=canvas.toDataURL('image/png',0.6);
+downloadImage(dataUrl);
+this.innerHTML='<i class="fa fa-download mr-1"></i> 下載完成';
+setTimeout(()=>{
+this.innerHTML='<i class="fa fa-download mr-1"></i> 下載報告';
+this.disabled=false;
+},1500);
+}catch(e){
+console.error('下載按鈕錯誤：',e);
+this.innerHTML='<i class="fa fa-download mr-1"></i> 下載報告';
+this.disabled=false;
+alert('下載失敗：'+e.message);
+}
+});
 }
 }
 
@@ -651,8 +742,10 @@ data:data,
 success:function(resp){
 document.getElementById('status').classList.add('hidden');
 const rd=organizeReportData({...data,userBasicInfo:window.userBasicInfo,selectedSymptoms:JSON.parse(data.selectedSymptoms)});
+// 保存報告數據到全局，便於分享時調用
+window.reportData=rd;
 renderReportSummary(rd);
-const mc=document.querySelector('#success-modal .modal-content');
+const mc=document.querySelector('#success-modal .modal-content')||document.getElementById('success-modal');
 if(mc&&!mc.querySelector('.close-modal-btn')){
 const cb=document.createElement('button');
 cb.className='close-modal-btn mt-4 w-full py-2 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 transition-colors';
@@ -680,18 +773,30 @@ showError('提交失敗，請稍後再試（'+status+'）');
 
 function renderReportSummary(reportData){
 const {formattedUserInfo,factorSymptoms,summaryText}=reportData;
-const sc=document.getElementById('summary-content'),rs=document.getElementById('report-summary');
+// 確保容器存在，不存在則創建
+let sc=document.getElementById('summary-content');
+if(!sc){
+sc=document.createElement('div');
+sc.id='summary-content';
+const rs=document.getElementById('report-summary')||document.createElement('div');
+rs.id='report-summary';
+rs.appendChild(sc);
+document.querySelector('#success-modal .modal-content')?.appendChild(rs)||document.body.appendChild(rs);
+}
 sc.dataset.summary=summaryText;
 const ts=Object.values(factorSymptoms).reduce((s,f)=>s+f.length,0);
 
 // 基礎樣式確保截圖正常
+const rs=document.getElementById('report-summary');
 rs.style.maxHeight='60vh';
 rs.style.overflowY='auto';
 rs.style.padding='16px';
 rs.style.boxSizing='border-box';
+rs.style.backgroundColor='#ffffff';
 sc.style.width='100%';
 sc.style.backgroundColor='#ffffff';
 sc.style.padding='16px';
+sc.style.boxSizing='border-box';
 
 // 構建HTML
 let html=`<div class="font-medium text-primary mb-1.5">👤 基本資料</div><div class="info-grid">`;
@@ -714,8 +819,14 @@ html+=`</div></div>`;
 });
 sc.innerHTML=html;
 
-// 調整高度確保完整顯示
-setTimeout(()=>{rs.style.height=sc.offsetHeight+30+'px';},150);
+// 強制刷新DOM，確保元素存在
+setTimeout(()=>{
+rs.style.height=sc.offsetHeight+30+'px';
+// 手動觸發重繪
+rs.style.display='none';
+rs.offsetHeight;
+rs.style.display='block';
+},150);
 }
 
 function resetChecklist(){
@@ -724,6 +835,7 @@ document.getElementById('filter-all').click();
 const fsBtn=document.getElementById('filter-selected');
 fsBtn.classList.contains('bg-red-600')&&fsBtn.click();
 window.userBasicInfo=null;
+window.reportData=null;
 document.getElementById('user-name').value='';
 document.getElementById('user-age').value='';
 document.getElementById('user-gender').value='';
@@ -744,11 +856,10 @@ return true;
 }catch(e){console.error("顯示用戶資訊出錯：",e);alert("頁面加載失敗，請刷新");return false;}
 }
 
-// 頁面加載初始化（確保所有DOM加載完成後再綁定事件）
+// 頁面加載初始化
 document.addEventListener('DOMContentLoaded',function(){
 console.log("頁面加載完成，初始化系統");
 setStatus('正在初始化...');
-// 確保LIFF加載完成
 if(!window.liff){
 showError('LINE LIFF初始化失敗，請檢查網絡或重新打開頁面');
 return;
