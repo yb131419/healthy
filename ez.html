@@ -104,11 +104,11 @@ body{font-feature-settings:"palt";letter-spacing:0.02em;}
 </div>
 <div class="space-y-1">
 <label class="block text-xs font-medium text-textPrimary">血壓 (mmHg)</label>
-<input type="text" id="user-bp" class="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm input-focus bg-white" placeholder="選填，例：120/80">
+<input type="text" id="user-bp" class="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm input-focus bg-white" placeholder="選填，例：120收縮壓/80舒張壓">
 </div>
 <div class="space-y-1">
-<label class="block text-xs font-medium text-textPrimary">糖化血色素 (%)</label>
-<input type="number" id="user-glucose" min="3" max="15" step="0.1" class="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm input-focus bg-white" placeholder="選填">
+<label class="block text-xs font-medium text-textPrimary">血糖(HbA1c)</label>
+<input type="number" id="user-glucose" min="3" max="15" step="0.1" class="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm input-focus bg-white" placeholder="糖化血色素">
 </div>
 <div class="space-y-1">
 <label class="block text-xs font-medium text-textPrimary">職業</label>
@@ -774,7 +774,7 @@ let html=`
 const infoEntries=Object.entries(formattedUserInfo),stEntry=infoEntries.find(([k])=>k==='提交時間');
 infoEntries.forEach(([k,v])=>{
 if(k!=='提交時間'){
-const label=k==='血糖'?'血糖':k;
+const label=k==='血糖'?'血糖（糖化血色素）':k;
 html+=`<div class="flex justify-between">
 <span class="text-[#4a5568] font-medium">${label}：</span>
 <span class="text-[#2d3748]">${v}</span>
