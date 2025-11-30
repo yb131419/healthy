@@ -177,19 +177,23 @@ body{font-feature-settings:"palt";letter-spacing:0.02em;}
 <i class="fa fa-check text-3xl text-primary"></i>
 </div>
 <h3 class="text-xl font-bold text-textPrimary mb-2">提交成功！</h3>
-<p class="text-textSecondary mb-6">您的自檢表已順利提交，我們將為您生成專業健康參考報告</p>
-<!-- 新增分享圖片區域 -->
-<div id="share-image-container" class="border border-gray-100 rounded-xl p-4 mb-5 bg-neutral/50">
-<h4 class="text-base font-medium text-textPrimary mb-3">分享報告圖片（選填）</h4>
-<div class="flex justify-center mb-3">
-<img id="report-image" src="https://picsum.photos/seed/healthreport/300/200" alt="健康報告預覽圖" class="rounded-lg max-w-full h-auto shadow-elevation-1">
+<p class="text-textSecondary mb-4">已為您整理健康報告，可直接分享到 LINE 群組</p>
+<!-- 報告摘要區域 -->
+<div id="report-summary" class="border border-gray-100 rounded-xl p-4 mb-5 bg-neutral/50 text-left">
+<h4 class="text-base font-medium text-textPrimary mb-3 flex items-center"><i class="fa fa-file-text-o text-primary mr-2"></i>健康報告摘要</h4>
+<div id="summary-content" class="text-sm space-y-2"></div>
 </div>
-<button id="share-image-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition btn-hover shadow-elevation-1">
-<i class="fa fa-share-alt mr-1.5"></i>分享圖片到手機
+<!-- 分享按鈕 -->
+<div class="flex gap-3 mb-5">
+<button id="share-line-btn" class="flex-1 bg-[#00C300] hover:bg-[#00A800] text-white font-medium py-2.5 px-4 rounded-lg transition btn-hover shadow-elevation-1 flex items-center justify-center">
+<i class="fa fa-line-chart mr-1.5"></i>分享到 LINE 群組
+</button>
+<button id="save-image-btn" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 px-4 rounded-lg transition btn-hover shadow-elevation-1 flex items-center justify-center">
+<i class="fa fa-download mr-1.5"></i>保存報告圖片
 </button>
 </div>
 <button id="close-modal" class="bg-primary hover:bg-[#007A69] text-white font-bold py-2.5 px-6 rounded-lg transition btn-hover shadow-elevation-1 w-full">
-確認
+完成
 </button>
 </div>
 </div>
@@ -303,6 +307,7 @@ const fullSymptomData=[
 {seq:99,symptom:"黑痣變大變多",气血:"",微循环:"",毒素:"○",血脂:"",寒凉湿:"",免疫:"○",情绪:""},
 {seq:100,symptom:"形體消瘦",气血:"○",微循环:"",毒素:"",血脂:"",寒凉湿:"",免疫:"",情绪:""}];
 
+// 工具函數
 const setStatus=text=>{const statusText=document.getElementById('status-text');if(statusText)statusText.textContent=text;};
 const showError=msg=>{
 document.getElementById('status').classList.add('hidden');
@@ -337,14 +342,16 @@ else if(remainingDays<=30)remainingDaysText=`<span class='text-orange-500 font-m
 else remainingDaysText=`${remainingDays} 天`;
 return{displayDate:formattedDate,remainingDays:remainingDaysText};
 }catch(error){
-console.error("基於日期計算剩餘天數失敗：",error,"日期字符串：",expiryDateStr);
+console.error("計算剩餘天數失敗：",error,expiryDateStr);
 return{displayDate:"計算錯誤",remainingDays:"計算錯誤"};
 }
 };
+
+// 渲染症狀卡片
 function renderSymptomCards(){
 try{
 const container=document.getElementById('symptoms-container');
-if(!container){console.error("症狀容器未找到");return false;}
+if(!container)return false;
 container.innerHTML='';
 fullSymptomData.forEach((symptom,index)=>{
 const relatedFactors=[];
@@ -375,18 +382,10 @@ ${relatedFactors.length>0?relatedFactors.join(''):'<span class="factor-tag bg-gr
 </div>
 <div class="symptom-details hidden mt-2 pt-2 border-t border-gray-100">
 <div class="grid grid-cols-2 gap-2.5">
-<div>
-<label class="block text-sm text-textSecondary mb-1">時間長短</label>
-<select class="duration-select w-full border border-gray-200 rounded-lg px-2.5 py-1.5 text-sm input-focus bg-white">
-${durationOptionsHtml}
-</select>
-</div>
-<div>
-<label class="block text-sm text-textSecondary mb-1">症狀輕重</label>
-<select class="severity-select w-full border border-gray-200 rounded-lg px-2.5 py-1.5 text-sm input-focus bg-white">
-${severityOptionsHtml}
-</select>
-</div>
+<div><label class="block text-sm text-textSecondary mb-1">時間長短</label>
+<select class="duration-select w-full border border-gray-200 rounded-lg px-2.5 py-1.5 text-sm input-focus bg-white">${durationOptionsHtml}</select></div>
+<div><label class="block text-sm text-textSecondary mb-1">症狀輕重</label>
+<select class="severity-select w-full border border-gray-200 rounded-lg px-2.5 py-1.5 text-sm input-focus bg-white">${severityOptionsHtml}</select></div>
 </div>
 </div>
 </div>
@@ -396,13 +395,13 @@ container.appendChild(card);
 setTimeout(()=>{card.style.opacity='1';card.style.transform='translateY(0)';},50);
 });
 bindCheckboxEvents();
-console.log("症狀卡片渲染完成");
 return true;
 }catch(error){console.error("渲染症狀卡片出錯：",error);return false;}
 }
+
+// 綁定勾選事件
 function bindCheckboxEvents(){
-const checkboxes=document.querySelectorAll('.symptom-checkbox');
-checkboxes.forEach(checkbox=>{
+document.querySelectorAll('.symptom-checkbox').forEach(checkbox=>{
 checkbox.addEventListener('change',function(){
 const card=this.closest('.symptom-card');
 const details=card.querySelector('.symptom-details');
@@ -412,20 +411,22 @@ card.classList.add('border-primary/30','bg-secondary/20','shadow-elevation-2');
 }else{
 details.classList.add('hidden');
 card.classList.remove('border-primary/30','bg-secondary/20','shadow-elevation-2');
-const durationSelect=card.querySelector('.duration-select');
-const severitySelect=card.querySelector('.severity-select');
-if(durationSelect)durationSelect.value='';
-if(severitySelect)severitySelect.value='';
+card.querySelector('.duration-select').value='';
+card.querySelector('.severity-select').value='';
 }
 updateSelectedCount();
 });
 });
 }
+
+// 更新已選計數
 function updateSelectedCount(){
 const checkedCount=document.querySelectorAll('.symptom-checkbox:checked').length;
 document.getElementById('selected-count').textContent=checkedCount;
 return checkedCount;
 }
+
+// 初始化過濾按鈕
 function initFilterButtons(){
 const filterButtons=document.querySelectorAll('[data-factor], #filter-all');
 let currentFilter='all';
@@ -452,16 +453,14 @@ this.innerHTML='<i class="fa fa-filter mr-1.5"></i>只看已選';
 applyFilters();
 });
 function applyFilters(){
-const symptomCards=document.querySelectorAll('.symptom-card');
-symptomCards.forEach(card=>{
+document.querySelectorAll('.symptom-card').forEach(card=>{
 let shouldShow=true;
 if(currentFilter!=='all'){
 const cardFactors=card.dataset.factors.split(',');
 shouldShow=cardFactors.includes(currentFilter);
 }
 if(showOnlySelected&&shouldShow){
-const checkbox=card.querySelector('.symptom-checkbox');
-shouldShow=checkbox.checked;
+shouldShow=card.querySelector('.symptom-checkbox').checked;
 }
 if(shouldShow){
 card.style.display='block';
@@ -474,18 +473,87 @@ setTimeout(()=>{card.style.display='none';},300);
 });
 }
 }
+
+// 整理報告數據（用戶資料+七大要素）
+function organizeReportData(submitData){
+const {userBasicInfo, selectedSymptoms, displayName, submitTime}=submitData;
+// 分類七大要素對應的症狀
+const factorSymptoms={
+气血:[],微循环:[],毒素:[],血脂:[],寒凉湿:[],免疫:[],情绪:[]
+};
+// 匹配症狀與要素
+selectedSymptoms.forEach(symptom=>{
+const originalSymptom=fullSymptomData.find(s=>s.seq===symptom.seq);
+if(originalSymptom){
+Object.keys(factorSymptoms).forEach(factor=>{
+if(originalSymptom[factor]==="○"){
+factorSymptoms[factor].push({
+name:symptom.symptom,
+duration:symptom.durationText,
+severity:symptom.severityText
+});
+}
+});
+}
+});
+// 格式化用戶資料
+const formattedUserInfo={
+姓名:userBasicInfo.name||'未填寫',
+年齡:userBasicInfo.age?`${userBasicInfo.age}歲`:'未填寫',
+性別:userBasicInfo.gender==='male'?'男':userBasicInfo.gender==='female'?'女':'未填寫',
+身高:userBasicInfo.height?`${userBasicInfo.height}cm`:'未填寫',
+體重:userBasicInfo.weight?`${userBasicInfo.weight}kg`:'未填寫',
+血壓:userBasicInfo.bp||'未填寫',
+糖化血色素:userBasicInfo.glucose?`${userBasicInfo.glucose}%`:'未填寫',
+職業:userBasicInfo.job||'未填寫',
+提交時間:new Date(submitTime).toLocaleString('zh-TW',{
+year:'numeric',month:'2-digit',day:'2-digit',
+hour:'2-digit',minute:'2-digit',second:'2-digit'
+})
+};
+// 生成摘要文本
+let summaryText=`🧬 彥彬健康自檢報告\n\n`;
+summaryText+=`👤 用戶：${displayName}\n`;
+summaryText+=`📅 提交時間：${formattedUserInfo.提交時間}\n\n`;
+summaryText+=`📋 基本資料：\n`;
+Object.entries(formattedUserInfo).forEach(([key,value])=>{
+if(key!=='提交時間')summaryText+=`  ${key}：${value}\n`;
+});
+summaryText+=`\n🩺 七大健康要素評估：\n`;
+Object.entries(factorSymptoms).forEach(([factorKey,factors])=>{
+const factorName=factorStyles[factorKey].label;
+if(factors.length>0){
+summaryText+=`\n【${factorName}】(${factors.length}項)：\n`;
+factors.forEach((item,index)=>{
+summaryText+=`  ${index+1}. ${item.name}\n`;
+summaryText+=`     ⏱️ 時間：${item.duration}\n`;
+summaryText+=`     ⚠️ 程度：${item.severity}\n`;
+});
+}else{
+summaryText+=`\n【${factorName}】：無相關症狀\n`;
+}
+});
+summaryText+=`\n💡 建議：根據自檢結果關注對應健康問題，必要時諮詢專業醫師`;
+return {
+formattedUserInfo,
+factorSymptoms,
+summaryText,
+reportImageUrl:`https://picsum.photos/seed/${submitData.userId||Date.now()}/600/400`
+};
+}
+
+// 初始化控制按鈕
 function initControlButtons(){
+// 下一步到自檢表
 document.getElementById('next-to-checklist').addEventListener('click',function(){
 const name=document.getElementById('user-name').value.trim();
 const age=document.getElementById('user-age').value.trim();
 const gender=document.getElementById('user-gender').value;
 if(!name){alert('請輸入姓名');document.getElementById('user-name').focus();return;}
-if(!age||isNaN(age)||age<0||age>120){alert('請輸入有效的年齡');document.getElementById('user-age').focus();return;}
+if(!age||isNaN(age)||age<0||age>120){alert('請輸入有效年齡');document.getElementById('user-age').focus();return;}
 if(!gender){alert('請選擇性別');document.getElementById('user-gender').focus();return;}
 window.userBasicInfo={
-name:name,
-age:parseInt(age),
-gender:gender,
+name:name,age:parseInt(age),gender:gender,
 height:document.getElementById('user-height').value?parseInt(document.getElementById('user-height').value):null,
 weight:document.getElementById('user-weight').value?parseFloat(document.getElementById('user-weight').value):null,
 bp:document.getElementById('user-bp').value.trim()||null,
@@ -496,8 +564,9 @@ document.getElementById('user-info-section').classList.add('hidden');
 document.getElementById('checklist-section').classList.remove('hidden');
 renderSymptomCards();
 initFilterButtons();
-document.getElementById('checklist-section').scrollIntoView({behavior:'smooth',block:'start'});
+document.getElementById('checklist-section').scrollIntoView({behavior:'smooth'});
 });
+// 返回修改資訊
 document.getElementById('back-to-info').addEventListener('click',function(){
 document.getElementById('checklist-section').classList.add('hidden');
 document.getElementById('user-info-section').classList.remove('hidden');
@@ -511,15 +580,15 @@ document.getElementById('user-bp').value=window.userBasicInfo.bp||'';
 document.getElementById('user-glucose').value=window.userBasicInfo.glucose||'';
 document.getElementById('user-job').value=window.userBasicInfo.job||'';
 }
-document.getElementById('user-info-section').scrollIntoView({behavior:'smooth',block:'start'});
+document.getElementById('user-info-section').scrollIntoView({behavior:'smooth'});
 });
+// 提交自檢表
 document.getElementById('submit-checklist').addEventListener('click',function(){
 const selectedCount=updateSelectedCount();
 if(selectedCount===0){alert('請至少勾選一個症狀');return;}
-const checkedCheckboxes=document.querySelectorAll('.symptom-checkbox:checked');
 let isValid=true;
 let firstInvalidCard=null;
-checkedCheckboxes.forEach(checkbox=>{
+document.querySelectorAll('.symptom-checkbox:checked').forEach(checkbox=>{
 const card=checkbox.closest('.symptom-card');
 const duration=card.querySelector('.duration-select').value;
 const severity=card.querySelector('.severity-select').value;
@@ -539,30 +608,38 @@ return;
 const submitData=collectSubmitData();
 submitChecklistData(submitData);
 });
-// 分享圖片按鈕事件
-document.getElementById('share-image-btn').addEventListener('click',function(){
-const imageUrl=document.getElementById('report-image').src;
-if(navigator.share&&imageUrl){
-// 原生分享API
-navigator.share({
-title:'我的健康自檢報告',
-text:'這是我的健康自檢報告，一起關注健康！',
-url:imageUrl
-}).catch(err=>{
-console.error('分享失敗：',err);
-alert('分享失敗，請手動保存圖片後分享');
+// LINE分享按鈕
+document.getElementById('share-line-btn').addEventListener('click',async function(){
+try{
+if(!liff.isInClient()){
+alert('請在 LINE 應用內打開以使用分享功能');
+return;
+}
+const summaryText=document.getElementById('summary-content').dataset.summary;
+const reportImageUrl=document.getElementById('summary-content').dataset.image;
+// 調用LINE分享API（支援群組分享）
+await liff.shareTargetPicker([
+{type:'text',text:summaryText},
+{type:'image',originalContentUrl:reportImageUrl,previewImageUrl:reportImageUrl}
+]);
+alert('分享成功！');
+}catch(error){
+console.error('LINE分享失敗：',error);
+alert('分享失敗，請重試或手動保存圖片分享');
+}
 });
-}else{
-// 兼容處理：創建臨時下載鏈接
+// 保存圖片按鈕
+document.getElementById('save-image-btn').addEventListener('click',function(){
+const reportImageUrl=document.getElementById('summary-content').dataset.image;
 const link=document.createElement('a');
-link.href=imageUrl;
-link.download='健康自檢報告.jpg';
+link.href=reportImageUrl;
+link.download=`${new Date().toLocaleDateString()}_健康自檢報告.jpg`;
 document.body.appendChild(link);
 link.click();
 document.body.removeChild(link);
-alert('已開始下載圖片，您可以手動分享給好友');
-}
+alert('圖片已開始下載，可手動分享給好友');
 });
+// 關閉彈窗
 document.getElementById('close-modal').addEventListener('click',function(){
 document.getElementById('success-modal').classList.add('hidden');
 resetChecklist();
@@ -570,34 +647,34 @@ document.getElementById('checklist-section').classList.add('hidden');
 document.getElementById('user-info-section').classList.remove('hidden');
 });
 }
+
+// 收集提交數據
 function collectSubmitData(){
-const result={
+const liffProfile=liff.getProfile()||{};
+return{
 userId:liff.getDecodedIDToken()?.sub||'',
-displayName:liff.getProfile()?.displayName||'用戶',
+displayName:liffProfile.displayName||document.getElementById('user-name').value.trim()||'用戶',
 submitTime:new Date().toISOString(),
 userBasicInfo:window.userBasicInfo||{},
-selectedSymptoms:[]
-};
-const checkedCheckboxes=document.querySelectorAll('.symptom-checkbox:checked');
-checkedCheckboxes.forEach(checkbox=>{
+selectedSymptoms:Array.from(document.querySelectorAll('.symptom-checkbox:checked')).map(checkbox=>{
 const seq=checkbox.dataset.seq;
 const card=checkbox.closest('.symptom-card');
 const symptomName=card.querySelector('label').textContent.replace(/^\[\d+\]/,'').trim();
 const duration=card.querySelector('.duration-select').value;
 const severity=card.querySelector('.severity-select').value;
-const durationText=durationOptions.find(opt=>opt.value===duration)?.label||'';
-const severityText=severityOptions.find(opt=>opt.value===severity)?.label||'';
-result.selectedSymptoms.push({
+return{
 seq:parseInt(seq),
 symptom:symptomName,
 duration:duration,
-durationText:durationText,
+durationText:durationOptions.find(opt=>opt.value===duration)?.label||'',
 severity:severity,
-severityText:severityText
-});
-});
-return result;
+severityText:severityOptions.find(opt=>opt.value===severity)?.label||''
+};
+})
+};
 }
+
+// 提交數據到後端
 function submitChecklistData(data){
 console.log("提交自檢表數據：",data);
 setStatus('正在提交數據...');
@@ -607,14 +684,21 @@ url:GAS_URL,
 dataType:'jsonp',
 jsonp:'callback',
 timeout:JSONP_TIMEOUT,
-data:{action:'submitChecklist',data:JSON.stringify(data)},
+data:{
+action:'submitChecklist',
+data:JSON.stringify({
+...data,
+// 後端工作表顯示LINE用戶名稱（替換原來的"用戶"）
+displayName:data.displayName||'未知用戶'
+})
+},
 success:function(resp){
 console.log("提交成功：",resp);
 document.getElementById('status').classList.add('hidden');
+// 整理報告數據並顯示
+const reportData=organizeReportData(data);
+renderReportSummary(reportData);
 document.getElementById('success-modal').classList.remove('hidden');
-// 可替換為真實報告圖片URL（這裡使用隨機圖片示例）
-const reportImage=document.getElementById('report-image');
-reportImage.src=`https://picsum.photos/seed/${data.userId||Date.now()}/300/200`;
 },
 error:function(xhr,status,error){
 console.error("提交失敗：",status,error);
@@ -623,9 +707,40 @@ showError('提交失敗，請稍後再試（錯誤：'+status+'）');
 }
 });
 }
+
+// 渲染報告摘要
+function renderReportSummary(reportData){
+const {formattedUserInfo, factorSymptoms, summaryText, reportImageUrl}=reportData;
+const summaryContent=document.getElementById('summary-content');
+// 設置數據屬性用於分享
+summaryContent.dataset.summary=summaryText;
+summaryContent.dataset.image=reportImageUrl;
+// 渲染HTML內容
+let html=`<div class="font-medium text-primary mb-2">👤 基本資料</div>`;
+Object.entries(formattedUserInfo).forEach(([key,value])=>{
+html+=`<div class="flex justify-between"><span class="text-textSecondary">${key}：</span><span class="font-medium">${value}</span></div>`;
+});
+html+=`<div class="font-medium text-primary mt-4 mb-2">🩺 七大健康要素評估</div>`;
+Object.entries(factorSymptoms).forEach(([factorKey,factors])=>{
+const factorName=factorStyles[factorKey].label;
+html+=`<div class="mt-3"><div class="font-medium">【${factorName}】</div>`;
+if(factors.length>0){
+html+=`<div class="ml-3 mt-1 space-y-1">`;
+factors.forEach((item,index)=>{
+html+=`<div class="text-sm">${index+1}. ${item.name} <span class="text-textSecondary">(${item.duration} · ${item.severity})</span></div>`;
+});
+html+=`</div>`;
+}else{
+html+=`<div class="ml-3 text-sm text-textSecondary">無相關症狀</div>`;
+}
+html+=`</div>`;
+});
+summaryContent.innerHTML=html;
+}
+
+// 重置自檢表
 function resetChecklist(){
-const checkboxes=document.querySelectorAll('.symptom-checkbox');
-checkboxes.forEach(checkbox=>{
+document.querySelectorAll('.symptom-checkbox').forEach(checkbox=>{
 if(checkbox.checked){checkbox.checked=false;checkbox.dispatchEvent(new Event('change'));}
 });
 document.getElementById('filter-all').click();
@@ -641,33 +756,43 @@ document.getElementById('user-bp').value='';
 document.getElementById('user-glucose').value='';
 document.getElementById('user-job').value='';
 }
+
+// 強制顯示用戶資訊區域
 function forceShowUserInfo(){
 try{
 const userInfoSection=document.getElementById('user-info-section');
-if(!userInfoSection){console.error("用戶基本資訊區域未找到");alert("頁面加載失敗，請刷新頁面重試");return false;}
+if(!userInfoSection){alert("頁面加載失敗，請刷新頁面重試");return false;}
 userInfoSection.classList.remove('hidden');
 initControlButtons();
-console.log("用戶基本資訊區域已顯示");
 return true;
-}catch(error){console.error("顯示用戶基本資訊出錯：",error);alert("頁面加載失敗，請刷新頁面重試");return false;}
+}catch(error){console.error("顯示用戶資訊出錯：",error);alert("頁面加載失敗，請刷新頁面重試");return false;}
 }
+
+// 頁面加載初始化
 document.addEventListener('DOMContentLoaded',function(){
-console.log("頁面加載完成，開始初始化");
+console.log("頁面加載完成，初始化系統");
 setStatus('正在初始化系統，請稍候...');
 liff.init({liffId:LIFF_ID},{disableRedirect:true})
 .then(()=>{
-console.log("LIFF 初始化成功");
-if(!liff.isLoggedIn()){console.log("用戶未登錄，跳轉登錄");liff.login();}
-else{console.log("用戶已登錄，開始驗證信息");getProfileAndVerify();}
+console.log("LIFF初始化成功");
+if(!liff.isLoggedIn()){liff.login();}
+else{getProfileAndVerify();}
 })
-.catch(err=>{console.error("LIFF 初始化失敗：",err);showError('系統初始化失敗：'+err.message);});
+.catch(err=>{console.error("LIFF初始化失敗：",err);showError('系統初始化失敗：'+err.message);});
 });
+
+// 獲取LINE用戶資料並驗證
 function getProfileAndVerify(){
 setStatus('驗證使用者資訊中...');
 liff.getProfile()
-.then(profile=>{console.log("獲取用戶信息成功：",profile);callGasBackend(profile.userId,profile.displayName||'用戶');})
-.catch(err=>{console.error("獲取使用者資料失敗：",err);showError('取得使用者資料失敗：'+err.message);});
+.then(profile=>{
+console.log("獲取LINE用戶資料成功：",profile);
+callGasBackend(profile.userId,profile.displayName||document.getElementById('user-name').value.trim()||'用戶');
+})
+.catch(err=>{console.error("獲取LINE用戶資料失敗：",err);showError('取得使用者資料失敗：'+err.message);});
 }
+
+// 調用後端驗證
 function callGasBackend(userId,displayName){
 console.log("調用後端驗證用戶：",userId,displayName);
 $.ajax({
@@ -675,14 +800,19 @@ url:GAS_URL,
 dataType:'jsonp',
 jsonp:'callback',
 timeout:JSONP_TIMEOUT,
-data:{userId:userId,displayName:displayName,action:'verifyUser',needExpiryDate:true},
+data:{
+userId:userId,
+displayName:displayName, // 傳遞LINE用戶名稱到後端
+action:'verifyUser',
+needExpiryDate:true
+},
 success:function(resp){
 console.log("後端返回數據：",resp);
 if(resp.status==="error")showError(resp.message);
 else renderResult(resp);
 },
 error:function(xhr,status,error){
-console.error("AJAX 錯誤：",status,error);
+console.error("AJAX錯誤：",status,error);
 let errorMsg='與伺服器通訊失敗';
 if(status==='timeout')errorMsg='請求超時，請檢查網絡連接';
 else if(status==='parsererror')errorMsg='數據解析錯誤';
@@ -690,8 +820,10 @@ showError(errorMsg);
 }
 });
 }
+
+// 渲染驗證結果
 function renderResult(resp){
-console.log("開始渲染驗證結果和基本資訊");
+console.log("渲染驗證結果",resp);
 document.getElementById('status').classList.add('hidden');
 document.getElementById('error-message').classList.add('hidden');
 const card=document.getElementById('result-card');
