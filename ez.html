@@ -24,11 +24,11 @@ tailwind.config={theme:{extend:{colors:{primary:'#008C76',secondary:'#E8F9F7',ac
 body{font-feature-settings:"palt";letter-spacing:0.02em;}
 .symptom-card{min-height:120px;}
 @media (max-width:640px){
-  .symptom-card{min-height:110px;}
-  .factor-tag{font-size:0.7rem;padding:0.15rem 0.3rem;}
-  #symptoms-container{gap:2px;}
-  .btn-hover{transform:scale(1.02);}
-  .result-summary{font-size:0.9rem;}
+.symptom-card{min-height:110px;}
+.factor-tag{font-size:0.7rem;padding:0.15rem 0.3rem;}
+#symptoms-container{gap:2px;}
+.btn-hover{transform:scale(1.02);}
+.result-summary{font-size:0.9rem;}
 }
 </style>
 </head>
@@ -67,59 +67,59 @@ body{font-feature-settings:"palt";letter-spacing:0.02em;}
 <p class="text-xs text-textSecondary/80"><i class="fa fa-info-circle text-primary mr-1"></i>請根據自身狀況如實填寫，系統將為您提供專業參考</p>
 </div>
 </div>
-<div id="user-info-section" class="hidden scale-in bg-neutral rounded-2xl p-4 md:p-5 mb-4 shadow-elevation-1">
-<div class="text-center mb-4">
+<div id="user-info-section" class="hidden scale-in bg-neutral rounded-2xl p-3 md:p-4 mb-4 shadow-elevation-1">
+<div class="text-center mb-3">
 <h2 class="text-lg md:text-xl font-bold text-textPrimary mb-1"><span class="gradient-text bg-gradient-to-r from-primary to-[#006658]">用戶基本資訊</span></h2>
-<p class="text-textSecondary max-w-2xl mx-auto text-xs">請根據實際情況填寫以下資訊，幫助系統更精確地評估您的健康狀態</p>
+<p class="text-textSecondary max-w-2xl mx-auto text-xs">請根據實際情況填寫，幫助系統精確評估</p>
 </div>
-<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-4">
-<div class="space-y-1.5">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-2 mb-3">
+<div class="space-y-1">
 <label class="block text-xs font-medium text-textPrimary">姓名 <span class="text-red-500">*</span></label>
-<input type="text" id="user-name" class="w-full border border-gray-200 rounded-lg px-2.5 py-2 text-sm input-focus bg-white" placeholder="請輸入真實姓名" required>
+<input type="text" id="user-name" class="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm input-focus bg-white" placeholder="請輸入真實姓名" required>
 </div>
-<div class="space-y-1.5">
+<div class="space-y-1">
 <label class="block text-xs font-medium text-textPrimary">年齡 <span class="text-red-500">*</span></label>
-<input type="number" id="user-age" min="0" max="120" class="w-full border border-gray-200 rounded-lg px-2.5 py-2 text-sm input-focus bg-white" placeholder="請輸入年齡" required>
+<input type="number" id="user-age" min="0" max="120" class="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm input-focus bg-white" placeholder="請輸入年齡" required>
 </div>
-<div class="space-y-1.5">
+<div class="space-y-1">
 <label class="block text-xs font-medium text-textPrimary">性別 <span class="text-red-500">*</span></label>
-<select id="user-gender" class="w-full border border-gray-200 rounded-lg px-2.5 py-2 text-sm input-focus bg-white" required>
+<select id="user-gender" class="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm input-focus bg-white" required>
 <option value="">請選擇性別</option>
 <option value="male">男</option>
 <option value="female">女</option>
 </select>
 </div>
-<div class="space-y-1.5">
+<div class="space-y-1">
 <label class="block text-xs font-medium text-textPrimary">身高 (cm)</label>
-<input type="number" id="user-height" min="50" max="250" class="w-full border border-gray-200 rounded-lg px-2.5 py-2 text-sm input-focus bg-white" placeholder="選填，例如：175">
+<input type="number" id="user-height" min="50" max="250" class="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm input-focus bg-white" placeholder="選填">
 </div>
-<div class="space-y-1.5">
+<div class="space-y-1">
 <label class="block text-xs font-medium text-textPrimary">體重 (kg)</label>
-<input type="number" id="user-weight" min="10" max="200" step="0.1" class="w-full border border-gray-200 rounded-lg px-2.5 py-2 text-sm input-focus bg-white" placeholder="選填，例如：68.5">
+<input type="number" id="user-weight" min="10" max="200" step="0.1" class="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm input-focus bg-white" placeholder="選填">
 </div>
-<div class="space-y-1.5">
+<div class="space-y-1">
 <label class="block text-xs font-medium text-textPrimary">血壓 (mmHg)</label>
-<input type="text" id="user-bp" class="w-full border border-gray-200 rounded-lg px-2.5 py-2 text-sm input-focus bg-white" placeholder="選填，例如：120/80">
+<input type="text" id="user-bp" class="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm input-focus bg-white" placeholder="選填，例：120/80">
 </div>
-<div class="space-y-1.5">
+<div class="space-y-1">
 <label class="block text-xs font-medium text-textPrimary">糖化血色素 (%)</label>
-<input type="number" id="user-glucose" min="3" max="15" step="0.1" class="w-full border border-gray-200 rounded-lg px-2.5 py-2 text-sm input-focus bg-white" placeholder="選填，例如：5.7">
+<input type="number" id="user-glucose" min="3" max="15" step="0.1" class="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm input-focus bg-white" placeholder="選填">
 </div>
-<div class="space-y-1.5">
+<div class="space-y-1">
 <label class="block text-xs font-medium text-textPrimary">職業</label>
-<input type="text" id="user-job" class="w-full border border-gray-200 rounded-lg px-2.5 py-2 text-sm input-focus bg-white" placeholder="選填，例如：上班族">
+<input type="text" id="user-job" class="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm input-focus bg-white" placeholder="選填">
 </div>
 </div>
 <div class="text-center">
-<button id="next-to-checklist" class="bg-gradient-to-r from-primary to-[#006658] hover:from-[#007A69] hover:to-[#00594D] text-white font-bold py-2.5 px-6 rounded-xl shadow-elevation-2 transition btn-hover transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-primary/50">
+<button id="next-to-checklist" class="bg-gradient-to-r from-primary to-[#006658] hover:from-[#007A69] hover:to-[#00594D] text-white font-bold py-2 px-5 rounded-xl shadow-elevation-2 transition btn-hover transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-primary/50">
 <i class="fa fa-arrow-right mr-1.5"></i>繼續填寫自檢表
 </button>
 </div>
 </div>
 <div id="checklist-section" class="hidden scale-in">
-<div class="mb-4 text-center">
+<div class="mb-3 text-center">
 <h2 class="text-lg md:text-xl font-bold text-textPrimary mb-1"><span class="gradient-text bg-gradient-to-r from-primary to-[#006658]">自檢表填寫區域</span></h2>
-<p class="text-textSecondary max-w-2xl mx-auto mb-3 text-xs">請根據自身情況勾選對應症狀，並填寫症狀相關資訊，幫助我們更精確地評估您的健康狀態</p>
+<p class="text-textSecondary max-w-2xl mx-auto mb-2 text-xs">請勾選對應症狀並填寫相關資訊</p>
 <div class="mt-2 flex flex-wrap justify-center gap-1.5 text-xs">
 <span class="bg-blue-50 text-blue-700 factor-tag">氣血不足</span>
 <span class="bg-green-50 text-green-700 factor-tag">微循環不通</span>
@@ -130,35 +130,35 @@ body{font-feature-settings:"palt";letter-spacing:0.02em;}
 <span class="bg-indigo-50 text-indigo-700 factor-tag">情緒</span>
 </div>
 </div>
-<div class="bg-neutral rounded-2xl p-3 mb-4 shadow-elevation-1">
-<div class="flex flex-wrap gap-2 mb-3">
-<button id="filter-all" class="bg-primary text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-[#007A69] transition btn-hover shadow-elevation-1">
+<div class="bg-neutral rounded-2xl p-2 mb-3 shadow-elevation-1">
+<div class="flex flex-wrap gap-1.5 mb-2">
+<button id="filter-all" class="bg-primary text-white px-2.5 py-1 rounded-lg text-xs font-medium hover:bg-[#007A69] transition btn-hover shadow-elevation-1">
 <i class="fa fa-th-list mr-1"></i>顯示全部
 </button>
-<button data-factor="气血" class="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-blue-700 transition btn-hover shadow-elevation-1">
+<button data-factor="气血" class="bg-blue-600 text-white px-2.5 py-1 rounded-lg text-xs font-medium hover:bg-blue-700 transition btn-hover shadow-elevation-1">
 <i class="fa fa-tag mr-1"></i>氣血不足
 </button>
-<button data-factor="微循环" class="bg-green-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-green-700 transition btn-hover shadow-elevation-1">
+<button data-factor="微循环" class="bg-green-600 text-white px-2.5 py-1 rounded-lg text-xs font-medium hover:bg-green-700 transition btn-hover shadow-elevation-1">
 <i class="fa fa-tag mr-1"></i>微循環不通
 </button>
-<button data-factor="毒素" class="bg-yellow-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-yellow-700 transition btn-hover shadow-elevation-1">
+<button data-factor="毒素" class="bg-yellow-600 text-white px-2.5 py-1 rounded-lg text-xs font-medium hover:bg-yellow-700 transition btn-hover shadow-elevation-1">
 <i class="fa fa-tag mr-1"></i>毒素
 </button>
-<button data-factor="血脂" class="bg-orange-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-orange-700 transition btn-hover shadow-elevation-1">
+<button data-factor="血脂" class="bg-orange-600 text-white px-2.5 py-1 rounded-lg text-xs font-medium hover:bg-orange-700 transition btn-hover shadow-elevation-1">
 <i class="fa fa-tag mr-1"></i>血脂粘稠
 </button>
-<button data-factor="寒凉湿" class="bg-purple-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-purple-700 transition btn-hover shadow-elevation-1">
+<button data-factor="寒凉湿" class="bg-purple-600 text-white px-2.5 py-1 rounded-lg text-xs font-medium hover:bg-purple-700 transition btn-hover shadow-elevation-1">
 <i class="fa fa-tag mr-1"></i>寒涼濕症
 </button>
-<button data-factor="免疫" class="bg-pink-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-pink-700 transition btn-hover shadow-elevation-1">
+<button data-factor="免疫" class="bg-pink-600 text-white px-2.5 py-1 rounded-lg text-xs font-medium hover:bg-pink-700 transition btn-hover shadow-elevation-1">
 <i class="fa fa-tag mr-1"></i>免疫
 </button>
-<button data-factor="情绪" class="bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-indigo-700 transition btn-hover shadow-elevation-1">
+<button data-factor="情绪" class="bg-indigo-600 text-white px-2.5 py-1 rounded-lg text-xs font-medium hover:bg-indigo-700 transition btn-hover shadow-elevation-1">
 <i class="fa fa-tag mr-1"></i>情緒
 </button>
 </div>
 <div class="flex flex-wrap items-center justify-between gap-2">
-<button id="filter-selected" class="bg-gray-700 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-gray-800 transition btn-hover shadow-elevation-1">
+<button id="filter-selected" class="bg-gray-700 text-white px-2.5 py-1 rounded-lg text-xs font-medium hover:bg-gray-800 transition btn-hover shadow-elevation-1">
 <i class="fa fa-filter mr-1"></i>只看已選
 </button>
 <div class="text-textPrimary text-sm font-medium">
@@ -166,39 +166,36 @@ body{font-feature-settings:"palt";letter-spacing:0.02em;}
 </div>
 </div>
 </div>
-<div id="symptoms-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 mb-6"></div>
-<div class="text-center mt-6 mb-3">
-<button id="back-to-info" class="bg-gray-200 hover:bg-gray-300 text-textPrimary font-bold py-2 px-5 rounded-xl shadow-elevation-1 transition btn-hover mr-2">
+<div id="symptoms-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 mb-4"></div>
+<div class="text-center mt-4 mb-2">
+<button id="back-to-info" class="bg-gray-200 hover:bg-gray-300 text-textPrimary font-bold py-1.5 px-4 rounded-xl shadow-elevation-1 transition btn-hover mr-2">
 <i class="fa fa-arrow-left mr-1.5"></i>返回修改資訊
 </button>
-<button id="submit-checklist" class="bg-gradient-to-r from-primary to-[#006658] hover:from-[#007A69] hover:to-[#00594D] text-white font-bold py-2.5 px-6 rounded-xl shadow-elevation-2 transition btn-hover transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-primary/50">
+<button id="submit-checklist" class="bg-gradient-to-r from-primary to-[#006658] hover:from-[#007A69] hover:to-[#00594D] text-white font-bold py-2 px-5 rounded-xl shadow-elevation-2 transition btn-hover transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-primary/50">
 <i class="fa fa-paper-plane mr-1.5"></i>提交自檢表
 </button>
-<p class="text-xs text-textSecondary/70 mt-2">提交後將生成專業參考報告，請確保所填信息真實有效</p>
+<p class="text-xs text-textSecondary/70 mt-2">提交後將生成專業參考報告，請確保信息真實有效</p>
 </div>
 </div>
 </div>
 </div>
 <div id="success-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 hidden fade-in p-2">
-<div class="bg-cardBg rounded-2xl p-5 max-w-md w-full mx-2 text-center shadow-elevation-3 transform transition-all hover:shadow-elevation-hover">
-<div class="inline-flex items-center justify-center w-14 h-14 bg-green-100 rounded-full mb-4">
+<div class="bg-cardBg rounded-2xl p-4 max-w-md w-full mx-2 text-center shadow-elevation-3 transform transition-all hover:shadow-elevation-hover">
+<div class="inline-flex items-center justify-center w-14 h-14 bg-green-100 rounded-full mb-3">
 <i class="fa fa-check text-2xl text-primary"></i>
 </div>
 <h3 class="text-lg font-bold text-textPrimary mb-2">提交成功！</h3>
-<p class="text-textSecondary text-sm mb-4">已為您整理健康報告，可直接分享給好友</p>
-<div id="report-summary" class="border border-gray-100 rounded-xl p-3 mb-4 bg-neutral/50 text-left result-summary">
+<p class="text-textSecondary text-sm mb-3">已為您整理健康報告，可直接分享給好友</p>
+<div id="report-summary" class="border border-gray-100 rounded-xl p-3 mb-3 bg-neutral/50 text-left result-summary">
 <h4 class="text-sm font-medium text-textPrimary mb-2 flex items-center"><i class="fa fa-file-text-o text-primary mr-1.5"></i>健康報告摘要</h4>
 <div id="summary-content" class="text-xs space-y-1.5"></div>
 </div>
-<div class="flex gap-2 mb-4">
+<div class="flex gap-2 mb-3">
 <button id="share-line-btn" class="flex-1 bg-[#00C300] hover:bg-[#00A800] text-white font-medium py-2 px-3 rounded-lg transition btn-hover shadow-elevation-1 flex items-center justify-center">
 <i class="fa fa-line-chart mr-1"></i>LINE分享
 </button>
 <button id="native-share-btn" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-3 rounded-lg transition btn-hover shadow-elevation-1 flex items-center justify-center">
 <i class="fa fa-share-alt mr-1"></i>原生分享
-</button>
-<button id="save-image-btn" class="flex-1 bg-gray-700 hover:bg-gray-800 text-white font-medium py-2 px-3 rounded-lg transition btn-hover shadow-elevation-1 flex items-center justify-center">
-<i class="fa fa-download mr-1"></i>保存圖片
 </button>
 </div>
 <button id="close-modal" class="bg-primary hover:bg-[#007A69] text-white font-bold py-2 px-5 rounded-lg transition btn-hover shadow-elevation-1 w-full">
@@ -366,7 +363,7 @@ Object.entries(factorStyles).forEach(([key,style])=>{if(symptom[key]==="○")rel
 const durationOptionsHtml=durationOptions.map(option=>`<option value="${option.value}">${option.label}</option>`).join('');
 const severityOptionsHtml=severityOptions.map(option=>`<option value="${option.value}">${option.label}</option>`).join('');
 const card=document.createElement('div');
-card.className='symptom-card bg-cardBg border border-gray-100 rounded-xl p-2.5 shadow-elevation-1 card-hover';
+card.className='symptom-card bg-cardBg border border-gray-100 rounded-xl p-2 shadow-elevation-1 card-hover';
 card.dataset.seq=symptom.seq;
 card.dataset.factors=Object.entries(factorStyles).filter(([key])=>symptom[key]==="○").map(([key])=>key).join(',');
 card.style.opacity='0';
@@ -379,20 +376,20 @@ card.innerHTML=`
 <input type="checkbox" id="symptom-${symptom.seq}" class="symptom-checkbox h-4 w-4 text-primary rounded border-gray-300 input-focus" data-seq="${symptom.seq}">
 </div>
 <div class="flex-1">
-<div class="flex justify-between items-start mb-1.5">
+<div class="flex justify-between items-start mb-1">
 <label for="symptom-${symptom.seq}" class="text-textPrimary font-medium cursor-pointer text-sm">
 <span class="text-primary mr-1 font-semibold">[${symptom.seq}]</span>${symptom.symptom}
 </label>
 </div>
-<div class="flex flex-wrap gap-1 mb-1.5">
+<div class="flex flex-wrap gap-1 mb-1">
 ${relatedFactors.length>0?relatedFactors.join(''):'<span class="factor-tag bg-gray-50 text-gray-500">無相關要素</span>'}
 </div>
 <div class="symptom-details hidden mt-2 pt-2 border-t border-gray-100">
 <div class="grid grid-cols-2 gap-2">
 <div><label class="block text-xs text-textSecondary mb-1">時間長短</label>
-<select class="duration-select w-full border border-gray-200 rounded-lg px-2 py-1.2 text-xs input-focus bg-white">${durationOptionsHtml}</select></div>
+<select class="duration-select w-full border border-gray-200 rounded-lg px-2 py-1 text-xs input-focus bg-white">${durationOptionsHtml}</select></div>
 <div><label class="block text-xs text-textSecondary mb-1">症狀輕重</label>
-<select class="severity-select w-full border border-gray-200 rounded-lg px-2 py-1.2 text-xs input-focus bg-white">${severityOptionsHtml}</select></div>
+<select class="severity-select w-full border border-gray-200 rounded-lg px-2 py-1 text-xs input-focus bg-white">${severityOptionsHtml}</select></div>
 </div>
 </div>
 </div>
@@ -531,12 +528,7 @@ summaryText+=`\n【${factorName}】：無相關症狀\n`;
 }
 });
 summaryText+=`\n💡 建議：根據自檢結果關注對應健康問題，必要時諮詢專業醫師`;
-return {
-formattedUserInfo,
-factorSymptoms,
-summaryText,
-reportImageUrl:`https://picsum.photos/seed/${submitData.userId||Date.now()}/800/600`
-};
+return {formattedUserInfo,factorSymptoms,summaryText};
 }
 
 function initControlButtons(){
@@ -611,47 +603,30 @@ alert('請在 LINE 應用內打開以使用LINE分享功能');
 return;
 }
 const summaryText=document.getElementById('summary-content').dataset.summary;
-const reportImageUrl=document.getElementById('summary-content').dataset.image;
-await liff.shareTargetPicker([
-{type:'text',text:summaryText},
-{type:'image',originalContentUrl:reportImageUrl,previewImageUrl:reportImageUrl}
-]);
+await liff.shareTargetPicker([{type:'text',text:summaryText}]);
 alert('LINE分享成功！');
 }catch(error){
 console.error('LINE分享失敗：',error);
-alert('LINE分享失敗，請嘗試原生分享或保存圖片分享');
+alert('LINE分享失敗，請嘗試原生分享');
 }
 });
 
 document.getElementById('native-share-btn').addEventListener('click',function(){
 const summaryText=document.getElementById('summary-content').dataset.summary;
-const reportImageUrl=document.getElementById('summary-content').dataset.image;
 if(navigator.share){
 navigator.share({
 title:'🧬 彥彬健康自檢報告',
 text:summaryText,
-url:reportImageUrl
+url:window.location.href
 }).then(()=>{
 alert('原生分享成功！');
 }).catch((error)=>{
 console.error('原生分享失敗：',error);
-alert('原生分享失敗，請手動保存圖片分享');
+alert('原生分享失敗，請手動複製分享');
 });
 }else{
-alert('您的設備不支持原生分享，請使用保存圖片功能');
-document.getElementById('save-image-btn').click();
+alert('您的設備不支持原生分享，請手動複製報告內容');
 }
-});
-
-document.getElementById('save-image-btn').addEventListener('click',function(){
-const reportImageUrl=document.getElementById('summary-content').dataset.image;
-const link=document.createElement('a');
-link.href=reportImageUrl;
-link.download=`${new Date().toLocaleDateString()}_健康自檢報告.jpg`;
-document.body.appendChild(link);
-link.click();
-document.body.removeChild(link);
-alert('圖片已開始下載，可手動分享給好友');
 });
 
 document.getElementById('close-modal').addEventListener('click',function(){
@@ -668,8 +643,15 @@ return{
 userId:liff.getDecodedIDToken()?.sub||'',
 displayName:liffProfile.displayName||document.getElementById('user-name').value.trim()||'用戶',
 submitTime:new Date().toISOString(),
-userBasicInfo:window.userBasicInfo||{},
-selectedSymptoms:Array.from(document.querySelectorAll('.symptom-checkbox:checked')).map(checkbox=>{
+userName:document.getElementById('user-name').value.trim(),
+userAge:document.getElementById('user-age').value.trim(),
+userGender:document.getElementById('user-gender').value,
+userHeight:document.getElementById('user-height').value.trim()||'',
+userWeight:document.getElementById('user-weight').value.trim()||'',
+userBp:document.getElementById('user-bp').value.trim()||'',
+userGlucose:document.getElementById('user-glucose').value.trim()||'',
+userJob:document.getElementById('user-job').value.trim()||'',
+selectedSymptoms:JSON.stringify(Array.from(document.querySelectorAll('.symptom-checkbox:checked')).map(checkbox=>{
 const seq=checkbox.dataset.seq;
 const card=checkbox.closest('.symptom-card');
 const symptomName=card.querySelector('label').textContent.replace(/^\[\d+\]/,'').trim();
@@ -683,7 +665,7 @@ durationText:durationOptions.find(opt=>opt.value===duration)?.label||'',
 severity:severity,
 severityText:severityOptions.find(opt=>opt.value===severity)?.label||''
 };
-})
+}))
 };
 }
 
@@ -696,13 +678,7 @@ url:GAS_URL,
 dataType:'jsonp',
 jsonp:'callback',
 timeout:JSONP_TIMEOUT,
-data:{
-action:'submitChecklist',
-data:JSON.stringify({
-...data,
-displayName:data.displayName||'未知用戶'
-})
-},
+data:data,
 success:function(resp){
 console.log("提交成功：",resp);
 document.getElementById('status').classList.add('hidden');
@@ -719,10 +695,9 @@ showError('提交失敗，請稍後再試（錯誤：'+status+'）');
 }
 
 function renderReportSummary(reportData){
-const {formattedUserInfo, factorSymptoms, summaryText, reportImageUrl}=reportData;
+const {formattedUserInfo, factorSymptoms, summaryText}=reportData;
 const summaryContent=document.getElementById('summary-content');
 summaryContent.dataset.summary=summaryText;
-summaryContent.dataset.image=reportImageUrl;
 let html=`<div class="font-medium text-primary mb-1.5">👤 基本資料</div>`;
 Object.entries(formattedUserInfo).forEach(([key,value])=>{
 html+=`<div class="flex justify-between"><span class="text-textSecondary">${key}：</span><span class="font-medium">${value}</span></div>`;
