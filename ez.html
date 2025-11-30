@@ -774,7 +774,7 @@ let html=`
 const infoEntries=Object.entries(formattedUserInfo),stEntry=infoEntries.find(([k])=>k==='提交時間');
 infoEntries.forEach(([k,v])=>{
 if(k!=='提交時間'){
-const label=k==='血糖'?'血糖（糖化血色素）':k;
+const label=k==='血糖'?'血糖':k;
 html+=`<div class="flex justify-between">
 <span class="text-[#4a5568] font-medium">${label}：</span>
 <span class="text-[#2d3748]">${v}</span>
@@ -786,10 +786,10 @@ html+=`</div></div>
 <div class="mb-8">
 <div class="flex justify-between items-center mb-4">
 <div class="text-xl font-semibold text-[#2d3748] flex items-center">
-<i class="fa fa-chart-pie text-primary mr-3 text-lg"></i>統計資訊
+<i class="fa fa-chart-pie text-primary mr-3 text-lg"></i>
 </div>
 <div class="bg-primary/10 text-primary px-4 py-2 rounded-full text-base font-medium">
-總選取症狀數：${ts} 項
+總症狀數：${ts} 項
 </div>
 </div>
 </div>
