@@ -445,7 +445,6 @@ st+=`\n💡 建議：根據自檢結果關注對應健康問題，必要時諮�
 return {formattedUserInfo:fui,factorSymptoms:ffs,summaryText:st};
 }
 
-// 下載圖片工具函數（獨立提取，確保穩定）
 function downloadImage(dataUrl,fileName){
 try{
 const link=document.createElement('a');
@@ -463,7 +462,6 @@ return false;
 }
 }
 
-// 添加關閉按鈕
 function addShareCloseButton(modalContent){
 const btn=document.createElement('button');
 btn.className='share-close-btn mt-3 w-full py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors';
@@ -477,7 +475,6 @@ modalContent.appendChild(btn);
 }
 
 function initControlButtons(){
-// 下一步按鈕
 document.getElementById('next-to-checklist').addEventListener('click',function(){
 const n=document.getElementById('user-name').value.trim(),a=document.getElementById('user-age').value.trim(),g=document.getElementById('user-gender').value;
 if(!n){alert('請輸入姓名');document.getElementById('user-name').focus();return;}
@@ -498,7 +495,6 @@ initFilterButtons();
 document.getElementById('checklist-section').scrollIntoView({behavior:'smooth'});
 });
 
-// 返回按鈕
 document.getElementById('back-to-info').addEventListener('click',function(){
 document.getElementById('checklist-section').classList.add('hidden');
 document.getElementById('user-info-section').classList.remove('hidden');
@@ -515,7 +511,6 @@ document.getElementById('user-job').value=window.userBasicInfo.job||'';
 document.getElementById('user-info-section').scrollIntoView({behavior:'smooth'});
 });
 
-// 提交按鈕
 document.getElementById('submit-checklist').addEventListener('click',function(){
 const sc=updateSelectedCount();
 if(sc===0){alert('請至少勾選一個症狀');return;}
@@ -529,18 +524,16 @@ const sd=collectSubmitData();
 submitChecklistData(sd);
 });
 
-// 核心修復：分享按鈕（解決報告未找到、LINE分享問題）
+// 核心修復：美化分享畫面+LINE分享僅保留指定文字
 const shareBtn=document.getElementById('native-share-btn');
 if(shareBtn){
 shareBtn.addEventListener('click',async function(e){
 e.stopPropagation();e.preventDefault();
 let scEl,mc,st,canvas,dataUrl,fileName;
 try{
-// 1. 增強DOM元素獲取（添加重試機制）
 scEl=document.getElementById('summary-content');
 mc=document.querySelector('#success-modal .modal-content')||document.getElementById('success-modal');
 if(!scEl||!mc){
-// 嘗試直接從DOM查詢報告內容
 const rs=document.getElementById('report-summary');
 if(rs)scEl=rs.querySelector('.summary-content')||rs;
 if(!scEl){
@@ -550,24 +543,16 @@ return;
 }
 }
 
-// 2. 確保報告數據存在
-st=scEl.dataset.summary||document.getElementById('summary-content')?.dataset.summary;
-if(!st){
-// 重新構建摘要文本（降级方案）
-const reportData=window.reportData||{};
-st=reportData.summaryText||'🧬 彥彬健康自檢報告\n\n未能加載完整數據，建議下載圖片查看詳情';
-}
+// LINE分享僅保留"彥彬健康自檢報告"文字
+st='彥彬健康自檢報告';
 
-// 3. 移除舊按鈕+顯示加載狀態
 const escb=mc.querySelector('.share-close-btn');
 escb&&escb.remove();
 shareBtn.disabled=true;
 shareBtn.innerHTML='<i class="fa fa-spinner fa-spin mr-1"></i> 處理中...';
 
-// 4. 確保html2canvas加載完成
 if(!window.html2canvas){
 alert('正在加載分享所需組件，請稍候...');
-// 動態加載html2canvas
 const script=document.createElement('script');
 script.src='https://html2canvas.hertzen.com/dist/html2canvas.min.js';
 script.onload=()=>this.click();
@@ -576,68 +561,63 @@ document.head.appendChild(script);
 return;
 }
 
-// 5. 優化截圖配置（確保LINE兼容）
+// 美化截圖樣式
 scEl.style.backgroundColor='#ffffff';
-scEl.style.padding='16px';
+scEl.style.padding='24px';
 scEl.style.width='100%';
 scEl.style.boxSizing='border-box';
+scEl.style.borderRadius='12px';
+scEl.style.boxShadow='0 4px 20px rgba(0,0,0,0.08)';
+
 canvas=await html2canvas(scEl,{
-scale:1.0,// 降低分辨率確保LINE兼容
+scale:1.2,// 適當提高分辨率
 useCORS:true,
 allowTaint:true,
 logging:false,
 backgroundColor:'#ffffff',
-width:Math.min(scEl.offsetWidth,800),// 限制最大寬度
+width:Math.min(scEl.offsetWidth,800),
 height:scEl.offsetHeight
 });
 
-// 6. 圖片處理（LINE兼容格式）
-dataUrl=canvas.toDataURL('image/png',0.5);
+dataUrl=canvas.toDataURL('image/png',0.7);
 fileName=`彥彬健康自檢報告_${new Date().toLocaleDateString()}.png`;
 const imgBlob=await (await fetch(dataUrl)).blob();
-// 確保文件大小符合LINE要求（<5MB）
 let file;
 if(imgBlob.size>5*1024*1024){
 alert('圖片體積過大，正在壓縮...');
-dataUrl=canvas.toDataURL('image/png',0.3);
+dataUrl=canvas.toDataURL('image/png',0.4);
 const compressedBlob=await (await fetch(dataUrl)).blob();
 file=new File([compressedBlob],fileName,{type:'image/png'});
 }else{
 file=new File([imgBlob],fileName,{type:'image/png'});
 }
 
-// 7. LINE優化分享邏輯
+// LINE分享邏輯（僅保留指定文字）
 if(navigator.share&&typeof navigator.share==='function'){
 try{
-// 專門針對LINE的分享數據格式
 const shareData={
-title:'🧬 彥彬健康自檢報告',
-text:st.length>100?st.substring(0,100)+'...':st,
+title:'彥彬健康自檢報告',
+text:st,// 僅保留指定文字
 files:[file]
 };
 
-// 兼容LINE的canShare檢測
 const canShare=navigator.canShare?await navigator.canShare(shareData):true;
 if(canShare){
 await navigator.share(shareData);
 alert('分享成功！已發送到LINE群組/好友');
 }else{
-// 降级：先分享文字，再下載圖片
 await navigator.share({title:shareData.title,text:shareData.text});
 alert('文字已分享，圖片將自動下載');
 downloadImage(dataUrl,fileName);
 }
 }catch(err){
 console.error('LINE分享失敗：',err);
-// 用戶取消不提示
 if(err.name!=='AbortError'){
-// 強制下載，確保用戶能獲取
 downloadImage(dataUrl,fileName);
 alert(`分享失敗：${err.message||'未知錯誤'}，已自動下載報告圖片`);
 }
 }
 }else{
-// 不支持原生分享：直接下載+複製文字
 downloadImage(dataUrl,fileName);
 try{
 await navigator.clipboard.writeText(st);
@@ -648,20 +628,17 @@ alert('已下載報告圖片，請手動複製文字內容到LINE分享');
 }
 }catch(err){
 console.error('分享總體錯誤：',err);
-// 最終降级方案：無論如何都要下載
 downloadImage(dataUrl||canvas.toDataURL('image/png',0.3),fileName||`健康報告_${new Date().getTime()}.png`);
 alert('分享功能異常，已強制下載報告圖片');
 }finally{
-// 恢復按鈕狀態
 shareBtn.disabled=false;
 shareBtn.innerHTML='<i class="fa fa-share-alt mr-1"></i> 分享到LINE';
-// 添加關閉按鈕
 addShareCloseButton(mc);
 }
 });
 }
 
-// 單獨添加下載按鈕功能（獨立入口，確保可靠）
+// 下載按鈕功能
 const downloadBtn=document.getElementById('download-report-btn');
 if(downloadBtn){
 downloadBtn.addEventListener('click',async function(){
@@ -680,10 +657,13 @@ script.onerror=reject;
 document.head.appendChild(script);
 });
 }
+// 下載時也應用美化樣式
 scEl.style.backgroundColor='#ffffff';
-scEl.style.padding='16px';
-const canvas=await html2canvas(scEl,{scale:1.0,useCORS:true,backgroundColor:'#ffffff'});
-const dataUrl=canvas.toDataURL('image/png',0.6);
+scEl.style.padding='24px';
+scEl.style.borderRadius='12px';
+scEl.style.boxShadow='0 4px 20px rgba(0,0,0,0.08)';
+const canvas=await html2canvas(scEl,{scale:1.2,useCORS:true,backgroundColor:'#ffffff'});
+const dataUrl=canvas.toDataURL('image/png',0.7);
 downloadImage(dataUrl);
 this.innerHTML='<i class="fa fa-download mr-1"></i> 下載完成';
 setTimeout(()=>{
@@ -742,7 +722,6 @@ data:data,
 success:function(resp){
 document.getElementById('status').classList.add('hidden');
 const rd=organizeReportData({...data,userBasicInfo:window.userBasicInfo,selectedSymptoms:JSON.parse(data.selectedSymptoms)});
-// 保存報告數據到全局，便於分享時調用
 window.reportData=rd;
 renderReportSummary(rd);
 const mc=document.querySelector('#success-modal .modal-content')||document.getElementById('success-modal');
@@ -771,9 +750,9 @@ showError('提交失敗，請稍後再試（'+status+'）');
 });
 }
 
+// 核心美化：報告畫面美化
 function renderReportSummary(reportData){
 const {formattedUserInfo,factorSymptoms,summaryText}=reportData;
-// 確保容器存在，不存在則創建
 let sc=document.getElementById('summary-content');
 if(!sc){
 sc=document.createElement('div');
@@ -786,43 +765,95 @@ document.querySelector('#success-modal .modal-content')?.appendChild(rs)||docume
 sc.dataset.summary=summaryText;
 const ts=Object.values(factorSymptoms).reduce((s,f)=>s+f.length,0);
 
-// 基礎樣式確保截圖正常
+// 容器美化樣式
 const rs=document.getElementById('report-summary');
 rs.style.maxHeight='60vh';
 rs.style.overflowY='auto';
 rs.style.padding='16px';
 rs.style.boxSizing='border-box';
 rs.style.backgroundColor='#ffffff';
+rs.style.borderRadius='16px';
+rs.style.boxShadow='0 6px 24px rgba(0,0,0,0.1)';
+
+// 內容區美化樣式
 sc.style.width='100%';
 sc.style.backgroundColor='#ffffff';
-sc.style.padding='16px';
+sc.style.padding='20px';
 sc.style.boxSizing='border-box';
+sc.style.lineHeight='1.6';
 
-// 構建HTML
-let html=`<div class="font-medium text-primary mb-1.5">👤 基本資料</div><div class="info-grid">`;
+// 美化HTML結構
+let html=`
+<div class="text-center mb-6">
+<h3 class="text-xl font-bold text-[#2d3748] mb-1">彥彬健康自檢報告</h3>
+<div class="text-sm text-[#718096]">${formattedUserInfo.提交時間}</div>
+</div>
+<div class="bg-[#f8f9fa] rounded-10 p-4 mb-6">
+<div class="text-lg font-semibold text-[#2d3748] mb-3 flex items-center">
+<i class="fa fa-user-circle text-primary mr-2"></i>基本資料
+</div>
+<div class="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">`;
+
 const infoEntries=Object.entries(formattedUserInfo),stEntry=infoEntries.find(([k])=>k==='提交時間');
 infoEntries.forEach(([k,v])=>{
 if(k!=='提交時間'){
 const label=k==='血糖'?'血糖（糖化血色素）':k;
-html+=`<div class="info-item"><span class="text-textSecondary">${label}：</span><span class="font-medium">${v}</span></div>`;
+html+=`<div class="flex justify-between">
+<span class="text-[#4a5568]">${label}：</span>
+<span class="font-medium text-[#2d3748]">${v}</span>
+</div>`;
 }
 });
-html+=`</div>`;
-html+=`<div class="mt-1.5 text-sm"><span class="text-textSecondary">提交時間：</span><span class="font-medium">${stEntry[1]}</span></div>`;
-html+=`<div class="mt-2 text-sm"><span class="text-textSecondary">總選取症狀數：</span><span class="font-medium text-primary">${ts} 項</span></div>`;
-html+=`<div class="font-medium text-primary mt-3 mb-1.5">🩺 七大健康要素評估</div>`;
+
+html+=`</div></div>
+<div class="mb-6">
+<div class="flex justify-between items-center mb-3">
+<div class="text-lg font-semibold text-[#2d3748] flex items-center">
+<i class="fa fa-chart-pie text-primary mr-2"></i>統計資訊
+</div>
+<div class="bg-primary/10 text-primary px-3 py-1 rounded-full text-sm font-medium">
+總選取症狀數：${ts} 項
+</div>
+</div>
+</div>
+<div class="text-lg font-semibold text-[#2d3748] mb-4 flex items-center">
+<i class="fa fa-heartbeat text-primary mr-2"></i>七大健康要素評估
+</div>`;
+
+// 每個要素卡片美化
 Object.entries(factorSymptoms).forEach(([fk,f])=>{
 const fn=factorStyles[fk].label;
-html+=`<div class="mt-2"><div class="font-medium">【${fn}】（${f.length}項）</div><div class="ml-2 mt-1 space-y-1">`;
-f.forEach((i,idx)=>html+=`<div class="text-xs">${idx+1}. ${i.name} <span class="text-textSecondary">(${i.duration} · ${i.severity})</span></div>`);
+const colorClass=factorStyles[fk].className.split(' ')[0].replace('bg-','text-');
+html+=`<div class="bg-white border border-[#e8f4f8] rounded-10 p-4 mb-4 shadow-sm hover:shadow-md transition-shadow">
+<div class="font-semibold text-[#2d3748] mb-3 flex items-center">
+<span class="inline-block w-3 h-3 rounded-full ${factorStyles[fk].className.split(' ')[0]} mr-2"></span>
+【${fn}】（${f.length}項）
+</div>
+<div class="space-y-2 text-sm">`;
+
+f.forEach((i,idx)=>{
+html+=`<div class="flex justify-between items-start p-2 bg-[#fafafa] rounded-lg">
+<div class="font-medium text-[#2d3748]">${idx+1}. ${i.name}</div>
+<div class="text-right">
+<div class="text-[#4a5568]">${i.duration}</div>
+<div class="text-[#718096]">${i.severity}</div>
+</div>
+</div>`;
+});
+
 html+=`</div></div>`;
 });
+
+// 建議區美化
+html+=`<div class="mt-8 bg-primary/5 border border-primary/20 rounded-10 p-4 text-sm text-[#4a5568] italic">
+💡 建議：根據自檢結果關注對應健康問題，必要時諮詢專業醫師
+</div>`;
+
 sc.innerHTML=html;
 
-// 強制刷新DOM，確保元素存在
+// 強制刷新DOM
 setTimeout(()=>{
 rs.style.height=sc.offsetHeight+30+'px';
-// 手動觸發重繪
 rs.style.display='none';
 rs.offsetHeight;
 rs.style.display='block';
@@ -856,7 +887,6 @@ return true;
 }catch(e){console.error("顯示用戶資訊出錯：",e);alert("頁面加載失敗，請刷新");return false;}
 }
 
-// 頁面加載初始化
 document.addEventListener('DOMContentLoaded',function(){
 console.log("頁面加載完成，初始化系統");
 setStatus('正在初始化...');
@@ -958,7 +988,6 @@ card.classList.remove('hidden');
 setTimeout(()=>forceShowUserInfo(),300);
 }
 
-// 全局回調函數
 window.submitCallback=resp=>{console.log("submitCallback:",resp);return resp;};
 window.verifyCallback=resp=>{console.log("verifyCallback:",resp);return resp;};
 </script>
