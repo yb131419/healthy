@@ -205,18 +205,14 @@ body{font-feature-settings:"palt";letter-spacing:0.02em;}
 </button>
 </div>
 </div>
-<script>const LIFF_ID="2008578880-NznKeG2a";
+<script>
+const LIFF_ID="2008578880-NznKeG2a";
 const GAS_URL="https://script.google.com/macros/s/AKfycbykBtM2_PM7IZ-ZUU4tgTqVa1xGhVQFaZ523FXc4ivdLz_GZ09sdmL6s5zk7SdloFuG/exec";
 const JSONP_TIMEOUT=15000;
 const PERMANENT_EXPIRY_DATE="9999/12/31";
 const factorStyles={气血:{className:'bg-blue-50 text-blue-700',label:'氣血不足'},微循环:{className:'bg-green-50 text-green-700',label:'微循環不通'},毒素:{className:'bg-yellow-50 text-yellow-700',label:'毒素'},血脂:{className:'bg-orange-50 text-orange-700',label:'血脂粘稠'},寒凉湿:{className:'bg-purple-50 text-purple-700',label:'寒涼濕症'},免疫:{className:'bg-pink-50 text-pink-700',label:'免疫'},情绪:{className:'bg-indigo-50 text-indigo-700',label:'情緒'}};
 const durationOptions=[{value:'',label:'請選擇時間'},{value:'1w',label:'1周內'},{value:'1-3m',label:'1-3個月'},{value:'3-6m',label:'3-6個月'},{value:'6m-1y',label:'6個月-1年'},{value:'1-2y',label:'1-2年'},{value:'2-5y',label:'2-5年'},{value:'5y+',label:'5年以上'}];
-const severityOptions=[
-{value:'',label:'請選擇輕重'},
-{value:'mild',label:'輕微（不影響日常生活）'},
-{value:'moderate',label:'中等（偶爾影響生活）'},
-{value:'severe',label:'嚴重（明顯影響生活）'}
-];
+const severityOptions=[{value:'',label:'請選擇輕重'},{value:'mild',label:'輕微（不影響日常生活）'},{value:'moderate',label:'中等（偶爾影響生活）'},{value:'severe',label:'嚴重（明顯影響生活）'}];
 const fullSymptomData=[
 {seq:1,symptom:"記憶力下降",气血:"○",微循环:"",毒素:"",血脂:"",寒凉湿:"",免疫:"",情绪:""},
 {seq:2,symptom:"思維斷電",气血:"○",微循环:"",毒素:"",血脂:"",寒凉湿:"",免疫:"",情绪:""},
@@ -605,39 +601,62 @@ const submitData=collectSubmitData();
 submitChecklistData(submitData);
 });
 
-// 修復分享功能：優化分享邏輯，優先文字分享，圖片分享做降级處理
+// 唯一分享按鈕：修復截圖傳送問題，優化分享邏輯
 document.getElementById('native-share-btn').addEventListener('click',async function(){
 try{
 const summaryText=document.getElementById('summary-content').dataset.summary;
-// 優先嘗試文字分享（兼容性最好）
+const reportSummary=document.getElementById('report-summary');
+// 確保報告容器可見且完整渲染
+reportSummary.style.overflow='visible';
+reportSummary.style.display='block';
+// 優化html2canvas配置，確保截圖完整
+const canvas=await html2canvas(reportSummary,{
+scale:2,
+useCORS:true,
+allowTaint:true,
+logging:false,
+scrollY: -window.scrollY,
+scrollX: -window.scrollX,
+width: reportSummary.offsetWidth,
+height: reportSummary.offsetHeight,
+backgroundColor: '#ffffff'
+});
+const imgData=canvas.toDataURL('image/png');
+const imgBlob=await fetch(imgData).then(res=>res.blob());
+const fileName=`彥彬健康自檢報告_${new Date().toLocaleDateString()}.png`;
+const file=new File([imgBlob],fileName,{type:'image/png'});
+
+// 優先原生分享（支援文字+圖片）
 if(navigator.share){
 try{
 await navigator.share({
 title:'🧬 彥彬健康自檢報告',
 text:summaryText,
+files:[file],
 url:window.location.href
 }).then(()=>{
-alert('文字分享成功！');
-// 文字分享成功後嘗試圖片分享（可選）
-shareReportImage(summaryText);
-}).catch(async(error)=>{
-console.error('文字分享失敗：',error);
+alert('分享成功！');
+}).catch((error)=>{
+console.error('分享失敗：',error);
 if(error.name!=='AbortError'){
-// 降级為圖片分享或複製文字
-await shareReportImage(summaryText);
+// 降级為下載圖片
+downloadImage(imgData,fileName);
+alert('分享失敗，已自動下載報告圖片');
 }
 });
 }catch(e){
 console.error('分享API調用失敗：',e);
-await shareReportImage(summaryText);
+downloadImage(imgData,fileName);
+alert('已自動下載報告圖片，可手動分享');
 }
 }else{
-// 不支持原生分享，直接生成圖片並提示保存
-await shareReportImage(summaryText,true);
+// 不支援原生分享，直接下載
+downloadImage(imgData,fileName);
+alert('已自動下載報告圖片，可手動分享');
 }
 }catch(error){
 console.error('生成分享內容失敗：',error);
-// 最終降级：複製文字到剪貼板
+// 最終降级：複製文字
 try{
 await navigator.clipboard.writeText(summaryText);
 alert('分享失敗，已自動複製報告文字到剪貼板！');
@@ -648,58 +667,6 @@ alert('分享失敗，請手動複製報告內容');
 }
 });
 
-// 單獨的圖片分享函數
-async function shareReportImage(summaryText,forceDownload=false){
-try{
-const reportSummary=document.getElementById('report-summary');
-// 確保報告容器可滾動，避免渲染不全
-reportSummary.style.overflow='visible';
-// 生成報告圖片
-const canvas=await html2canvas(reportSummary,{
-scale:2,
-useCORS:true,
-logging:false,
-scrollY: -window.scrollY, // 解決滾動後渲染不全問題
-scrollX: -window.scrollX
-});
-const imgData=canvas.toDataURL('image/png');
-const imgBlob=await fetch(imgData).then(res=>res.blob());
-const fileName=`彥彬健康自檢報告_${new Date().toLocaleDateString()}.png`;
-const file=new File([imgBlob],fileName,{type:'image/png'});
-
-if(navigator.share&&!forceDownload){
-try{
-await navigator.share({
-title:'🧬 彥彬健康自檢報告',
-text:summaryText,
-files:[file],
-url:window.location.href
-}).then(()=>{
-alert('圖片分享成功！');
-}).catch((error)=>{
-console.error('圖片分享失敗：',error);
-if(error.name!=='AbortError'){
-// 降级為下載圖片
-downloadImage(imgData,fileName);
-alert('圖片分享失敗，已自動下載報告圖片');
-}
-});
-}catch(e){
-console.error('圖片分享API調用失敗：',e);
-downloadImage(imgData,fileName);
-alert('已自動下載報告圖片');
-}
-}else{
-// 直接下載圖片
-downloadImage(imgData,fileName);
-alert('已自動下載報告圖片，可手動分享');
-}
-}catch(error){
-console.error('生成圖片失敗：',error);
-throw error;
-}
-}
-
 // 圖片下載輔助函數
 function downloadImage(dataUrl,fileName){
 const link=document.createElement('a');
@@ -709,13 +676,6 @@ document.body.appendChild(link);
 link.click();
 document.body.removeChild(link);
 }
-
-document.getElementById('close-modal').addEventListener('click',function(){
-document.getElementById('success-modal').classList.add('hidden');
-resetChecklist();
-document.getElementById('checklist-section').classList.add('hidden');
-document.getElementById('user-info-section').classList.remove('hidden');
-});
 }
 
 function collectSubmitData(){
@@ -787,15 +747,16 @@ showError('提交失敗，請稍後再試（錯誤：'+status+'）');
 });
 }
 
-// 優化報告渲染：添加滾動功能，確保全部內容可見
+// 優化報告渲染：確保截圖完整
 function renderReportSummary(reportData){
 const {formattedUserInfo, factorSymptoms, summaryText}=reportData;
 const summaryContent=document.getElementById('summary-content');
 summaryContent.dataset.summary=summaryText;
-// 報告容器添加滾動樣式
+// 優化報告容器樣式，確保截圖完整
 summaryContent.style.maxHeight='50vh';
 summaryContent.style.overflowY='auto';
-summaryContent.style.paddingRight='8px';
+summaryContent.style.padding='16px';
+summaryContent.style.backgroundColor='#ffffff';
 let html=`<div class="font-medium text-primary mb-1.5">👤 基本資料</div>`;
 html+=`<div class="info-grid">`;
 let infoEntries=Object.entries(formattedUserInfo);
@@ -822,8 +783,6 @@ html+=`<div class="ml-2 text-xs text-textSecondary">無相關症狀</div>`;
 html+=`</div>`;
 });
 summaryContent.innerHTML=html;
-// 確保操作按鈕始終可見（添加底部內邊距）
-summaryContent.style.paddingBottom='20px';
 }
 
 function resetChecklist(){
@@ -948,6 +907,7 @@ details.innerHTML=`
 card.classList.remove('hidden');
 setTimeout(()=>{forceShowUserInfo();},300);
 }
+
 window.submitCallback=function(resp){console.log("submitCallback:",resp);return resp;};
 window.verifyCallback=function(resp){console.log("verifyCallback:",resp);return resp;};
 </script>
