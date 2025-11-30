@@ -475,6 +475,7 @@ setTimeout(()=>{card.style.display='none';},300);
 }
 }
 
+// 優化：過濾無相關症狀的要素，不顯示在分享報告中
 function organizeReportData(submitData){
 const {userBasicInfo, selectedSymptoms, displayName, submitTime}=submitData;
 const factorSymptoms={气血:[],微循环:[],毒素:[],血脂:[],寒凉湿:[],免疫:[],情绪:[]};
@@ -492,6 +493,10 @@ severity:symptom.severityText
 });
 }
 });
+// 過濾空數組（無相關症狀的要素不顯示）
+const filteredFactorSymptoms=Object.fromEntries(
+Object.entries(factorSymptoms).filter(([_,factors])=>factors.length>0)
+);
 const formattedUserInfo={
 姓名:userBasicInfo.name||'未填寫',
 年齡:userBasicInfo.age?`${userBasicInfo.age}歲`:'未填寫',
@@ -514,27 +519,23 @@ Object.entries(formattedUserInfo).forEach(([key,value])=>{
 if(key!=='提交時間')summaryText+=`  ${key}：${value}\n`;
 });
 // 統計數據
-const totalSelected=Object.values(factorSymptoms).reduce((sum,factors)=>sum+factors.length,0);
-const abnormalFactors=Object.values(factorSymptoms).filter(f=>f.length>0).length;
+const totalSelected=Object.values(filteredFactorSymptoms).reduce((sum,factors)=>sum+factors.length,0);
+const abnormalFactors=Object.keys(filteredFactorSymptoms).length;
 summaryText+=`\n📊 統計資訊：\n`;
 summaryText+=`  總選取症狀數：${totalSelected} 項\n`;
 summaryText+=`  異常要素數：${abnormalFactors} 個\n\n`;
 summaryText+=`🩺 七大健康要素評估：\n`;
-Object.entries(factorSymptoms).forEach(([factorKey,factors])=>{
+Object.entries(filteredFactorSymptoms).forEach(([factorKey,factors])=>{
 const factorName=factorStyles[factorKey].label;
-if(factors.length>0){
 summaryText+=`\n【${factorName}】(${factors.length}項)：\n`;
 factors.forEach((item,index)=>{
 summaryText+=`  ${index+1}. ${item.name}\n`;
 summaryText+=`     ⏱️ 時間：${item.duration}\n`;
 summaryText+=`     ⚠️ 程度：${item.severity}\n`;
 });
-}else{
-summaryText+=`\n【${factorName}】：無相關症狀\n`;
-}
 });
 summaryText+=`\n💡 建議：根據自檢結果關注對應健康問題，必要時諮詢專業醫師`;
-return {formattedUserInfo,factorSymptoms,summaryText};
+return {formattedUserInfo,factorSymptoms:filteredFactorSymptoms,summaryText};
 }
 
 function initControlButtons(){
@@ -602,19 +603,24 @@ const submitData=collectSubmitData();
 submitChecklistData(submitData);
 });
 
-// 優化分享按鈕：适配iOS/平板、完整截圖、不分享链接
+// 優化分享：适配iOS/平板、完整截圖、不分享鏈接、新增分享後關閉按鈕
 document.getElementById('native-share-btn').addEventListener('click',async function(){
 try{
 const summaryText=document.getElementById('summary-content').dataset.summary;
 const reportSummary=document.getElementById('report-summary');
-// 截圖前滾動到頂部確保完整性
+const modalContent=document.querySelector('#success-modal .modal-content');
+// 移除之前可能存在的分享後關閉按鈕
+const existingShareCloseBtn=modalContent.querySelector('.share-close-btn');
+if(existingShareCloseBtn)existingShareCloseBtn.remove();
+
+// 截圖前準備：確保內容完整顯示
 window.scrollTo(0,0);
-// 確保報告容器可見且完整渲染
 reportSummary.style.overflow='visible';
 reportSummary.style.display='block';
-// 延遲確保滾動完成
-await new Promise(resolve=>setTimeout(resolve,300));
-// 優化html2canvas配置確保截圖完整
+reportSummary.style.minHeight=reportSummary.scrollHeight+'px'; // 確保高度足夠
+await new Promise(resolve=>setTimeout(resolve,300)); // 等待渲染完成
+
+// 優化html2canvas配置：確保完整捕獲基本資料到七大要素
 const canvas=await html2canvas(reportSummary,{
 scale:2,
 useCORS:true,
@@ -623,15 +629,17 @@ logging:false,
 scrollY:0,
 scrollX:0,
 width:reportSummary.offsetWidth,
-height:reportSummary.offsetHeight,
-backgroundColor:'#ffffff'
+height:reportSummary.scrollHeight, // 用scrollHeight確保全部內容
+backgroundColor:'#ffffff',
+windowWidth:reportSummary.offsetWidth,
+windowHeight:reportSummary.scrollHeight
 });
 const imgData=canvas.toDataURL('image/png');
 const imgBlob=await fetch(imgData).then(res=>res.blob());
 const fileName=`彥彬健康自檢報告_${new Date().toLocaleDateString()}.png`;
 const file=new File([imgBlob],fileName,{type:'image/png'});
 
-// 優先原生分享（僅文字+圖片，不包含鏈接）
+// 原生分享（僅文字+圖片，無鏈接）
 if(navigator.share){
 try{
 await navigator.share({
@@ -640,21 +648,26 @@ text:summaryText,
 files:[file]
 }).then(()=>{
 alert('分享成功！');
+// 新增分享後關閉按鈕
+addShareCloseButton(modalContent);
 }).catch((error)=>{
 console.error('分享失敗：',error);
 if(error.name!=='AbortError'){
 downloadImage(imgData,fileName);
 alert('分享失敗，已自動下載報告圖片');
+addShareCloseButton(modalContent);
 }
 });
 }catch(e){
 console.error('分享API調用失敗：',e);
 downloadImage(imgData,fileName);
 alert('已自動下載報告圖片，可手動分享');
+addShareCloseButton(modalContent);
 }
 }else{
 downloadImage(imgData,fileName);
 alert('已自動下載報告圖片，可手動分享');
+addShareCloseButton(modalContent);
 }
 }catch(error){
 console.error('生成分享內容失敗：',error);
@@ -665,8 +678,24 @@ alert('分享失敗，已自動複製報告文字到剪貼板！');
 console.error('剪貼板複製失敗：',clipboardErr);
 alert('分享失敗，請手動複製報告內容');
 }
+addShareCloseButton(modalContent);
 }
 });
+
+// 新增分享後關閉按鈕
+function addShareCloseButton(modalContent){
+const shareCloseBtn=document.createElement('button');
+shareCloseBtn.className='share-close-btn mt-3 w-full py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors';
+shareCloseBtn.innerHTML='<i class="fa fa-times mr-1"></i> 關閉分享結果';
+shareCloseBtn.addEventListener('click',function(){
+document.getElementById('success-modal').classList.add('hidden');
+resetChecklist();
+document.getElementById('user-info-section').scrollIntoView({behavior:'smooth'});
+});
+// 插入到分享按鈕下方
+const shareBtn=document.getElementById('native-share-btn');
+modalContent.insertBefore(shareCloseBtn,shareBtn.nextSibling);
+}
 
 // 圖片下載輔助函數
 function downloadImage(dataUrl,fileName){
@@ -731,7 +760,7 @@ userBasicInfo:window.userBasicInfo,
 selectedSymptoms:JSON.parse(data.selectedSymptoms)
 });
 renderReportSummary(reportData);
-// 新增關閉按鈕
+// 報告關閉按鈕
 const modalContent=document.querySelector('#success-modal .modal-content');
 if(modalContent&&!modalContent.querySelector('.close-modal-btn')){
 const closeBtn=document.createElement('button');
@@ -760,19 +789,22 @@ showError('提交失敗，請稍後再試（錯誤：'+status+'）');
 });
 }
 
-// 優化報告渲染：確保截圖完整+新增統計數量
+// 優化報告渲染：確保截圖包含完整內容，過濾無相關症狀
 function renderReportSummary(reportData){
 const {formattedUserInfo, factorSymptoms, summaryText}=reportData;
 const summaryContent=document.getElementById('summary-content');
 summaryContent.dataset.summary=summaryText;
 // 統計數據
 const totalSelectedSymptoms=Object.values(factorSymptoms).reduce((sum,factors)=>sum+factors.length,0);
-const abnormalFactorsCount=Object.values(factorSymptoms).filter(factors=>factors.length>0).length;
-// 優化報告容器樣式
-summaryContent.style.maxHeight='50vh';
-summaryContent.style.overflowY='auto';
+const abnormalFactorsCount=Object.keys(factorSymptoms).length;
+// 優化容器樣式確保截圖完整
+summaryContent.style.maxHeight='none';
+summaryContent.style.overflowY='visible';
 summaryContent.style.padding='16px';
 summaryContent.style.backgroundColor='#ffffff';
+summaryContent.style.width='100%';
+summaryContent.style.boxSizing='border-box';
+
 let html=`<div class="font-medium text-primary mb-1.5">👤 基本資料</div>`;
 html+=`<div class="info-grid">`;
 let infoEntries=Object.entries(formattedUserInfo);
@@ -783,27 +815,28 @@ html+=`<div class="info-item"><span class="text-textSecondary">${key}：</span><
 });
 html+=`</div>`;
 html+=`<div class="mt-1.5 text-sm"><span class="text-textSecondary">提交時間：</span><span class="font-medium">${submitTimeEntry[1]}</span></div>`;
-// 新增統計行
+// 統計行
 html+=`<div class="mt-2 text-sm">
 <span class="text-textSecondary">總選取症狀數：</span><span class="font-medium text-primary">${totalSelectedSymptoms} 項</span> | 
 <span class="text-textSecondary">異常要素數：</span><span class="font-medium text-primary">${abnormalFactorsCount} 個</span>
 </div>`;
 html+=`<div class="font-medium text-primary mt-3 mb-1.5">🩺 七大健康要素評估</div>`;
+// 只渲染有症狀的要素
 Object.entries(factorSymptoms).forEach(([factorKey,factors])=>{
 const factorName=factorStyles[factorKey].label;
-html+=`<div class="mt-2"><div class="font-medium">【${factorName}】</div>`;
-if(factors.length>0){
+html+=`<div class="mt-2"><div class="font-medium">【${factorName}】（${factors.length}項）</div>`;
 html+=`<div class="ml-2 mt-1 space-y-1">`;
 factors.forEach((item,index)=>{
 html+=`<div class="text-xs">${index+1}. ${item.name} <span class="text-textSecondary">(${item.duration} · ${item.severity})</span></div>`;
 });
-html+=`</div>`;
-}else{
-html+=`<div class="ml-2 text-xs text-textSecondary">無相關症狀</div>`;
-}
-html+=`</div>`;
+html+=`</div></div>`;
 });
 summaryContent.innerHTML=html;
+// 強制重新計算高度確保截圖完整
+setTimeout(()=>{
+const reportSummary=document.getElementById('report-summary');
+reportSummary.style.height=summaryContent.offsetHeight+40+'px'; // 增加預留空間
+},100);
 }
 
 function resetChecklist(){
@@ -846,6 +879,7 @@ else{getProfileAndVerify();}
 .catch(err=>{console.error("LIFF初始化失敗：",err);showError('系統初始化失敗：'+err.message);});
 });
 
+// 解決access token過期問題：過期時自動重新登錄
 function getProfileAndVerify(){
 setStatus('驗證使用者資訊中...');
 liff.getProfile()
@@ -853,7 +887,16 @@ liff.getProfile()
 console.log("獲取LINE用戶資料成功：",profile);
 callGasBackend(profile.userId,profile.displayName||'LINE用戶');
 })
-.catch(err=>{console.error("獲取LINE用戶資料失敗：",err);showError('取得使用者資料失敗：'+err.message);});
+.catch(err=>{
+console.error("獲取LINE用戶資料失敗：",err);
+// 判斷是否為token過期錯誤
+if(err.message.includes('expired') || err.message.includes('token') || err.message.includes('authentication')){
+setStatus('令牌已過期，重新登錄中...');
+setTimeout(()=>{liff.login();},1000); // 延遲登錄避免重複請求
+}else{
+showError('取得使用者資料失敗：'+err.message);
+}
+});
 }
 
 function callGasBackend(userId,displayName){
