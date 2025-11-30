@@ -205,8 +205,7 @@ body{font-feature-settings:"palt";letter-spacing:0.02em;}
 </button>
 </div>
 </div>
-<script>
-const LIFF_ID="2008578880-NznKeG2a";
+<script>const LIFF_ID="2008578880-NznKeG2a";
 const GAS_URL="https://script.google.com/macros/s/AKfycbykBtM2_PM7IZ-ZUU4tgTqVa1xGhVQFaZ523FXc4ivdLz_GZ09sdmL6s5zk7SdloFuG/exec";
 const JSONP_TIMEOUT=15000;
 const PERMANENT_EXPIRY_DATE="9999/12/31";
@@ -606,51 +605,110 @@ const submitData=collectSubmitData();
 submitChecklistData(submitData);
 });
 
+// 修復分享功能：優化分享邏輯，優先文字分享，圖片分享做降级處理
 document.getElementById('native-share-btn').addEventListener('click',async function(){
 try{
 const summaryText=document.getElementById('summary-content').dataset.summary;
+// 優先嘗試文字分享（兼容性最好）
+if(navigator.share){
+try{
+await navigator.share({
+title:'🧬 彥彬健康自檢報告',
+text:summaryText,
+url:window.location.href
+}).then(()=>{
+alert('文字分享成功！');
+// 文字分享成功後嘗試圖片分享（可選）
+shareReportImage(summaryText);
+}).catch(async(error)=>{
+console.error('文字分享失敗：',error);
+if(error.name!=='AbortError'){
+// 降级為圖片分享或複製文字
+await shareReportImage(summaryText);
+}
+});
+}catch(e){
+console.error('分享API調用失敗：',e);
+await shareReportImage(summaryText);
+}
+}else{
+// 不支持原生分享，直接生成圖片並提示保存
+await shareReportImage(summaryText,true);
+}
+}catch(error){
+console.error('生成分享內容失敗：',error);
+// 最終降级：複製文字到剪貼板
+try{
+await navigator.clipboard.writeText(summaryText);
+alert('分享失敗，已自動複製報告文字到剪貼板！');
+}catch(clipboardErr){
+console.error('剪貼板複製失敗：',clipboardErr);
+alert('分享失敗，請手動複製報告內容');
+}
+}
+});
+
+// 單獨的圖片分享函數
+async function shareReportImage(summaryText,forceDownload=false){
+try{
 const reportSummary=document.getElementById('report-summary');
+// 確保報告容器可滾動，避免渲染不全
+reportSummary.style.overflow='visible';
 // 生成報告圖片
 const canvas=await html2canvas(reportSummary,{
 scale:2,
 useCORS:true,
-logging:false
+logging:false,
+scrollY: -window.scrollY, // 解決滾動後渲染不全問題
+scrollX: -window.scrollX
 });
 const imgData=canvas.toDataURL('image/png');
 const imgBlob=await fetch(imgData).then(res=>res.blob());
 const fileName=`彥彬健康自檢報告_${new Date().toLocaleDateString()}.png`;
 const file=new File([imgBlob],fileName,{type:'image/png'});
-if(navigator.share){
-// 分享文字+圖片
+
+if(navigator.share&&!forceDownload){
+try{
 await navigator.share({
 title:'🧬 彥彬健康自檢報告',
 text:summaryText,
 files:[file],
 url:window.location.href
 }).then(()=>{
-alert('分享成功！');
+alert('圖片分享成功！');
 }).catch((error)=>{
-console.error('分享失敗：',error);
-// 降级為只分享文字
+console.error('圖片分享失敗：',error);
 if(error.name!=='AbortError'){
-navigator.share({
-title:'🧬 彥彬健康自檢報告',
-text:summaryText,
-url:window.location.href
-}).then(()=>alert('文字分享成功！')).catch(err=>{
-console.error('文字分享也失敗：',err);
-alert('分享失敗，請手動複製報告內容');
-});
+// 降级為下載圖片
+downloadImage(imgData,fileName);
+alert('圖片分享失敗，已自動下載報告圖片');
 }
 });
+}catch(e){
+console.error('圖片分享API調用失敗：',e);
+downloadImage(imgData,fileName);
+alert('已自動下載報告圖片');
+}
 }else{
-alert('您的設備不支持原生分享，請手動複製報告內容');
+// 直接下載圖片
+downloadImage(imgData,fileName);
+alert('已自動下載報告圖片，可手動分享');
 }
 }catch(error){
-console.error('生成分享內容失敗：',error);
-alert('分享失敗，請重試');
+console.error('生成圖片失敗：',error);
+throw error;
 }
-});
+}
+
+// 圖片下載輔助函數
+function downloadImage(dataUrl,fileName){
+const link=document.createElement('a');
+link.href=dataUrl;
+link.download=fileName;
+document.body.appendChild(link);
+link.click();
+document.body.removeChild(link);
+}
 
 document.getElementById('close-modal').addEventListener('click',function(){
 document.getElementById('success-modal').classList.add('hidden');
@@ -662,7 +720,6 @@ document.getElementById('user-info-section').classList.remove('hidden');
 
 function collectSubmitData(){
 const liffProfile=liff.getProfile()||{};
-// 症狀數據：只傳文本，不傳代碼
 const selectedSymptoms=Array.from(document.querySelectorAll('.symptom-checkbox:checked')).map(checkbox=>{
 const seq=checkbox.dataset.seq;
 const card=checkbox.closest('.symptom-card');
@@ -679,7 +736,7 @@ severityText:severityText
 return{
 action:'submitChecklist',
 userId:liff.getDecodedIDToken()?.sub||'',
-displayName:liffProfile.displayName||'LINE用戶',// 讀取LINE登錄者名稱
+displayName:liffProfile.displayName||'LINE用戶',
 submitTime:new Date().toISOString(),
 userName:document.getElementById('user-name').value.trim(),
 userAge:document.getElementById('user-age').value.trim(),
@@ -689,7 +746,7 @@ userWeight:document.getElementById('user-weight').value.trim()||'',
 userBp:document.getElementById('user-bp').value.trim()||'',
 userGlucose:document.getElementById('user-glucose').value.trim()||'',
 userJob:document.getElementById('user-job').value.trim()||'',
-selectedSymptoms:JSON.stringify(selectedSymptoms)// 只包含文本字段
+selectedSymptoms:JSON.stringify(selectedSymptoms)
 };
 }
 
@@ -714,6 +771,13 @@ selectedSymptoms:JSON.parse(data.selectedSymptoms)
 });
 renderReportSummary(reportData);
 document.getElementById('success-modal').classList.remove('hidden');
+// 確保模態框可滾動
+setTimeout(()=>{
+const modalContent=document.querySelector('#success-modal .modal-content');
+if(modalContent)modalContent.style.maxHeight='80vh';
+const reportContainer=document.getElementById('report-summary');
+if(reportContainer)reportContainer.style.maxHeight='60vh';
+},100);
 },
 error:function(xhr,status,error){
 console.error("提交失敗：",status,error);
@@ -723,10 +787,15 @@ showError('提交失敗，請稍後再試（錯誤：'+status+'）');
 });
 }
 
+// 優化報告渲染：添加滾動功能，確保全部內容可見
 function renderReportSummary(reportData){
 const {formattedUserInfo, factorSymptoms, summaryText}=reportData;
 const summaryContent=document.getElementById('summary-content');
 summaryContent.dataset.summary=summaryText;
+// 報告容器添加滾動樣式
+summaryContent.style.maxHeight='50vh';
+summaryContent.style.overflowY='auto';
+summaryContent.style.paddingRight='8px';
 let html=`<div class="font-medium text-primary mb-1.5">👤 基本資料</div>`;
 html+=`<div class="info-grid">`;
 let infoEntries=Object.entries(formattedUserInfo);
@@ -753,6 +822,8 @@ html+=`<div class="ml-2 text-xs text-textSecondary">無相關症狀</div>`;
 html+=`</div>`;
 });
 summaryContent.innerHTML=html;
+// 確保操作按鈕始終可見（添加底部內邊距）
+summaryContent.style.paddingBottom='20px';
 }
 
 function resetChecklist(){
