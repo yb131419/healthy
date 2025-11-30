@@ -359,7 +359,7 @@ cd.innerHTML=`
 <div class="flex justify-between items-start mb-1"><label for="symptom-${s.seq}" class="text-textPrimary font-medium cursor-pointer text-sm"><span class="text-primary mr-1 font-semibold">[${s.seq}]</span>${s.symptom}</label></div>
 <div class="flex flex-wrap gap-1 mb-1">${rf.length>0?rf.join(''):'<span class="factor-tag bg-gray-50 text-gray-500">無相關要素</span>'}</div>
 <div class="symptom-details hidden mt-2 pt-2 border-t border-gray-100">
-<div class="grid grid-cols-2 gap-2">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-2">
 <div><label class="block text-xs text-textSecondary mb-1">時間長短</label><select class="duration-select w-full border border-gray-200 rounded-lg px-2 py-1 text-xs input-focus bg-white">${doh}</select></div>
 <div><label class="block text-xs text-textSecondary mb-1">症狀輕重</label><select class="severity-select w-full border border-gray-200 rounded-lg px-2 py-1 text-xs input-focus bg-white">${soh}</select><div class="severity-note">備注：輕微(不影響生活)、中等(偶爾影響)、嚴重(明顯影響)</div></div>
 </div></div></div></div>`;
@@ -449,7 +449,7 @@ function downloadImage(dataUrl,fileName){
 try{
 const link=document.createElement('a');
 link.href=dataUrl;
-link.download=fileName||`彥彬健康自檢報告_${new Date().toLocaleDateString()}.png`;
+link.download=fileName||`🧬 彥彬自檢系統_${new Date().toLocaleDateString()}.png`;
 link.style.display='none';
 document.body.appendChild(link);
 link.click();
@@ -512,7 +512,6 @@ const sd=collectSubmitData();
 submitChecklistData(sd);
 });
 
-// 核心優化：取消關閉按鈕+高清大尺寸分享圖片
 const shareBtn=document.getElementById('native-share-btn');
 if(shareBtn){
 shareBtn.addEventListener('click',async function(e){
@@ -530,7 +529,7 @@ setTimeout(()=>this.click(),500);
 return;
 }
 }
-st='彥彬健康自檢報告';
+st='🧬 彥彬自檢系統';
 shareBtn.disabled=true;
 shareBtn.innerHTML='<i class="fa fa-spinner fa-spin mr-1"></i> 處理中...';
 
@@ -544,47 +543,42 @@ document.head.appendChild(script);
 return;
 }
 
-// 高清大尺寸設置：提高分辨率+取消寬度限制
 scEl.style.backgroundColor='#ffffff';
-scEl.style.padding='32px';
+scEl.style.padding='2rem';
 scEl.style.width='100%';
 scEl.style.boxSizing='border-box';
 scEl.style.borderRadius='16px';
 scEl.style.boxShadow='0 4px 24px rgba(0,0,0,0.12)';
 
-// 關鍵優化：scale=2.0（高清）、無寬度限制、高壓縮質量
 canvas=await html2canvas(scEl,{
-scale:2.0,// 2倍分辨率，確保清晰
+scale:2.0,
 useCORS:true,
 allowTaint:true,
 logging:false,
 backgroundColor:'#ffffff',
-width:scEl.offsetWidth,// 按實際寬度，更大尺寸
+width:scEl.offsetWidth,
 height:scEl.offsetHeight,
-dpi:300// 模擬高DPI，提升清晰度
+dpi:300
 });
 
-// 高質量壓縮（0.9=高清晰）
 dataUrl=canvas.toDataURL('image/png',0.9);
-fileName=`彥彬健康自檢報告_${new Date().toLocaleDateString()}.png`;
+fileName=`🧬 彥彬自檢系統_${new Date().toLocaleDateString()}.png`;
 const imgBlob=await (await fetch(dataUrl)).blob();
 let file;
 
-// 平衡清晰度和文件大小（LINE限制5MB）
 if(imgBlob.size>5*1024*1024){
 alert('圖片體積過大，輕微壓縮保持清晰...');
-dataUrl=canvas.toDataURL('image/png',0.8);// 輕度壓縮
+dataUrl=canvas.toDataURL('image/png',0.8);
 const compressedBlob=await (await fetch(dataUrl)).blob();
 file=new File([compressedBlob],fileName,{type:'image/png'});
 }else{
 file=new File([imgBlob],fileName,{type:'image/png'});
 }
 
-// LINE分享：僅指定文字+高清大圖
 if(navigator.share&&typeof navigator.share==='function'){
 try{
 const shareData={
-title:'彥彬健康自檢報告',
+title:'🧬 彥彬自檢系統',
 text:st,
 files:[file]
 };
@@ -620,7 +614,6 @@ shareBtn.innerHTML='<i class="fa fa-share-alt mr-1"></i> 分享到LINE';
 });
 }
 
-// 下載按鈕同步高清設置
 const downloadBtn=document.getElementById('download-report-btn');
 if(downloadBtn){
 downloadBtn.addEventListener('click',async function(){
@@ -640,7 +633,7 @@ document.head.appendChild(script);
 });
 }
 scEl.style.backgroundColor='#ffffff';
-scEl.style.padding='32px';
+scEl.style.padding='2rem';
 scEl.style.borderRadius='16px';
 scEl.style.boxShadow='0 4px 24px rgba(0,0,0,0.12)';
 const canvas=await html2canvas(scEl,{
@@ -712,7 +705,7 @@ window.reportData=rd;
 renderReportSummary(rd);
 document.getElementById('success-modal').classList.remove('hidden');
 setTimeout(()=>{
-mc&&(mc.style.maxHeight='90vh');// 擴大彈窗高度，適配大圖
+mc&&(mc.style.maxHeight='90vh');
 document.getElementById('report-summary')&&(document.getElementById('report-summary').style.maxHeight='80vh');
 },100);
 },
@@ -724,7 +717,6 @@ showError('提交失敗，請稍後再試（'+status+'）');
 });
 }
 
-// 核心美化+大尺寸適配
 function renderReportSummary(reportData){
 const {formattedUserInfo,factorSymptoms,summaryText}=reportData;
 let sc=document.getElementById('summary-content');
@@ -739,37 +731,35 @@ document.querySelector('#success-modal .modal-content')?.appendChild(rs)||docume
 sc.dataset.summary=summaryText;
 const ts=Object.values(factorSymptoms).reduce((s,f)=>s+f.length,0);
 
-// 容器大尺寸設置
 const rs=document.getElementById('report-summary');
 rs.style.maxHeight='80vh';
 rs.style.overflowY='auto';
-rs.style.padding='24px';
+rs.style.padding='1.5rem';
 rs.style.boxSizing='border-box';
 rs.style.backgroundColor='#ffffff';
 rs.style.borderRadius='16px';
 rs.style.boxShadow='0 8px 32px rgba(0,0,0,0.15)';
 rs.style.margin='0 auto';
-rs.style.width='95%';// 幾乎全屏宽度，更大尺寸
+rs.style.width='100%';
+rs.style.maxWidth='800px';
 
-// 內容區樣式優化（適配大圖）
 sc.style.width='100%';
 sc.style.backgroundColor='#ffffff';
-sc.style.padding='32px';
+sc.style.padding='1.5rem';
 sc.style.boxSizing='border-box';
 sc.style.lineHeight='1.8';
-sc.style.fontSize='15px';// 字號放大，確保清晰
+sc.style.fontSize='1rem';
 
-// 美化HTML結構（大尺寸适配）
 let html=`
-<div class="text-center mb-8">
-<h3 class="text-2xl font-bold text-[#2d3748] mb-2">彥彬健康自檢報告</h3>
+<div class="text-center mb-6">
+<h3 class="text-2xl md:text-3xl font-bold text-[#2d3748] mb-2">🧬 彥彬自檢系統</h3>
 <div class="text-base text-[#718096]">${formattedUserInfo.提交時間}</div>
 </div>
-<div class="bg-[#f8f9fa] rounded-12 p-6 mb-8">
+<div class="bg-[#f8f9fa] rounded-12 p-6 mb-6">
 <div class="text-xl font-semibold text-[#2d3748] mb-4 flex items-center">
 <i class="fa fa-user-circle text-primary mr-3 text-lg"></i>基本資料
 </div>
-<div class="grid grid-cols-2 gap-x-8 gap-y-4 text-base">`;
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-base">`;
 
 const infoEntries=Object.entries(formattedUserInfo),stEntry=infoEntries.find(([k])=>k==='提交時間');
 infoEntries.forEach(([k,v])=>{
@@ -783,7 +773,7 @@ html+=`<div class="flex justify-between">
 });
 
 html+=`</div></div>
-<div class="mb-8">
+<div class="mb-6">
 <div class="flex justify-between items-center mb-4">
 <div class="text-xl font-semibold text-[#2d3748] flex items-center">
 <i class="fa fa-chart-pie text-primary mr-3 text-lg"></i>
@@ -793,14 +783,13 @@ html+=`</div></div>
 </div>
 </div>
 </div>
-<div class="text-xl font-semibold text-[#2d3748] mb-6 flex items-center">
+<div class="text-xl font-semibold text-[#2d3748] mb-4 flex items-center">
 <i class="fa fa-heartbeat text-primary mr-3 text-lg"></i>七大健康要素評估
 </div>`;
 
-// 要素卡片大尺寸優化
 Object.entries(factorSymptoms).forEach(([fk,f])=>{
 const fn=factorStyles[fk].label;
-html+=`<div class="bg-white border border-[#e8f4f8] rounded-12 p-6 mb-6 shadow-sm hover:shadow-md transition-shadow">
+html+=`<div class="bg-white border border-[#e8f4f8] rounded-12 p-6 mb-5 shadow-sm hover:shadow-md transition-shadow">
 <div class="font-semibold text-lg text-[#2d3748] mb-4 flex items-center">
 <span class="inline-block w-4 h-4 rounded-full ${factorStyles[fk].className.split(' ')[0]} mr-3"></span>
 【${fn}】（${f.length}項）
@@ -808,9 +797,9 @@ html+=`<div class="bg-white border border-[#e8f4f8] rounded-12 p-6 mb-6 shadow-s
 <div class="space-y-3 text-base">`;
 
 f.forEach((i,idx)=>{
-html+=`<div class="flex justify-between items-center p-3 bg-[#fafafa] rounded-lg">
-<div class="font-medium text-[#2d3748]">${idx+1}. ${i.name}</div>
-<div class="text-right">
+html+=`<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center p-3 bg-[#fafafa] rounded-lg">
+<div class="font-medium text-[#2d3748] mb-2 sm:mb-0">${idx+1}. ${i.name}</div>
+<div class="text-right w-full sm:w-auto">
 <div class="text-[#4a5568]">${i.duration}</div>
 <div class="text-[#718096]">${i.severity}</div>
 </div>
@@ -820,14 +809,12 @@ html+=`<div class="flex justify-between items-center p-3 bg-[#fafafa] rounded-lg
 html+=`</div></div>`;
 });
 
-// 建議區大尺寸優化
-html+=`<div class="mt-10 bg-primary/5 border border-primary/20 rounded-12 p-6 text-base text-[#4a5568] italic">
+html+=`<div class="mt-8 bg-primary/5 border border-primary/20 rounded-12 p-6 text-base text-[#4a5568] italic">
 💡 建議：根據自檢結果關注對應健康問題，必要時諮詢專業醫師
 </div>`;
 
 sc.innerHTML=html;
 
-// 強制刷新DOM，確保大尺寸渲染
 setTimeout(()=>{
 rs.style.height=sc.offsetHeight+40+'px';
 rs.style.display='none';
