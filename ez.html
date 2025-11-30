@@ -502,7 +502,7 @@ const formattedUserInfo={
 身高:userBasicInfo.height?`${userBasicInfo.height}cm`:'未填寫',
 體重:userBasicInfo.weight?`${userBasicInfo.weight}kg`:'未填寫',
 血壓:userBasicInfo.bp||'未填寫',
-糖化血色素:userBasicInfo.glucose?`${userBasicInfo.glucose}%`:'未填寫',
+血糖:userBasicInfo.glucose?`${userBasicInfo.glucose}%`:'未填寫',
 職業:userBasicInfo.job||'未填寫',
 提交時間:new Date(submitTime).toLocaleString('zh-TW',{
 year:'numeric',month:'2-digit',day:'2-digit',
@@ -601,25 +601,25 @@ submitChecklistData(submitData);
 document.getElementById('native-share-btn').addEventListener('click',async function(){
 try{
 const summaryText=document.getElementById('summary-content').dataset.summary;
-const reportContent=document.getElementById('summary-content'); // 截圖目標：包含基本資料和七大要素的容器
+const reportContent=document.getElementById('summary-content');
 const modalContent=document.querySelector('#success-modal .modal-content');
 
 // 移除之前的關閉按鈕
 const existingShareCloseBtn=modalContent.querySelector('.share-close-btn');
 if(existingShareCloseBtn)existingShareCloseBtn.remove();
 
-// 準備截圖：確保內容完整顯示
+// 準備截圖
 window.scrollTo(0,0);
 reportContent.style.overflow='visible';
 reportContent.style.display='block';
 reportContent.style.minHeight=reportContent.scrollHeight+'px';
 reportContent.style.width='100%';
 reportContent.style.boxSizing='border-box';
-await new Promise(resolve=>setTimeout(resolve,500)); // 延長等待確保渲染完成
+await new Promise(resolve=>setTimeout(resolve,800)); // 延長等待確保渲染
 
-// 優化html2canvas配置：精確捕獲目標容器
+// 優化html2canvas配置
 const canvas=await html2canvas(reportContent,{
-scale:3, // 提高解析度
+scale:3,
 useCORS:true,
 allowTaint:true,
 logging:false,
@@ -633,11 +633,12 @@ windowHeight:reportContent.scrollHeight,
 x:0,
 y:0
 });
-const imgData=canvas.toDataURL('image/png');
-const imgBlob=await fetch(imgData).then(res=>res.blob()).catch(err=>{
-console.error('Blob轉換失敗：',err);
-throw new Error('圖片處理失敗');
+
+// 使用toBlob避免fetch跨域問題
+const imgBlob=await new Promise((resolve,reject)=>{
+canvas.toBlob(blob=>blob?resolve(blob):reject(new Error('Canvas轉換失敗')),'image/png',1.0);
 });
+
 const fileName=`彥彬健康自檢報告_${new Date().toLocaleDateString()}.png`;
 const file=new File([imgBlob],fileName,{type:'image/png'});
 
@@ -651,34 +652,32 @@ files:[file]
 }).then(()=>{
 alert('分享成功！');
 addShareCloseButton(modalContent);
-}).catch((error)=>{
+}).catch(error=>{
 console.error('分享失敗：',error);
 if(error.name!=='AbortError'){
-downloadImage(imgData,fileName);
+downloadImage(canvas.toDataURL('image/png'),fileName);
 alert('分享失敗，已自動下載報告圖片');
-addShareCloseButton(modalContent);
 }
+addShareCloseButton(modalContent);
 });
 }catch(e){
-console.error('分享API調用失敗：',e);
-downloadImage(imgData,fileName);
+console.error('分享API錯誤：',e);
+downloadImage(canvas.toDataURL('image/png'),fileName);
 alert('已自動下載報告圖片，可手動分享');
 addShareCloseButton(modalContent);
 }
 }else{
-downloadImage(imgData,fileName);
+downloadImage(canvas.toDataURL('image/png'),fileName);
 alert('已自動下載報告圖片，可手動分享');
 addShareCloseButton(modalContent);
 }
 }catch(error){
-console.error('生成分享內容失敗：',error);
+console.error('分享處理失敗：',error);
 try{
-await navigator.clipboard.writeText(summaryText).catch(clipboardErr=>{
-console.error('剪貼板複製失敗：',clipboardErr);
-throw new Error('剪貼板複製失敗');
-});
-alert('分享失敗，已自動複製報告文字到剪貼板！');
+await navigator.clipboard.writeText(summaryText);
+alert('分享失敗，已複製報告文字到剪貼板！');
 }catch(clipboardErr){
+console.error('剪貼板複製失敗：',clipboardErr);
 alert('分享失敗，請手動複製報告內容');
 }
 addShareCloseButton(modalContent);
@@ -791,17 +790,22 @@ showError('提交失敗，請稍後再試（錯誤：'+status+'）');
 function renderReportSummary(reportData){
 const {formattedUserInfo, factorSymptoms, summaryText}=reportData;
 const summaryContent=document.getElementById('summary-content');
+const reportSummary=document.getElementById('report-summary');
 summaryContent.dataset.summary=summaryText;
 const totalSelectedSymptoms=Object.values(factorSymptoms).reduce((sum,factors)=>sum+factors.length,0);
 
-// 優化容器樣式確保截圖完整
-summaryContent.style.maxHeight='none';
-summaryContent.style.overflowY='visible';
-summaryContent.style.padding='16px';
-summaryContent.style.backgroundColor='#ffffff';
+// 設置滾動樣式
+reportSummary.style.maxHeight='60vh';
+reportSummary.style.overflowY='auto';
+reportSummary.style.padding='16px';
+reportSummary.style.boxSizing='border-box';
+reportSummary.style.margin='0 auto';
+
+// 內容樣式
 summaryContent.style.width='100%';
 summaryContent.style.boxSizing='border-box';
-summaryContent.style.margin='0 auto';
+summaryContent.style.backgroundColor='#ffffff';
+summaryContent.style.padding='0';
 
 let html=`<div class="font-medium text-primary mb-1.5">👤 基本資料</div>`;
 html+=`<div class="info-grid">`;
@@ -809,16 +813,16 @@ let infoEntries=Object.entries(formattedUserInfo);
 const submitTimeEntry=infoEntries.find(([key])=>key==='提交時間');
 infoEntries=infoEntries.filter(([key])=>key!=='提交時間');
 infoEntries.forEach(([key,value])=>{
-html+=`<div class="info-item"><span class="text-textSecondary">${key}：</span><span class="font-medium">${value}</span></div>`;
+// 血糖顯示備注
+const label=key==='血糖'?'血糖（糖化血色素）':key;
+html+=`<div class="info-item"><span class="text-textSecondary">${label}：</span><span class="font-medium">${value}</span></div>`;
 });
 html+=`</div>`;
 html+=`<div class="mt-1.5 text-sm"><span class="text-textSecondary">提交時間：</span><span class="font-medium">${submitTimeEntry[1]}</span></div>`;
-// 只顯示總選取症狀數
 html+=`<div class="mt-2 text-sm">
 <span class="text-textSecondary">總選取症狀數：</span><span class="font-medium text-primary">${totalSelectedSymptoms} 項</span>
 </div>`;
 html+=`<div class="font-medium text-primary mt-3 mb-1.5">🩺 七大健康要素評估</div>`;
-// 只渲染有症狀的要素
 Object.entries(factorSymptoms).forEach(([factorKey,factors])=>{
 const factorName=factorStyles[factorKey].label;
 html+=`<div class="mt-2"><div class="font-medium">【${factorName}】（${factors.length}項）</div>`;
@@ -829,10 +833,10 @@ html+=`<div class="text-xs">${index+1}. ${item.name} <span class="text-textSecon
 html+=`</div></div>`;
 });
 summaryContent.innerHTML=html;
+
 // 強制重新計算高度
 setTimeout(()=>{
-const reportSummary=document.getElementById('report-summary');
-reportSummary.style.height=summaryContent.offsetHeight+60+'px'; // 增加足夠預留空間
+reportSummary.style.height=summaryContent.offsetHeight+30+'px';
 },200);
 }
 
@@ -875,7 +879,6 @@ else{getProfileAndVerify();}
 })
 .catch(err=>{
 console.error("LIFF初始化失敗：",err);
-// 處理初始化時的token錯誤
 if(err.message.includes('expired')||err.message.includes('token')||err.message.includes('authentication')||err.message.includes('invalid')){
 setStatus('令牌無效，重新登錄中...');
 setTimeout(()=>{liff.login();},1000);
@@ -894,12 +897,10 @@ callGasBackend(profile.userId,profile.displayName||'LINE用戶');
 })
 .catch(err=>{
 console.error("獲取LINE用戶資料失敗：",err);
-// 增強token錯誤判斷
 const tokenErrorKeywords=['expired','token','authentication','invalid','session','auth'];
 const isTokenError=tokenErrorKeywords.some(keyword=>err.message.toLowerCase().includes(keyword.toLowerCase()));
 if(isTokenError){
 setStatus('令牌已過期或無效，重新登錄中...');
-// 確保登錄前銷毀舊session
 if(liff.isLoggedIn())liff.logout().then(()=>{
 setTimeout(()=>{liff.login();},1000);
 }).catch(()=>{liff.login();});
