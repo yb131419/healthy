@@ -201,7 +201,7 @@ body{font-feature-settings:"palt";letter-spacing:0.02em;}
 </button>
 </div>
 <script>
-onst LIFF_ID="2008578880-NznKeG2a";
+const LIFF_ID="2008578880-NznKeG2a";
 const GAS_URL="https://script.google.com/macros/s/AKfycbykBtM2_PM7IZ-ZUU4tgTqVa1xGhVQFaZ523FXc4ivdLz_GZ09sdmL6s5zk7SdloFuG/exec";
 const JSONP_TIMEOUT=15000;
 const PERMANENT_EXPIRY_DATE="9999/12/31";
@@ -483,7 +483,11 @@ const originalSymptom=fullSymptomData.find(s=>s.seq===symptom.seq);
 if(originalSymptom){
 Object.keys(factorSymptoms).forEach(factor=>{
 if(originalSymptom[factor]==="○"){
-factorSymptoms[factor].push({name:symptom.symptom,duration:symptom.durationText,severity:symptom.severityText});
+factorSymptoms[factor].push({
+name:symptom.symptom,
+duration:symptom.durationText,
+severity:symptom.severityText
+});
 }
 });
 }
@@ -497,11 +501,13 @@ const formattedUserInfo={
 血壓:userBasicInfo.bp||'未填寫',
 糖化血色素:userBasicInfo.glucose?`${userBasicInfo.glucose}%`:'未填寫',
 職業:userBasicInfo.job||'未填寫',
-LINE用戶名:displayName||'未知用戶',
-提交時間:new Date(submitTime).toLocaleString('zh-TW',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'})
+提交時間:new Date(submitTime).toLocaleString('zh-TW',{
+year:'numeric',month:'2-digit',day:'2-digit',
+hour:'2-digit',minute:'2-digit'
+})
 };
 let summaryText=`🧬 彥彬健康自檢報告\n\n`;
-summaryText+=`👤 用戶：${displayName||'未知用戶'}\n`;
+summaryText+=`👤 用戶：${displayName}\n`;
 summaryText+=`📅 提交時間：${formattedUserInfo.提交時間}\n\n`;
 summaryText+=`📋 基本資料：\n`;
 Object.entries(formattedUserInfo).forEach(([key,value])=>{
@@ -586,14 +592,8 @@ alert('部分已選症狀未填寫完整資訊，請檢查後再提交');
 if(firstInvalidCard)firstInvalidCard.scrollIntoView({behavior:'smooth',block:'center'});
 return;
 }
-// 確保先獲取LIFF用戶資訊再提交
-liff.getProfile().then(profile=>{
-const submitData=collectSubmitData(profile);
+const submitData=collectSubmitData();
 submitChecklistData(submitData);
-}).catch(err=>{
-console.error('獲取LIFF用戶資訊失敗：',err);
-alert('獲取用戶資訊失敗，請重試');
-});
 });
 
 // 唯一分享按鈕：修復截圖傳送問題，優化分享邏輯
@@ -601,12 +601,19 @@ document.getElementById('native-share-btn').addEventListener('click',async funct
 try{
 const summaryText=document.getElementById('summary-content').dataset.summary;
 const reportSummary=document.getElementById('report-summary');
+// 確保報告容器可見且完整渲染
 reportSummary.style.overflow='visible';
 reportSummary.style.display='block';
+// 優化html2canvas配置，確保截圖完整
 const canvas=await html2canvas(reportSummary,{
-scale:2,useCORS:true,allowTaint:true,logging:false,
-scrollY: -window.scrollY,scrollX: -window.scrollX,
-width: reportSummary.offsetWidth,height: reportSummary.offsetHeight,
+scale:2,
+useCORS:true,
+allowTaint:true,
+logging:false,
+scrollY: -window.scrollY,
+scrollX: -window.scrollX,
+width: reportSummary.offsetWidth,
+height: reportSummary.offsetHeight,
 backgroundColor: '#ffffff'
 });
 const imgData=canvas.toDataURL('image/png');
@@ -614,6 +621,7 @@ const imgBlob=await fetch(imgData).then(res=>res.blob());
 const fileName=`彥彬健康自檢報告_${new Date().toLocaleDateString()}.png`;
 const file=new File([imgBlob],fileName,{type:'image/png'});
 
+// 優先原生分享（支援文字+圖片）
 if(navigator.share){
 try{
 await navigator.share({
@@ -621,9 +629,12 @@ title:'🧬 彥彬健康自檢報告',
 text:summaryText,
 files:[file],
 url:window.location.href
-}).then(()=>alert('分享成功！')).catch((error)=>{
+}).then(()=>{
+alert('分享成功！');
+}).catch((error)=>{
 console.error('分享失敗：',error);
 if(error.name!=='AbortError'){
+// 降级為下載圖片
 downloadImage(imgData,fileName);
 alert('分享失敗，已自動下載報告圖片');
 }
@@ -634,11 +645,13 @@ downloadImage(imgData,fileName);
 alert('已自動下載報告圖片，可手動分享');
 }
 }else{
+// 不支援原生分享，直接下載
 downloadImage(imgData,fileName);
 alert('已自動下載報告圖片，可手動分享');
 }
 }catch(error){
 console.error('生成分享內容失敗：',error);
+// 最終降级：複製文字
 try{
 await navigator.clipboard.writeText(summaryText);
 alert('分享失敗，已自動複製報告文字到剪貼板！');
@@ -660,20 +673,25 @@ document.body.removeChild(link);
 }
 }
 
-// 修復：接收profile參數，確保displayName正確獲取
-function collectSubmitData(profile){
+function collectSubmitData(){
+const liffProfile=liff.getProfile()||{};
 const selectedSymptoms=Array.from(document.querySelectorAll('.symptom-checkbox:checked')).map(checkbox=>{
 const seq=checkbox.dataset.seq;
 const card=checkbox.closest('.symptom-card');
 const symptomName=card.querySelector('label').textContent.replace(/^\[\d+\]/,'').trim();
 const durationText=card.querySelector('.duration-select option:checked').textContent;
 const severityText=card.querySelector('.severity-select option:checked').textContent;
-return{seq:parseInt(seq),symptom:symptomName,durationText:durationText,severityText:severityText};
+return{
+seq:parseInt(seq),
+symptom:symptomName,
+durationText:durationText,
+severityText:severityText
+};
 });
 return{
 action:'submitChecklist',
 userId:liff.getDecodedIDToken()?.sub||'',
-displayName:profile?.displayName||'未知用戶', // 優先使用LIFF用戶名
+displayName:liffProfile.displayName||'LINE用戶',
 submitTime:new Date().toISOString(),
 userName:document.getElementById('user-name').value.trim(),
 userAge:document.getElementById('user-age').value.trim(),
@@ -688,7 +706,7 @@ selectedSymptoms:JSON.stringify(selectedSymptoms)
 }
 
 function submitChecklistData(data){
-console.log("提交自檢表數據（含LIFF用戶名）：",data);
+console.log("提交自檢表數據：",data);
 setStatus('正在提交數據...');
 document.getElementById('status').classList.remove('hidden');
 $.ajax({
@@ -708,6 +726,7 @@ selectedSymptoms:JSON.parse(data.selectedSymptoms)
 });
 renderReportSummary(reportData);
 document.getElementById('success-modal').classList.remove('hidden');
+// 確保模態框可滾動
 setTimeout(()=>{
 const modalContent=document.querySelector('#success-modal .modal-content');
 if(modalContent)modalContent.style.maxHeight='80vh';
@@ -728,6 +747,7 @@ function renderReportSummary(reportData){
 const {formattedUserInfo, factorSymptoms, summaryText}=reportData;
 const summaryContent=document.getElementById('summary-content');
 summaryContent.dataset.summary=summaryText;
+// 優化報告容器樣式，確保截圖完整
 summaryContent.style.maxHeight='50vh';
 summaryContent.style.overflowY='auto';
 summaryContent.style.padding='16px';
@@ -805,7 +825,7 @@ setStatus('驗證使用者資訊中...');
 liff.getProfile()
 .then(profile=>{
 console.log("獲取LINE用戶資料成功：",profile);
-callGasBackend(profile.userId,profile.displayName||'未知用戶');
+callGasBackend(profile.userId,profile.displayName||'LINE用戶');
 })
 .catch(err=>{console.error("獲取LINE用戶資料失敗：",err);showError('取得使用者資料失敗：'+err.message);});
 }
