@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>🧬 彥彬 自檢表系統 - 專業健康評估平台</title>
+<title>🧬 彥彬 自檢表系統</title>
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0">
 <script src="https://cdn.tailwindcss.com"></script>
 <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
@@ -462,18 +462,6 @@ return false;
 }
 }
 
-function addShareCloseButton(modalContent){
-const btn=document.createElement('button');
-btn.className='share-close-btn mt-3 w-full py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors';
-btn.innerHTML='<i class="fa fa-times mr-1"></i> 關閉';
-btn.addEventListener('click',function(){
-document.getElementById('success-modal').classList.add('hidden');
-resetChecklist();
-document.getElementById('user-info-section').scrollIntoView({behavior:'smooth'});
-});
-modalContent.appendChild(btn);
-}
-
 function initControlButtons(){
 document.getElementById('next-to-checklist').addEventListener('click',function(){
 const n=document.getElementById('user-name').value.trim(),a=document.getElementById('user-age').value.trim(),g=document.getElementById('user-gender').value;
@@ -524,7 +512,7 @@ const sd=collectSubmitData();
 submitChecklistData(sd);
 });
 
-// 核心修復：美化分享畫面+LINE分享僅保留指定文字
+// 核心優化：取消關閉按鈕+高清大尺寸分享圖片
 const shareBtn=document.getElementById('native-share-btn');
 if(shareBtn){
 shareBtn.addEventListener('click',async function(e){
@@ -542,12 +530,7 @@ setTimeout(()=>this.click(),500);
 return;
 }
 }
-
-// LINE分享僅保留"彥彬健康自檢報告"文字
 st='彥彬健康自檢報告';
-
-const escb=mc.querySelector('.share-close-btn');
-escb&&escb.remove();
 shareBtn.disabled=true;
 shareBtn.innerHTML='<i class="fa fa-spinner fa-spin mr-1"></i> 處理中...';
 
@@ -561,84 +544,83 @@ document.head.appendChild(script);
 return;
 }
 
-// 美化截圖樣式
+// 高清大尺寸設置：提高分辨率+取消寬度限制
 scEl.style.backgroundColor='#ffffff';
-scEl.style.padding='24px';
+scEl.style.padding='32px';
 scEl.style.width='100%';
 scEl.style.boxSizing='border-box';
-scEl.style.borderRadius='12px';
-scEl.style.boxShadow='0 4px 20px rgba(0,0,0,0.08)';
+scEl.style.borderRadius='16px';
+scEl.style.boxShadow='0 4px 24px rgba(0,0,0,0.12)';
 
+// 關鍵優化：scale=2.0（高清）、無寬度限制、高壓縮質量
 canvas=await html2canvas(scEl,{
-scale:1.2,// 適當提高分辨率
+scale:2.0,// 2倍分辨率，確保清晰
 useCORS:true,
 allowTaint:true,
 logging:false,
 backgroundColor:'#ffffff',
-width:Math.min(scEl.offsetWidth,800),
-height:scEl.offsetHeight
+width:scEl.offsetWidth,// 按實際寬度，更大尺寸
+height:scEl.offsetHeight,
+dpi:300// 模擬高DPI，提升清晰度
 });
 
-dataUrl=canvas.toDataURL('image/png',0.7);
+// 高質量壓縮（0.9=高清晰）
+dataUrl=canvas.toDataURL('image/png',0.9);
 fileName=`彥彬健康自檢報告_${new Date().toLocaleDateString()}.png`;
 const imgBlob=await (await fetch(dataUrl)).blob();
 let file;
+
+// 平衡清晰度和文件大小（LINE限制5MB）
 if(imgBlob.size>5*1024*1024){
-alert('圖片體積過大，正在壓縮...');
-dataUrl=canvas.toDataURL('image/png',0.4);
+alert('圖片體積過大，輕微壓縮保持清晰...');
+dataUrl=canvas.toDataURL('image/png',0.8);// 輕度壓縮
 const compressedBlob=await (await fetch(dataUrl)).blob();
 file=new File([compressedBlob],fileName,{type:'image/png'});
 }else{
 file=new File([imgBlob],fileName,{type:'image/png'});
 }
 
-// LINE分享邏輯（僅保留指定文字）
+// LINE分享：僅指定文字+高清大圖
 if(navigator.share&&typeof navigator.share==='function'){
 try{
 const shareData={
 title:'彥彬健康自檢報告',
-text:st,// 僅保留指定文字
+text:st,
 files:[file]
 };
-
 const canShare=navigator.canShare?await navigator.canShare(shareData):true;
 if(canShare){
 await navigator.share(shareData);
-alert('分享成功！已發送到LINE群組/好友');
-}else{
-await navigator.share({title:shareData.title,text:shareData.text});
-alert('文字已分享，圖片將自動下載');
-downloadImage(dataUrl,fileName);
+alert('分享成功！高清報告已發送到LINE群組/好友');
 }
 }catch(err){
 console.error('LINE分享失敗：',err);
 if(err.name!=='AbortError'){
 downloadImage(dataUrl,fileName);
-alert(`分享失敗：${err.message||'未知錯誤'}，已自動下載報告圖片`);
+alert(`分享失敗：${err.message||'未知錯誤'}，已下載高清報告圖片`);
 }
 }
 }else{
 downloadImage(dataUrl,fileName);
 try{
 await navigator.clipboard.writeText(st);
-alert('已下載報告圖片，文字內容已複製到剪貼板\n可手動粘貼到LINE分享');
+alert('已下載高清報告圖片，文字已複製到剪貼板');
 }catch(cbErr){
-alert('已下載報告圖片，請手動複製文字內容到LINE分享');
+alert('已下載高清報告圖片，請手動複製文字分享');
 }
 }
 }catch(err){
 console.error('分享總體錯誤：',err);
-downloadImage(dataUrl||canvas.toDataURL('image/png',0.3),fileName||`健康報告_${new Date().getTime()}.png`);
-alert('分享功能異常，已強制下載報告圖片');
+downloadImage(dataUrl||canvas.toDataURL('image/png',0.8),fileName||`健康報告_${new Date().getTime()}.png`);
+alert('分享功能異常，已下載高清報告圖片');
 }finally{
 shareBtn.disabled=false;
 shareBtn.innerHTML='<i class="fa fa-share-alt mr-1"></i> 分享到LINE';
-addShareCloseButton(mc);
 }
 });
 }
 
-// 下載按鈕功能
+// 下載按鈕同步高清設置
 const downloadBtn=document.getElementById('download-report-btn');
 if(downloadBtn){
 downloadBtn.addEventListener('click',async function(){
@@ -657,13 +639,17 @@ script.onerror=reject;
 document.head.appendChild(script);
 });
 }
-// 下載時也應用美化樣式
 scEl.style.backgroundColor='#ffffff';
-scEl.style.padding='24px';
-scEl.style.borderRadius='12px';
-scEl.style.boxShadow='0 4px 20px rgba(0,0,0,0.08)';
-const canvas=await html2canvas(scEl,{scale:1.2,useCORS:true,backgroundColor:'#ffffff'});
-const dataUrl=canvas.toDataURL('image/png',0.7);
+scEl.style.padding='32px';
+scEl.style.borderRadius='16px';
+scEl.style.boxShadow='0 4px 24px rgba(0,0,0,0.12)';
+const canvas=await html2canvas(scEl,{
+scale:2.0,
+useCORS:true,
+backgroundColor:'#ffffff',
+dpi:300
+});
+const dataUrl=canvas.toDataURL('image/png',0.9);
 downloadImage(dataUrl);
 this.innerHTML='<i class="fa fa-download mr-1"></i> 下載完成';
 setTimeout(()=>{
@@ -724,22 +710,10 @@ document.getElementById('status').classList.add('hidden');
 const rd=organizeReportData({...data,userBasicInfo:window.userBasicInfo,selectedSymptoms:JSON.parse(data.selectedSymptoms)});
 window.reportData=rd;
 renderReportSummary(rd);
-const mc=document.querySelector('#success-modal .modal-content')||document.getElementById('success-modal');
-if(mc&&!mc.querySelector('.close-modal-btn')){
-const cb=document.createElement('button');
-cb.className='close-modal-btn mt-4 w-full py-2 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 transition-colors';
-cb.innerHTML='<i class="fa fa-times mr-1"></i> 關閉報告';
-cb.addEventListener('click',function(){
-document.getElementById('success-modal').classList.add('hidden');
-resetChecklist();
-document.getElementById('user-info-section').scrollIntoView({behavior:'smooth'});
-});
-mc.appendChild(cb);
-}
 document.getElementById('success-modal').classList.remove('hidden');
 setTimeout(()=>{
-mc&&(mc.style.maxHeight='80vh');
-document.getElementById('report-summary')&&(document.getElementById('report-summary').style.maxHeight='60vh');
+mc&&(mc.style.maxHeight='90vh');// 擴大彈窗高度，適配大圖
+document.getElementById('report-summary')&&(document.getElementById('report-summary').style.maxHeight='80vh');
 },100);
 },
 error:function(xhr,status,err){
@@ -750,7 +724,7 @@ showError('提交失敗，請稍後再試（'+status+'）');
 });
 }
 
-// 核心美化：報告畫面美化
+// 核心美化+大尺寸適配
 function renderReportSummary(reportData){
 const {formattedUserInfo,factorSymptoms,summaryText}=reportData;
 let sc=document.getElementById('summary-content');
@@ -765,74 +739,76 @@ document.querySelector('#success-modal .modal-content')?.appendChild(rs)||docume
 sc.dataset.summary=summaryText;
 const ts=Object.values(factorSymptoms).reduce((s,f)=>s+f.length,0);
 
-// 容器美化樣式
+// 容器大尺寸設置
 const rs=document.getElementById('report-summary');
-rs.style.maxHeight='60vh';
+rs.style.maxHeight='80vh';
 rs.style.overflowY='auto';
-rs.style.padding='16px';
+rs.style.padding='24px';
 rs.style.boxSizing='border-box';
 rs.style.backgroundColor='#ffffff';
 rs.style.borderRadius='16px';
-rs.style.boxShadow='0 6px 24px rgba(0,0,0,0.1)';
+rs.style.boxShadow='0 8px 32px rgba(0,0,0,0.15)';
+rs.style.margin='0 auto';
+rs.style.width='95%';// 幾乎全屏宽度，更大尺寸
 
-// 內容區美化樣式
+// 內容區樣式優化（適配大圖）
 sc.style.width='100%';
 sc.style.backgroundColor='#ffffff';
-sc.style.padding='20px';
+sc.style.padding='32px';
 sc.style.boxSizing='border-box';
-sc.style.lineHeight='1.6';
+sc.style.lineHeight='1.8';
+sc.style.fontSize='15px';// 字號放大，確保清晰
 
-// 美化HTML結構
+// 美化HTML結構（大尺寸适配）
 let html=`
-<div class="text-center mb-6">
-<h3 class="text-xl font-bold text-[#2d3748] mb-1">彥彬健康自檢報告</h3>
-<div class="text-sm text-[#718096]">${formattedUserInfo.提交時間}</div>
+<div class="text-center mb-8">
+<h3 class="text-2xl font-bold text-[#2d3748] mb-2">彥彬健康自檢報告</h3>
+<div class="text-base text-[#718096]">${formattedUserInfo.提交時間}</div>
 </div>
-<div class="bg-[#f8f9fa] rounded-10 p-4 mb-6">
-<div class="text-lg font-semibold text-[#2d3748] mb-3 flex items-center">
-<i class="fa fa-user-circle text-primary mr-2"></i>基本資料
+<div class="bg-[#f8f9fa] rounded-12 p-6 mb-8">
+<div class="text-xl font-semibold text-[#2d3748] mb-4 flex items-center">
+<i class="fa fa-user-circle text-primary mr-3 text-lg"></i>基本資料
 </div>
-<div class="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">`;
+<div class="grid grid-cols-2 gap-x-8 gap-y-4 text-base">`;
 
 const infoEntries=Object.entries(formattedUserInfo),stEntry=infoEntries.find(([k])=>k==='提交時間');
 infoEntries.forEach(([k,v])=>{
 if(k!=='提交時間'){
-const label=k==='血糖'?'血糖（糖化血色素）':k;
+const label=k==='血糖'?'血糖':k;
 html+=`<div class="flex justify-between">
-<span class="text-[#4a5568]">${label}：</span>
-<span class="font-medium text-[#2d3748]">${v}</span>
+<span class="text-[#4a5568] font-medium">${label}：</span>
+<span class="text-[#2d3748]">${v}</span>
 </div>`;
 }
 });
 
 html+=`</div></div>
-<div class="mb-6">
-<div class="flex justify-between items-center mb-3">
-<div class="text-lg font-semibold text-[#2d3748] flex items-center">
-<i class="fa fa-chart-pie text-primary mr-2"></i>統計資訊
+<div class="mb-8">
+<div class="flex justify-between items-center mb-4">
+<div class="text-xl font-semibold text-[#2d3748] flex items-center">
+<i class="fa fa-chart-pie text-primary mr-3 text-lg"></i>統計資訊
 </div>
-<div class="bg-primary/10 text-primary px-3 py-1 rounded-full text-sm font-medium">
+<div class="bg-primary/10 text-primary px-4 py-2 rounded-full text-base font-medium">
 總選取症狀數：${ts} 項
 </div>
 </div>
 </div>
-<div class="text-lg font-semibold text-[#2d3748] mb-4 flex items-center">
-<i class="fa fa-heartbeat text-primary mr-2"></i>七大健康要素評估
+<div class="text-xl font-semibold text-[#2d3748] mb-6 flex items-center">
+<i class="fa fa-heartbeat text-primary mr-3 text-lg"></i>七大健康要素評估
 </div>`;
 
-// 每個要素卡片美化
+// 要素卡片大尺寸優化
 Object.entries(factorSymptoms).forEach(([fk,f])=>{
 const fn=factorStyles[fk].label;
-const colorClass=factorStyles[fk].className.split(' ')[0].replace('bg-','text-');
-html+=`<div class="bg-white border border-[#e8f4f8] rounded-10 p-4 mb-4 shadow-sm hover:shadow-md transition-shadow">
-<div class="font-semibold text-[#2d3748] mb-3 flex items-center">
-<span class="inline-block w-3 h-3 rounded-full ${factorStyles[fk].className.split(' ')[0]} mr-2"></span>
+html+=`<div class="bg-white border border-[#e8f4f8] rounded-12 p-6 mb-6 shadow-sm hover:shadow-md transition-shadow">
+<div class="font-semibold text-lg text-[#2d3748] mb-4 flex items-center">
+<span class="inline-block w-4 h-4 rounded-full ${factorStyles[fk].className.split(' ')[0]} mr-3"></span>
 【${fn}】（${f.length}項）
 </div>
-<div class="space-y-2 text-sm">`;
+<div class="space-y-3 text-base">`;
 
 f.forEach((i,idx)=>{
-html+=`<div class="flex justify-between items-start p-2 bg-[#fafafa] rounded-lg">
+html+=`<div class="flex justify-between items-center p-3 bg-[#fafafa] rounded-lg">
 <div class="font-medium text-[#2d3748]">${idx+1}. ${i.name}</div>
 <div class="text-right">
 <div class="text-[#4a5568]">${i.duration}</div>
@@ -844,16 +820,16 @@ html+=`<div class="flex justify-between items-start p-2 bg-[#fafafa] rounded-lg"
 html+=`</div></div>`;
 });
 
-// 建議區美化
-html+=`<div class="mt-8 bg-primary/5 border border-primary/20 rounded-10 p-4 text-sm text-[#4a5568] italic">
+// 建議區大尺寸優化
+html+=`<div class="mt-10 bg-primary/5 border border-primary/20 rounded-12 p-6 text-base text-[#4a5568] italic">
 💡 建議：根據自檢結果關注對應健康問題，必要時諮詢專業醫師
 </div>`;
 
 sc.innerHTML=html;
 
-// 強制刷新DOM
+// 強制刷新DOM，確保大尺寸渲染
 setTimeout(()=>{
-rs.style.height=sc.offsetHeight+30+'px';
+rs.style.height=sc.offsetHeight+40+'px';
 rs.style.display='none';
 rs.offsetHeight;
 rs.style.display='block';
