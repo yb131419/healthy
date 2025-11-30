@@ -608,18 +608,18 @@ const modalContent=document.querySelector('#success-modal .modal-content');
 const existingShareCloseBtn=modalContent.querySelector('.share-close-btn');
 if(existingShareCloseBtn)existingShareCloseBtn.remove();
 
-// 準備截圖
+// 準備截圖 - 優化DOM結構確保完整渲染
 window.scrollTo(0,0);
 reportContent.style.overflow='visible';
 reportContent.style.display='block';
-reportContent.style.minHeight=reportContent.scrollHeight+'px';
 reportContent.style.width='100%';
 reportContent.style.boxSizing='border-box';
-await new Promise(resolve=>setTimeout(resolve,800)); // 延長等待確保渲染
+reportContent.style.padding='16px'; // 增加內邊距確保樣式完整
+await new Promise(resolve=>setTimeout(resolve,1000)); // 延長等待確保DOM穩定
 
-// 優化html2canvas配置
+// 優化html2canvas配置 - 解決截圖不完整問題
 const canvas=await html2canvas(reportContent,{
-scale:3,
+scale:2, // 降低分辨率減小文件體積
 useCORS:true,
 allowTaint:true,
 logging:false,
@@ -631,18 +631,27 @@ backgroundColor:'#ffffff',
 windowWidth:reportContent.offsetWidth,
 windowHeight:reportContent.scrollHeight,
 x:0,
-y:0
+y:0,
+dpi:96 // 標準DPI確保兼容性
 });
 
-// 使用toBlob避免fetch跨域問題
+// 優化Blob轉換 - 確保文件格式正確
 const imgBlob=await new Promise((resolve,reject)=>{
-canvas.toBlob(blob=>blob?resolve(blob):reject(new Error('Canvas轉換失敗')),'image/png',1.0);
+canvas.toBlob(blob=>{
+if(blob){
+resolve(blob);
+}else{
+// 降级处理：使用toDataURL转换
+const dataUrl=canvas.toDataURL('image/png',0.8);
+fetch(dataUrl).then(res=>res.blob()).then(blob=>resolve(blob)).catch(reject);
+}
+},'image/png',0.8); // 壓縮質量平衡清晰度和大小
 });
 
 const fileName=`彥彬健康自檢報告_${new Date().toLocaleDateString()}.png`;
 const file=new File([imgBlob],fileName,{type:'image/png'});
 
-// 原生分享
+// 原生分享增強 - 完善錯誤處理和兼容性
 if(navigator.share&&navigator.canShare&&navigator.canShare({files:[file]})){
 try{
 await navigator.share({
@@ -655,20 +664,21 @@ addShareCloseButton(modalContent);
 }).catch(error=>{
 console.error('分享失敗：',error);
 if(error.name!=='AbortError'){
-downloadImage(canvas.toDataURL('image/png'),fileName);
+downloadImage(canvas.toDataURL('image/png',0.8),fileName);
 alert('分享失敗，已自動下載報告圖片');
 }
 addShareCloseButton(modalContent);
 });
 }catch(e){
 console.error('分享API錯誤：',e);
-downloadImage(canvas.toDataURL('image/png'),fileName);
+downloadImage(canvas.toDataURL('image/png',0.8),fileName);
 alert('已自動下載報告圖片，可手動分享');
 addShareCloseButton(modalContent);
 }
 }else{
-downloadImage(canvas.toDataURL('image/png'),fileName);
-alert('已自動下載報告圖片，可手動分享');
+// 不支持原生分享時直接下載
+downloadImage(canvas.toDataURL('image/png',0.8),fileName);
+alert('您的瀏覽器不支持原生分享，已自動下載報告圖片');
 addShareCloseButton(modalContent);
 }
 }catch(error){
@@ -681,6 +691,9 @@ console.error('剪貼板複製失敗：',clipboardErr);
 alert('分享失敗，請手動複製報告內容');
 }
 addShareCloseButton(modalContent);
+}finally{
+// 恢復原樣式
+reportContent.style.padding='0';
 }
 });
 
@@ -813,7 +826,7 @@ let infoEntries=Object.entries(formattedUserInfo);
 const submitTimeEntry=infoEntries.find(([key])=>key==='提交時間');
 infoEntries=infoEntries.filter(([key])=>key!=='提交時間');
 infoEntries.forEach(([key,value])=>{
-// 血糖顯示備注
+// 血糖顯示糖化血色素提示
 const label=key==='血糖'?'血糖（糖化血色素）':key;
 html+=`<div class="info-item"><span class="text-textSecondary">${label}：</span><span class="font-medium">${value}</span></div>`;
 });
