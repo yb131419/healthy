@@ -513,7 +513,13 @@ summaryText+=`📋 基本資料：\n`;
 Object.entries(formattedUserInfo).forEach(([key,value])=>{
 if(key!=='提交時間')summaryText+=`  ${key}：${value}\n`;
 });
-summaryText+=`\n🩺 七大健康要素評估：\n`;
+// 統計數據
+const totalSelected=Object.values(factorSymptoms).reduce((sum,factors)=>sum+factors.length,0);
+const abnormalFactors=Object.values(factorSymptoms).filter(f=>f.length>0).length;
+summaryText+=`\n📊 統計資訊：\n`;
+summaryText+=`  總選取症狀數：${totalSelected} 項\n`;
+summaryText+=`  異常要素數：${abnormalFactors} 個\n\n`;
+summaryText+=`🩺 七大健康要素評估：\n`;
 Object.entries(factorSymptoms).forEach(([factorKey,factors])=>{
 const factorName=factorStyles[factorKey].label;
 if(factors.length>0){
@@ -596,45 +602,47 @@ const submitData=collectSubmitData();
 submitChecklistData(submitData);
 });
 
-// 唯一分享按鈕：修復截圖傳送問題，優化分享邏輯
+// 優化分享按鈕：适配iOS/平板、完整截圖、不分享链接
 document.getElementById('native-share-btn').addEventListener('click',async function(){
 try{
 const summaryText=document.getElementById('summary-content').dataset.summary;
 const reportSummary=document.getElementById('report-summary');
+// 截圖前滾動到頂部確保完整性
+window.scrollTo(0,0);
 // 確保報告容器可見且完整渲染
 reportSummary.style.overflow='visible';
 reportSummary.style.display='block';
-// 優化html2canvas配置，確保截圖完整
+// 延遲確保滾動完成
+await new Promise(resolve=>setTimeout(resolve,300));
+// 優化html2canvas配置確保截圖完整
 const canvas=await html2canvas(reportSummary,{
 scale:2,
 useCORS:true,
 allowTaint:true,
 logging:false,
-scrollY: -window.scrollY,
-scrollX: -window.scrollX,
-width: reportSummary.offsetWidth,
-height: reportSummary.offsetHeight,
-backgroundColor: '#ffffff'
+scrollY:0,
+scrollX:0,
+width:reportSummary.offsetWidth,
+height:reportSummary.offsetHeight,
+backgroundColor:'#ffffff'
 });
 const imgData=canvas.toDataURL('image/png');
 const imgBlob=await fetch(imgData).then(res=>res.blob());
 const fileName=`彥彬健康自檢報告_${new Date().toLocaleDateString()}.png`;
 const file=new File([imgBlob],fileName,{type:'image/png'});
 
-// 優先原生分享（支援文字+圖片）
+// 優先原生分享（僅文字+圖片，不包含鏈接）
 if(navigator.share){
 try{
 await navigator.share({
 title:'🧬 彥彬健康自檢報告',
 text:summaryText,
-files:[file],
-url:window.location.href
+files:[file]
 }).then(()=>{
 alert('分享成功！');
 }).catch((error)=>{
 console.error('分享失敗：',error);
 if(error.name!=='AbortError'){
-// 降级為下載圖片
 downloadImage(imgData,fileName);
 alert('分享失敗，已自動下載報告圖片');
 }
@@ -645,13 +653,11 @@ downloadImage(imgData,fileName);
 alert('已自動下載報告圖片，可手動分享');
 }
 }else{
-// 不支援原生分享，直接下載
 downloadImage(imgData,fileName);
 alert('已自動下載報告圖片，可手動分享');
 }
 }catch(error){
 console.error('生成分享內容失敗：',error);
-// 最終降级：複製文字
 try{
 await navigator.clipboard.writeText(summaryText);
 alert('分享失敗，已自動複製報告文字到剪貼板！');
@@ -725,8 +731,20 @@ userBasicInfo:window.userBasicInfo,
 selectedSymptoms:JSON.parse(data.selectedSymptoms)
 });
 renderReportSummary(reportData);
+// 新增關閉按鈕
+const modalContent=document.querySelector('#success-modal .modal-content');
+if(modalContent&&!modalContent.querySelector('.close-modal-btn')){
+const closeBtn=document.createElement('button');
+closeBtn.className='close-modal-btn mt-4 w-full py-2 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 transition-colors';
+closeBtn.innerHTML='<i class="fa fa-times mr-1"></i> 關閉報告';
+closeBtn.addEventListener('click',function(){
+document.getElementById('success-modal').classList.add('hidden');
+resetChecklist();
+document.getElementById('user-info-section').scrollIntoView({behavior:'smooth'});
+});
+modalContent.appendChild(closeBtn);
+}
 document.getElementById('success-modal').classList.remove('hidden');
-// 確保模態框可滾動
 setTimeout(()=>{
 const modalContent=document.querySelector('#success-modal .modal-content');
 if(modalContent)modalContent.style.maxHeight='80vh';
@@ -742,12 +760,15 @@ showError('提交失敗，請稍後再試（錯誤：'+status+'）');
 });
 }
 
-// 優化報告渲染：確保截圖完整
+// 優化報告渲染：確保截圖完整+新增統計數量
 function renderReportSummary(reportData){
 const {formattedUserInfo, factorSymptoms, summaryText}=reportData;
 const summaryContent=document.getElementById('summary-content');
 summaryContent.dataset.summary=summaryText;
-// 優化報告容器樣式，確保截圖完整
+// 統計數據
+const totalSelectedSymptoms=Object.values(factorSymptoms).reduce((sum,factors)=>sum+factors.length,0);
+const abnormalFactorsCount=Object.values(factorSymptoms).filter(factors=>factors.length>0).length;
+// 優化報告容器樣式
 summaryContent.style.maxHeight='50vh';
 summaryContent.style.overflowY='auto';
 summaryContent.style.padding='16px';
@@ -762,6 +783,11 @@ html+=`<div class="info-item"><span class="text-textSecondary">${key}：</span><
 });
 html+=`</div>`;
 html+=`<div class="mt-1.5 text-sm"><span class="text-textSecondary">提交時間：</span><span class="font-medium">${submitTimeEntry[1]}</span></div>`;
+// 新增統計行
+html+=`<div class="mt-2 text-sm">
+<span class="text-textSecondary">總選取症狀數：</span><span class="font-medium text-primary">${totalSelectedSymptoms} 項</span> | 
+<span class="text-textSecondary">異常要素數：</span><span class="font-medium text-primary">${abnormalFactorsCount} 個</span>
+</div>`;
 html+=`<div class="font-medium text-primary mt-3 mb-1.5">🩺 七大健康要素評估</div>`;
 Object.entries(factorSymptoms).forEach(([factorKey,factors])=>{
 const factorName=factorStyles[factorKey].label;
