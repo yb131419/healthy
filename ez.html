@@ -195,33 +195,29 @@ body{font-feature-settings:"palt";letter-spacing:0.02em;}
 <h4 class="text-sm font-medium text-textPrimary mb-2 flex items-center"><i class="fa fa-file-text-o text-primary mr-1.5"></i>健康報告摘要</h4>
 <div id="summary-content" class="text-xs space-y-1.5"></div>
 </div>
-<div class="mb-3">
-<button id="native-share-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-3 rounded-lg transition btn-hover shadow-elevation-1 flex items-center justify-center">
-<i class="fa fa-share-alt mr-1"></i>分享報告
-</button>
-</div>
+
 <script>
 const LIFF_ID="2008578880-NznKeG2a";
 const GAS_URL="https://script.google.com/macros/s/AKfycbykBtM2_PM7IZ-ZUU4tgTqVa1xGhVQFaZ523FXc4ivdLz_GZ09sdmL6s5zk7SdloFuG/exec";
 const JSONP_TIMEOUT=15000;
 const PERMANENT_EXPIRY_DATE="9999/12/31";
 const factorStyles={
-  氣血:{className:'bg-blue-50 text-blue-700',label:'氣血不足'},
-  微循環:{className:'bg-green-50 text-green-700',label:'微循環不通'},
-  毒素:{className:'bg-yellow-50 text-yellow-700',label:'毒素'},
-  血脂:{className:'bg-orange-50 text-orange-700',label:'血脂粘稠'},
-  寒涼濕:{className:'bg-purple-50 text-purple-700',label:'寒涼濕症'},
-  免疫:{className:'bg-pink-50 text-pink-700',label:'免疫'},
-  情緒:{className:'bg-indigo-50 text-indigo-700',label:'情緒'}
+氣血:{className:'bg-blue-50 text-blue-700',label:'氣血不足'},
+微循環:{className:'bg-green-50 text-green-700',label:'微循環不通'},
+毒素:{className:'bg-yellow-50 text-yellow-700',label:'毒素'},
+血脂:{className:'bg-orange-50 text-orange-700',label:'血脂粘稠'},
+寒涼濕:{className:'bg-purple-50 text-purple-700',label:'寒涼濕症'},
+免疫:{className:'bg-pink-50 text-pink-700',label:'免疫'},
+情緒:{className:'bg-indigo-50 text-indigo-700',label:'情緒'}
 };
 const durationOptions=[
-  {value:'',label:'請選擇時間'},{value:'1w',label:'1周內'},{value:'1-3m',label:'1-3個月'},
-  {value:'3-6m',label:'3-6個月'},{value:'6m-1y',label:'6個月-1年'},{value:'1-2y',label:'1-2年'},
-  {value:'2-5y',label:'2-5年'},{value:'5y+',label:'5年以上'}
+{value:'',label:'請選擇時間'},{value:'1w',label:'1周內'},{value:'1-3m',label:'1-3個月'},
+{value:'3-6m',label:'3-6個月'},{value:'6m-1y',label:'6個月-1年'},{value:'1-2y',label:'1-2年'},
+{value:'2-5y',label:'2-5年'},{value:'5y+',label:'5年以上'}
 ];
 const severityOptions=[
-  {value:'',label:'請選擇輕重'},{value:'mild',label:'輕微（不影響日常生活）'},
-  {value:'moderate',label:'中等（偶爾影響生活）'},{value:'severe',label:'嚴重（明顯影響生活）'}
+{value:'',label:'請選擇輕重'},{value:'mild',label:'輕微（不影響日常生活）'},
+{value:'moderate',label:'中等（偶爾影響生活）'},{value:'severe',label:'嚴重（明顯影響生活）'}
 ];
 const fullSymptomData=[
 {seq:1,symptom:"記憶力下降",氣血:"○",微循環:"",毒素:"",血脂:"",寒涼濕:"",免疫:"",情緒:""},
@@ -323,7 +319,8 @@ const fullSymptomData=[
 {seq:97,symptom:"身體異味",氣血:"",微循環:"",毒素:"○",血脂:"",寒涼濕:"",免疫:"",情緒:""},
 {seq:98,symptom:"淋巴結大",氣血:"",微循環:"",毒素:"○",血脂:"",寒涼濕:"",免疫:"○",情緒:""},
 {seq:99,symptom:"黑痣變大變多",氣血:"",微循環:"",毒素:"○",血脂:"",寒涼濕:"",免疫:"○",情緒:""},
-{seq:100,symptom:"形體消瘦",氣血:"○",微循環:"",毒素:"",血脂:"",寒涼濕:"",免疫:"",情緒:""}];
+{seq:100,symptom:"形體消瘦",氣血:"○",微循環:"",毒素:"",血脂:"",寒涼濕:"",免疫:"",情緒:""}
+];
 
 const setStatus=text=>{const e=document.getElementById('status-text');e&&(e.textContent=text);};
 const showError=msg=>{
@@ -477,133 +474,6 @@ return false;
 }
 }
 
-function handleShare(){
-return async function(e){
-e.stopPropagation();e.preventDefault();
-let scEl,mc,st,canvas,dataUrl,fileName;
-try{
-scEl=document.getElementById('summary-content');
-mc=document.querySelector('#success-modal .modal-content')||document.getElementById('success-modal');
-if(!scEl||!mc){
-const rs=document.getElementById('report-summary');
-if(rs)scEl=rs.querySelector('.summary-content')||rs;
-if(!scEl){
-alert('報告內容加載中，請稍候再試');
-setTimeout(()=>this.click(),500);
-return;
-}
-}
-st='🧬 彥彬自檢系統';
-this.disabled=true;
-this.innerHTML='<i class="fa fa-spinner fa-spin mr-1"></i> 處理中...';
-
-if(!window.html2canvas){
-alert('正在加載分享所需組件，請稍候...');
-const script=document.createElement('script');
-script.src='https://html2canvas.hertzen.com/dist/html2canvas.min.js';
-script.onload=()=>this.click();
-script.onerror=()=>{throw new Error('組件加載失敗');};
-document.head.appendChild(script);
-return;
-}
-
-scEl.style.backgroundColor='#ffffff';
-scEl.style.padding='1rem';
-scEl.style.width='100%';
-scEl.style.boxSizing='border-box';
-scEl.style.borderRadius='16px';
-scEl.style.boxShadow='0 4px 24px rgba(0,0,0,0.12)';
-
-canvas=await html2canvas(scEl,{
-scale:2.0,useCORS:true,allowTaint:true,logging:false,
-backgroundColor:'#ffffff',width:scEl.offsetWidth,height:scEl.offsetHeight,dpi:300
-});
-
-dataUrl=canvas.toDataURL('image/png',0.9);
-fileName=`🧬 彥彬自檢系統_${new Date().toLocaleDateString()}.png`;
-const imgBlob=await (await fetch(dataUrl)).blob();
-let file;
-
-if(imgBlob.size>5*1024*1024){
-alert('圖片體積過大，輕微壓縮保持清晰...');
-dataUrl=canvas.toDataURL('image/png',0.8);
-const compressedBlob=await (await fetch(dataUrl)).blob();
-file=new File([compressedBlob],fileName,{type:'image/png'});
-}else{
-file=new File([imgBlob],fileName,{type:'image/png'});
-}
-
-if(navigator.share&&typeof navigator.share==='function'){
-try{
-const shareData={title:'🧬 彥彬自檢系統',text:st,files:[file]};
-const canShare=navigator.canShare?await navigator.canShare(shareData):true;
-if(canShare){await navigator.share(shareData);alert('分享成功！高清報告已發送到LINE群組/好友');}
-}catch(err){
-console.error('LINE分享失敗：',err);
-if(err.name!=='AbortError'){
-downloadImage(dataUrl,fileName);
-alert(`分享失敗：${err.message||'未知錯誤'}，已下載高清報告圖片`);
-}
-}
-}else{
-downloadImage(dataUrl,fileName);
-try{
-await navigator.clipboard.writeText(st);
-alert('已下載高清報告圖片，文字已複製到剪貼板');
-}catch(cbErr){
-alert('已下載高清報告圖片，請手動複製文字分享');
-}
-}
-}catch(err){
-console.error('分享總體錯誤：',err);
-downloadImage(dataUrl||canvas.toDataURL('image/png',0.8),fileName||`健康報告_${new Date().getTime()}.png`);
-alert('分享功能異常，已下載高清報告圖片');
-}finally{
-this.disabled=false;
-this.innerHTML='<i class="fa fa-share-alt mr-1"></i> 分享到LINE';
-}
-};
-}
-
-function handleDownload(){
-return async function(){
-try{
-this.disabled=true;
-this.innerHTML='<i class="fa fa-spinner fa-spin mr-1"></i> 下載中...';
-const scEl=document.getElementById('summary-content')||document.querySelector('#report-summary .summary-content');
-if(!scEl)throw new Error('報告內容未找到');
-if(!window.html2canvas){
-alert('正在加載下載所需組件...');
-await new Promise((resolve,reject)=>{
-const script=document.createElement('script');
-script.src='https://html2canvas.hertzen.com/dist/html2canvas.min.js';
-script.onload=resolve;script.onerror=reject;
-document.head.appendChild(script);
-});
-}
-scEl.style.backgroundColor='#ffffff';
-scEl.style.padding='1rem';
-scEl.style.borderRadius='16px';
-scEl.style.boxShadow='0 4px 24px rgba(0,0,0,0.12)';
-const canvas=await html2canvas(scEl,{
-scale:2.0,useCORS:true,backgroundColor:'#ffffff',dpi:300
-});
-const dataUrl=canvas.toDataURL('image/png',0.9);
-downloadImage(dataUrl);
-this.innerHTML='<i class="fa fa-download mr-1"></i> 下載完成';
-setTimeout(()=>{
-this.innerHTML='<i class="fa fa-download mr-1"></i> 下載報告';
-this.disabled=false;
-},1500);
-}catch(e){
-console.error('下載按鈕錯誤：',e);
-this.innerHTML='<i class="fa fa-download mr-1"></i> 下載報告';
-this.disabled=false;
-alert('下載失敗：'+e.message);
-}
-};
-}
-
 function initControlButtons(){
 // 下一步按鈕
 document.getElementById('next-to-checklist').addEventListener('click',function(){
@@ -657,13 +527,133 @@ const sd=collectSubmitData();
 submitChecklistData(sd);
 });
 
-// 分享按鈕（通用事件）
-const shareHandler=handleShare();
-document.querySelectorAll('.share-btn').forEach(btn=>btn.addEventListener('click',shareHandler));
+// 分享按鈕（優化位置：報告模态框底部）
+const initShareButton=()=>{
+const shareBtn=document.createElement('button');
+shareBtn.id='native-share-btn';
+shareBtn.className='bg-[#00C300] hover:bg-[#00A800] text-white font-medium py-2 px-4 rounded-lg flex items-center justify-center gap-2 shadow-elevation-1 transition-all w-full md:w-auto';
+shareBtn.innerHTML='<i class="fa fa-share-alt"></i> 分享到LINE';
+shareBtn.addEventListener('click',async function(e){
+e.stopPropagation();e.preventDefault();
+let scEl,mc,st,canvas,dataUrl,fileName;
+try{
+scEl=document.getElementById('summary-content');
+mc=document.querySelector('#success-modal .modal-content')||document.getElementById('success-modal');
+if(!scEl||!mc){
+const rs=document.getElementById('report-summary');
+if(rs)scEl=rs.querySelector('.summary-content')||rs;
+if(!scEl){alert('報告內容加載中，請稍候再試');setTimeout(()=>this.click(),500);return;}
+}
+st='🧬 彥彬自檢系統';
+this.disabled=true;
+this.innerHTML='<i class="fa fa-spinner fa-spin"></i> 處理中...';
 
-// 下載按鈕（通用事件）
-const downloadHandler=handleDownload();
-document.querySelectorAll('.download-btn').forEach(btn=>btn.addEventListener('click',downloadHandler));
+if(!window.html2canvas){
+alert('正在加載分享所需組件，請稍候...');
+const script=document.createElement('script');
+script.src='https://html2canvas.hertzen.com/dist/html2canvas.min.js';
+script.onload=()=>this.click();
+script.onerror=()=>{throw new Error('組件加載失敗');};
+document.head.appendChild(script);
+return;
+}
+
+// 優化截圖樣式
+scEl.style.backgroundColor='#ffffff';
+scEl.style.padding='1rem';
+scEl.style.width='100%';
+scEl.style.boxSizing='border-box';
+scEl.style.borderRadius='16px';
+scEl.style.boxShadow='0 4px 24px rgba(0,0,0,0.12)';
+
+// 生成截圖
+canvas=await html2canvas(scEl,{
+scale:2.0,useCORS:true,allowTaint:true,logging:false,
+backgroundColor:'#ffffff',width:scEl.offsetWidth,height:scEl.offsetHeight,dpi:300
+});
+
+dataUrl=canvas.toDataURL('image/png',0.9);
+fileName=`🧬 彥彬自檢系統_${new Date().toLocaleDateString()}.png`;
+const imgBlob=await (await fetch(dataUrl)).blob();
+let file;
+
+// 圖片壓縮處理
+if(imgBlob.size>5*1024*1024){
+alert('圖片體積過大，輕微壓縮保持清晰...');
+dataUrl=canvas.toDataURL('image/png',0.8);
+const compressedBlob=await (await fetch(dataUrl)).blob();
+file=new File([compressedBlob],fileName,{type:'image/png'});
+}else{
+file=new File([imgBlob],fileName,{type:'image/png'});
+}
+
+// 原生分享
+if(navigator.share&&typeof navigator.share==='function'){
+try{
+const shareData={title:'🧬 彥彬自檢系統',text:st,files:[file]};
+const canShare=navigator.canShare?await navigator.canShare(shareData):true;
+if(canShare){await navigator.share(shareData);alert('分享成功！高清報告已發送到LINE群組/好友');}
+}catch(err){
+console.error('LINE分享失敗：',err);
+if(err.name!=='AbortError'){downloadImage(dataUrl,fileName);alert(`分享失敗：${err.message||'未知錯誤'}，已下載高清報告圖片`);}
+}
+}else{
+downloadImage(dataUrl,fileName);
+try{await navigator.clipboard.writeText(st);alert('已下載高清報告圖片，文字已複製到剪貼板');}
+catch(cbErr){alert('已下載高清報告圖片，請手動複製文字分享');}
+}
+}catch(err){
+console.error('分享總體錯誤：',err);
+downloadImage(dataUrl||canvas.toDataURL('image/png',0.8),fileName||`健康報告_${new Date().getTime()}.png`);
+alert('分享功能異常，已下載高清報告圖片');
+}finally{
+this.disabled=false;this.innerHTML='<i class="fa fa-share-alt"></i> 分享到LINE';
+}
+});
+
+// 下載按鈕
+const downloadBtn=document.getElementById('download-report-btn')||document.createElement('button');
+if(!document.getElementById('download-report-btn')){
+downloadBtn.id='download-report-btn';
+downloadBtn.className='bg-primary hover:bg-primary/90 text-white font-medium py-2 px-4 rounded-lg flex items-center justify-center gap-2 shadow-elevation-1 transition-all w-full md:w-auto';
+downloadBtn.innerHTML='<i class="fa fa-download"></i> 下載報告';
+}
+downloadBtn.addEventListener('click',async function(){
+try{
+this.disabled=true;this.innerHTML='<i class="fa fa-spinner fa-spin"></i> 下載中...';
+const scEl=document.getElementById('summary-content')||document.querySelector('#report-summary .summary-content');
+if(!scEl)throw new Error('報告內容未找到');
+if(!window.html2canvas){
+alert('正在加載下載所需組件...');
+await new Promise((resolve,reject)=>{
+const script=document.createElement('script');
+script.src='https://html2canvas.hertzen.com/dist/html2canvas.min.js';
+script.onload=resolve;script.onerror=reject;document.head.appendChild(script);
+});
+}
+// 優化截圖樣式
+scEl.style.backgroundColor='#ffffff';
+scEl.style.padding='1rem';
+scEl.style.borderRadius='16px';
+scEl.style.boxShadow='0 4px 24px rgba(0,0,0,0.12)';
+const canvas=await html2canvas(scEl,{scale:2.0,useCORS:true,backgroundColor:'#ffffff',dpi:300});
+const dataUrl=canvas.toDataURL('image/png',0.9);
+downloadImage(dataUrl);
+this.innerHTML='<i class="fa fa-check"></i> 下載完成';
+setTimeout(()=>{this.innerHTML='<i class="fa fa-download"></i> 下載報告';this.disabled=false;},1500);
+}catch(e){
+console.error('下載按鈕錯誤：',e);
+this.innerHTML='<i class="fa fa-download"></i> 下載報告';this.disabled=false;
+alert('下載失敗：'+e.message);
+}
+});
+
+// 將按鈕添加到模态框底部（最佳位置）
+const modalFooter=document.createElement('div');
+modalFooter.className='modal-footer flex flex-col sm:flex-row gap-3 mt-5 pt-4 border-t border-gray-100';
+modalFooter.appendChild(shareBtn);
+modalFooter.appendChild(downloadBtn);
+document.querySelector('#success-modal .modal-content')?.appendChild(modalFooter);
 }
 
 function collectSubmitData(){
@@ -698,6 +688,22 @@ function submitChecklistData(data){
 console.log("提交數據：",data);
 setStatus('提交中...');
 document.getElementById('status').classList.remove('hidden');
+// 修復JSONP提交問題
+window.submitCallback=function(resp){
+document.getElementById('status').classList.add('hidden');
+if(resp.status==='error'){showError('提交失敗：'+resp.message);return;}
+const rd=organizeReportData({...data,userBasicInfo:window.userBasicInfo,selectedSymptoms:JSON.parse(data.selectedSymptoms)});
+window.reportData=rd;
+renderReportSummary(rd);
+document.getElementById('success-modal').classList.remove('hidden');
+// 初始化按鈕
+initControlButtons();
+setTimeout(()=>{
+const mc=document.querySelector('#success-modal .modal-content');
+mc&&(mc.style.maxHeight='90vh');
+document.getElementById('report-summary')&&(document.getElementById('report-summary').style.maxHeight='80vh');
+},100);
+};
 $.ajax({
 url:GAS_URL,
 dataType:'jsonp',
@@ -705,23 +711,13 @@ jsonp:'callback',
 jsonpCallback:'submitCallback',
 timeout:JSONP_TIMEOUT,
 data:data,
-success:function(resp){
-document.getElementById('status').classList.add('hidden');
-const rd=organizeReportData({...data,userBasicInfo:window.userBasicInfo,selectedSymptoms:JSON.parse(data.selectedSymptoms)});
-window.reportData=rd;
-renderReportSummary(rd);
-document.getElementById('success-modal').classList.remove('hidden');
-setTimeout(()=>{
-mc&&(mc.style.maxHeight='90vh');
-document.getElementById('report-summary')&&(document.getElementById('report-summary').style.maxHeight='80vh');
-},100);
-},
 error:function(xhr,status,err){
 console.error("提交失敗：",status,err);
 document.getElementById('status').classList.add('hidden');
-// 增強錯誤提示，顯示具體原因
-const errMsg=err.message||status;
-showError(`提交失敗：${errMsg}（可能原因：網絡中斷、伺服器繁忙、數據格式錯誤），請檢查網絡後重新嘗試`);
+const errMsg=status==='timeout'?'請求超時，請檢查網絡連接':
+status==='parsererror'?'數據解析錯誤，請聯繫管理員':
+'與伺服器通訊失敗，錯誤：'+err;
+showError(errMsg);
 }
 });
 }
@@ -730,11 +726,9 @@ function renderReportSummary(reportData){
 const {formattedUserInfo,factorSymptoms,summaryText}=reportData;
 let sc=document.getElementById('summary-content');
 if(!sc){
-sc=document.createElement('div');
-sc.id='summary-content';
+sc=document.createElement('div');sc.id='summary-content';
 const rs=document.getElementById('report-summary')||document.createElement('div');
-rs.id='report-summary';
-rs.appendChild(sc);
+rs.id='report-summary';rs.appendChild(sc);
 document.querySelector('#success-modal .modal-content')?.appendChild(rs)||document.body.appendChild(rs);
 }
 sc.dataset.summary=summaryText;
@@ -742,59 +736,38 @@ const ts=Object.values(factorSymptoms).reduce((s,f)=>s+f.length,0);
 
 // 報告容器樣式
 const rs=document.getElementById('report-summary');
-rs.style.maxHeight='80vh';
-rs.style.overflowY='auto';
-rs.style.padding='1rem';
-rs.style.boxSizing='border-box';
-rs.style.backgroundColor='#ffffff';
-rs.style.borderRadius='16px';
-rs.style.boxShadow='0 8px 32px rgba(0,0,0,0.15)';
-rs.style.margin='0 auto';
-rs.style.width='100%';
-rs.style.maxWidth='800px';
+rs.style.maxHeight='80vh';rs.style.overflowY='auto';rs.style.padding='1rem';
+rs.style.boxSizing='border-box';rs.style.backgroundColor='#ffffff';rs.style.borderRadius='16px';
+rs.style.boxShadow='0 8px 32px rgba(0,0,0,0.15)';rs.style.margin='0 auto';
+rs.style.width='100%';rs.style.maxWidth='800px';
 
-// 內容區樣式
-sc.style.width='100%';
-sc.style.backgroundColor='#ffffff';
-sc.style.padding='1rem';
-sc.style.boxSizing='border-box';
-sc.style.lineHeight='1.6';
-sc.style.fontSize='0.95rem';
+// 內容樣式
+sc.style.width='100%';sc.style.backgroundColor='#ffffff';sc.style.padding='1rem';
+sc.style.boxSizing='border-box';sc.style.lineHeight='1.6';sc.style.fontSize='0.95rem';
 
-// 手機端按鈕區（置頂，方便點擊）
+// 生成報告HTML
 let html=`
 <div class="text-center mb-4">
 <h3 class="text-xl md:text-2xl font-bold text-[#2d3748] mb-1">🧬 彥彬自檢系統</h3>
 <div class="text-sm text-[#718096]">${formattedUserInfo.提交時間}</div>
 </div>
-<!-- 手機端頂部按鈕區 -->
-<div class="flex justify-center gap-3 mb-4">
-<button class="share-btn flex items-center justify-center gap-1 bg-primary text-white px-4 py-2 rounded-full text-sm font-medium shadow-md hover:shadow-lg transition-shadow w-1/2 max-w-[180px]">
-<i class="fa fa-share-alt"></i> 分享到LINE
-</button>
-<button class="download-btn flex items-center justify-center gap-1 bg-gray-700 text-white px-4 py-2 rounded-full text-sm font-medium shadow-md hover:shadow-lg transition-shadow w-1/2 max-w-[180px]">
-<i class="fa fa-download"></i> 下載報告
-</button>
-</div>
-<!-- 基本資料 -->
 <div class="bg-[#f8f9fa] rounded-10 p-4 mb-4">
 <div class="text-lg font-semibold text-[#2d3748] mb-3 flex items-center">
 <i class="fa fa-user-circle text-primary mr-2 text-base"></i>基本資料
 </div>
 <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-sm">`;
 
-// 基本資料內容
-const infoEntries=Object.entries(formattedUserInfo);
-infoEntries.forEach(([k,v])=>{
+// 基本資料
+Object.entries(formattedUserInfo).forEach(([k,v])=>{
 if(k!=='提交時間'){
+const label=k==='血糖'?'血糖':k;
 html+=`<div class="flex justify-between">
-<span class="text-[#4a5568] font-medium">${k}：</span>
+<span class="text-[#4a5568] font-medium">${label}：</span>
 <span class="text-[#2d3748]">${v}</span>
 </div>`;
 }
 });
 
-// 統計資訊
 html+=`</div></div>
 <div class="mb-4">
 <div class="flex justify-between items-center mb-3">
@@ -806,12 +779,11 @@ html+=`</div></div>
 </div>
 </div>
 </div>
-<!-- 健康要素評估 -->
 <div class="text-lg font-semibold text-[#2d3748] mb-3 flex items-center">
 <i class="fa fa-heartbeat text-primary mr-2 text-base"></i>七大健康要素評估
 </div>`;
 
-// 要素詳情
+// 健康要素評估
 Object.entries(factorSymptoms).forEach(([fk,f])=>{
 const fn=factorStyles[fk].label;
 html+=`<div class="bg-white border border-[#e8f4f8] rounded-10 p-4 mb-3 shadow-sm hover:shadow-md transition-shadow">
@@ -832,7 +804,7 @@ html+=`<div class="flex flex-col p-2 bg-[#fafafa] rounded-lg">
 html+=`</div></div>`;
 });
 
-// 建議部分
+// 建議
 html+=`<div class="mt-5 bg-primary/5 border border-primary/20 rounded-10 p-4 text-sm text-[#4a5568] italic">
 💡 建議：根據自檢結果關注對應健康問題，必要時諮詢專業醫師
 </div>`;
@@ -842,9 +814,7 @@ sc.innerHTML=html;
 // 動畫效果
 setTimeout(()=>{
 rs.style.height=sc.offsetHeight+30+'px';
-rs.style.display='none';
-rs.offsetHeight;
-rs.style.display='block';
+rs.style.display='none';rs.offsetHeight;rs.style.display='block';
 },150);
 }
 
@@ -853,16 +823,11 @@ document.querySelectorAll('.symptom-checkbox').forEach(cb=>{cb.checked&&(cb.chec
 document.getElementById('filter-all').click();
 const fsBtn=document.getElementById('filter-selected');
 fsBtn.classList.contains('bg-red-600')&&fsBtn.click();
-window.userBasicInfo=null;
-window.reportData=null;
-document.getElementById('user-name').value='';
-document.getElementById('user-age').value='';
-document.getElementById('user-gender').value='';
-document.getElementById('user-height').value='';
-document.getElementById('user-weight').value='';
-document.getElementById('user-bp').value='';
-document.getElementById('user-glucose').value='';
-document.getElementById('user-job').value='';
+window.userBasicInfo=null;window.reportData=null;
+document.getElementById('user-name').value='';document.getElementById('user-age').value='';
+document.getElementById('user-gender').value='';document.getElementById('user-height').value='';
+document.getElementById('user-weight').value='';document.getElementById('user-bp').value='';
+document.getElementById('user-glucose').value='';document.getElementById('user-job').value='';
 }
 
 function forceShowUserInfo(){
@@ -875,13 +840,11 @@ return true;
 }catch(e){console.error("顯示用戶資訊出錯：",e);alert("頁面加載失敗，請刷新");return false;}
 }
 
+// 頁面加載初始化
 document.addEventListener('DOMContentLoaded',function(){
 console.log("頁面加載完成，初始化系統");
 setStatus('正在初始化...');
-if(!window.liff){
-showError('LINE LIFF初始化失敗，請檢查網絡或重新打開頁面');
-return;
-}
+if(!window.liff){showError('LINE LIFF初始化失敗，請檢查網絡或重新打開頁面');return;}
 liff.init({liffId:LIFF_ID},{disableRedirect:true})
 .then(()=>{
 console.log("LIFF初始化成功");
@@ -892,9 +855,7 @@ console.error("LIFF初始化失敗：",err);
 if(err.message.includes('expired')||err.message.includes('token')||err.message.includes('auth')){
 setStatus('令牌無效，重新登錄...');
 setTimeout(()=>liff.login(),1000);
-}else{
-showError('系統初始化失敗：'+err.message);
-}
+}else{showError('系統初始化失敗：'+err.message);}
 });
 });
 
@@ -912,13 +873,15 @@ const isTokenErr=tokenErrs.some(k=>err.message.toLowerCase().includes(k));
 if(isTokenErr){
 setStatus('令牌過期，重新登錄...');
 liff.isLoggedIn()?liff.logout().then(()=>setTimeout(()=>liff.login(),1000)).catch(()=>liff.login()):setTimeout(()=>liff.login(),1000);
-}else{
-showError('取得用戶資料失敗：'+err.message);
-}
+}else{showError('取得用戶資料失敗：'+err.message);}
 });
 }
 
 function callGasBackend(userId,displayName){
+window.verifyCallback=function(resp){
+console.log("後端返回：",resp);
+resp.status==="error"?showError(resp.message):renderResult(resp);
+};
 $.ajax({
 url:GAS_URL,
 dataType:'jsonp',
@@ -926,13 +889,10 @@ jsonp:'callback',
 jsonpCallback:'verifyCallback',
 timeout:JSONP_TIMEOUT,
 data:{userId:userId,displayName:displayName,action:'verifyUser',needExpiryDate:true},
-success:function(resp){
-console.log("後端返回：",resp);
-resp.status==="error"?showError(resp.message):renderResult(resp);
-},
 error:function(xhr,status,err){
 console.error("AJAX錯誤：",status,err);
-const errMsg=status==='timeout'?'請求超時，檢查網絡':status==='parsererror'?'數據解析錯誤':'與伺服器通訊失敗';
+const errMsg=status==='timeout'?'請求超時，檢查網絡':
+status==='parsererror'?'數據解析錯誤':'與伺服器通訊失敗';
 showError(errMsg);
 }
 });
@@ -976,8 +936,9 @@ card.classList.remove('hidden');
 setTimeout(()=>forceShowUserInfo(),300);
 }
 
-window.submitCallback=resp=>{console.log("submitCallback:",resp);return resp;};
-window.verifyCallback=resp=>{console.log("verifyCallback:",resp);return resp;};
+// 全局回調函數
+window.submitCallback=function(){};
+window.verifyCallback=function(){};
 </script>
 </body>
 </html>
