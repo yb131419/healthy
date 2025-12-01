@@ -581,6 +581,18 @@ alert('分享功能異常，請手動截圖分享');
 }finally{
 btn.disabled=false;
 btn.innerHTML='<i class="fa fa-share-alt mr-1"></i> 分享到LINE';
+// 添加關閉按鈕
+let closeBtn=document.getElementById('close-page-btn');
+if(!closeBtn){
+closeBtn=document.createElement('button');
+closeBtn.id='close-page-btn';
+closeBtn.className='w-full sm:w-auto px-8 py-3 bg-gray-600 text-white rounded-lg font-medium flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-shadow mt-2';
+closeBtn.innerHTML='<i class="fa fa-times"></i> 關閉網頁';
+closeBtn.onclick=()=>liff.closeWindow();
+btn.parentNode.appendChild(closeBtn);
+}else{
+closeBtn.style.display='flex';
+}
 }
 }
 
@@ -717,7 +729,7 @@ html+=`</div></div>
 <i class="fa fa-heartbeat text-primary mr-2 text-base"></i>七大健康要素評估
 </div>`;
 
-// 調整七大健康要素排列，使用更緊湊的布局
+// 調整排版：症狀名稱單獨一行，時間和程度另一行
 Object.entries(factorSymptoms).forEach(([fk,f])=>{
 const fn=factorStyles[fk].label;
 html+=`<div class="bg-white border border-[#e8f4f8] rounded-10 p-3 mb-3 shadow-sm hover:shadow-md transition-shadow">
@@ -728,17 +740,18 @@ html+=`<div class="bg-white border border-[#e8f4f8] rounded-10 p-3 mb-3 shadow-s
 <div class="grid grid-cols-1 gap-1.5 text-sm">`;
 
 f.forEach((i,idx)=>{
-html+=`<div class="flex items-center justify-between p-2 bg-[#fafafa] rounded-lg">
-<div class="font-medium text-[#2d3748] text-sm truncate flex-1">${idx+1}. ${i.name}</div>
-<div class="text-[#4a5568] text-xs whitespace-nowrap mx-2">${i.duration}</div>
-<div class="text-[#718096] text-xs whitespace-nowrap">${i.severity}</div>
+html+=`<div class="p-2 bg-[#fafafa] rounded-lg">
+<div class="font-medium text-[#2d3748] text-sm">${idx+1}. ${i.name}</div>
+<div class="flex justify-between mt-1 text-xs">
+<div class="text-[#4a5568]">⏱️ ${i.duration}</div>
+<div class="text-[#718096]">⚠️ ${i.severity}</div>
+</div>
 </div>`;
 });
 
 html+=`</div></div>`;
 });
 
-// 建議文字改為粗體，去除斜體
 html+=`<div class="mt-5 bg-primary/5 border border-primary/20 rounded-10 p-4 text-sm text-[#4a5568] font-bold">
 💡 建議：根據自檢結果關注對應健康問題，必要時諮詢專業醫師
 </div>
