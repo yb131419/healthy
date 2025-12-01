@@ -210,8 +210,8 @@ const durationOptions=[
   {value:'2-5y',label:'2-5年'},{value:'5y+',label:'5年以上'}
 ];
 const severityOptions=[
-  {value:'',label:'請選擇輕重'},{value:'mild',label:'輕微（不影響日常生活）'},
-  {value:'moderate',label:'中等（偶爾影響生活）'},{value:'severe',label:'嚴重（明顯影響生活）'}
+  {value:'',label:'請選擇輕重'},{value:'mild',label:'輕度（不影響生活）'},
+  {value:'moderate',label:'中度（偶爾影響）'},{value:'severe',label:'重度（明顯影響）'}
 ];
 const fullSymptomData=[
 {seq:1,symptom:"記憶力下降",氣血:"○",微循環:"",毒素:"",血脂:"",寒涼濕:"",免疫:"",情緒:""},
@@ -230,14 +230,14 @@ const fullSymptomData=[
 {seq:14,symptom:"易打哈欠",氣血:"○",微循環:"",毒素:"",血脂:"○",免疫:"",情緒:""},
 {seq:15,symptom:"常嘆氣",氣血:"",微循環:"",毒素:"",血脂:"",寒涼濕:"",免疫:"",情緒:"○"},
 {seq:16,symptom:"眼乾澀",氣血:"○",微循環:"",毒素:"",血脂:"",寒涼濕:"",免疫:"",情緒:""},
-{seq:17,symptom:"眼癢",氣血:"",微循環:"",毒素:"○",血脂:"",寒涼濕:"",免疫:"○",情緒:""},
+{seq:17,symptom:"眼癢",氣血:"",微循環:"",毒素:"○",血脂:"",寒涼濕:"○",免疫:"",情緒:""},
 {seq:18,symptom:"眼痛",氣血:"",微循環:"",毒素:"○",血脂:"",寒涼濕:"",免疫:"○",情緒:""},
 {seq:19,symptom:"視力模糊",氣血:"○",微循環:"",毒素:"",血脂:"",寒涼濕:"",免疫:"",情緒:""},
 {seq:20,symptom:"眼屎多",氣血:"",微循環:"",毒素:"○",血脂:"",寒涼濕:"",免疫:"",情緒:""},
 {seq:21,symptom:"眼怕光流淚",氣血:"○",微循環:"",毒素:"",血脂:"",寒涼濕:"",免疫:"",情緒:""},
 {seq:22,symptom:"麥粒腫",氣血:"",微循環:"",毒素:"○",血脂:"",寒涼濕:"",免疫:"",情緒:""},
 {seq:23,symptom:"聽力下降",氣血:"○",微循環:"",毒素:"",血脂:"",寒涼濕:"",免疫:"",情緒:"○"},
-{seq:24,symptom:"耳癢",氣血:"",微循環:"",毒素:"○",血脂:"",寒涼濕:"",免疫:"○",情緒:""},
+{seq:24,symptom:"耳癢",氣血:"",微循環:"",毒素:"○",血脂:"",寒涼濕:"○",免疫:"",情緒:""},
 {seq:25,symptom:"耳鳴",氣血:"○",微循環:"",毒素:"",血脂:"",寒涼濕:"",免疫:"",情緒:"○"},
 {seq:26,symptom:"耳痛",氣血:"",微循環:"",毒素:"○",血脂:"",寒涼濕:"",免疫:"",情緒:""},
 {seq:27,symptom:"耳屎多",氣血:"",微循環:"",毒素:"○",血脂:"",寒涼濕:"",免疫:"",情緒:""},
@@ -366,7 +366,7 @@ cd.innerHTML=`
 <div class="symptom-details hidden mt-2 pt-2 border-t border-gray-100">
 <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
 <div><label class="block text-xs text-textSecondary mb-1">時間長短</label><select class="duration-select w-full border border-gray-200 rounded-lg px-2 py-1 text-xs input-focus bg-white">${doh}</select></div>
-<div><label class="block text-xs text-textSecondary mb-1">症狀輕重</label><select class="severity-select w-full border border-gray-200 rounded-lg px-2 py-1 text-xs input-focus bg-white">${soh}</select><div class="severity-note">備注：輕微(不影響生活)、中等(偶爾影響)、嚴重(明顯影響)</div></div>
+<div><label class="block text-xs text-textSecondary mb-1">症狀輕重</label><select class="severity-select w-full border border-gray-200 rounded-lg px-2 py-1 text-xs input-focus bg-white">${soh}</select><div class="severity-note">備注：輕度(不影響生活)、中度(偶爾影響)、重度(明顯影響)</div></div>
 </div></div></div></div>`;
 c.appendChild(cd);
 setTimeout(()=>{cd.style.opacity='1';cd.style.transform='translateY(0)';},50);
@@ -709,7 +709,7 @@ html+=`</div></div>
 <div class="text-lg font-semibold text-[#2d3748] flex items-center mb-1">
 <i class="fa fa-chart-pie text-primary mr-2 text-base"></i>統計資訊
 </div>
-<div class="bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-medium inline-flex items-center justify-center">
+<div class="bg-green-100 text-green-800 px-4 py-2 rounded-full text-sm font-medium inline-flex items-center justify-center">
 總症狀數：${ts} 項
 </div>
 </div>
@@ -717,14 +717,15 @@ html+=`</div></div>
 <i class="fa fa-heartbeat text-primary mr-2 text-base"></i>七大健康要素評估
 </div>`;
 
+// 調整七大健康要素排列，使用更緊湊的布局
 Object.entries(factorSymptoms).forEach(([fk,f])=>{
 const fn=factorStyles[fk].label;
-html+=`<div class="bg-white border border-[#e8f4f8] rounded-10 p-4 mb-3 shadow-sm hover:shadow-md transition-shadow">
-<div class="font-semibold text-base text-[#2d3748] mb-3 flex items-center">
+html+=`<div class="bg-white border border-[#e8f4f8] rounded-10 p-3 mb-3 shadow-sm hover:shadow-md transition-shadow">
+<div class="font-semibold text-base text-[#2d3748] mb-2 flex items-center">
 <span class="inline-block w-3 h-3 rounded-full ${factorStyles[fk].className.split(' ')[0]} mr-2"></span>
 【${fn}】（${f.length}項）
 </div>
-<div class="grid grid-cols-1 gap-2 text-sm">`;
+<div class="grid grid-cols-1 gap-1.5 text-sm">`;
 
 f.forEach((i,idx)=>{
 html+=`<div class="flex items-center justify-between p-2 bg-[#fafafa] rounded-lg">
@@ -737,7 +738,8 @@ html+=`<div class="flex items-center justify-between p-2 bg-[#fafafa] rounded-lg
 html+=`</div></div>`;
 });
 
-html+=`<div class="mt-5 bg-primary/5 border border-primary/20 rounded-10 p-4 text-sm text-[#4a5568] italic">
+// 建議文字改為粗體，去除斜體
+html+=`<div class="mt-5 bg-primary/5 border border-primary/20 rounded-10 p-4 text-sm text-[#4a5568] font-bold">
 💡 建議：根據自檢結果關注對應健康問題，必要時諮詢專業醫師
 </div>
 <div class="mt-8 mb-4 flex justify-center px-4">
