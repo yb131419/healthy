@@ -451,6 +451,17 @@ return {formattedUserInfo:fui,factorSymptoms:ffs,summaryText:st};
 }
 
 function initControlButtons(){
+// 統一按鈕樣式：高級質感風格
+const styleButtons = () => {
+  const buttons = document.querySelectorAll('button');
+  buttons.forEach(btn => {
+    if(!btn.classList.contains('custom-styled')) {
+      btn.classList.add('custom-styled', 'px-6', 'py-2.5', 'rounded-lg', 'font-medium', 'transition-all', 'duration-300', 'shadow-md', 'hover:shadow-lg', 'transform', 'hover:-translate-y-0.5', 'active:translate-y-0');
+      btn.classList.remove('px-8', 'py-3'); // 移除舊樣式
+    }
+  });
+};
+
 document.getElementById('next-to-checklist').addEventListener('click',function(){
 const n=document.getElementById('user-name').value.trim(),a=document.getElementById('user-age').value.trim(),g=document.getElementById('user-gender').value;
 if(!n){alert('請輸入姓名');document.getElementById('user-name').focus();return;}
@@ -469,6 +480,7 @@ document.getElementById('checklist-section').classList.remove('hidden');
 renderSymptomCards();
 initFilterButtons();
 document.getElementById('checklist-section').scrollIntoView({behavior:'smooth'});
+styleButtons(); // 應用按鈕樣式
 });
 
 document.getElementById('back-to-info').addEventListener('click',function(){
@@ -506,6 +518,8 @@ submitChecklistData(sd,btn);
 document.addEventListener('click',function(e){
 if(e.target.closest('#native-share-btn'))handleShareButtonClick(e);
 });
+
+styleButtons(); // 初始化按鈕樣式
 }
 
 async function handleShareButtonClick(e){
@@ -536,6 +550,9 @@ document.head.appendChild(script);
 });
 }
 
+// 確保內容居中顯示
+scEl.style.textAlign='center';
+scEl.style.margin='0 auto';
 scEl.style.backgroundColor='#ffffff';
 scEl.style.padding='1rem';
 scEl.style.width='100%';
@@ -581,14 +598,21 @@ alert('分享功能異常，請手動截圖分享');
 }finally{
 btn.disabled=false;
 btn.innerHTML='<i class="fa fa-share-alt mr-1"></i> 分享到LINE';
-// 添加關閉按鈕
+// 添加關閉按鈕 - 高級樣式
 let closeBtn=document.getElementById('close-page-btn');
 if(!closeBtn){
 closeBtn=document.createElement('button');
 closeBtn.id='close-page-btn';
-closeBtn.className='w-full sm:w-auto px-8 py-3 bg-gray-600 text-white rounded-lg font-medium flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-shadow mt-2';
+closeBtn.className='w-full sm:w-auto px-6 py-2.5 bg-gray-600 text-white rounded-lg font-medium flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 mt-2';
 closeBtn.innerHTML='<i class="fa fa-times"></i> 關閉網頁';
-closeBtn.onclick=()=>liff.closeWindow();
+closeBtn.onclick=()=>{
+  if(window.liff && liff.closeWindow) {
+    liff.closeWindow();
+  } else {
+    // 後備方案
+    window.close();
+  }
+};
 btn.parentNode.appendChild(closeBtn);
 }else{
 closeBtn.style.display='flex';
@@ -683,7 +707,7 @@ rs.style.boxSizing='border-box';
 rs.style.backgroundColor='#ffffff';
 rs.style.borderRadius='16px';
 rs.style.boxShadow='0 8px 32px rgba(0,0,0,0.15)';
-rs.style.margin='0 auto';
+rs.style.margin='0 auto'; // 整體居中
 rs.style.width='100%';
 rs.style.maxWidth='800px';
 
@@ -693,6 +717,7 @@ sc.style.padding='1rem';
 sc.style.boxSizing='border-box';
 sc.style.lineHeight='1.6';
 sc.style.fontSize='0.95rem';
+sc.style.textAlign='center'; // 文字居中
 
 let html=`
 <div class="text-center mb-4">
@@ -700,7 +725,7 @@ let html=`
 <div class="text-sm text-[#718096]">${formattedUserInfo.提交時間}</div>
 </div>
 <div class="bg-[#f8f9fa] rounded-10 p-4 mb-4">
-<div class="text-lg font-semibold text-[#2d3748] mb-3 flex items-center">
+<div class="text-lg font-semibold text-[#2d3748] mb-3 flex items-center justify-center">
 <i class="fa fa-user-circle text-primary mr-2 text-base"></i>基本資料
 </div>
 <div class="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">`;
@@ -718,22 +743,22 @@ html+=`<div class="flex justify-between">
 
 html+=`</div></div>
 <div class="mb-4">
-<div class="text-lg font-semibold text-[#2d3748] flex items-center mb-1">
+<div class="text-lg font-semibold text-[#2d3748] flex items-center justify-center mb-1">
 <i class="fa fa-chart-pie text-primary mr-2 text-base"></i>統計資訊
 </div>
-<div class="bg-green-100 text-green-800 px-4 py-2 rounded-full text-sm font-medium inline-flex items-center justify-center">
+<div class="bg-green-100 text-green-800 px-4 py-2 rounded-full text-sm font-medium inline-flex items-center justify-center mx-auto">
 總症狀數：${ts} 項
 </div>
 </div>
-<div class="text-lg font-semibold text-[#2d3748] mb-3 flex items-center">
+<div class="text-lg font-semibold text-[#2d3748] mb-3 flex items-center justify-center">
 <i class="fa fa-heartbeat text-primary mr-2 text-base"></i>七大健康要素評估
 </div>`;
 
 // 調整排版：症狀名稱單獨一行，時間和程度另一行
 Object.entries(factorSymptoms).forEach(([fk,f])=>{
 const fn=factorStyles[fk].label;
-html+=`<div class="bg-white border border-[#e8f4f8] rounded-10 p-3 mb-3 shadow-sm hover:shadow-md transition-shadow">
-<div class="font-semibold text-base text-[#2d3748] mb-2 flex items-center">
+html+=`<div class="bg-white border border-[#e8f4f8] rounded-10 p-3 mb-3 shadow-sm hover:shadow-md transition-shadow mx-auto max-w-lg">
+<div class="font-semibold text-base text-[#2d3748] mb-2 flex items-center justify-center">
 <span class="inline-block w-3 h-3 rounded-full ${factorStyles[fk].className.split(' ')[0]} mr-2"></span>
 【${fn}】（${f.length}項）
 </div>
@@ -752,11 +777,11 @@ html+=`<div class="p-2 bg-[#fafafa] rounded-lg">
 html+=`</div></div>`;
 });
 
-html+=`<div class="mt-5 bg-primary/5 border border-primary/20 rounded-10 p-4 text-sm text-[#4a5568] font-bold">
+html+=`<div class="mt-5 bg-primary/5 border border-primary/20 rounded-10 p-4 text-sm text-[#4a5568] font-bold mx-auto max-w-lg">
 💡 建議：根據自檢結果關注對應健康問題，必要時諮詢專業醫師
 </div>
 <div class="mt-8 mb-4 flex justify-center px-4">
-  <button id="native-share-btn" class="w-full sm:w-auto px-8 py-3 bg-[#00C300] text-white rounded-lg font-medium flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-shadow">
+  <button id="native-share-btn" class="w-full sm:w-auto px-6 py-2.5 bg-[#00C300] text-white rounded-lg font-medium flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0">
     <i class="fa fa-share-alt"></i> 分享到LINE
   </button>
 </div>`;
