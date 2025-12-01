@@ -289,8 +289,8 @@ const fullSymptomData=[
 {seq:71,symptom:"高血脂",氣血:"",微循環:"",毒素:"",血脂:"○",寒涼濕:"",免疫:"",情緒:""},
 {seq:72,symptom:"高血壓",氣血:"",微循環:"○",毒素:"",血脂:"○",免疫:"",情緒:""},
 {seq:73,symptom:"高血糖",氣血:"",微循環:"○",毒素:"",血脂:"○",免疫:"",情緒:""},
-{seq:74,symptom:"低血糖",氣血:"○",微循環:"",毒素:"",血脂:"",免疫:"",情緒:""},
-{seq:75,symptom:"低血壓",氣血:"○",微循環:"",毒素:"",血脂:"",免疫:"",情緒:""},
+{seq:74,symptom:"低血糖",氣血:"○",微循環:"",毒素:"",血脂:"",寒涼濕:"",免疫:"",情緒:""},
+{seq:75,symptom:"低血壓",氣血:"○",微循環:"",毒素:"",血脂:"",寒涼濕:"",免疫:"",情緒:""},
 {seq:76,symptom:"經期頭痛",氣血:"○",微循環:"",毒素:"",血脂:"",寒涼濕:"",免疫:"",情緒:""},
 {seq:77,symptom:"月經量少",氣血:"○",微循環:"",毒素:"",血脂:"",寒涼濕:"",免疫:"",情緒:""},
 {seq:78,symptom:"經期時長",氣血:"",微循環:"",毒素:"○",血脂:"",寒涼濕:"",免疫:"",情緒:""},
@@ -711,7 +711,7 @@ html+=`</div></div>
 <div class="text-lg font-semibold text-[#2d3748] flex items-center mb-1">
 <i class="fa fa-chart-pie text-primary mr-2 text-base"></i>統計資訊
 </div>
-<div class="bg-primary/10 text-primary px-3 py-1 rounded-full text-sm font-medium inline-block">
+<div class="bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-medium inline-flex items-center justify-center">
 總症狀數：${ts} 項
 </div>
 </div>
@@ -729,10 +729,10 @@ html+=`<div class="bg-white border border-[#e8f4f8] rounded-10 p-4 mb-3 shadow-s
 <div class="grid grid-cols-1 gap-2 text-sm">`;
 
 f.forEach((i,idx)=>{
-html+=`<div class="flex flex-col p-2 bg-[#fafafa] rounded-lg">
-<div class="font-medium text-[#2d3748] mb-1 text-sm truncate">${idx+1}. ${i.name}</div>
-<div class="text-[#4a5568] text-xs">${i.duration}</div>
-<div class="text-[#718096] text-xs">${i.severity}</div>
+html+=`<div class="flex items-center justify-between p-2 bg-[#fafafa] rounded-lg">
+<div class="font-medium text-[#2d3748] text-sm truncate flex-1">${idx+1}. ${i.name}</div>
+<div class="text-[#4a5568] text-xs whitespace-nowrap mx-2">${i.duration}</div>
+<div class="text-[#718096] text-xs whitespace-nowrap">${i.severity}</div>
 </div>`;
 });
 
