@@ -189,8 +189,6 @@ body{font-feature-settings:"palt";letter-spacing:0.02em;}
 <div class="inline-flex items-center justify-center w-14 h-14 bg-green-100 rounded-full mb-3">
 <i class="fa fa-check text-2xl text-primary"></i>
 </div>
-<h3 class="text-lg font-bold text-textPrimary mb-2">提交成功！</h3>
-<p class="text-textSecondary text-sm mb-3">已為您整理健康報告，可直接分享給好友</p>
 <div id="report-summary" class="border border-gray-100 rounded-xl p-3 mb-3 bg-neutral/50 text-left result-summary">
 <h4 class="text-sm font-medium text-textPrimary mb-2 flex items-center"><i class="fa fa-file-text-o text-primary mr-1.5"></i>健康報告摘要</h4>
 <div id="summary-content" class="text-xs space-y-1.5"></div>
@@ -454,23 +452,6 @@ st+=`\n💡 建議：根據自檢結果關注對應健康問題，必要時諮�
 return {formattedUserInfo:fui,factorSymptoms:ffs,summaryText:st};
 }
 
-function downloadImage(dataUrl,fileName){
-try{
-const link=document.createElement('a');
-link.href=dataUrl;
-link.download=fileName||`🧬 彥彬自檢系統_${new Date().toLocaleDateString()}.png`;
-link.style.display='none';
-document.body.appendChild(link);
-link.click();
-setTimeout(()=>document.body.removeChild(link),300);
-return true;
-}catch(e){
-console.error('下載失敗：',e);
-alert('下載失敗，請手動截圖保存');
-return false;
-}
-}
-
 function initControlButtons(){
 document.getElementById('next-to-checklist').addEventListener('click',function(){
 const n=document.getElementById('user-name').value.trim(),a=document.getElementById('user-age').value.trim(),g=document.getElementById('user-gender').value;
@@ -521,13 +502,9 @@ const sd=collectSubmitData();
 submitChecklistData(sd);
 });
 
-// 按鈕事件委託（解決動態生成按鈕綁定問題）
 document.addEventListener('click',function(e){
 if(e.target.closest('#native-share-btn')){
 handleShareButtonClick(e);
-}
-if(e.target.closest('#download-report-btn')){
-handleDownloadButtonClick(e);
 }
 });
 }
@@ -590,61 +567,19 @@ if(canShare){await navigator.share(shareData);alert('分享成功！高清報告
 }catch(err){
 console.error('LINE分享失敗：',err);
 if(err.name!=='AbortError'){
-downloadImage(dataUrl,fileName);
-alert(`分享失敗：${err.message||'未知錯誤'}，已下載高清報告圖片`);
+alert(`分享失敗：${err.message||'未知錯誤'}`);
 }
 }
 }else{
-downloadImage(dataUrl,fileName);
-try{await navigator.clipboard.writeText(st);alert('已下載高清報告圖片，文字已複製到剪貼板');}
-catch(cbErr){alert('已下載高清報告圖片，請手動複製文字分享');}
+try{await navigator.clipboard.writeText(st);alert('文字已複製到剪貼板，請手動截圖分享');}
+catch(cbErr){alert('請手動截圖並複製文字分享');}
 }
 }catch(err){
 console.error('分享總體錯誤：',err);
-downloadImage(dataUrl||canvas.toDataURL('image/png',0.8),fileName||`健康報告_${new Date().getTime()}.png`);
-alert('分享功能異常，已下載高清報告圖片');
+alert('分享功能異常，請手動截圖分享');
 }finally{
 btn.disabled=false;
 btn.innerHTML='<i class="fa fa-share-alt mr-1"></i> 分享到LINE';
-}
-}
-
-async function handleDownloadButtonClick(e){
-e.stopPropagation();e.preventDefault();
-const btn=e.target.closest('#download-report-btn');
-try{
-btn.disabled=true;
-btn.innerHTML='<i class="fa fa-spinner fa-spin mr-1"></i> 下載中...';
-const scEl=document.getElementById('summary-content')||document.querySelector('#report-summary .summary-content');
-if(!scEl)throw new Error('報告內容未找到');
-if(!window.html2canvas){
-alert('正在加載下載所需組件...');
-await new Promise((resolve,reject)=>{
-const script=document.createElement('script');
-script.src='https://html2canvas.hertzen.com/dist/html2canvas.min.js';
-script.onload=resolve;script.onerror=reject;
-document.head.appendChild(script);
-});
-}
-scEl.style.backgroundColor='#ffffff';
-scEl.style.padding='1rem';
-scEl.style.borderRadius='16px';
-scEl.style.boxShadow='0 4px 24px rgba(0,0,0,0.12)';
-const canvas=await html2canvas(scEl,{
-scale:2.0,useCORS:true,backgroundColor:'#ffffff',dpi:300
-});
-const dataUrl=canvas.toDataURL('image/png',0.9);
-downloadImage(dataUrl);
-btn.innerHTML='<i class="fa fa-check mr-1"></i> 下載完成';
-setTimeout(()=>{
-btn.innerHTML='<i class="fa fa-download mr-1"></i> 下載報告';
-btn.disabled=false;
-},1500);
-}catch(e){
-console.error('下載按鈕錯誤：',e);
-btn.innerHTML='<i class="fa fa-download mr-1"></i> 下載報告';
-btn.disabled=false;
-alert('下載失敗：'+e.message);
 }
 }
 
@@ -750,7 +685,7 @@ let html=`
 <div class="text-lg font-semibold text-[#2d3748] mb-3 flex items-center">
 <i class="fa fa-user-circle text-primary mr-2 text-base"></i>基本資料
 </div>
-<div class="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-sm">`;
+<div class="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">`;
 
 const infoEntries=Object.entries(formattedUserInfo);
 infoEntries.forEach(([k,v])=>{
@@ -801,12 +736,8 @@ html+=`</div></div>`;
 html+=`<div class="mt-5 bg-primary/5 border border-primary/20 rounded-10 p-4 text-sm text-[#4a5568] italic">
 💡 建議：根據自檢結果關注對應健康問題，必要時諮詢專業醫師
 </div>
-<!-- 按鈕區域 - 移至報告底部，避免手機擋住 -->
-<div class="mt-8 mb-4 flex flex-col sm:flex-row gap-3 justify-center px-4">
-  <button id="download-report-btn" class="flex-1 px-6 py-3 bg-primary text-white rounded-lg font-medium flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-shadow">
-    <i class="fa fa-download"></i> 下載報告
-  </button>
-  <button id="native-share-btn" class="flex-1 px-6 py-3 bg-[#00C300] text-white rounded-lg font-medium flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-shadow">
+<div class="mt-8 mb-4 flex justify-center px-4">
+  <button id="native-share-btn" class="w-full sm:w-auto px-8 py-3 bg-[#00C300] text-white rounded-lg font-medium flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-shadow">
     <i class="fa fa-share-alt"></i> 分享到LINE
   </button>
 </div>`;
@@ -855,7 +786,6 @@ if(!window.liff){
 showError('LINE LIFF初始化失敗，請檢查網絡或重新打開頁面');
 return;
 }
-// 優化LIFF初始化配置，加快驗證速度
 liff.init({ liffId: LIFF_ID, enableAnonymousLogin: false }, { disableRedirect: true })
 .then(()=>{
 console.log("LIFF初始化成功");
