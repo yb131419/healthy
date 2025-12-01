@@ -423,10 +423,13 @@ ss?(cd.style.display='block',setTimeout(()=>{cd.style.opacity='1';cd.style.trans
 
 function organizeReportData(submitData){
 const {userBasicInfo,selectedSymptoms,displayName,submitTime}=submitData,fs={氣血:[],微循環:[],毒素:[],血脂:[],寒涼濕:[],免疫:[],情緒:[]};
+// 修復：強制轉換為數組，避免undefined
 const safeSymptoms=Array.isArray(selectedSymptoms)?selectedSymptoms:[];
 safeSymptoms.forEach(s=>{
 const os=fullSymptomData.find(ss=>ss.seq===s.seq);
-os&&Object.keys(fs).forEach(f=>os[f]==="○"&&fs[f].push({name:s.symptom,duration:s.durationText,severity:s.severityText}));
+if(os){// 增加存在性判斷
+Object.keys(fs).forEach(f=>os[f]==="○"&&fs[f].push({name:s.symptom,duration:s.durationText,severity:s.severityText}));
+}
 });
 const ffs=Object.fromEntries(Object.entries(fs).filter(([_,f])=>f.length>0)),fui={
 姓名:userBasicInfo?.name||'未填寫',
@@ -519,7 +522,7 @@ const sd=collectSubmitData();
 submitChecklistData(sd);
 });
 
-// 原生分享按鈕（新增）
+// 原生分享按鈕
 const shareContainer=document.createElement('div');
 shareContainer.className='flex gap-3 justify-center mt-4';
 const nativeShareBtn=document.createElement('button');
@@ -594,7 +597,7 @@ alert('已下載報告圖片，請手動複製文字分享');
 }
 }catch(err){
 console.error('分享總體錯誤：',err);
-const fallbackDataUrl=window.html2canvas?canvas.toDataURL('image/png',0.8):dataUrl;
+const fallbackDataUrl=window.html2canvas?canvas?.toDataURL('image/png',0.8)||dataUrl:dataUrl;
 downloadImage(fallbackDataUrl,`健康報告_${new Date().getTime()}.png`);
 alert('分享功能異常，已下載報告圖片');
 }finally{
@@ -642,7 +645,7 @@ alert('下載失敗：'+e.message);
 }
 
 function collectSubmitData(){
-const liffProfile=liff.getProfile()||{};
+const liffProfile=liff.getProfile?.()||{};// 修復：可選鏈避免函數不存在
 const selectedSymptoms=Array.from(document.querySelectorAll('.symptom-checkbox:checked')).map(cb=>{
 const seq=cb.dataset.seq,cd=cb.closest('.symptom-card');
 return{
@@ -652,9 +655,10 @@ durationText:cd.querySelector('.duration-select option:checked').textContent,
 severityText:cd.querySelector('.severity-select option:checked').textContent
 };
 });
+// 確保返回數組，避免undefined
 return{
 action:'submitChecklist',
-userId:liff.getDecodedIDToken()?.sub||'',
+userId:liff.getDecodedIDToken?.()?.sub||'',// 修復：可選鏈避免函數不存在
 displayName:liffProfile.displayName||'LINE用戶',
 submitTime:new Date().toISOString(),
 userName:document.getElementById('user-name').value.trim(),
@@ -673,9 +677,18 @@ function submitChecklistData(data){
 console.log("提交數據：",data);
 setStatus('提交中...');
 document.getElementById('status').classList.remove('hidden');
-// 數據驗證
-if(!data.selectedSymptoms){data.selectedSymptoms='[]';}
-try{JSON.parse(data.selectedSymptoms);}catch(e){data.selectedSymptoms='[]';}
+// 加強數據驗證，確保是合法數組JSON
+let selectedSymptoms=[];
+try{
+selectedSymptoms=data.selectedSymptoms?JSON.parse(data.selectedSymptoms):[];
+// 強制轉換為數組
+if(!Array.isArray(selectedSymptoms))selectedSymptoms=[];
+}catch(e){
+console.error("解析selectedSymptoms失敗，重置為空數組：",e);
+selectedSymptoms=[];
+}
+// 覆蓋為安全的JSON字符串
+data.selectedSymptoms=JSON.stringify(selectedSymptoms);
 
 $.ajax({
 url:GAS_URL,
@@ -687,7 +700,7 @@ data:data,
 success:function(resp){
 document.getElementById('status').classList.add('hidden');
 if(resp.status==='error'){showError(resp.message||'提交失敗，伺服器返回錯誤');return;}
-const safeSymptoms=JSON.parse(data.selectedSymptoms||'[]');
+const safeSymptoms=Array.isArray(selectedSymptoms)?selectedSymptoms:[];
 const rd=organizeReportData({...data,userBasicInfo:window.userBasicInfo||{},selectedSymptoms:safeSymptoms});
 window.reportData=rd;
 renderReportSummary(rd);
@@ -840,14 +853,12 @@ if(!window.liff){
 showError('LINE LIFF初始化失敗，請檢查網絡或重新打開頁面');
 return;
 }
-// 優化LIFF初始化流程，減少延遲
 liff.init({liffId:LIFF_ID},{disableRedirect:true})
 .then(()=>{
 console.log("LIFF初始化成功");
 if(liff.isLoggedIn()){
 getProfileAndVerify();
 }else{
-// 立即跳轉登錄，不等待
 liff.login({redirectUri:window.location.href});
 }
 })
@@ -868,8 +879,7 @@ showError('系統初始化失敗：'+err.message);
 
 function getProfileAndVerify(){
 setStatus('驗證用戶資訊...');
-// 並行執行，提升速度
-Promise.all([liff.getProfile(),liff.getDecodedIDToken()])
+Promise.all([liff.getProfile?.()||Promise.resolve({}),liff.getDecodedIDToken?.()||Promise.resolve({})])// 修復：可選鏈+默認Promise
 .then(([profile,token])=>{
 console.log("獲取LINE資料成功：",profile);
 callGasBackend(token?.sub||'',profile.displayName||'LINE用戶');
@@ -892,7 +902,6 @@ showError('取得用戶資料失敗：'+err.message);
 }
 
 function callGasBackend(userId,displayName){
-// 優化AJAX請求配置
 $.ajax({
 url:GAS_URL,
 dataType:'jsonp',
@@ -952,7 +961,6 @@ details.innerHTML=`
 }
 }
 card.classList.remove('hidden');
-// 延遲減少，快速顯示表單
 setTimeout(()=>forceShowUserInfo(),100);
 }
 
