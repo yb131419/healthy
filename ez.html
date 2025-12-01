@@ -205,24 +205,9 @@ const LIFF_ID="2008578880-NznKeG2a";
 const GAS_URL="https://script.google.com/macros/s/AKfycbykBtM2_PM7IZ-ZUU4tgTqVa1xGhVQFaZ523FXc4ivdLz_GZ09sdmL6s5zk7SdloFuG/exec";
 const JSONP_TIMEOUT=15000;
 const PERMANENT_EXPIRY_DATE="9999/12/31";
-const factorStyles={
-氣血:{className:'bg-blue-50 text-blue-700',label:'氣血不足'},
-微循環:{className:'bg-green-50 text-green-700',label:'微循環不通'},
-毒素:{className:'bg-yellow-50 text-yellow-700',label:'毒素'},
-血脂:{className:'bg-orange-50 text-orange-700',label:'血脂粘稠'},
-寒涼濕:{className:'bg-purple-50 text-purple-700',label:'寒涼濕症'},
-免疫:{className:'bg-pink-50 text-pink-700',label:'免疫'},
-情緒:{className:'bg-indigo-50 text-indigo-700',label:'情緒'}
-};
-const durationOptions=[
-{value:'',label:'請選擇時間'},{value:'1w',label:'1周內'},{value:'1-3m',label:'1-3個月'},
-{value:'3-6m',label:'3-6個月'},{value:'6m-1y',label:'6個月-1年'},{value:'1-2y',label:'1-2年'},
-{value:'2-5y',label:'2-5年'},{value:'5y+',label:'5年以上'}
-];
-const severityOptions=[
-{value:'',label:'請選擇輕重'},{value:'mild',label:'輕微（不影響日常生活）'},
-{value:'moderate',label:'中等（偶爾影響生活）'},{value:'severe',label:'嚴重（明顯影響生活）'}
-];
+const factorStyles={氣血:{className:'bg-blue-50 text-blue-700',label:'氣血不足'},微循環:{className:'bg-green-50 text-green-700',label:'微循環不通'},毒素:{className:'bg-yellow-50 text-yellow-700',label:'毒素'},血脂:{className:'bg-orange-50 text-orange-700',label:'血脂粘稠'},寒涼濕:{className:'bg-purple-50 text-purple-700',label:'寒涼濕症'},免疫:{className:'bg-pink-50 text-pink-700',label:'免疫'},情緒:{className:'bg-indigo-50 text-indigo-700',label:'情緒'}};
+const durationOptions=[{value:'',label:'請選擇時間'},{value:'1w',label:'1周內'},{value:'1-3m',label:'1-3個月'},{value:'3-6m',label:'3-6個月'},{value:'6m-1y',label:'6個月-1年'},{value:'1-2y',label:'1-2年'},{value:'2-5y',label:'2-5年'},{value:'5y+',label:'5年以上'}];
+const severityOptions=[{value:'',label:'請選擇輕重'},{value:'mild',label:'輕微（不影響日常生活）'},{value:'moderate',label:'中等（偶爾影響生活）'},{value:'severe',label:'嚴重（明顯影響生活）'}];
 const fullSymptomData=[
 {seq:1,symptom:"記憶力下降",氣血:"○",微循環:"",毒素:"",血脂:"",寒涼濕:"",免疫:"",情緒:""},
 {seq:2,symptom:"思維斷電",氣血:"○",微循環:"",毒素:"",血脂:"",寒涼濕:"",免疫:"",情緒:""},
@@ -323,8 +308,7 @@ const fullSymptomData=[
 {seq:97,symptom:"身體異味",氣血:"",微循環:"",毒素:"○",血脂:"",寒涼濕:"",免疫:"",情緒:""},
 {seq:98,symptom:"淋巴結大",氣血:"",微循環:"",毒素:"○",血脂:"",寒涼濕:"",免疫:"○",情緒:""},
 {seq:99,symptom:"黑痣變大變多",氣血:"",微循環:"",毒素:"○",血脂:"",寒涼濕:"",免疫:"○",情緒:""},
-{seq:100,symptom:"形體消瘦",氣血:"○",微循環:"",毒素:"",血脂:"",寒涼濕:"",免疫:"",情緒:""}
-];
+{seq:100,symptom:"形體消瘦",氣血:"○",微循環:"",毒素:"",血脂:"",寒涼濕:"",免疫:"",情緒:""}];
 
 const setStatus=text=>{const e=document.getElementById('status-text');e&&(e.textContent=text);};
 const showError=msg=>{
@@ -332,7 +316,6 @@ document.getElementById('status').classList.add('hidden');
 document.getElementById('result-card').classList.add('hidden');
 document.getElementById('user-info-section').classList.add('hidden');
 document.getElementById('checklist-section').classList.add('hidden');
-document.getElementById('report-container')?.classList.add('hidden');
 const e=document.getElementById('error-message'),c=document.getElementById('error-content');
 e&&c&&(c.innerHTML=`<p class="font-medium">${msg}</p><div class="mt-3 flex justify-center"><button onclick="window.location.reload()" class="text-primary hover:text-[#007A69] font-medium flex items-center gap-1"><i class="fa fa-refresh"></i> 重新嘗試</button></div>`,e.classList.remove('hidden'));
 };
@@ -528,18 +511,24 @@ if(!iv){alert('部分已選症狀未填寫完整資訊，請檢查後再提交')
 const sd=collectSubmitData();
 submitChecklistData(sd);
 });
-}
 
-function initReportButtons(){
-// 分享按鈕
-const shareBtn=document.getElementById('report-share-btn');
+const shareBtn=document.getElementById('native-share-btn');
 if(shareBtn){
 shareBtn.addEventListener('click',async function(e){
 e.stopPropagation();e.preventDefault();
-let scEl,st,canvas,dataUrl,fileName;
+let scEl,mc,st,canvas,dataUrl,fileName;
 try{
 scEl=document.getElementById('summary-content');
-if(!scEl){alert('報告內容加載中，請稍候再試');setTimeout(()=>this.click(),500);return;}
+mc=document.querySelector('#success-modal .modal-content')||document.getElementById('success-modal');
+if(!scEl||!mc){
+const rs=document.getElementById('report-summary');
+if(rs)scEl=rs.querySelector('.summary-content')||rs;
+if(!scEl){
+alert('報告內容加載中，請稍候再試');
+setTimeout(()=>this.click(),500);
+return;
+}
+}
 st='🧬 彥彬自檢系統';
 shareBtn.disabled=true;
 shareBtn.innerHTML='<i class="fa fa-spinner fa-spin mr-1"></i> 處理中...';
@@ -562,8 +551,14 @@ scEl.style.borderRadius='16px';
 scEl.style.boxShadow='0 4px 24px rgba(0,0,0,0.12)';
 
 canvas=await html2canvas(scEl,{
-scale:2.0,useCORS:true,allowTaint:true,logging:false,
-backgroundColor:'#ffffff',width:scEl.offsetWidth,height:scEl.offsetHeight,dpi:300
+scale:2.0,
+useCORS:true,
+allowTaint:true,
+logging:false,
+backgroundColor:'#ffffff',
+width:scEl.offsetWidth,
+height:scEl.offsetHeight,
+dpi:300
 });
 
 dataUrl=canvas.toDataURL('image/png',0.9);
@@ -582,9 +577,16 @@ file=new File([imgBlob],fileName,{type:'image/png'});
 
 if(navigator.share&&typeof navigator.share==='function'){
 try{
-const shareData={title:'🧬 彥彬自檢系統',text:st,files:[file]};
+const shareData={
+title:'🧬 彥彬自檢系統',
+text:st,
+files:[file]
+};
 const canShare=navigator.canShare?await navigator.canShare(shareData):true;
-if(canShare){await navigator.share(shareData);alert('分享成功！高清報告已發送到LINE群組/好友');}
+if(canShare){
+await navigator.share(shareData);
+alert('分享成功！高清報告已發送到LINE群組/好友');
+}
 }catch(err){
 console.error('LINE分享失敗：',err);
 if(err.name!=='AbortError'){
@@ -612,21 +614,21 @@ shareBtn.innerHTML='<i class="fa fa-share-alt mr-1"></i> 分享到LINE';
 });
 }
 
-// 下載按鈕
-const downloadBtn=document.getElementById('report-download-btn');
+const downloadBtn=document.getElementById('download-report-btn');
 if(downloadBtn){
 downloadBtn.addEventListener('click',async function(){
 try{
 this.disabled=true;
 this.innerHTML='<i class="fa fa-spinner fa-spin mr-1"></i> 下載中...';
-const scEl=document.getElementById('summary-content');
+const scEl=document.getElementById('summary-content')||document.querySelector('#report-summary .summary-content');
 if(!scEl)throw new Error('報告內容未找到');
 if(!window.html2canvas){
 alert('正在加載下載所需組件...');
 await new Promise((resolve,reject)=>{
 const script=document.createElement('script');
 script.src='https://html2canvas.hertzen.com/dist/html2canvas.min.js';
-script.onload=resolve;script.onerror=reject;
+script.onload=resolve;
+script.onerror=reject;
 document.head.appendChild(script);
 });
 }
@@ -635,7 +637,10 @@ scEl.style.padding='1rem';
 scEl.style.borderRadius='16px';
 scEl.style.boxShadow='0 4px 24px rgba(0,0,0,0.12)';
 const canvas=await html2canvas(scEl,{
-scale:2.0,useCORS:true,backgroundColor:'#ffffff',dpi:300
+scale:2.0,
+useCORS:true,
+backgroundColor:'#ffffff',
+dpi:300
 });
 const dataUrl=canvas.toDataURL('image/png',0.9);
 downloadImage(dataUrl);
@@ -697,55 +702,19 @@ success:function(resp){
 document.getElementById('status').classList.add('hidden');
 const rd=organizeReportData({...data,userBasicInfo:window.userBasicInfo,selectedSymptoms:JSON.parse(data.selectedSymptoms)});
 window.reportData=rd;
-// 隱藏檢查表，顯示報告容器
-document.getElementById('checklist-section').classList.add('hidden');
-renderReportContainer();
 renderReportSummary(rd);
-initReportButtons();
-// 滾動到報告頂部
-document.getElementById('report-container').scrollIntoView({behavior:'smooth'});
+document.getElementById('success-modal').classList.remove('hidden');
+setTimeout(()=>{
+mc&&(mc.style.maxHeight='90vh');
+document.getElementById('report-summary')&&(document.getElementById('report-summary').style.maxHeight='80vh');
+},100);
 },
 error:function(xhr,status,err){
 console.error("提交失敗：",status,err);
 document.getElementById('status').classList.add('hidden');
-// 詳細錯誤提示
-let errorMsg='提交失敗，';
-switch(status){
-case 'timeout':errorMsg+='請求超時，請檢查網絡連接後重試';break;
-case 'parsererror':errorMsg+='數據解析錯誤，可能是伺服器回應異常';break;
-case 'error':errorMsg+='網絡錯誤，請確認網絡暢通後重試';break;
-default:errorMsg+=`未知錯誤(${status})，請稍後再試`;
-}
-showError(errorMsg);
+showError('提交失敗，請稍後再試（'+status+'）');
 }
 });
-}
-
-// 創建報告容器（包含按鈕和報告內容）
-function renderReportContainer(){
-let container=document.getElementById('report-container');
-if(!container){
-container=document.createElement('div');
-container.id='report-container';
-container.className='container mx-auto px-4 py-8';
-container.innerHTML=`
-<div class="mb-6 text-center">
-<h2 class="text-2xl font-bold text-[#2d3748] mb-4">🧬 健康自檢報告</h2>
-<div class="flex justify-center gap-4 mb-8">
-<button id="report-share-btn" class="bg-primary text-white px-6 py-2 rounded-lg font-medium flex items-center shadow-elevation-1 hover:shadow-elevation-2 transition-all">
-<i class="fa fa-share-alt mr-1"></i> 分享到LINE
-</button>
-<button id="report-download-btn" class="bg-[#4a5568] text-white px-6 py-2 rounded-lg font-medium flex items-center shadow-elevation-1 hover:shadow-elevation-2 transition-all">
-<i class="fa fa-download mr-1"></i> 下載報告
-</button>
-</div>
-</div>
-<div id="report-summary" class="w-full max-w-4xl mx-auto"></div>
-`;
-document.body.appendChild(container);
-}else{
-container.classList.remove('hidden');
-}
 }
 
 function renderReportSummary(reportData){
@@ -754,11 +723,14 @@ let sc=document.getElementById('summary-content');
 if(!sc){
 sc=document.createElement('div');
 sc.id='summary-content';
+const rs=document.getElementById('report-summary')||document.createElement('div');
+rs.id='report-summary';
+rs.appendChild(sc);
+document.querySelector('#success-modal .modal-content')?.appendChild(rs)||document.body.appendChild(rs);
 }
 sc.dataset.summary=summaryText;
 const ts=Object.values(factorSymptoms).reduce((s,f)=>s+f.length,0);
 
-// 報告容器樣式
 const rs=document.getElementById('report-summary');
 rs.style.maxHeight='80vh';
 rs.style.overflowY='auto';
@@ -769,91 +741,84 @@ rs.style.borderRadius='16px';
 rs.style.boxShadow='0 8px 32px rgba(0,0,0,0.15)';
 rs.style.margin='0 auto';
 rs.style.width='100%';
+rs.style.maxWidth='800px';
 
-// 報告內容樣式
 sc.style.width='100%';
 sc.style.backgroundColor='#ffffff';
-sc.style.padding='1.5rem';
+sc.style.padding='1rem';
 sc.style.boxSizing='border-box';
 sc.style.lineHeight='1.6';
 sc.style.fontSize='0.95rem';
 
-// 報告HTML內容
 let html=`
-<div class="text-center mb-6">
-<h3 class="text-xl md:text-2xl font-bold text-[#2d3748] mb-2">健康自檢分析結果</h3>
+<div class="text-center mb-4">
+<h3 class="text-xl md:text-2xl font-bold text-[#2d3748] mb-1">🧬 彥彬自檢系統</h3>
 <div class="text-sm text-[#718096]">${formattedUserInfo.提交時間}</div>
 </div>
-
-<div class="bg-[#f8f9fa] rounded-10 p-4 mb-6">
+<div class="bg-[#f8f9fa] rounded-10 p-4 mb-4">
 <div class="text-lg font-semibold text-[#2d3748] mb-3 flex items-center">
 <i class="fa fa-user-circle text-primary mr-2 text-base"></i>基本資料
 </div>
 <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-sm">`;
 
-// 基本資料
-const infoEntries=Object.entries(formattedUserInfo);
+const infoEntries=Object.entries(formattedUserInfo),stEntry=infoEntries.find(([k])=>k==='提交時間');
 infoEntries.forEach(([k,v])=>{
 if(k!=='提交時間'){
+const label=k==='血糖'?'血糖':k;
 html+=`<div class="flex justify-between">
-<span class="text-[#4a5568] font-medium">${k}：</span>
+<span class="text-[#4a5568] font-medium">${label}：</span>
 <span class="text-[#2d3748]">${v}</span>
 </div>`;
 }
 });
 
 html+=`</div></div>
-
-<div class="mb-6">
+<div class="mb-4">
 <div class="flex justify-between items-center mb-3">
 <div class="text-lg font-semibold text-[#2d3748] flex items-center">
-<i class="fa fa-chart-pie text-primary mr-2 text-base"></i>統計資訊
+<i class="fa fa-chart-pie text-primary mr-2 text-base"></i>
 </div>
 <div class="bg-primary/10 text-primary px-3 py-1 rounded-full text-sm font-medium">
 總症狀數：${ts} 項
 </div>
 </div>
 </div>
-
-<div class="text-lg font-semibold text-[#2d3748] mb-4 flex items-center">
+<div class="text-lg font-semibold text-[#2d3748] mb-3 flex items-center">
 <i class="fa fa-heartbeat text-primary mr-2 text-base"></i>七大健康要素評估
 </div>`;
 
-// 健康要素分析
 Object.entries(factorSymptoms).forEach(([fk,f])=>{
 const fn=factorStyles[fk].label;
-html+=`<div class="bg-white border border-[#e8f4f8] rounded-10 p-4 mb-4 shadow-sm hover:shadow-md transition-shadow">
+html+=`<div class="bg-white border border-[#e8f4f8] rounded-10 p-4 mb-3 shadow-sm hover:shadow-md transition-shadow">
 <div class="font-semibold text-base text-[#2d3748] mb-3 flex items-center">
 <span class="inline-block w-3 h-3 rounded-full ${factorStyles[fk].className.split(' ')[0]} mr-2"></span>
 【${fn}】（${f.length}項）
 </div>
-<div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">`;
+<div class="grid grid-cols-2 gap-2 text-sm">`;
 
 f.forEach((i,idx)=>{
-html+=`<div class="flex flex-col p-3 bg-[#fafafa] rounded-lg">
+html+=`<div class="flex flex-col p-2 bg-[#fafafa] rounded-lg">
 <div class="font-medium text-[#2d3748] mb-1 text-sm truncate">${idx+1}. ${i.name}</div>
-<div class="text-[#4a5568] text-xs flex items-center"><i class="fa fa-clock-o mr-1"></i>${i.duration}</div>
-<div class="text-[#718096] text-xs flex items-center"><i class="fa fa-exclamation-circle mr-1"></i>${i.severity}</div>
+<div class="text-[#4a5568] text-xs">${i.duration}</div>
+<div class="text-[#718096] text-xs">${i.severity}</div>
 </div>`;
 });
 
 html+=`</div></div>`;
 });
 
-// 建議部分
-html+=`<div class="mt-8 bg-primary/5 border border-primary/20 rounded-10 p-4 text-sm text-[#4a5568] italic">
-💡 建議：根據自檢結果關注對應健康問題，保持良好生活習慣，必要時諮詢專業醫師進行進一步檢查。
+html+=`<div class="mt-5 bg-primary/5 border border-primary/20 rounded-10 p-4 text-sm text-[#4a5568] italic">
+💡 建議：根據自檢結果關注對應健康問題，必要時諮詢專業醫師
 </div>`;
 
 sc.innerHTML=html;
-rs.innerHTML='';
-rs.appendChild(sc);
 
-// 動畫效果
 setTimeout(()=>{
-rs.style.opacity='1';
-rs.style.transform='translateY(0)';
-},100);
+rs.style.height=sc.offsetHeight+30+'px';
+rs.style.display='none';
+rs.offsetHeight;
+rs.style.display='block';
+},150);
 }
 
 function resetChecklist(){
