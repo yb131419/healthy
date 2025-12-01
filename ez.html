@@ -451,12 +451,13 @@ return {formattedUserInfo:fui,factorSymptoms:ffs,summaryText:st};
 }
 
 function initControlButtons(){
+// 統一按鈕樣式：高級質感風格
 const styleButtons = () => {
   const buttons = document.querySelectorAll('button');
   buttons.forEach(btn => {
     if(!btn.classList.contains('custom-styled')) {
       btn.classList.add('custom-styled', 'px-6', 'py-2.5', 'rounded-lg', 'font-medium', 'transition-all', 'duration-300', 'shadow-md', 'hover:shadow-lg', 'transform', 'hover:-translate-y-0.5', 'active:translate-y-0');
-      btn.classList.remove('px-8', 'py-3');
+      btn.classList.remove('px-8', 'py-3'); // 移除舊樣式
     }
   });
 };
@@ -476,21 +477,15 @@ job:document.getElementById('user-job').value.trim()||null
 };
 document.getElementById('user-info-section').classList.add('hidden');
 document.getElementById('checklist-section').classList.remove('hidden');
-// 進入自檢表後才顯示權限卡片
-const resultCard=document.getElementById('result-card');
-resultCard&&resultCard.classList.remove('hidden');
 renderSymptomCards();
 initFilterButtons();
 document.getElementById('checklist-section').scrollIntoView({behavior:'smooth'});
-styleButtons();
+styleButtons(); // 應用按鈕樣式
 });
 
 document.getElementById('back-to-info').addEventListener('click',function(){
 document.getElementById('checklist-section').classList.add('hidden');
 document.getElementById('user-info-section').classList.remove('hidden');
-// 返回時隱藏權限卡片
-const resultCard=document.getElementById('result-card');
-resultCard&&resultCard.classList.add('hidden');
 if(window.userBasicInfo){
 document.getElementById('user-name').value=window.userBasicInfo.name||'';
 document.getElementById('user-age').value=window.userBasicInfo.age||'';
@@ -524,12 +519,13 @@ document.addEventListener('click',function(e){
 if(e.target.closest('#native-share-btn'))handleShareButtonClick(e);
 });
 
-styleButtons();
+styleButtons(); // 初始化按鈕樣式
 }
 
 async function handleShareButtonClick(e){
 e.stopPropagation();e.preventDefault();
 const btn=e.target.closest('#native-share-btn');
+const shareBtn=document.getElementById('native-share-btn');
 let scEl,mc,st,canvas,dataUrl,fileName;
 try{
 scEl=document.getElementById('summary-content');
@@ -542,7 +538,7 @@ if(!scEl){alert('報告內容加載中，請稍候再試');setTimeout(()=>btn.cl
 st='🧬 彥彬自檢表系統';
 btn.disabled=true;
 btn.innerHTML='<i class="fa fa-spinner fa-spin mr-1"></i> 處理中...';
-btn.style.display='none';
+if(shareBtn)shareBtn.style.display='none';
 
 if(!window.html2canvas){
 alert('正在加載分享所需組件，請稍候...');
@@ -554,6 +550,7 @@ document.head.appendChild(script);
 });
 }
 
+// 確保內容居中顯示
 scEl.style.textAlign='center';
 scEl.style.margin='0 auto';
 scEl.style.backgroundColor='#ffffff';
@@ -567,6 +564,7 @@ canvas=await html2canvas(scEl,{
 scale:2.0,useCORS:true,allowTaint:true,logging:false,
 backgroundColor:'#ffffff',width:scEl.offsetWidth,height:scEl.offsetHeight,dpi:300
 });
+if(shareBtn)shareBtn.style.display='flex';
 
 dataUrl=canvas.toDataURL('image/png',0.9);
 fileName=`🧬 彥彬自檢表系統_${new Date().toLocaleDateString()}.png`;
@@ -594,35 +592,31 @@ try{await navigator.clipboard.writeText(st);alert('文字已複製到剪貼板�
 catch(cbErr){alert('請手動截圖並複製文字分享');}
 }
 }catch(err){
+if(shareBtn)shareBtn.style.display='flex';
 console.error('分享總體錯誤：',err);
 alert('分享功能異常，請手動截圖分享');
 }finally{
-// 重新創建並設計高級質感按鈕
-btn.parentNode.innerHTML='';
-
-// 分享到LINE按鈕（綠色主題，高級質感）
-const shareBtn=document.createElement('button');
-shareBtn.id='native-share-btn';
-shareBtn.className='w-full sm:w-1/2 px-6 py-3 rounded-lg font-semibold text-white bg-gradient-to-r from-[#00C300] to-[#00A86B] shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-2 mb-2 sm:mb-0 sm:mr-2';
-shareBtn.innerHTML='<i class="fa fa-share-alt text-lg"></i> 分享到LINE';
-shareBtn.onclick=(e)=>handleShareButtonClick(e);
-
-// 關閉網頁按鈕（深灰主題，高級質感）
-const closeBtn=document.createElement('button');
+btn.disabled=false;
+btn.innerHTML='<i class="fa fa-share-alt mr-1"></i> 分享到LINE';
+// 添加關閉按鈕 - 高級樣式
+let closeBtn=document.getElementById('close-page-btn');
+if(!closeBtn){
+closeBtn=document.createElement('button');
 closeBtn.id='close-page-btn';
-closeBtn.className='w-full sm:w-1/2 px-6 py-3 rounded-lg font-semibold text-white bg-gradient-to-r from-[#4A5568] to-[#2D3748] shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-2';
-closeBtn.innerHTML='<i class="fa fa-times text-lg"></i> 關閉網頁';
+closeBtn.className='w-full sm:w-auto px-6 py-2.5 bg-gray-600 text-white rounded-lg font-medium flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 mt-2';
+closeBtn.innerHTML='<i class="fa fa-times"></i> 關閉網頁';
 closeBtn.onclick=()=>{
-  if(window.liff && liff.closeWindow) liff.closeWindow();
-  else window.close();
+  if(window.liff && liff.closeWindow) {
+    liff.closeWindow();
+  } else {
+    // 後備方案
+    window.close();
+  }
 };
-
-// 按鈕容器（響應式佈局）
-const btnContainer=document.createElement('div');
-btnContainer.className='flex flex-col sm:flex-row w-full gap-2';
-btnContainer.appendChild(shareBtn);
-btnContainer.appendChild(closeBtn);
-btn.parentNode.appendChild(btnContainer);
+btn.parentNode.appendChild(closeBtn);
+}else{
+closeBtn.style.display='flex';
+}
 }
 }
 
@@ -713,7 +707,7 @@ rs.style.boxSizing='border-box';
 rs.style.backgroundColor='#ffffff';
 rs.style.borderRadius='16px';
 rs.style.boxShadow='0 8px 32px rgba(0,0,0,0.15)';
-rs.style.margin='0 auto';
+rs.style.margin='0 auto'; // 整體居中
 rs.style.width='100%';
 rs.style.maxWidth='800px';
 
@@ -723,7 +717,7 @@ sc.style.padding='1rem';
 sc.style.boxSizing='border-box';
 sc.style.lineHeight='1.6';
 sc.style.fontSize='0.95rem';
-sc.style.textAlign='center';
+sc.style.textAlign='center'; // 文字居中
 
 let html=`
 <div class="text-center mb-4">
@@ -760,6 +754,7 @@ html+=`</div></div>
 <i class="fa fa-heartbeat text-primary mr-2 text-base"></i>七大健康要素評估
 </div>`;
 
+// 調整排版：症狀名稱單獨一行，時間和程度另一行
 Object.entries(factorSymptoms).forEach(([fk,f])=>{
 const fn=factorStyles[fk].label;
 html+=`<div class="bg-white border border-[#e8f4f8] rounded-10 p-3 mb-3 shadow-sm hover:shadow-md transition-shadow mx-auto max-w-lg">
@@ -786,8 +781,8 @@ html+=`<div class="mt-5 bg-primary/5 border border-primary/20 rounded-10 p-4 tex
 💡 建議：根據自檢結果關注對應健康問題，必要時諮詢專業醫師
 </div>
 <div class="mt-8 mb-4 flex justify-center px-4">
-  <button id="native-share-btn" class="w-full sm:w-auto px-6 py-3 rounded-lg font-semibold text-white bg-gradient-to-r from-[#00C300] to-[#00A86B] shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-2">
-    <i class="fa fa-share-alt text-lg"></i> 分享到LINE
+  <button id="native-share-btn" class="w-full sm:w-auto px-6 py-2.5 bg-[#00C300] text-white rounded-lg font-medium flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0">
+    <i class="fa fa-share-alt"></i> 分享到LINE
   </button>
 </div>`;
 
@@ -823,9 +818,6 @@ try{
 const uis=document.getElementById('user-info-section');
 if(!uis){alert("頁面加載失敗，請刷新");return false;}
 uis.classList.remove('hidden');
-// 初始狀態隱藏權限卡片
-const resultCard=document.getElementById('result-card');
-resultCard&&resultCard.classList.add('hidden');
 initControlButtons();
 return true;
 }catch(e){console.error("顯示用戶資訊出錯：",e);alert("頁面加載失敗，請刷新");return false;}
@@ -919,6 +911,8 @@ details.innerHTML=`
 <div><i class="fa fa-refresh text-orange-600 mr-1"></i>剩餘次數：<span class="text-red-500 font-medium">${rt} 次</span></div>
 <div><i class="fa fa-info-circle text-orange-600 mr-1"></i>提示：請聯繫管理員升級</div>
 `;
+card.classList.remove('hidden');
+return;
 }else{
 main.innerHTML=`<span class="text-textPrimary"><i class="fa fa-user mr-1.5"></i>普通用戶驗證通過</span>`;
 details.innerHTML=`
@@ -928,8 +922,7 @@ details.innerHTML=`
 `;
 }
 }
-// 初始狀態保持隱藏，待用戶進入自檢表後顯示
-card.classList.add('hidden');
+card.classList.remove('hidden');
 setTimeout(()=>forceShowUserInfo(),300);
 }
 
