@@ -451,13 +451,12 @@ return {formattedUserInfo:fui,factorSymptoms:ffs,summaryText:st};
 }
 
 function initControlButtons(){
-// 統一按鈕樣式：高級質感風格
 const styleButtons = () => {
   const buttons = document.querySelectorAll('button');
   buttons.forEach(btn => {
     if(!btn.classList.contains('custom-styled')) {
       btn.classList.add('custom-styled', 'px-6', 'py-2.5', 'rounded-lg', 'font-medium', 'transition-all', 'duration-300', 'shadow-md', 'hover:shadow-lg', 'transform', 'hover:-translate-y-0.5', 'active:translate-y-0');
-      btn.classList.remove('px-8', 'py-3'); // 移除舊樣式
+      btn.classList.remove('px-8', 'py-3');
     }
   });
 };
@@ -480,7 +479,7 @@ document.getElementById('checklist-section').classList.remove('hidden');
 renderSymptomCards();
 initFilterButtons();
 document.getElementById('checklist-section').scrollIntoView({behavior:'smooth'});
-styleButtons(); // 應用按鈕樣式
+styleButtons();
 });
 
 document.getElementById('back-to-info').addEventListener('click',function(){
@@ -519,7 +518,7 @@ document.addEventListener('click',function(e){
 if(e.target.closest('#native-share-btn'))handleShareButtonClick(e);
 });
 
-styleButtons(); // 初始化按鈕樣式
+styleButtons();
 }
 
 async function handleShareButtonClick(e){
@@ -550,7 +549,6 @@ document.head.appendChild(script);
 });
 }
 
-// 確保內容居中顯示
 scEl.style.textAlign='center';
 scEl.style.margin='0 auto';
 scEl.style.backgroundColor='#ffffff';
@@ -598,7 +596,6 @@ alert('分享功能異常，請手動截圖分享');
 }finally{
 btn.disabled=false;
 btn.innerHTML='<i class="fa fa-share-alt mr-1"></i> 分享到LINE';
-// 添加關閉按鈕 - 高級樣式
 let closeBtn=document.getElementById('close-page-btn');
 if(!closeBtn){
 closeBtn=document.createElement('button');
@@ -606,11 +603,21 @@ closeBtn.id='close-page-btn';
 closeBtn.className='w-full sm:w-auto px-6 py-2.5 bg-gray-600 text-white rounded-lg font-medium flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 mt-2';
 closeBtn.innerHTML='<i class="fa fa-times"></i> 關閉網頁';
 closeBtn.onclick=()=>{
+  // 關閉所有功能
+  ['user-info-section','checklist-section','result-card','success-modal','error-message'].forEach(id=>{
+    const el=document.getElementById(id);
+    el&&el.classList.add('hidden');
+  });
+  // 移除所有事件監聽器
+  document.querySelectorAll('button, .symptom-checkbox').forEach(el=>{
+    const newEl=el.cloneNode(true);
+    el.parentNode.replaceChild(newEl,el);
+  });
+  // 嘗試關閉窗口
   if(window.liff && liff.closeWindow) {
     liff.closeWindow();
   } else {
-    // 後備方案
-    window.close();
+    alert('已關閉所有功能，請手動關閉頁面');
   }
 };
 btn.parentNode.appendChild(closeBtn);
@@ -707,7 +714,7 @@ rs.style.boxSizing='border-box';
 rs.style.backgroundColor='#ffffff';
 rs.style.borderRadius='16px';
 rs.style.boxShadow='0 8px 32px rgba(0,0,0,0.15)';
-rs.style.margin='0 auto'; // 整體居中
+rs.style.margin='0 auto';
 rs.style.width='100%';
 rs.style.maxWidth='800px';
 
@@ -717,7 +724,7 @@ sc.style.padding='1rem';
 sc.style.boxSizing='border-box';
 sc.style.lineHeight='1.6';
 sc.style.fontSize='0.95rem';
-sc.style.textAlign='center'; // 文字居中
+sc.style.textAlign='center';
 
 let html=`
 <div class="text-center mb-4">
@@ -754,7 +761,6 @@ html+=`</div></div>
 <i class="fa fa-heartbeat text-primary mr-2 text-base"></i>七大健康要素評估
 </div>`;
 
-// 調整排版：症狀名稱單獨一行，時間和程度另一行
 Object.entries(factorSymptoms).forEach(([fk,f])=>{
 const fn=factorStyles[fk].label;
 html+=`<div class="bg-white border border-[#e8f4f8] rounded-10 p-3 mb-3 shadow-sm hover:shadow-md transition-shadow mx-auto max-w-lg">
@@ -826,6 +832,11 @@ return true;
 document.addEventListener('DOMContentLoaded',function(){
 console.log("頁面加載完成，初始化系統");
 setStatus('正在初始化...');
+// 初始隱藏所有表單相關元素
+['user-info-section','checklist-section','result-card','success-modal','error-message'].forEach(id=>{
+  const el=document.getElementById(id);
+  el&&el.classList.add('hidden');
+});
 if(!window.liff){
 showError('LINE LIFF初始化失敗，請檢查網絡或重新打開頁面');
 return;
