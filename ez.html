@@ -490,16 +490,19 @@ document.getElementById('user-info-section').scrollIntoView({behavior:'smooth'})
 });
 
 document.getElementById('submit-checklist').addEventListener('click',function(){
+const btn=this;
+btn.disabled=true;
+btn.innerHTML='<i class="fa fa-spinner fa-spin mr-1"></i> 提交中...';
 const sc=updateSelectedCount();
-if(sc===0){alert('請至少勾選一個症狀');return;}
+if(sc===0){alert('請至少勾選一個症狀');btn.disabled=false;btn.innerHTML='提交檢查表';return;}
 let iv=true,fic=null;
 document.querySelectorAll('.symptom-checkbox:checked').forEach(cb=>{
 const cd=cb.closest('.symptom-card'),d=cd.querySelector('.duration-select').value,s=cd.querySelector('.severity-select').value;
 if(!d||!s){iv=false;fic=fic||cd;cd.classList.add('border-red-500');cd.style.transform='scale(1.03)';setTimeout(()=>{cd.classList.remove('border-red-500');cd.style.transform='';},1500);}
 });
-if(!iv){alert('部分已選症狀未填寫完整資訊，請檢查後再提交');fic&&fic.scrollIntoView({behavior:'smooth',block:'center'});return;}
+if(!iv){alert('部分已選症狀未填寫完整資訊，請檢查後再提交');fic&&fic.scrollIntoView({behavior:'smooth',block:'center'});btn.disabled=false;btn.innerHTML='提交檢查表';return;}
 const sd=collectSubmitData();
-submitChecklistData(sd);
+submitChecklistData(sd,btn);
 });
 
 document.addEventListener('click',function(e){
@@ -510,6 +513,7 @@ if(e.target.closest('#native-share-btn'))handleShareButtonClick(e);
 async function handleShareButtonClick(e){
 e.stopPropagation();e.preventDefault();
 const btn=e.target.closest('#native-share-btn');
+const shareBtn=document.getElementById('native-share-btn');
 let scEl,mc,st,canvas,dataUrl,fileName;
 try{
 scEl=document.getElementById('summary-content');
@@ -522,6 +526,7 @@ if(!scEl){alert('報告內容加載中，請稍候再試');setTimeout(()=>btn.cl
 st='🧬 彥彬自檢系統';
 btn.disabled=true;
 btn.innerHTML='<i class="fa fa-spinner fa-spin mr-1"></i> 處理中...';
+if(shareBtn)shareBtn.style.display='none';
 
 if(!window.html2canvas){
 alert('正在加載分享所需組件，請稍候...');
@@ -544,6 +549,7 @@ canvas=await html2canvas(scEl,{
 scale:2.0,useCORS:true,allowTaint:true,logging:false,
 backgroundColor:'#ffffff',width:scEl.offsetWidth,height:scEl.offsetHeight,dpi:300
 });
+if(shareBtn)shareBtn.style.display='flex';
 
 dataUrl=canvas.toDataURL('image/png',0.9);
 fileName=`🧬 彥彬自檢系統_${new Date().toLocaleDateString()}.png`;
@@ -555,7 +561,7 @@ alert('圖片體積過大，輕微壓縮保持清晰...');
 dataUrl=canvas.toDataURL('image/png',0.8);
 const compressedBlob=await (await fetch(dataUrl)).blob();
 file=new File([compressedBlob],fileName,{type:'image/png'});
-}else{file=new File([imgBlob],fileName,{type:'image/png'});}
+}else file=new File([imgBlob],fileName,{type:'image/png'});
 
 if(navigator.share&&typeof navigator.share==='function'){
 try{
@@ -571,6 +577,7 @@ try{await navigator.clipboard.writeText(st);alert('文字已複製到剪貼板�
 catch(cbErr){alert('請手動截圖並複製文字分享');}
 }
 }catch(err){
+if(shareBtn)shareBtn.style.display='flex';
 console.error('分享總體錯誤：',err);
 alert('分享功能異常，請手動截圖分享');
 }finally{
@@ -607,7 +614,7 @@ selectedSymptoms:JSON.stringify(selectedSymptoms)
 };
 }
 
-function submitChecklistData(data){
+function submitChecklistData(data,btn){
 console.log("提交數據：",data);
 setStatus('提交中...');
 document.getElementById('status').classList.remove('hidden');
@@ -620,18 +627,26 @@ timeout:JSONP_TIMEOUT,
 data:data,
 success:function(resp){
 document.getElementById('status').classList.add('hidden');
+alert('提交成功！正在生成健康報告...');
 const rd=organizeReportData({...data,userBasicInfo:window.userBasicInfo,selectedSymptoms:JSON.parse(data.selectedSymptoms)});
 window.reportData=rd;
 renderReportSummary(rd);
 document.getElementById('success-modal').classList.remove('hidden');
-setTimeout(()=>{document.getElementById('report-summary')&&(document.getElementById('report-summary').style.maxHeight='100vh');},100);
+setTimeout(()=>{
+document.getElementById('report-summary')&&(document.getElementById('report-summary').style.maxHeight='80vh');
+},100);
+btn.disabled=false;
+btn.innerHTML='提交檢查表';
 },
 error:function(xhr,status,err){
 console.error("提交失敗：",status,err);
 document.getElementById('status').classList.add('hidden');
 const errMsg=status==='timeout'?'請求超時，請檢查網絡連接':
-status==='parsererror'?'數據解析錯誤，伺服器返回無效數據':'與伺服器通訊失敗，請稍後再試';
+status==='parsererror'?'數據解析錯誤，伺服器返回無效數據':
+'與伺服器通訊失敗，請稍後再試';
 showError(`${errMsg}（錯誤：${err.message || status}）`);
+btn.disabled=false;
+btn.innerHTML='提交檢查表';
 }
 });
 }
@@ -650,29 +665,21 @@ document.querySelector('#success-modal .modal-content')?.appendChild(rs)||docume
 sc.dataset.summary=summaryText;
 const ts=Object.values(factorSymptoms).reduce((s,f)=>s+f.length,0);
 
-// 全螢幕樣式設置
 const rs=document.getElementById('report-summary');
-rs.style.position='fixed';
-rs.style.top='0';
-rs.style.left='0';
-rs.style.zIndex='9999';
-rs.style.width='100vw';
-rs.style.height='100vh';
-rs.style.maxWidth='none';
-rs.style.maxHeight='none';
-rs.style.margin='0';
-rs.style.padding='1rem 1rem 80px'; // 底部留出分享按鈕空間
+rs.style.maxHeight='80vh';
+rs.style.overflowY='auto';
+rs.style.padding='1rem';
 rs.style.boxSizing='border-box';
 rs.style.backgroundColor='#ffffff';
-rs.style.borderRadius='0';
-rs.style.boxShadow='none';
-rs.style.overflowY='auto';
+rs.style.borderRadius='16px';
+rs.style.boxShadow='0 8px 32px rgba(0,0,0,0.15)';
+rs.style.margin='0 auto';
+rs.style.width='100%';
+rs.style.maxWidth='800px';
 
-// 摘要內容樣式（不包含分享按鈕）
 sc.style.width='100%';
-sc.style.height='100%';
 sc.style.backgroundColor='#ffffff';
-sc.style.padding='0';
+sc.style.padding='1rem';
 sc.style.boxSizing='border-box';
 sc.style.lineHeight='1.6';
 sc.style.fontSize='0.95rem';
@@ -688,7 +695,6 @@ let html=`
 </div>
 <div class="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">`;
 
-// 基本資料一行兩列
 const infoEntries=Object.entries(formattedUserInfo);
 infoEntries.forEach(([k,v])=>{
 if(k!=='提交時間'){
@@ -701,12 +707,11 @@ html+=`<div class="flex justify-between">
 });
 
 html+=`</div></div>
-<!-- 總症狀數置左 -->
-<div class="flex items-center mb-3">
-<div class="text-lg font-semibold text-[#2d3748] flex items-center mr-4">
+<div class="mb-4">
+<div class="text-lg font-semibold text-[#2d3748] flex items-center mb-1">
 <i class="fa fa-chart-pie text-primary mr-2 text-base"></i>統計資訊
 </div>
-<div class="bg-primary/10 text-primary px-3 py-1 rounded-full text-sm font-medium">
+<div class="bg-primary/10 text-primary px-3 py-1 rounded-full text-sm font-medium inline-block">
 總症狀數：${ts} 項
 </div>
 </div>
@@ -714,7 +719,6 @@ html+=`</div></div>
 <i class="fa fa-heartbeat text-primary mr-2 text-base"></i>七大健康要素評估
 </div>`;
 
-// 七大健康要素一行一列
 Object.entries(factorSymptoms).forEach(([fk,f])=>{
 const fn=factorStyles[fk].label;
 html+=`<div class="bg-white border border-[#e8f4f8] rounded-10 p-4 mb-3 shadow-sm hover:shadow-md transition-shadow">
@@ -722,7 +726,7 @@ html+=`<div class="bg-white border border-[#e8f4f8] rounded-10 p-4 mb-3 shadow-s
 <span class="inline-block w-3 h-3 rounded-full ${factorStyles[fk].className.split(' ')[0]} mr-2"></span>
 【${fn}】（${f.length}項）
 </div>
-<div class="grid grid-cols-1 gap-2 text-sm">`; // 改為grid-cols-1
+<div class="grid grid-cols-1 gap-2 text-sm">`;
 
 f.forEach((i,idx)=>{
 html+=`<div class="flex flex-col p-2 bg-[#fafafa] rounded-lg">
@@ -737,18 +741,17 @@ html+=`</div></div>`;
 
 html+=`<div class="mt-5 bg-primary/5 border border-primary/20 rounded-10 p-4 text-sm text-[#4a5568] italic">
 💡 建議：根據自檢結果關注對應健康問題，必要時諮詢專業醫師
+</div>
+<div class="mt-8 mb-4 flex justify-center px-4">
+  <button id="native-share-btn" class="w-full sm:w-auto px-8 py-3 bg-[#00C300] text-white rounded-lg font-medium flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-shadow">
+    <i class="fa fa-share-alt"></i> 分享到LINE
+  </button>
 </div>`;
 
 sc.innerHTML=html;
 
-// 分享按鈕置於摘要內容外（不參與截圖）
-const shareBtn=document.createElement('button');
-shareBtn.id='native-share-btn';
-shareBtn.className='fixed bottom-4 left-1/2 transform -translate-x-1/2 w-full max-w-md px-8 py-3 bg-[#00C300] text-white rounded-lg font-medium flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-shadow';
-shareBtn.innerHTML='<i class="fa fa-share-alt"></i> 分享到LINE';
-rs.appendChild(shareBtn);
-
 setTimeout(()=>{
+rs.style.height=sc.offsetHeight+60+'px';
 rs.style.display='none';
 rs.offsetHeight;
 rs.style.display='block';
