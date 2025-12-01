@@ -523,7 +523,7 @@ const rs=document.getElementById('report-summary');
 if(rs)scEl=rs.querySelector('.summary-content')||rs;
 if(!scEl){alert('報告內容加載中，請稍候再試');setTimeout(()=>btn.click(),500);return;}
 }
-st='🧬 彥彬自檢系統';
+st='🧬 彥彬自檢表系統';
 btn.disabled=true;
 btn.innerHTML='<i class="fa fa-spinner fa-spin mr-1"></i> 處理中...';
 if(shareBtn)shareBtn.style.display='none';
@@ -552,7 +552,7 @@ backgroundColor:'#ffffff',width:scEl.offsetWidth,height:scEl.offsetHeight,dpi:30
 if(shareBtn)shareBtn.style.display='flex';
 
 dataUrl=canvas.toDataURL('image/png',0.9);
-fileName=`🧬 彥彬自檢系統_${new Date().toLocaleDateString()}.png`;
+fileName=`🧬 彥彬自檢表系統_${new Date().toLocaleDateString()}.png`;
 const imgBlob=await (await fetch(dataUrl)).blob();
 let file;
 
@@ -565,9 +565,9 @@ file=new File([compressedBlob],fileName,{type:'image/png'});
 
 if(navigator.share&&typeof navigator.share==='function'){
 try{
-const shareData={title:'🧬 彥彬自檢系統',text:st,files:[file]};
+const shareData={title:'🧬 彥彬自檢表系統',text:st,files:[file]};
 const canShare=navigator.canShare?await navigator.canShare(shareData):true;
-if(canShare){await navigator.share(shareData);alert('分享成功！高清報告已發送到LINE群組/好友');}
+if(canShare){await navigator.share(shareData);alert('分享成功！\n報告已發送到LINE群組/好友');}
 }catch(err){
 console.error('LINE分享失敗：',err);
 if(err.name!=='AbortError')alert(`分享失敗：${err.message||'未知錯誤'}`);
@@ -686,7 +686,7 @@ sc.style.fontSize='0.95rem';
 
 let html=`
 <div class="text-center mb-4">
-<h3 class="text-xl md:text-2xl font-bold text-[#2d3748] mb-1">🧬 彥彬自檢系統</h3>
+<h3 class="text-xl md:text-2xl font-bold text-[#2d3748] mb-1">🧬 彥彬自檢表系統</h3>
 <div class="text-sm text-[#718096]">${formattedUserInfo.提交時間}</div>
 </div>
 <div class="bg-[#f8f9fa] rounded-10 p-4 mb-4">
