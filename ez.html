@@ -206,16 +206,23 @@ const GAS_URL="https://script.google.com/macros/s/AKfycbykBtM2_PM7IZ-ZUU4tgTqVa1
 const JSONP_TIMEOUT=12000;
 const PERMANENT_EXPIRY_DATE="9999/12/31";
 const factorStyles={
-氣血:{className:'bg-blue-50 text-blue-700',label:'氣血不足'},
-微循環:{className:'bg-green-50 text-green-700',label:'微循環不通'},
-毒素:{className:'bg-yellow-50 text-yellow-700',label:'毒素'},
-血脂:{className:'bg-orange-50 text-orange-700',label:'血脂粘稠'},
-寒涼濕:{className:'bg-purple-50 text-purple-700',label:'寒涼濕症'},
-免疫:{className:'bg-pink-50 text-pink-700',label:'免疫'},
-情緒:{className:'bg-indigo-50 text-indigo-700',label:'情緒'}
+  氣血:{className:'bg-blue-50 text-blue-700',label:'氣血不足'},
+  微循環:{className:'bg-green-50 text-green-700',label:'微循環不通'},
+  毒素:{className:'bg-yellow-50 text-yellow-700',label:'毒素'},
+  血脂:{className:'bg-orange-50 text-orange-700',label:'血脂粘稠'},
+  寒涼濕:{className:'bg-purple-50 text-purple-700',label:'寒涼濕症'},
+  免疫:{className:'bg-pink-50 text-pink-700',label:'免疫'},
+  情緒:{className:'bg-indigo-50 text-indigo-700',label:'情緒'}
 };
-const durationOptions=[{value:'',label:'請選擇時間'},{value:'1w',label:'1周內'},{value:'1-3m',label:'1-3個月'},{value:'3-6m',label:'3-6個月'},{value:'6m-1y',label:'6個月-1年'},{value:'1-2y',label:'1-2年'},{value:'2-5y',label:'2-5年'},{value:'5y+',label:'5年以上'}];
-const severityOptions=[{value:'',label:'請選擇輕重'},{value:'mild',label:'輕微（不影響日常生活）'},{value:'moderate',label:'中等（偶爾影響生活）'},{value:'severe',label:'嚴重（明顯影響生活）'}];
+const durationOptions=[
+  {value:'',label:'請選擇時間'},{value:'1w',label:'1周內'},{value:'1-3m',label:'1-3個月'},
+  {value:'3-6m',label:'3-6個月'},{value:'6m-1y',label:'6個月-1年'},{value:'1-2y',label:'1-2年'},
+  {value:'2-5y',label:'2-5年'},{value:'5y+',label:'5年以上'}
+];
+const severityOptions=[
+  {value:'',label:'請選擇輕重'},{value:'mild',label:'輕微（不影響日常生活）'},
+  {value:'moderate',label:'中等（偶爾影響生活）'},{value:'severe',label:'嚴重（明顯影響生活）'}
+];
 const fullSymptomData=[
 {seq:1,symptom:"記憶力下降",氣血:"○",微循環:"",毒素:"",血脂:"",寒涼濕:"",免疫:"",情緒:""},
 {seq:2,symptom:"思維斷電",氣血:"○",微循環:"",毒素:"",血脂:"",寒涼濕:"",免疫:"",情緒:""},
@@ -408,7 +415,8 @@ applyFilters();
 });
 document.getElementById('filter-selected').addEventListener('click',function(){
 sos=!sos;
-sos?(this.classList.remove('bg-gray-700','hover:bg-gray-800'),this.classList.add('bg-red-600','hover:bg-red-700','shadow-elevation-2'),this.innerHTML='<i class="fa fa-filter mr-1"></i>顯示全部已勾選'):(this.classList.remove('bg-red-600','hover:bg-red-700','shadow-elevation-2'),this.classList.add('bg-gray-700','hover:bg-gray-800'),this.innerHTML='<i class="fa fa-filter mr-1"></i>只看已選');
+if(sos){this.classList.remove('bg-gray-700','hover:bg-gray-800');this.classList.add('bg-red-600','hover:bg-red-700','shadow-elevation-2');this.innerHTML='<i class="fa fa-filter mr-1"></i>顯示全部已勾選';}
+else{this.classList.remove('bg-red-600','hover:bg-red-700','shadow-elevation-2');this.classList.add('bg-gray-700','hover:bg-gray-800');this.innerHTML='<i class="fa fa-filter mr-1"></i>只看已選';}
 applyFilters();
 });
 function applyFilters(){
@@ -416,35 +424,32 @@ document.querySelectorAll('.symptom-card').forEach(cd=>{
 let ss=true;
 if(cf!=='all'){const cfs=cd.dataset.factors.split(',');ss=cfs.includes(cf);}
 if(sos&&ss)ss=cd.querySelector('.symptom-checkbox').checked;
-ss?(cd.style.display='block',setTimeout(()=>{cd.style.opacity='1';cd.style.transform='translateY(0)';},10)):(cd.style.opacity='0',cd.style.transform='translateY(10px)',setTimeout(()=>{cd.style.display='none';},300));
+if(ss){cd.style.display='block';setTimeout(()=>{cd.style.opacity='1';cd.style.transform='translateY(0)';},10);}
+else{cd.style.opacity='0';cd.style.transform='translateY(10px)';setTimeout(()=>{cd.style.display='none';},300);}
 });
 }
 }
 
 function organizeReportData(submitData){
 const {userBasicInfo,selectedSymptoms,displayName,submitTime}=submitData,fs={氣血:[],微循環:[],毒素:[],血脂:[],寒涼濕:[],免疫:[],情緒:[]};
-// 修復：強制轉換為數組，避免undefined
-const safeSymptoms=Array.isArray(selectedSymptoms)?selectedSymptoms:[];
-safeSymptoms.forEach(s=>{
+selectedSymptoms.forEach(s=>{
 const os=fullSymptomData.find(ss=>ss.seq===s.seq);
-if(os){// 增加存在性判斷
-Object.keys(fs).forEach(f=>os[f]==="○"&&fs[f].push({name:s.symptom,duration:s.durationText,severity:s.severityText}));
-}
+os&&Object.keys(fs).forEach(f=>os[f]==="○"&&fs[f].push({name:s.symptom,duration:s.durationText,severity:s.severityText}));
 });
 const ffs=Object.fromEntries(Object.entries(fs).filter(([_,f])=>f.length>0)),fui={
-姓名:userBasicInfo?.name||'未填寫',
-年齡:userBasicInfo?.age?`${userBasicInfo.age}歲`:'未填寫',
-性別:userBasicInfo?.gender==='male'?'男':userBasicInfo?.gender==='female'?'女':'未填寫',
-身高:userBasicInfo?.height?`${userBasicInfo.height}cm`:'未填寫',
-體重:userBasicInfo?.weight?`${userBasicInfo.weight}kg`:'未填寫',
-血壓:userBasicInfo?.bp||'未填寫',
-血糖:userBasicInfo?.glucose?`${userBasicInfo.glucose}%`:'未填寫',
-職業:userBasicInfo?.job||'未填寫',
+姓名:userBasicInfo.name||'未填寫',
+年齡:userBasicInfo.age?`${userBasicInfo.age}歲`:'未填寫',
+性別:userBasicInfo.gender==='male'?'男':userBasicInfo.gender==='female'?'女':'未填寫',
+身高:userBasicInfo.height?`${userBasicInfo.height}cm`:'未填寫',
+體重:userBasicInfo.weight?`${userBasicInfo.weight}kg`:'未填寫',
+血壓:userBasicInfo.bp||'未填寫',
+血糖:userBasicInfo.glucose?`${userBasicInfo.glucose}%`:'未填寫',
+職業:userBasicInfo.job||'未填寫',
 提交時間:new Date(submitTime).toLocaleString('zh-TW',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'})
 };
 let st=`🧬 彥彬健康自檢報告\n\n👤 用戶：${displayName}\n📅 提交時間：${fui.提交時間}\n\n📋 基本資料：\n`;
 Object.entries(fui).forEach(([k,v])=>k!=='提交時間'&&(st+=`  ${k}：${v}\n`));
-const ts=Object.values(ffs).reduce((s,f)=>s+(f.length||0),0);
+const ts=Object.values(ffs).reduce((s,f)=>s+f.length,0);
 st+=`\n📊 統計資訊：\n  總選取症狀數：${ts} 項\n\n🩺 七大健康要素評估：\n`;
 Object.entries(ffs).forEach(([fk,f])=>{
 const fn=factorStyles[fk].label;
@@ -522,32 +527,39 @@ const sd=collectSubmitData();
 submitChecklistData(sd);
 });
 
-// 原生分享按鈕
-const shareContainer=document.createElement('div');
-shareContainer.className='flex gap-3 justify-center mt-4';
-const nativeShareBtn=document.createElement('button');
-nativeShareBtn.id='native-share-btn';
-nativeShareBtn.className='bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg shadow-elevation-1 flex items-center gap-1 transition-all';
-nativeShareBtn.innerHTML='<i class="fa fa-share-alt mr-1"></i> 原生分享';
-document.querySelector('#success-modal .modal-actions')?.prepend(nativeShareBtn);
+// 按鈕事件委託（解決動態生成按鈕綁定問題）
+document.addEventListener('click',function(e){
+if(e.target.closest('#native-share-btn')){
+handleShareButtonClick(e);
+}
+if(e.target.closest('#download-report-btn')){
+handleDownloadButtonClick(e);
+}
+});
+}
 
-// 分享按鈕事件
-if(nativeShareBtn){
-nativeShareBtn.addEventListener('click',async function(e){
+async function handleShareButtonClick(e){
 e.stopPropagation();e.preventDefault();
+const btn=e.target.closest('#native-share-btn');
+let scEl,mc,st,canvas,dataUrl,fileName;
 try{
-const scEl=document.getElementById('summary-content')||document.querySelector('#report-summary .summary-content');
-if(!scEl){alert('報告內容加載中，請稍候再試');setTimeout(()=>this.click(),500);return;}
-this.disabled=true;
-this.innerHTML='<i class="fa fa-spinner fa-spin mr-1"></i> 處理中...';
+scEl=document.getElementById('summary-content');
+mc=document.querySelector('#success-modal .modal-content')||document.getElementById('success-modal');
+if(!scEl||!mc){
+const rs=document.getElementById('report-summary');
+if(rs)scEl=rs.querySelector('.summary-content')||rs;
+if(!scEl){alert('報告內容加載中，請稍候再試');setTimeout(()=>btn.click(),500);return;}
+}
+st='🧬 彥彬自檢系統';
+btn.disabled=true;
+btn.innerHTML='<i class="fa fa-spinner fa-spin mr-1"></i> 處理中...';
 
 if(!window.html2canvas){
 alert('正在加載分享所需組件，請稍候...');
 await new Promise((resolve,reject)=>{
 const script=document.createElement('script');
 script.src='https://html2canvas.hertzen.com/dist/html2canvas.min.js';
-script.onload=resolve;
-script.onerror=reject;
+script.onload=resolve;script.onerror=reject;
 document.head.appendChild(script);
 });
 }
@@ -559,60 +571,56 @@ scEl.style.boxSizing='border-box';
 scEl.style.borderRadius='16px';
 scEl.style.boxShadow='0 4px 24px rgba(0,0,0,0.12)';
 
-const canvas=await html2canvas(scEl,{scale:2.0,useCORS:true,allowTaint:true,logging:false,backgroundColor:'#ffffff',width:scEl.offsetWidth,height:scEl.offsetHeight,dpi:300});
-const dataUrl=canvas.toDataURL('image/png',0.9);
-const fileName=`🧬 彥彬自檢系統_${new Date().toLocaleDateString()}.png`;
+canvas=await html2canvas(scEl,{
+scale:2.0,useCORS:true,allowTaint:true,logging:false,
+backgroundColor:'#ffffff',width:scEl.offsetWidth,height:scEl.offsetHeight,dpi:300
+});
+
+dataUrl=canvas.toDataURL('image/png',0.9);
+fileName=`🧬 彥彬自檢系統_${new Date().toLocaleDateString()}.png`;
 const imgBlob=await (await fetch(dataUrl)).blob();
 let file;
 
 if(imgBlob.size>5*1024*1024){
 alert('圖片體積過大，輕微壓縮保持清晰...');
-const compressedDataUrl=canvas.toDataURL('image/png',0.8);
-const compressedBlob=await (await fetch(compressedDataUrl)).blob();
+dataUrl=canvas.toDataURL('image/png',0.8);
+const compressedBlob=await (await fetch(dataUrl)).blob();
 file=new File([compressedBlob],fileName,{type:'image/png'});
-}else{
-file=new File([imgBlob],fileName,{type:'image/png'});
-}
+}else{file=new File([imgBlob],fileName,{type:'image/png'});}
 
 if(navigator.share&&typeof navigator.share==='function'){
 try{
-const shareData={title:'🧬 彥彬自檢系統',text:'健康自檢報告',files:[file]};
+const shareData={title:'🧬 彥彬自檢系統',text:st,files:[file]};
 const canShare=navigator.canShare?await navigator.canShare(shareData):true;
-if(canShare){await navigator.share(shareData);alert('分享成功！');}
+if(canShare){await navigator.share(shareData);alert('分享成功！高清報告已發送到LINE群組/好友');}
 }catch(err){
-console.error('分享失敗：',err);
+console.error('LINE分享失敗：',err);
 if(err.name!=='AbortError'){
 downloadImage(dataUrl,fileName);
-alert(`分享失敗：${err.message||'未知錯誤'}，已下載報告圖片`);
+alert(`分享失敗：${err.message||'未知錯誤'}，已下載高清報告圖片`);
 }
 }
 }else{
 downloadImage(dataUrl,fileName);
-try{
-await navigator.clipboard.writeText('🧬 彥彬自檢系統健康報告');
-alert('已下載報告圖片，文字已複製到剪貼板');
-}catch(cbErr){
-alert('已下載報告圖片，請手動複製文字分享');
-}
+try{await navigator.clipboard.writeText(st);alert('已下載高清報告圖片，文字已複製到剪貼板');}
+catch(cbErr){alert('已下載高清報告圖片，請手動複製文字分享');}
 }
 }catch(err){
 console.error('分享總體錯誤：',err);
-const fallbackDataUrl=window.html2canvas?canvas?.toDataURL('image/png',0.8)||dataUrl:dataUrl;
-downloadImage(fallbackDataUrl,`健康報告_${new Date().getTime()}.png`);
-alert('分享功能異常，已下載報告圖片');
+downloadImage(dataUrl||canvas.toDataURL('image/png',0.8),fileName||`健康報告_${new Date().getTime()}.png`);
+alert('分享功能異常，已下載高清報告圖片');
 }finally{
-this.disabled=false;
-this.innerHTML='<i class="fa fa-share-alt mr-1"></i> 原生分享';
+btn.disabled=false;
+btn.innerHTML='<i class="fa fa-share-alt mr-1"></i> 分享到LINE';
 }
-});
 }
 
-const downloadBtn=document.getElementById('download-report-btn');
-if(downloadBtn){
-downloadBtn.addEventListener('click',async function(){
+async function handleDownloadButtonClick(e){
+e.stopPropagation();e.preventDefault();
+const btn=e.target.closest('#download-report-btn');
 try{
-this.disabled=true;
-this.innerHTML='<i class="fa fa-spinner fa-spin mr-1"></i> 下載中...';
+btn.disabled=true;
+btn.innerHTML='<i class="fa fa-spinner fa-spin mr-1"></i> 下載中...';
 const scEl=document.getElementById('summary-content')||document.querySelector('#report-summary .summary-content');
 if(!scEl)throw new Error('報告內容未找到');
 if(!window.html2canvas){
@@ -620,8 +628,7 @@ alert('正在加載下載所需組件...');
 await new Promise((resolve,reject)=>{
 const script=document.createElement('script');
 script.src='https://html2canvas.hertzen.com/dist/html2canvas.min.js';
-script.onload=resolve;
-script.onerror=reject;
+script.onload=resolve;script.onerror=reject;
 document.head.appendChild(script);
 });
 }
@@ -629,23 +636,26 @@ scEl.style.backgroundColor='#ffffff';
 scEl.style.padding='1rem';
 scEl.style.borderRadius='16px';
 scEl.style.boxShadow='0 4px 24px rgba(0,0,0,0.12)';
-const canvas=await html2canvas(scEl,{scale:2.0,useCORS:true,backgroundColor:'#ffffff',dpi:300});
+const canvas=await html2canvas(scEl,{
+scale:2.0,useCORS:true,backgroundColor:'#ffffff',dpi:300
+});
 const dataUrl=canvas.toDataURL('image/png',0.9);
 downloadImage(dataUrl);
-this.innerHTML='<i class="fa fa-check mr-1"></i> 下載完成';
-setTimeout(()=>{this.innerHTML='<i class="fa fa-download mr-1"></i> 下載報告';this.disabled=false;},1500);
+btn.innerHTML='<i class="fa fa-check mr-1"></i> 下載完成';
+setTimeout(()=>{
+btn.innerHTML='<i class="fa fa-download mr-1"></i> 下載報告';
+btn.disabled=false;
+},1500);
 }catch(e){
 console.error('下載按鈕錯誤：',e);
-this.innerHTML='<i class="fa fa-download mr-1"></i> 下載報告';
-this.disabled=false;
+btn.innerHTML='<i class="fa fa-download mr-1"></i> 下載報告';
+btn.disabled=false;
 alert('下載失敗：'+e.message);
-}
-});
 }
 }
 
 function collectSubmitData(){
-const liffProfile=liff.getProfile?.()||{};// 修復：可選鏈避免函數不存在
+const liffProfile=liff.getProfile()||{};
 const selectedSymptoms=Array.from(document.querySelectorAll('.symptom-checkbox:checked')).map(cb=>{
 const seq=cb.dataset.seq,cd=cb.closest('.symptom-card');
 return{
@@ -655,10 +665,9 @@ durationText:cd.querySelector('.duration-select option:checked').textContent,
 severityText:cd.querySelector('.severity-select option:checked').textContent
 };
 });
-// 確保返回數組，避免undefined
 return{
 action:'submitChecklist',
-userId:liff.getDecodedIDToken?.()?.sub||'',// 修復：可選鏈避免函數不存在
+userId:liff.getDecodedIDToken()?.sub||'',
 displayName:liffProfile.displayName||'LINE用戶',
 submitTime:new Date().toISOString(),
 userName:document.getElementById('user-name').value.trim(),
@@ -669,7 +678,7 @@ userWeight:document.getElementById('user-weight').value.trim()||'',
 userBp:document.getElementById('user-bp').value.trim()||'',
 userGlucose:document.getElementById('user-glucose').value.trim()||'',
 userJob:document.getElementById('user-job').value.trim()||'',
-selectedSymptoms:JSON.stringify(selectedSymptoms||[])
+selectedSymptoms:JSON.stringify(selectedSymptoms)
 };
 }
 
@@ -677,19 +686,6 @@ function submitChecklistData(data){
 console.log("提交數據：",data);
 setStatus('提交中...');
 document.getElementById('status').classList.remove('hidden');
-// 加強數據驗證，確保是合法數組JSON
-let selectedSymptoms=[];
-try{
-selectedSymptoms=data.selectedSymptoms?JSON.parse(data.selectedSymptoms):[];
-// 強制轉換為數組
-if(!Array.isArray(selectedSymptoms))selectedSymptoms=[];
-}catch(e){
-console.error("解析selectedSymptoms失敗，重置為空數組：",e);
-selectedSymptoms=[];
-}
-// 覆蓋為安全的JSON字符串
-data.selectedSymptoms=JSON.stringify(selectedSymptoms);
-
 $.ajax({
 url:GAS_URL,
 dataType:'jsonp',
@@ -699,22 +695,21 @@ timeout:JSONP_TIMEOUT,
 data:data,
 success:function(resp){
 document.getElementById('status').classList.add('hidden');
-if(resp.status==='error'){showError(resp.message||'提交失敗，伺服器返回錯誤');return;}
-const safeSymptoms=Array.isArray(selectedSymptoms)?selectedSymptoms:[];
-const rd=organizeReportData({...data,userBasicInfo:window.userBasicInfo||{},selectedSymptoms:safeSymptoms});
+const rd=organizeReportData({...data,userBasicInfo:window.userBasicInfo,selectedSymptoms:JSON.parse(data.selectedSymptoms)});
 window.reportData=rd;
 renderReportSummary(rd);
 document.getElementById('success-modal').classList.remove('hidden');
 setTimeout(()=>{
-document.querySelector('#success-modal .modal-content')&&(document.querySelector('#success-modal .modal-content').style.maxHeight='90vh');
 document.getElementById('report-summary')&&(document.getElementById('report-summary').style.maxHeight='80vh');
 },100);
 },
 error:function(xhr,status,err){
 console.error("提交失敗：",status,err);
 document.getElementById('status').classList.add('hidden');
-const errMsg=status==='timeout'?'請求超時，請檢查網絡後重試':status==='parsererror'?'數據解析錯誤，請重試':status==='abort'?'請求被中斷，請重試':'與伺服器通訊失敗，請稍後再試';
-showError(errMsg);
+const errMsg=status==='timeout'?'請求超時，請檢查網絡連接':
+status==='parsererror'?'數據解析錯誤，伺服器返回無效數據':
+'與伺服器通訊失敗，請稍後再試';
+showError(`${errMsg}（錯誤：${err.message || status}）`);
 }
 });
 }
@@ -731,7 +726,7 @@ rs.appendChild(sc);
 document.querySelector('#success-modal .modal-content')?.appendChild(rs)||document.body.appendChild(rs);
 }
 sc.dataset.summary=summaryText;
-const ts=Object.values(factorSymptoms).reduce((s,f)=>s+(f.length||0),0);
+const ts=Object.values(factorSymptoms).reduce((s,f)=>s+f.length,0);
 
 const rs=document.getElementById('report-summary');
 rs.style.maxHeight='80vh';
@@ -763,10 +758,14 @@ let html=`
 </div>
 <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-sm">`;
 
-Object.entries(formattedUserInfo).forEach(([k,v])=>{
+const infoEntries=Object.entries(formattedUserInfo);
+infoEntries.forEach(([k,v])=>{
 if(k!=='提交時間'){
 const label=k==='血糖'?'血糖':k;
-html+=`<div class="flex justify-between"><span class="text-[#4a5568] font-medium">${label}：</span><span class="text-[#2d3748]">${v}</span></div>`;
+html+=`<div class="flex justify-between">
+<span class="text-[#4a5568] font-medium">${label}：</span>
+<span class="text-[#2d3748]">${v}</span>
+</div>`;
 }
 });
 
@@ -807,12 +806,21 @@ html+=`</div></div>`;
 
 html+=`<div class="mt-5 bg-primary/5 border border-primary/20 rounded-10 p-4 text-sm text-[#4a5568] italic">
 💡 建議：根據自檢結果關注對應健康問題，必要時諮詢專業醫師
+</div>
+<!-- 按鈕區域 - 移至報告底部，避免手機擋住 -->
+<div class="mt-8 mb-4 flex flex-col sm:flex-row gap-3 justify-center px-4">
+  <button id="download-report-btn" class="flex-1 px-6 py-3 bg-primary text-white rounded-lg font-medium flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-shadow">
+    <i class="fa fa-download"></i> 下載報告
+  </button>
+  <button id="native-share-btn" class="flex-1 px-6 py-3 bg-[#00C300] text-white rounded-lg font-medium flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-shadow">
+    <i class="fa fa-share-alt"></i> 分享到LINE
+  </button>
 </div>`;
 
 sc.innerHTML=html;
 
 setTimeout(()=>{
-rs.style.height=sc.offsetHeight+30+'px';
+rs.style.height=sc.offsetHeight+60+'px';
 rs.style.display='none';
 rs.offsetHeight;
 rs.style.display='block';
@@ -853,24 +861,17 @@ if(!window.liff){
 showError('LINE LIFF初始化失敗，請檢查網絡或重新打開頁面');
 return;
 }
-liff.init({liffId:LIFF_ID},{disableRedirect:true})
+// 優化LIFF初始化配置，加快驗證速度
+liff.init({ liffId: LIFF_ID, enableAnonymousLogin: false }, { disableRedirect: true })
 .then(()=>{
 console.log("LIFF初始化成功");
-if(liff.isLoggedIn()){
-getProfileAndVerify();
-}else{
-liff.login({redirectUri:window.location.href});
-}
+liff.isLoggedIn()?getProfileAndVerify():liff.login();
 })
 .catch(err=>{
 console.error("LIFF初始化失敗：",err);
-const tokenErrs=['expired','token','auth','invalid','session'];
-const isTokenErr=tokenErrs.some(k=>err.message.toLowerCase().includes(k));
-if(isTokenErr){
+if(err.message.includes('expired')||err.message.includes('token')||err.message.includes('auth')){
 setStatus('令牌無效，重新登錄...');
-setTimeout(()=>{
-liff.isLoggedIn()?liff.logout().then(()=>liff.login()):liff.login();
-},500);
+setTimeout(()=>liff.login(),1000);
 }else{
 showError('系統初始化失敗：'+err.message);
 }
@@ -878,11 +879,11 @@ showError('系統初始化失敗：'+err.message);
 });
 
 function getProfileAndVerify(){
-setStatus('驗證用戶資訊...');
-Promise.all([liff.getProfile?.()||Promise.resolve({}),liff.getDecodedIDToken?.()||Promise.resolve({})])// 修復：可選鏈+默認Promise
-.then(([profile,token])=>{
+setStatus('正在獲取用戶資訊...');
+liff.getProfile()
+.then(profile=>{
 console.log("獲取LINE資料成功：",profile);
-callGasBackend(token?.sub||'',profile.displayName||'LINE用戶');
+callGasBackend(profile.userId,profile.displayName||'LINE用戶');
 })
 .catch(err=>{
 console.error("獲取LINE資料失敗：",err);
@@ -890,11 +891,7 @@ const tokenErrs=['expired','token','auth','invalid','session'];
 const isTokenErr=tokenErrs.some(k=>err.message.toLowerCase().includes(k));
 if(isTokenErr){
 setStatus('令牌過期，重新登錄...');
-if(liff.isLoggedIn()){
-liff.logout().then(()=>setTimeout(()=>liff.login(),500)).catch(()=>liff.login());
-}else{
-setTimeout(()=>liff.login(),500);
-}
+liff.isLoggedIn()?liff.logout().then(()=>setTimeout(()=>liff.login(),1000)).catch(()=>liff.login()):setTimeout(()=>liff.login(),1000);
 }else{
 showError('取得用戶資料失敗：'+err.message);
 }
@@ -902,25 +899,22 @@ showError('取得用戶資料失敗：'+err.message);
 }
 
 function callGasBackend(userId,displayName){
+setStatus('正在驗證用戶權限...');
 $.ajax({
 url:GAS_URL,
 dataType:'jsonp',
 jsonp:'callback',
 jsonpCallback:'verifyCallback',
 timeout:JSONP_TIMEOUT,
-cache:false,
 data:{userId:userId,displayName:displayName,action:'verifyUser',needExpiryDate:true},
 success:function(resp){
 console.log("後端返回：",resp);
-if(resp.status==="error"){
-showError(resp.message||'用戶驗證失敗');
-}else{
-renderResult(resp);
-}
+resp.status==="error"?showError(resp.message):renderResult(resp);
 },
 error:function(xhr,status,err){
 console.error("AJAX錯誤：",status,err);
-const errMsg=status==='timeout'?'驗證超時，請檢查網絡':status==='parsererror'?'數據解析錯誤':status==='abort'?'請求中斷':'與伺服器通訊失敗';
+const errMsg=status==='timeout'?'請求超時，檢查網絡':
+status==='parsererror'?'數據解析錯誤':'與伺服器通訊失敗';
 showError(errMsg);
 }
 });
@@ -961,7 +955,7 @@ details.innerHTML=`
 }
 }
 card.classList.remove('hidden');
-setTimeout(()=>forceShowUserInfo(),100);
+setTimeout(()=>forceShowUserInfo(),300);
 }
 
 window.submitCallback=resp=>{console.log("submitCallback:",resp);return resp;};
