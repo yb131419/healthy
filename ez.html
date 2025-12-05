@@ -451,13 +451,12 @@ return {formattedUserInfo:fui,factorSymptoms:ffs,summaryText:st};
 }
 
 function initControlButtons(){
-// 統一按鈕樣式：高級質感風格
 const styleButtons = () => {
   const buttons = document.querySelectorAll('button');
   buttons.forEach(btn => {
     if(!btn.classList.contains('custom-styled')) {
       btn.classList.add('custom-styled', 'px-6', 'py-2.5', 'rounded-lg', 'font-medium', 'transition-all', 'duration-300', 'shadow-md', 'hover:shadow-lg', 'transform', 'hover:-translate-y-0.5', 'active:translate-y-0');
-      btn.classList.remove('px-8', 'py-3'); // 移除舊樣式
+      btn.classList.remove('px-8', 'py-3');
     }
   });
 };
@@ -480,7 +479,7 @@ document.getElementById('checklist-section').classList.remove('hidden');
 renderSymptomCards();
 initFilterButtons();
 document.getElementById('checklist-section').scrollIntoView({behavior:'smooth'});
-styleButtons(); // 應用按鈕樣式
+styleButtons();
 });
 
 document.getElementById('back-to-info').addEventListener('click',function(){
@@ -514,91 +513,15 @@ if(!iv){alert('部分已選症狀未填寫完整資訊，請檢查後再提交')
 const sd=collectSubmitData();
 submitChecklistData(sd,btn);
 });
-
-document.addEventListener('click',function(e){
-if(e.target.closest('#native-share-btn'))handleShareButtonClick(e);
-});
-
-styleButtons(); // 初始化按鈕樣式
+styleButtons();
 }
 
 async function handleShareButtonClick(e){
 e.stopPropagation();e.preventDefault();
-const btn=e.target.closest('#native-share-btn');
+// 隐藏分享按钮，直接显示关闭按钮
 const shareBtn=document.getElementById('native-share-btn');
-let scEl,mc,st,canvas,dataUrl,fileName;
-try{
-scEl=document.getElementById('summary-content');
-mc=document.querySelector('#success-modal .modal-content')||document.getElementById('success-modal');
-if(!scEl||!mc){
-const rs=document.getElementById('report-summary');
-if(rs)scEl=rs.querySelector('.summary-content')||rs;
-if(!scEl){alert('報告內容加載中，請稍候再試');setTimeout(()=>btn.click(),500);return;}
-}
-st='🧬 彥彬自檢表系統';
-btn.disabled=true;
-btn.innerHTML='<i class="fa fa-spinner fa-spin mr-1"></i> 處理中...';
 if(shareBtn)shareBtn.style.display='none';
-
-if(!window.html2canvas){
-alert('正在加載分享所需組件，請稍候...');
-await new Promise((resolve,reject)=>{
-const script=document.createElement('script');
-script.src='https://html2canvas.hertzen.com/dist/html2canvas.min.js';
-script.onload=resolve;script.onerror=reject;
-document.head.appendChild(script);
-});
-}
-
-// 確保內容居中顯示
-scEl.style.textAlign='center';
-scEl.style.margin='0 auto';
-scEl.style.backgroundColor='#ffffff';
-scEl.style.padding='1rem';
-scEl.style.width='100%';
-scEl.style.boxSizing='border-box';
-scEl.style.borderRadius='16px';
-scEl.style.boxShadow='0 4px 24px rgba(0,0,0,0.12)';
-
-canvas=await html2canvas(scEl,{
-scale:2.0,useCORS:true,allowTaint:true,logging:false,
-backgroundColor:'#ffffff',width:scEl.offsetWidth,height:scEl.offsetHeight,dpi:300
-});
-if(shareBtn)shareBtn.style.display='flex';
-
-dataUrl=canvas.toDataURL('image/png',0.9);
-fileName=`🧬 彥彬自檢表系統_${new Date().toLocaleDateString()}.png`;
-const imgBlob=await (await fetch(dataUrl)).blob();
-let file;
-
-if(imgBlob.size>5*1024*1024){
-alert('圖片體積過大，輕微壓縮保持清晰...');
-dataUrl=canvas.toDataURL('image/png',0.8);
-const compressedBlob=await (await fetch(dataUrl)).blob();
-file=new File([compressedBlob],fileName,{type:'image/png'});
-}else file=new File([imgBlob],fileName,{type:'image/png'});
-
-if(navigator.share&&typeof navigator.share==='function'){
-try{
-const shareData={title:'🧬 彥彬自檢表系統',text:st,files:[file]};
-const canShare=navigator.canShare?await navigator.canShare(shareData):true;
-if(canShare){await navigator.share(shareData);alert('分享成功！\n報告已發送到LINE群組/好友');}
-}catch(err){
-console.error('LINE分享失敗：',err);
-if(err.name!=='AbortError')alert(`分享失敗：${err.message||'未知錯誤'}`);
-}
-}else{
-try{await navigator.clipboard.writeText(st);alert('文字已複製到剪貼板，請手動截圖分享');}
-catch(cbErr){alert('請手動截圖並複製文字分享');}
-}
-}catch(err){
-if(shareBtn)shareBtn.style.display='flex';
-console.error('分享總體錯誤：',err);
-alert('分享功能異常，請手動截圖分享');
-}finally{
-btn.disabled=false;
-btn.innerHTML='<i class="fa fa-share-alt mr-1"></i> 分享到LINE';
-// 添加關閉按鈕 - 高級樣式
+// 创建/显示关闭按钮
 let closeBtn=document.getElementById('close-page-btn');
 if(!closeBtn){
 closeBtn=document.createElement('button');
@@ -609,14 +532,12 @@ closeBtn.onclick=()=>{
   if(window.liff && liff.closeWindow) {
     liff.closeWindow();
   } else {
-    // 後備方案
     window.close();
   }
 };
-btn.parentNode.appendChild(closeBtn);
+document.querySelector('#summary-content').parentNode.appendChild(closeBtn);
 }else{
 closeBtn.style.display='flex';
-}
 }
 }
 
@@ -634,7 +555,7 @@ severityText:cd.querySelector('.severity-select option:checked').textContent
 return{
 action:'submitChecklist',
 userId:liff.getDecodedIDToken()?.sub||'',
-displayName:liffProfile.displayName||'LINE用戶',
+displayName:'匿名用戶', // 隐藏LINE用户名，不传递真实名称
 submitTime:new Date().toISOString(),
 userName:document.getElementById('user-name').value.trim(),
 userAge:document.getElementById('user-age').value.trim(),
@@ -707,7 +628,7 @@ rs.style.boxSizing='border-box';
 rs.style.backgroundColor='#ffffff';
 rs.style.borderRadius='16px';
 rs.style.boxShadow='0 8px 32px rgba(0,0,0,0.15)';
-rs.style.margin='0 auto'; // 整體居中
+rs.style.margin='0 auto';
 rs.style.width='100%';
 rs.style.maxWidth='800px';
 
@@ -717,11 +638,11 @@ sc.style.padding='1rem';
 sc.style.boxSizing='border-box';
 sc.style.lineHeight='1.6';
 sc.style.fontSize='0.95rem';
-sc.style.textAlign='center'; // 文字居中
+sc.style.textAlign='center';
 
 let html=`
 <div class="text-center mb-4">
-<h3 class="text-xl md:text-2xl font-bold text-[#2d3748] mb-1">🧬 彥彬自檢表系統</h3>
+<h3 class="text-xl md:text-2xl font-bold text-[#2d3748] mb-1">🧬 彥彬健康自檢報告</h3>
 <div class="text-sm text-[#718096]">${formattedUserInfo.提交時間}</div>
 </div>
 <div class="bg-[#f8f9fa] rounded-10 p-4 mb-4">
@@ -754,7 +675,6 @@ html+=`</div></div>
 <i class="fa fa-heartbeat text-primary mr-2 text-base"></i>七大健康要素評估
 </div>`;
 
-// 調整排版：症狀名稱單獨一行，時間和程度另一行
 Object.entries(factorSymptoms).forEach(([fk,f])=>{
 const fn=factorStyles[fk].label;
 html+=`<div class="bg-white border border-[#e8f4f8] rounded-10 p-3 mb-3 shadow-sm hover:shadow-md transition-shadow mx-auto max-w-lg">
@@ -781,7 +701,7 @@ html+=`<div class="mt-5 bg-primary/5 border border-primary/20 rounded-10 p-4 tex
 💡 建議：根據自檢結果關注對應健康問題，必要時諮詢專業醫師
 </div>
 <div class="mt-8 mb-4 flex justify-center px-4">
-  <button id="native-share-btn" class="w-full sm:w-auto px-6 py-2.5 bg-[#00C300] text-white rounded-lg font-medium flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0">
+  <button id="native-share-btn" class="w-full sm:w-auto px-6 py-2.5 bg-[#00C300] text-white rounded-lg font-medium flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0" style="display:none">
     <i class="fa fa-share-alt"></i> 分享到LINE
   </button>
 </div>`;
@@ -793,6 +713,8 @@ rs.style.height=sc.offsetHeight+60+'px';
 rs.style.display='none';
 rs.offsetHeight;
 rs.style.display='block';
+// 初始化关闭按钮
+handleShareButtonClick({stopPropagation:()=>{},preventDefault:()=>{}});
 },150);
 }
 
@@ -851,7 +773,7 @@ setStatus('正在獲取用戶資訊...');
 liff.getProfile()
 .then(profile=>{
 console.log("獲取LINE資料成功：",profile);
-callGasBackend(profile.userId,profile.displayName||'LINE用戶');
+callGasBackend(profile.userId,'匿名用戶'); // 传递匿名名称
 })
 .catch(err=>{
 console.error("獲取LINE資料失敗：",err);
@@ -892,7 +814,7 @@ function renderResult(resp){
 document.getElementById('status').classList.add('hidden');
 document.getElementById('error-message').classList.add('hidden');
 const card=document.getElementById('result-card'),main=document.getElementById('result-main'),details=document.getElementById('result-details');
-const isPro=resp.isAdmin===true,un=resp.displayName||'用戶',ed=resp.expiryDate||resp.endDate||resp.expireDate||'';
+const isPro=resp.isAdmin===true,un=resp.displayName||'匿名用戶',ed=resp.expiryDate||resp.endDate||resp.expireDate||'';
 if(isPro){
 const{displayDate,remainingDays}=calculateRemainingDaysByDate(ed);
 main.innerHTML=`<span class="text-primary"><i class="fa fa-check-circle mr-1.5"></i>專業用戶驗證通過</span>`;
