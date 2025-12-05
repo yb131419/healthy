@@ -431,34 +431,13 @@ Object.values(ffs).forEach(factorSymptoms => {
   factorSymptoms.forEach(symptom => allSelectedSymptoms.add(symptom.name));
 });
 const selectedTotal = allSelectedSymptoms.size;
-// 优化分享文字，补充姓名、年龄、总症状数、调整方向
+// 優化分享文字：移除詳細資訊和七大健康要素評估
 let st=`🧬 彥彬自檢表系統
 👤 姓名：${fui.姓名} | 年齡：${fui.年齡}
 📊 總選取症狀數：${selectedTotal} 項 (共${totalSymptomCount}種症狀)
 🎯 調整方向：${topFactors.length > 0 ? (topFactors.length === 1 ? `${topFactors[0].name} (${topFactors[0].count}項)` : `${topFactors[0].name} (${topFactors[0].count}項)、${topFactors[1].name} (${topFactors[1].count}項)`) : '無'}
 
-📋 詳細資訊：
-  用戶：${displayName}
-  提交時間：${fui.提交時間}
-  性別：${fui.性別}
-  身高：${fui.身高}
-  體重：${fui.體重}
-  血壓：${fui.血壓}
-  血糖：${fui.血糖}
-  職業：${fui.職業}
-
-🩺 七大健康要素評估：
-`;
-Object.entries(ffs).forEach(([fk,f])=>{
-const fn=factorStyles[fk].label;
-st+=`【${fn}】(${f.length}項)：
-`;
-f.forEach((i,idx)=>st+=`  ${idx+1}. ${i.name}
-     ⏱️ 時間：${i.duration}
-     ⚠️ 程度：${i.severity}
-`);
-});
-st+=`💡 建議：根據自檢結果關注對應健康問題，必要時諮詢專業醫師`;
+💡 建議：根據自檢結果關注對應健康問題，必要時諮詢專業醫師`;
 return {formattedUserInfo:fui,factorSymptoms:ffs,summaryText:st,totalSymptomCount, selectedTotal, topFactors};
 }
 function initControlButtons(){
@@ -572,11 +551,10 @@ file=new File([compressedBlob],fileName,{type:'image/png'});
 }else file=new File([imgBlob],fileName,{type:'image/png'});
 if(navigator.share&&typeof navigator.share==='function'){
 try{
-// 调整分享顺序：图片在前，文字在后
 const shareData={
 title:'🧬 彥彬自檢表系統',
-files:[file], // 图片优先
-text:st       // 文字在后
+files:[file],
+text:st
 };
 const canShare=navigator.canShare?await navigator.canShare(shareData):true;
 if(canShare){await navigator.share(shareData);alert('分享成功！\n報告已發送到LINE群組/好友');}
