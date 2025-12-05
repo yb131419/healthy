@@ -433,8 +433,8 @@ Object.values(ffs).forEach(factorSymptoms => {
 const selectedTotal = allSelectedSymptoms.size;
 // 優化分享文字：移除詳細資訊和七大健康要素評估
 let st=`🧬 彥彬自檢表系統\n
-👤 姓名：${fui.姓名} | 年齡：${fui.年齡}\n
-📊 總選取症狀數：\n${selectedTotal} 項 (共${totalSymptomCount}種症狀)
+👤 姓名：${fui.姓名} \n 🕶️ 年齡：${fui.年齡}\n
+📊 總選取症狀數：\n${selectedTotal} 項 (共${totalSymptomCount}種症狀)\n
 🎯 調整方向：\n${topFactors.length > 0 ? (topFactors.length === 1 ? `${topFactors[0].name} (${topFactors[0].count}項)` : `${topFactors[0].name} (${topFactors[0].count}項)、${topFactors[1].name} (${topFactors[1].count}項)`) : '無'}
 `;
 return {formattedUserInfo:fui,factorSymptoms:ffs,summaryText:st,totalSymptomCount, selectedTotal, topFactors};
