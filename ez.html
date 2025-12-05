@@ -416,15 +416,7 @@ selectedSymptoms.forEach(s=>{
 const os=fullSymptomData.find(ss=>ss.seq===s.seq);
 os&&Object.keys(fs).forEach(f=>os[f]==="○"&&fs[f].push({name:s.symptom,duration:s.durationText,severity:s.severityText}));
 });
-// 計算最多的健康要素（前2名）
-const factorCounts = Object.entries(fs)
-  .map(([key, list]) => ({
-    name: factorStyles[key].label,
-    count: list.length,
-    key: key
-  }))
-  .filter(item => item.count > 0)
-  .sort((a, b) => b.count - a.count);
+const factorCounts = Object.entries(fs).map(([key, list]) => ({name: factorStyles[key].label,count: list.length,key: key})).filter(item => item.count > 0).sort((a, b) => b.count - a.count);
 const topFactors = factorCounts.slice(0, 2);
 const ffs=Object.fromEntries(Object.entries(fs).filter(([_,f])=>f.length>0)),fui={
 姓名:userBasicInfo.name||'未填寫',年齡:userBasicInfo.age?`${userBasicInfo.age}歲`:'未填寫',
@@ -434,7 +426,12 @@ const ffs=Object.fromEntries(Object.entries(fs).filter(([_,f])=>f.length>0)),fui
 職業:userBasicInfo.job||'未填寫',提交時間:new Date(submitTime).toLocaleString('zh-TW',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'})
 };
 const totalSymptomCount = fullSymptomData.length;
-const selectedTotal = Object.values(ffs).reduce((s,f)=>s+f.length,0);
+// 核心修改：收集所有选中症状名称并去重，重复症状只算一种
+const allSelectedSymptoms = new Set();
+Object.values(ffs).forEach(factorSymptoms => {
+  factorSymptoms.forEach(symptom => allSelectedSymptoms.add(symptom.name));
+});
+const selectedTotal = allSelectedSymptoms.size;
 let st=`🧬 彥彬自檢表系統\n\n👤 用戶：${displayName}\n📅 提交時間：${fui.提交時間}\n\n📋 基本資料：\n`;
 Object.entries(fui).forEach(([k,v])=>k!=='提交時間'&&(st+=`  ${k}：${v}\n`));
 st+=`\n📊 統計資訊：\n  總選取症狀數：${selectedTotal} 項 (共${totalSymptomCount}種症狀)\n`;
@@ -452,8 +449,7 @@ st+=`\n【${fn}】(${f.length}項)：\n`;
 f.forEach((i,idx)=>st+=`  ${idx+1}. ${i.name}\n     ⏱️ 時間：${i.duration}\n     ⚠️ 程度：${i.severity}\n`);
 });
 st+=`\n💡 建議：根據自檢結果關注對應健康問題，必要時諮詢專業醫師`;
-return {formattedUserInfo:fui,factorSymptoms:ffs,summaryText:st, 
-        totalSymptomCount, selectedTotal, topFactors};
+return {formattedUserInfo:fui,factorSymptoms:ffs,summaryText:st,totalSymptomCount, selectedTotal, topFactors};
 }
 function initControlButtons(){
 const styleButtons = () => {
@@ -712,7 +708,6 @@ html+=`</div></div>
 <div class="bg-green-100 text-green-800 px-4 py-2 rounded-full text-sm font-medium inline-flex items-center justify-center mx-auto mb-2">
 總症狀數：${selectedTotal} 項 (共${totalSymptomCount}種症狀)
 </div>`;
-// 顯示前2種調整方向
 if(topFactors.length > 0){
   if(topFactors.length === 1){
     html+=`<div class="bg-blue-100 text-blue-800 px-4 py-2 rounded-full text-sm font-medium inline-flex items-center justify-center mx-auto">
