@@ -314,6 +314,7 @@ const fullSymptomData=[
 {seq:98,symptom:"淋巴結大",氣血:"",微循環:"",毒素:"○",血脂:"",寒涼濕:"",免疫:"○",情緒:""},
 {seq:99,symptom:"黑痣變大變多",氣血:"",微循環:"",毒素:"○",血脂:"",寒涼濕:"",免疫:"○",情緒:""},
 {seq:100,symptom:"形體消瘦",氣血:"○",微循環:"",毒素:"",血脂:"",寒涼濕:"",免疫:"",情緒:""}];
+
 const setStatus=text=>{const e=document.getElementById('status-text');e&&(e.textContent=text);};
 const showError=msg=>{
 document.getElementById('status').classList.add('hidden');
@@ -339,6 +340,7 @@ else rt=`${rd} 天`;
 return{displayDate:fd,remainingDays:rt};
 }catch(e){console.error("計算剩餘天數失敗：",e,expiryDateStr);return{displayDate:"計算錯誤",remainingDays:"計算錯誤"}};
 };
+
 function renderSymptomCards(){
 try{
 const c=document.getElementById('symptoms-container');
@@ -373,6 +375,7 @@ bindCheckboxEvents();
 return true;
 }catch(e){console.error("渲染症狀卡片出錯：",e);return false;}
 }
+
 function bindCheckboxEvents(){
 document.querySelectorAll('.symptom-checkbox').forEach(cb=>{
 cb.addEventListener('change',function(){
@@ -382,11 +385,13 @@ updateSelectedCount();
 });
 });
 }
+
 function updateSelectedCount(){
 const cnt=document.querySelectorAll('.symptom-checkbox:checked').length;
 document.getElementById('selected-count').textContent=cnt;
 return cnt;
 }
+
 function initFilterButtons(){
 const fb=document.querySelectorAll('[data-factor], #filter-all');
 let cf='all',sos=false;
@@ -414,6 +419,7 @@ else{cd.style.opacity='0';cd.style.transform='translateY(10px)';setTimeout(()=>{
 });
 }
 }
+
 function organizeReportData(submitData){
 const {userBasicInfo,selectedSymptoms,displayName,submitTime}=submitData,fs={氣血:[],微循環:[],毒素:[],血脂:[],寒涼濕:[],免疫:[],情緒:[]};
 selectedSymptoms.forEach(s=>{
@@ -443,16 +449,19 @@ f.forEach((i,idx)=>st+=`  ${idx+1}. ${i.name}\n     ⏱️ 時間：${i.duration
 st+=`\n💡 建議：根據自檢結果關注對應健康問題，必要時諮詢專業醫師`;
 return {formattedUserInfo:fui,factorSymptoms:ffs,summaryText:st};
 }
+
 function initControlButtons(){
+// 統一按鈕樣式：高級質感風格
 const styleButtons = () => {
   const buttons = document.querySelectorAll('button');
   buttons.forEach(btn => {
     if(!btn.classList.contains('custom-styled')) {
       btn.classList.add('custom-styled', 'px-6', 'py-2.5', 'rounded-lg', 'font-medium', 'transition-all', 'duration-300', 'shadow-md', 'hover:shadow-lg', 'transform', 'hover:-translate-y-0.5', 'active:translate-y-0');
-      btn.classList.remove('px-8', 'py-3');
+      btn.classList.remove('px-8', 'py-3'); // 移除舊樣式
     }
   });
 };
+
 document.getElementById('next-to-checklist').addEventListener('click',function(){
 const n=document.getElementById('user-name').value.trim(),a=document.getElementById('user-age').value.trim(),g=document.getElementById('user-gender').value;
 if(!n){alert('請輸入姓名');document.getElementById('user-name').focus();return;}
@@ -471,8 +480,9 @@ document.getElementById('checklist-section').classList.remove('hidden');
 renderSymptomCards();
 initFilterButtons();
 document.getElementById('checklist-section').scrollIntoView({behavior:'smooth'});
-styleButtons();
+styleButtons(); // 應用按鈕樣式
 });
+
 document.getElementById('back-to-info').addEventListener('click',function(){
 document.getElementById('checklist-section').classList.add('hidden');
 document.getElementById('user-info-section').classList.remove('hidden');
@@ -488,6 +498,7 @@ document.getElementById('user-job').value=window.userBasicInfo.job||'';
 }
 document.getElementById('user-info-section').scrollIntoView({behavior:'smooth'});
 });
+
 document.getElementById('submit-checklist').addEventListener('click',function(){
 const btn=this;
 btn.disabled=true;
@@ -503,12 +514,91 @@ if(!iv){alert('部分已選症狀未填寫完整資訊，請檢查後再提交')
 const sd=collectSubmitData();
 submitChecklistData(sd,btn);
 });
-styleButtons();
+
+document.addEventListener('click',function(e){
+if(e.target.closest('#native-share-btn'))handleShareButtonClick(e);
+});
+
+styleButtons(); // 初始化按鈕樣式
 }
+
 async function handleShareButtonClick(e){
 e.stopPropagation();e.preventDefault();
+const btn=e.target.closest('#native-share-btn');
 const shareBtn=document.getElementById('native-share-btn');
+let scEl,mc,st,canvas,dataUrl,fileName;
+try{
+scEl=document.getElementById('summary-content');
+mc=document.querySelector('#success-modal .modal-content')||document.getElementById('success-modal');
+if(!scEl||!mc){
+const rs=document.getElementById('report-summary');
+if(rs)scEl=rs.querySelector('.summary-content')||rs;
+if(!scEl){alert('報告內容加載中，請稍候再試');setTimeout(()=>btn.click(),500);return;}
+}
+st='🧬 彥彬自檢表系統';
+btn.disabled=true;
+btn.innerHTML='<i class="fa fa-spinner fa-spin mr-1"></i> 處理中...';
 if(shareBtn)shareBtn.style.display='none';
+
+if(!window.html2canvas){
+alert('正在加載分享所需組件，請稍候...');
+await new Promise((resolve,reject)=>{
+const script=document.createElement('script');
+script.src='https://html2canvas.hertzen.com/dist/html2canvas.min.js';
+script.onload=resolve;script.onerror=reject;
+document.head.appendChild(script);
+});
+}
+
+// 確保內容居中顯示
+scEl.style.textAlign='center';
+scEl.style.margin='0 auto';
+scEl.style.backgroundColor='#ffffff';
+scEl.style.padding='1rem';
+scEl.style.width='100%';
+scEl.style.boxSizing='border-box';
+scEl.style.borderRadius='16px';
+scEl.style.boxShadow='0 4px 24px rgba(0,0,0,0.12)';
+
+canvas=await html2canvas(scEl,{
+scale:2.0,useCORS:true,allowTaint:true,logging:false,
+backgroundColor:'#ffffff',width:scEl.offsetWidth,height:scEl.offsetHeight,dpi:300
+});
+if(shareBtn)shareBtn.style.display='flex';
+
+dataUrl=canvas.toDataURL('image/png',0.9);
+fileName=`🧬 彥彬自檢表系統_${new Date().toLocaleDateString()}.png`;
+const imgBlob=await (await fetch(dataUrl)).blob();
+let file;
+
+if(imgBlob.size>5*1024*1024){
+alert('圖片體積過大，輕微壓縮保持清晰...');
+dataUrl=canvas.toDataURL('image/png',0.8);
+const compressedBlob=await (await fetch(dataUrl)).blob();
+file=new File([compressedBlob],fileName,{type:'image/png'});
+}else file=new File([imgBlob],fileName,{type:'image/png'});
+
+if(navigator.share&&typeof navigator.share==='function'){
+try{
+const shareData={title:'🧬 彥彬自檢表系統',text:st,files:[file]};
+const canShare=navigator.canShare?await navigator.canShare(shareData):true;
+if(canShare){await navigator.share(shareData);alert('分享成功！\n報告已發送到LINE群組/好友');}
+}catch(err){
+console.error('LINE分享失敗：',err);
+if(err.name!=='AbortError')alert(`分享失敗：${err.message||'未知錯誤'}`);
+}
+}else{
+try{await navigator.clipboard.writeText(st);alert('文字已複製到剪貼板，請手動截圖分享');}
+catch(cbErr){alert('請手動截圖並複製文字分享');}
+}
+}catch(err){
+if(shareBtn)shareBtn.style.display='flex';
+console.error('分享總體錯誤：',err);
+alert('分享功能異常，請手動截圖分享');
+}finally{
+btn.disabled=false;
+btn.innerHTML='<i class="fa fa-share-alt mr-1"></i> 分享到LINE';
+// 添加關閉按鈕 - 高級樣式
 let closeBtn=document.getElementById('close-page-btn');
 if(!closeBtn){
 closeBtn=document.createElement('button');
@@ -519,14 +609,17 @@ closeBtn.onclick=()=>{
   if(window.liff && liff.closeWindow) {
     liff.closeWindow();
   } else {
+    // 後備方案
     window.close();
   }
 };
-document.querySelector('#summary-content').parentNode.appendChild(closeBtn);
+btn.parentNode.appendChild(closeBtn);
 }else{
 closeBtn.style.display='flex';
 }
 }
+}
+
 function collectSubmitData(){
 const liffProfile=liff.getProfile()||{};
 const selectedSymptoms=Array.from(document.querySelectorAll('.symptom-checkbox:checked')).map(cb=>{
@@ -541,7 +634,7 @@ severityText:cd.querySelector('.severity-select option:checked').textContent
 return{
 action:'submitChecklist',
 userId:liff.getDecodedIDToken()?.sub||'',
-displayName: liffProfile.displayName || '匿名用戶', // 修改点1：显示真实的LINE昵称，兜底匿名
+displayName:liffProfile.displayName||'LINE用戶',
 submitTime:new Date().toISOString(),
 userName:document.getElementById('user-name').value.trim(),
 userAge:document.getElementById('user-age').value.trim(),
@@ -554,6 +647,7 @@ userJob:document.getElementById('user-job').value.trim()||'',
 selectedSymptoms:JSON.stringify(selectedSymptoms)
 };
 }
+
 function submitChecklistData(data,btn){
 console.log("提交數據：",data);
 setStatus('提交中...');
@@ -590,6 +684,7 @@ btn.innerHTML='提交檢查表';
 }
 });
 }
+
 function renderReportSummary(reportData){
 const {formattedUserInfo,factorSymptoms,summaryText}=reportData;
 let sc=document.getElementById('summary-content');
@@ -603,6 +698,7 @@ document.querySelector('#success-modal .modal-content')?.appendChild(rs)||docume
 }
 sc.dataset.summary=summaryText;
 const ts=Object.values(factorSymptoms).reduce((s,f)=>s+f.length,0);
+
 const rs=document.getElementById('report-summary');
 rs.style.maxHeight='80vh';
 rs.style.overflowY='auto';
@@ -611,19 +707,21 @@ rs.style.boxSizing='border-box';
 rs.style.backgroundColor='#ffffff';
 rs.style.borderRadius='16px';
 rs.style.boxShadow='0 8px 32px rgba(0,0,0,0.15)';
-rs.style.margin='0 auto';
+rs.style.margin='0 auto'; // 整體居中
 rs.style.width='100%';
 rs.style.maxWidth='800px';
+
 sc.style.width='100%';
 sc.style.backgroundColor='#ffffff';
 sc.style.padding='1rem';
 sc.style.boxSizing='border-box';
 sc.style.lineHeight='1.6';
 sc.style.fontSize='0.95rem';
-sc.style.textAlign='center';
+sc.style.textAlign='center'; // 文字居中
+
 let html=`
 <div class="text-center mb-4">
-<h3 class="text-xl md:text-2xl font-bold text-[#2d3748] mb-1">🧬 彥彬健康自檢報告</h3>
+<h3 class="text-xl md:text-2xl font-bold text-[#2d3748] mb-1">🧬 彥彬自檢表系統</h3>
 <div class="text-sm text-[#718096]">${formattedUserInfo.提交時間}</div>
 </div>
 <div class="bg-[#f8f9fa] rounded-10 p-4 mb-4">
@@ -631,6 +729,7 @@ let html=`
 <i class="fa fa-user-circle text-primary mr-2 text-base"></i>基本資料
 </div>
 <div class="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">`;
+
 const infoEntries=Object.entries(formattedUserInfo);
 infoEntries.forEach(([k,v])=>{
 if(k!=='提交時間'){
@@ -641,6 +740,7 @@ html+=`<div class="flex justify-between">
 </div>`;
 }
 });
+
 html+=`</div></div>
 <div class="mb-4">
 <div class="text-lg font-semibold text-[#2d3748] flex items-center justify-center mb-1">
@@ -653,6 +753,8 @@ html+=`</div></div>
 <div class="text-lg font-semibold text-[#2d3748] mb-3 flex items-center justify-center">
 <i class="fa fa-heartbeat text-primary mr-2 text-base"></i>七大健康要素評估
 </div>`;
+
+// 調整排版：症狀名稱單獨一行，時間和程度另一行
 Object.entries(factorSymptoms).forEach(([fk,f])=>{
 const fn=factorStyles[fk].label;
 html+=`<div class="bg-white border border-[#e8f4f8] rounded-10 p-3 mb-3 shadow-sm hover:shadow-md transition-shadow mx-auto max-w-lg">
@@ -661,6 +763,7 @@ html+=`<div class="bg-white border border-[#e8f4f8] rounded-10 p-3 mb-3 shadow-s
 【${fn}】（${f.length}項）
 </div>
 <div class="grid grid-cols-1 gap-1.5 text-sm">`;
+
 f.forEach((i,idx)=>{
 html+=`<div class="p-2 bg-[#fafafa] rounded-lg">
 <div class="font-medium text-[#2d3748] text-sm">${idx+1}. ${i.name}</div>
@@ -670,25 +773,29 @@ html+=`<div class="p-2 bg-[#fafafa] rounded-lg">
 </div>
 </div>`;
 });
+
 html+=`</div></div>`;
 });
+
 html+=`<div class="mt-5 bg-primary/5 border border-primary/20 rounded-10 p-4 text-sm text-[#4a5568] font-bold mx-auto max-w-lg">
 💡 建議：根據自檢結果關注對應健康問題，必要時諮詢專業醫師
 </div>
 <div class="mt-8 mb-4 flex justify-center px-4">
-  <button id="native-share-btn" class="w-full sm:w-auto px-6 py-2.5 bg-[#00C300] text-white rounded-lg font-medium flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0" style="display:none">
+  <button id="native-share-btn" class="w-full sm:w-auto px-6 py-2.5 bg-[#00C300] text-white rounded-lg font-medium flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0">
     <i class="fa fa-share-alt"></i> 分享到LINE
   </button>
 </div>`;
+
 sc.innerHTML=html;
+
 setTimeout(()=>{
 rs.style.height=sc.offsetHeight+60+'px';
 rs.style.display='none';
 rs.offsetHeight;
 rs.style.display='block';
-handleShareButtonClick({stopPropagation:()=>{},preventDefault:()=>{}});
 },150);
 }
+
 function resetChecklist(){
 document.querySelectorAll('.symptom-checkbox').forEach(cb=>{cb.checked&&(cb.checked=false,cb.dispatchEvent(new Event('change')));});
 document.getElementById('filter-all').click();
@@ -705,6 +812,7 @@ document.getElementById('user-bp').value='';
 document.getElementById('user-glucose').value='';
 document.getElementById('user-job').value='';
 }
+
 function forceShowUserInfo(){
 try{
 const uis=document.getElementById('user-info-section');
@@ -714,12 +822,36 @@ initControlButtons();
 return true;
 }catch(e){console.error("顯示用戶資訊出錯：",e);alert("頁面加載失敗，請刷新");return false;}
 }
+
+document.addEventListener('DOMContentLoaded',function(){
+console.log("頁面加載完成，初始化系統");
+setStatus('正在初始化...');
+if(!window.liff){
+showError('LINE LIFF初始化失敗，請檢查網絡或重新打開頁面');
+return;
+}
+liff.init({ liffId: LIFF_ID, enableAnonymousLogin: false }, { disableRedirect: true })
+.then(()=>{
+console.log("LIFF初始化成功");
+liff.isLoggedIn()?getProfileAndVerify():liff.login();
+})
+.catch(err=>{
+console.error("LIFF初始化失敗：",err);
+if(err.message.includes('expired')||err.message.includes('token')||err.message.includes('auth')){
+setStatus('令牌無效，重新登錄...');
+setTimeout(()=>liff.login(),1000);
+}else{
+showError('系統初始化失敗：'+err.message);
+}
+});
+});
+
 function getProfileAndVerify(){
 setStatus('正在獲取用戶資訊...');
 liff.getProfile()
 .then(profile=>{
 console.log("獲取LINE資料成功：",profile);
-callGasBackend(profile.userId, profile.displayName); // 修改点2：传递真实的LINE昵称
+callGasBackend(profile.userId,profile.displayName||'LINE用戶');
 })
 .catch(err=>{
 console.error("獲取LINE資料失敗：",err);
@@ -733,6 +865,7 @@ showError('取得用戶資料失敗：'+err.message);
 }
 });
 }
+
 function callGasBackend(userId,displayName){
 setStatus('正在驗證用戶權限...');
 $.ajax({
@@ -754,11 +887,12 @@ showError(errMsg);
 }
 });
 }
+
 function renderResult(resp){
 document.getElementById('status').classList.add('hidden');
 document.getElementById('error-message').classList.add('hidden');
 const card=document.getElementById('result-card'),main=document.getElementById('result-main'),details=document.getElementById('result-details');
-const isPro=resp.isAdmin===true,un=resp.displayName||'匿名用戶',ed=resp.expiryDate||resp.endDate||resp.expireDate||'';
+const isPro=resp.isAdmin===true,un=resp.displayName||'用戶',ed=resp.expiryDate||resp.endDate||resp.expireDate||'';
 if(isPro){
 const{displayDate,remainingDays}=calculateRemainingDaysByDate(ed);
 main.innerHTML=`<span class="text-primary"><i class="fa fa-check-circle mr-1.5"></i>專業用戶驗證通過</span>`;
@@ -791,28 +925,7 @@ details.innerHTML=`
 card.classList.remove('hidden');
 setTimeout(()=>forceShowUserInfo(),300);
 }
-document.addEventListener('DOMContentLoaded',function(){
-console.log("頁面加載完成，初始化系統");
-setStatus('正在初始化...');
-if(!window.liff){
-showError('LINE LIFF初始化失敗，請檢查網絡或重新打開頁面');
-return;
-}
-liff.init({ liffId: LIFF_ID, enableAnonymousLogin: false }, { disableRedirect: true })
-.then(()=>{
-console.log("LIFF初始化成功");
-liff.isLoggedIn()?getProfileAndVerify():liff.login();
-})
-.catch(err=>{
-console.error("LIFF初始化失敗：",err);
-if(err.message.includes('expired')||err.message.includes('token')||err.message.includes('auth')){
-setStatus('令牌無效，重新登錄...');
-setTimeout(()=>liff.login(),1000);
-}else{
-showError('系統初始化失敗：'+err.message);
-}
-});
-});
+
 window.submitCallback=resp=>{console.log("submitCallback:",resp);return resp;};
 window.verifyCallback=resp=>{console.log("verifyCallback:",resp);return resp;};
 </script>
