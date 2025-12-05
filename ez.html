@@ -195,8 +195,7 @@ const LIFF_ID="2008578880-NznKeG2a";
 const GAS_URL="https://script.google.com/macros/s/AKfycbykBtM2_PM7IZ-ZUU4tgTqVa1xGhVQFaZ523FXc4ivdLz_GZ09sdmL6s5zk7SdloFuG/exec";
 const JSONP_TIMEOUT=12000;
 const PERMANENT_EXPIRY_DATE="9999/12/31";
-let globalLiffProfile = null; // 全局存储LINE用户信息
-// 要素样式配置
+let globalLiffProfile = null;
 const factorStyles={
   氣血:{className:'bg-blue-50 text-blue-700',label:'氣血不足'},
   微循環:{className:'bg-green-50 text-green-700',label:'微循環不通'},
@@ -206,18 +205,15 @@ const factorStyles={
   免疫:{className:'bg-pink-50 text-pink-700',label:'免疫'},
   情緒:{className:'bg-indigo-50 text-indigo-700',label:'情緒'}
 };
-// 时间选项
 const durationOptions=[
   {value:'',label:'請選擇時間'},{value:'1w',label:'1周內'},{value:'1-3m',label:'1-3個月'},
   {value:'3-6m',label:'3-6個月'},{value:'6m-1y',label:'6個月-1年'},{value:'1-2y',label:'1-2年'},
   {value:'2-5y',label:'2-5年'},{value:'5y+',label:'5年以上'}
 ];
-// 严重程度选项
 const severityOptions=[
   {value:'',label:'請選擇輕重'},{value:'mild',label:'輕度（不影響生活）'},
   {value:'moderate',label:'中度（偶爾影響）'},{value:'severe',label:'重度（明顯影響）'}
 ];
-// 症状数据
 const fullSymptomData=[
 {seq:1,symptom:"記憶力下降",氣血:"○",微循環:"",毒素:"",血脂:"",寒涼濕:"",免疫:"",情緒:""},
 {seq:2,symptom:"思維斷電",氣血:"○",微循環:"",毒素:"",血脂:"",寒涼濕:"",免疫:"",情緒:""},
@@ -319,14 +315,10 @@ const fullSymptomData=[
 {seq:98,symptom:"淋巴結大",氣血:"",微循環:"",毒素:"○",血脂:"",寒涼濕:"",免疫:"○",情緒:""},
 {seq:99,symptom:"黑痣變大變多",氣血:"",微循環:"",毒素:"○",血脂:"",寒涼濕:"",免疫:"○",情緒:""},
 {seq:100,symptom:"形體消瘦",氣血:"○",微循環:"",毒素:"",血脂:"",寒涼濕:"",免疫:"",情緒:""}];
-
-// 设置状态文本
 const setStatus=text=>{
   const e=document.getElementById('status-text');
   e&&(e.textContent=text);
 };
-
-// 显示错误信息
 const showError=msg=>{
   document.getElementById('status').classList.add('hidden');
   document.getElementById('result-card').classList.add('hidden');
@@ -335,8 +327,6 @@ const showError=msg=>{
   const e=document.getElementById('error-message'),c=document.getElementById('error-content');
   e&&c&&(c.innerHTML=`<p class="font-medium">${msg}</p><div class="mt-3 flex justify-center"><button onclick="window.location.reload()" class="text-primary hover:text-[#007A69] font-medium flex items-center gap-1"><i class="fa fa-refresh"></i> 重新嘗試</button></div>`,e.classList.remove('hidden'));
 };
-
-// 计算剩余天数
 const calculateRemainingDaysByDate=expiryDateStr=>{
   try{
     if(expiryDateStr===PERMANENT_EXPIRY_DATE)return{displayDate:"永久有效",remainingDays:"永久有效"};
@@ -356,8 +346,6 @@ const calculateRemainingDaysByDate=expiryDateStr=>{
     return{displayDate:"計算錯誤",remainingDays:"計算錯誤"};
   }
 };
-
-// 渲染症状卡片
 function renderSymptomCards(){
   try{
     const c=document.getElementById('symptoms-container');
@@ -395,8 +383,6 @@ function renderSymptomCards(){
     return false;
   }
 }
-
-// 绑定复选框事件
 function bindCheckboxEvents(){
   document.querySelectorAll('.symptom-checkbox').forEach(cb=>{
     cb.addEventListener('change',function(){
@@ -406,15 +392,11 @@ function bindCheckboxEvents(){
     });
   });
 }
-
-// 更新选中数量
 function updateSelectedCount(){
   const cnt=document.querySelectorAll('.symptom-checkbox:checked').length;
   document.getElementById('selected-count').textContent=cnt;
   return cnt;
 }
-
-// 初始化筛选按钮
 function initFilterButtons(){
   const fb=document.querySelectorAll('[data-factor], #filter-all');
   let cf='all',sos=false;
@@ -458,8 +440,6 @@ function initFilterButtons(){
     });
   }
 }
-
-// 组织报告数据
 function organizeReportData(submitData){
   const {userBasicInfo,selectedSymptoms,displayName,submitTime}=submitData,fs={氣血:[],微循環:[],毒素:[],血脂:[],寒涼濕:[],免疫:[],情緒:[]};
   selectedSymptoms.forEach(s=>{
@@ -490,53 +470,28 @@ function organizeReportData(submitData){
   st+=`\n💡 建議：根據自檢結果關注對應健康問題，必要時諮詢專業醫師`;
   return {formattedUserInfo:fui,factorSymptoms:ffs,summaryText:st};
 }
-
-// 按钮样式美化
 const styleButtons = () => {
   const buttons = document.querySelectorAll('button');
   buttons.forEach(btn => {
     if(!btn.classList.contains('custom-styled')) {
-      btn.classList.add(
-        'custom-styled', 
-        'px-5', 
-        'py-2', 
-        'rounded-lg', 
-        'font-medium', 
-        'transition-all', 
-        'duration-300', 
-        'shadow-md', 
-        'hover:shadow-lg', 
-        'transform', 
-        'hover:-translate-y-0.5', 
-        'active:translate-y-0',
-        'focus:outline-none',
-        'focus:ring-2',
-        'focus:ring-primary/50'
-      );
-      btn.classList.remove('px-8', 'py-3');
+      btn.classList.add('custom-styled','px-5','py-2','rounded-lg','font-medium','transition-all','duration-300','shadow-md','hover:shadow-lg','transform','hover:-translate-y-0.5','active:translate-y-0','focus:outline-none','focus:ring-2','focus:ring-primary/50');
+      btn.classList.remove('px-8','py-3');
     }
-    // 统一按钮间距
     if(!btn.parentElement.classList.contains('button-group')) {
       btn.style.margin = '0.25rem 0.5rem';
     }
   });
-  // 主按钮特殊样式
   document.querySelectorAll('button.bg-[#00C300], button#native-share-btn').forEach(btn => {
-    btn.classList.add('text-white', 'bg-[#00C300]', 'hover:bg-[#00a800]');
+    btn.classList.add('text-white','bg-[#00C300]','hover:bg-[#00a800]');
   });
-  // 取消/返回按钮样式
   document.querySelectorAll('button#back-to-info, button#close-page-btn').forEach(btn => {
-    btn.classList.add('bg-gray-600', 'text-white', 'hover:bg-gray-700');
+    btn.classList.add('bg-gray-600','text-white','hover:bg-gray-700');
   });
-  // 提交按钮样式
   document.querySelectorAll('button#submit-checklist, button#next-to-checklist').forEach(btn => {
-    btn.classList.add('bg-primary', 'text-white', 'hover:bg-primary/90');
+    btn.classList.add('bg-primary','text-white','hover:bg-primary/90');
   });
 };
-
-// 初始化控制按钮
 function initControlButtons(){
-  // 下一步按钮
   document.getElementById('next-to-checklist').addEventListener('click',function(){
     const n=document.getElementById('user-name').value.trim(),a=document.getElementById('user-age').value.trim(),g=document.getElementById('user-gender').value;
     if(!n){alert('請輸入姓名');document.getElementById('user-name').focus();return;}
@@ -557,8 +512,6 @@ function initControlButtons(){
     document.getElementById('checklist-section').scrollIntoView({behavior:'smooth'});
     styleButtons();
   });
-
-  // 返回按钮
   document.getElementById('back-to-info').addEventListener('click',function(){
     document.getElementById('checklist-section').classList.add('hidden');
     document.getElementById('user-info-section').classList.remove('hidden');
@@ -574,8 +527,6 @@ function initControlButtons(){
     }
     document.getElementById('user-info-section').scrollIntoView({behavior:'smooth'});
   });
-
-  // 提交按钮
   document.getElementById('submit-checklist').addEventListener('click',async function(){
     const btn=this;
     btn.disabled=true;
@@ -600,19 +551,14 @@ function initControlButtons(){
       btn.innerHTML='提交檢查表';
       return;
     }
-    const sd=await collectSubmitData(); // 改为异步获取
+    const sd=await collectSubmitData();
     submitChecklistData(sd,btn);
   });
-
-  // 分享按钮点击事件
   document.addEventListener('click',function(e){
     if(e.target.closest('#native-share-btn'))handleShareButtonClick(e);
   });
-  
   styleButtons();
 }
-
-// 处理分享按钮点击
 async function handleShareButtonClick(e){
   e.stopPropagation();e.preventDefault();
   const btn=e.target.closest('#native-share-btn');
@@ -630,8 +576,6 @@ async function handleShareButtonClick(e){
     btn.disabled=true;
     btn.innerHTML='<i class="fa fa-spinner fa-spin mr-1"></i> 處理中...';
     if(shareBtn)shareBtn.style.display='none';
-
-    // 加载html2canvas
     if(!window.html2canvas){
       alert('正在加載分享所需組件，請稍候...');
       await new Promise((resolve,reject)=>{
@@ -641,8 +585,6 @@ async function handleShareButtonClick(e){
         document.head.appendChild(script);
       });
     }
-
-    // 设置分享内容样式
     scEl.style.textAlign='center';
     scEl.style.margin='0 auto';
     scEl.style.backgroundColor='#ffffff';
@@ -651,21 +593,15 @@ async function handleShareButtonClick(e){
     scEl.style.boxSizing='border-box';
     scEl.style.borderRadius='16px';
     scEl.style.boxShadow='0 4px 24px rgba(0,0,0,0.12)';
-
-    // 生成截图
     canvas=await html2canvas(scEl,{
       scale:2.0,useCORS:true,allowTaint:true,logging:false,
       backgroundColor:'#ffffff',width:scEl.offsetWidth,height:scEl.offsetHeight,dpi:300
     });
     if(shareBtn)shareBtn.style.display='flex';
-
-    // 处理图片数据
     dataUrl=canvas.toDataURL('image/png',0.9);
     fileName=`🧬 彥彬自檢表系統_${new Date().toLocaleDateString()}.png`;
     const imgBlob=await (await fetch(dataUrl)).blob();
     let file;
-
-    // 压缩图片
     if(imgBlob.size>5*1024*1024){
       alert('圖片體積過大，輕微壓縮保持清晰...');
       dataUrl=canvas.toDataURL('image/png',0.8);
@@ -674,8 +610,6 @@ async function handleShareButtonClick(e){
     }else{
       file=new File([imgBlob],fileName,{type:'image/png'});
     }
-
-    // 分享逻辑
     if(navigator.share&&typeof navigator.share==='function'){
       try{
         const shareData={title:'🧬 彥彬自檢表系統',text:st,files:[file]};
@@ -707,46 +641,67 @@ async function handleShareButtonClick(e){
     if(!closeBtn){
       closeBtn=document.createElement('button');
       closeBtn.id='close-page-btn';
-      closeBtn.className='w-full sm:w-auto px-5 py-2 bg-gray-600 text-white rounded-lg font-medium flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 mt-2 custom-styled';
+      closeBtn.className='w-full sm:w-auto px-5 py-2 bg-gray-600 text-white rounded-lg font-medium flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 custom-styled';
       closeBtn.innerHTML='<i class="fa fa-times"></i> 關閉網頁';
       closeBtn.onclick=()=>{
-        // 修复关闭按钮逻辑
         try {
-          if (window.liff && typeof liff.closeWindow === 'function') {
-            liff.closeWindow();
+          // 修正关闭逻辑：优先判断LIFF环境
+          if (window.liff && liff.getContext && liff.closeWindow) {
+            const context = liff.getContext();
+            // 判斷是否在LINE容器內
+            if (context && (context.viewType === 'compact' || context.viewType === 'tall' || context.viewType === 'full')) {
+              liff.closeWindow(); // LIFF環境關閉視窗
+            } else if (window.opener) {
+              window.close(); // 彈窗環境關閉
+            } else {
+              // 瀏覽器環境給出提示
+              if(confirm('確定要關閉此頁面嗎？')){
+                window.close();
+                // 備案：部分瀏覽器限制，提示用戶手動關閉
+                setTimeout(()=>{
+                  alert('瀏覽器限制無法自動關閉，請手動關閉此標籤頁');
+                }, 1000);
+              }
+            }
           } else if (window.opener) {
             window.close();
           } else {
-            alert('已完成報告分享，您可以手動關閉此頁面');
+            if(confirm('確定要關閉此頁面嗎？')){
+              window.close();
+              setTimeout(()=>{
+                alert('瀏覽器限制無法自動關閉，請手動關閉此標籤頁');
+              }, 1000);
+            }
           }
         } catch (e) {
           alert('已完成報告分享，您可以手動關閉此頁面');
         }
       };
-      btn.parentNode.appendChild(closeBtn);
+      // 修正按鈕排列：創建按鈕組容器
+      const btnGroup = document.createElement('div');
+      btnGroup.className = 'flex gap-2 justify-center w-full';
+      btn.parentNode.appendChild(btnGroup);
+      // 移動分享按鈕到按鈕組
+      btnGroup.appendChild(btn);
+      // 添加關閉按鈕到按鈕組
+      btnGroup.appendChild(closeBtn);
     }else{
       closeBtn.style.display='flex';
     }
   }
 }
-
-// 收集提交数据（改为异步）
 async function collectSubmitData(){
-  // 确保获取真实LINE用户名称
   let lineUserName = '未獲取到LINE名稱';
   try {
-    // 优先使用全局存储的profile
     if (globalLiffProfile && globalLiffProfile.displayName) {
       lineUserName = globalLiffProfile.displayName;
     } else {
-      // 重新获取profile
       const profile = await liff.getProfile();
       lineUserName = profile.displayName || '未獲取到LINE名稱';
       globalLiffProfile = profile;
     }
   } catch (e) {
     console.error("獲取LINE用戶資訊失敗：", e);
-    // 尝试从ID Token获取
     try {
       const idToken = liff.getDecodedIDToken();
       if (idToken && idToken.name) {
@@ -756,8 +711,6 @@ async function collectSubmitData(){
       console.error("從ID Token獲取名稱失敗：", tokenErr);
     }
   }
-  
-  // 收集选中的症状
   const selectedSymptoms=Array.from(document.querySelectorAll('.symptom-checkbox:checked')).map(cb=>{
     const seq=cb.dataset.seq,cd=cb.closest('.symptom-card');
     return{
@@ -767,7 +720,6 @@ async function collectSubmitData(){
       severityText:cd.querySelector('.severity-select option:checked').textContent
     };
   });
-  
   return{
     action:'submitChecklist',
     userId:liff.getDecodedIDToken()?.sub||'',
@@ -785,8 +737,6 @@ async function collectSubmitData(){
     lineUserName:lineUserName
   };
 }
-
-// 提交检查表数据
 function submitChecklistData(data,btn){
   console.log("提交數據（含真實LINE名稱）：",data);
   setStatus('提交中...');
@@ -823,8 +773,6 @@ function submitChecklistData(data,btn){
     }
   });
 }
-
-// 渲染报告摘要
 function renderReportSummary(reportData){
   const {formattedUserInfo,factorSymptoms,summaryText}=reportData;
   let sc=document.getElementById('summary-content');
@@ -838,7 +786,6 @@ function renderReportSummary(reportData){
   }
   sc.dataset.summary=summaryText;
   const ts=Object.values(factorSymptoms).reduce((s,f)=>s+f.length,0);
-
   const rs=document.getElementById('report-summary');
   rs.style.maxHeight='80vh';
   rs.style.overflowY='auto';
@@ -850,7 +797,6 @@ function renderReportSummary(reportData){
   rs.style.margin='0 auto';
   rs.style.width='100%';
   rs.style.maxWidth='800px';
-
   sc.style.width='100%';
   sc.style.backgroundColor='#ffffff';
   sc.style.padding='1rem';
@@ -858,7 +804,6 @@ function renderReportSummary(reportData){
   sc.style.lineHeight='1.6';
   sc.style.fontSize='0.95rem';
   sc.style.textAlign='center';
-
   let html=`
 <div class="text-center mb-4">
 <h3 class="text-xl md:text-2xl font-bold text-[#2d3748] mb-1">🧬 彥彬健康自檢表系統</h3>
@@ -869,7 +814,6 @@ function renderReportSummary(reportData){
 <i class="fa fa-user-circle text-primary mr-2 text-base"></i>基本資料
 </div>
 <div class="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">`;
-
   const infoEntries=Object.entries(formattedUserInfo);
   infoEntries.forEach(([k,v])=>{
     if(k!=='提交時間'){
@@ -880,7 +824,6 @@ function renderReportSummary(reportData){
 </div>`;
     }
   });
-
   html+=`</div></div>
 <div class="mb-4">
 <div class="text-lg font-semibold text-[#2d3748] flex items-center justify-center mb-1">
@@ -893,7 +836,6 @@ function renderReportSummary(reportData){
 <div class="text-lg font-semibold text-[#2d3748] mb-3 flex items-center justify-center">
 <i class="fa fa-heartbeat text-primary mr-2 text-base"></i>七大健康要素評估
 </div>`;
-
   Object.entries(factorSymptoms).forEach(([fk,f])=>{
     const fn=factorStyles[fk].label;
     html+=`<div class="bg-white border border-[#e8f4f8] rounded-10 p-3 mb-3 shadow-sm hover:shadow-md transition-shadow mx-auto max-w-lg">
@@ -902,7 +844,6 @@ function renderReportSummary(reportData){
 【${fn}】（${f.length}項）
 </div>
 <div class="grid grid-cols-1 gap-1.5 text-sm">`;
-
     f.forEach((i,idx)=>{
       html+=`<div class="p-2 bg-[#fafafa] rounded-lg">
 <div class="font-medium text-[#2d3748] text-sm">${idx+1}. ${i.name}</div>
@@ -912,21 +853,17 @@ function renderReportSummary(reportData){
 </div>
 </div>`;
     });
-
     html+=`</div></div>`;
   });
-
   html+=`<div class="mt-5 bg-primary/5 border border-primary/20 rounded-10 p-4 text-sm text-[#4a5568] font-bold mx-auto max-w-lg">
 💡 建議：根據自檢結果關注對應健康問題，必要時諮詢專業醫師
 </div>
-<div class="mt-8 mb-4 flex justify-center px-4">
+<div class="mt-8 mb-4 flex justify-center px-4 gap-2">
   <button id="native-share-btn" class="w-full sm:w-auto px-6 py-2.5 bg-[#00C300] text-white rounded-lg font-medium flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0">
     <i class="fa fa-share-alt"></i> 分享到LINE
   </button>
 </div>`;
-
   sc.innerHTML=html;
-
   setTimeout(()=>{
     rs.style.height=sc.offsetHeight+60+'px';
     rs.style.display='none';
@@ -934,8 +871,6 @@ function renderReportSummary(reportData){
     rs.style.display='block';
   },150);
 }
-
-// 重置检查表
 function resetChecklist(){
   document.querySelectorAll('.symptom-checkbox').forEach(cb=>{
     cb.checked&&(cb.checked=false,cb.dispatchEvent(new Event('change')));
@@ -954,23 +889,28 @@ function resetChecklist(){
   document.getElementById('user-glucose').value='';
   document.getElementById('user-job').value='';
 }
-
-// 强制显示用户信息
 function forceShowUserInfo(){
   try{
-    const uis=document.getElementById('user-info-section');
-    if(!uis){alert("頁面加載失敗，請刷新");return false;}
+    // 修正頁面加載失敗問題：增加DOM元素檢查的健壯性
+    const uis = document.querySelector('#user-info-section');
+    if(!uis){
+      // 嘗試重新加載頁面
+      if(confirm('頁面元素加載異常，是否重新加載頁面？')){
+        window.location.reload();
+      }
+      return false;
+    }
     uis.classList.remove('hidden');
     initControlButtons();
     return true;
   }catch(e){
     console.error("顯示用戶資訊出錯：",e);
-    alert("頁面加載失敗，請刷新");
+    if(confirm('頁面加載失敗，是否重新加載？')){
+      window.location.reload();
+    }
     return false;
   }
 }
-
-// 页面加载完成初始化
 document.addEventListener('DOMContentLoaded',function(){
   console.log("頁面加載完成，初始化系統");
   setStatus('正在初始化...');
@@ -978,12 +918,10 @@ document.addEventListener('DOMContentLoaded',function(){
     showError('LINE LIFF初始化失敗，請檢查網絡或重新打開頁面');
     return;
   }
-  // 初始化LIFF
   liff.init({ liffId: LIFF_ID, enableAnonymousLogin: false }, { disableRedirect: true })
   .then(async ()=>{
     console.log("LIFF初始化成功");
     if(liff.isLoggedIn()){
-      // 提前获取并存储用户profile
       try {
         globalLiffProfile = await liff.getProfile();
         console.log("預加載LINE用戶資訊成功：", globalLiffProfile.displayName);
@@ -1005,18 +943,13 @@ document.addEventListener('DOMContentLoaded',function(){
     }
   });
 });
-
-// 获取Profile并验证用户
 function getProfileAndVerify(){
   setStatus('正在獲取用戶資訊...');
-  // 使用全局存储的profile
   if (globalLiffProfile) {
     console.log("使用預加載的LINE資料（真實名稱）：", globalLiffProfile.displayName);
     callGasBackend(globalLiffProfile.userId, globalLiffProfile.displayName||'LINE用戶');
     return;
   }
-  
-  // 重新获取profile
   liff.getProfile()
   .then(profile=>{
     globalLiffProfile = profile;
@@ -1035,8 +968,6 @@ function getProfileAndVerify(){
     }
   });
 }
-
-// 调用GAS后端验证用户
 function callGasBackend(userId,displayName){
   setStatus('正在驗證用戶權限...');
   $.ajax({
@@ -1058,8 +989,6 @@ function callGasBackend(userId,displayName){
     }
   });
 }
-
-// 渲染验证结果
 function renderResult(resp){
   document.getElementById('status').classList.add('hidden');
   document.getElementById('error-message').classList.add('hidden');
@@ -1097,8 +1026,6 @@ function renderResult(resp){
   card.classList.remove('hidden');
   setTimeout(()=>forceShowUserInfo(),300);
 }
-
-// 全局回调函数
 window.submitCallback=resp=>{console.log("submitCallback:",resp);return resp;};
 window.verifyCallback=resp=>{console.log("verifyCallback:",resp);return resp;};
 </script>
