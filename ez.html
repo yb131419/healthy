@@ -435,6 +435,7 @@ const ffs=Object.fromEntries(Object.entries(fs).filter(([_,f])=>f.length>0)),fui
 血壓:userBasicInfo.bp||'未填寫',
 血糖:userBasicInfo.glucose?`${userBasicInfo.glucose}%`:'未填寫',
 職業:userBasicInfo.job||'未填寫',
+LINE暱稱:displayName||'未填寫',
 提交時間:new Date(submitTime).toLocaleString('zh-TW',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'})
 };
 let st=`🧬 彥彬健康自檢報告\n\n👤 用戶：${displayName}\n📅 提交時間：${fui.提交時間}\n\n📋 基本資料：\n`;
@@ -451,13 +452,12 @@ return {formattedUserInfo:fui,factorSymptoms:ffs,summaryText:st};
 }
 
 function initControlButtons(){
-// 統一按鈕樣式：高級質感風格
 const styleButtons = () => {
   const buttons = document.querySelectorAll('button');
   buttons.forEach(btn => {
     if(!btn.classList.contains('custom-styled')) {
       btn.classList.add('custom-styled', 'px-6', 'py-2.5', 'rounded-lg', 'font-medium', 'transition-all', 'duration-300', 'shadow-md', 'hover:shadow-lg', 'transform', 'hover:-translate-y-0.5', 'active:translate-y-0');
-      btn.classList.remove('px-8', 'py-3'); // 移除舊樣式
+      btn.classList.remove('px-8', 'py-3');
     }
   });
 };
@@ -480,7 +480,7 @@ document.getElementById('checklist-section').classList.remove('hidden');
 renderSymptomCards();
 initFilterButtons();
 document.getElementById('checklist-section').scrollIntoView({behavior:'smooth'});
-styleButtons(); // 應用按鈕樣式
+styleButtons();
 });
 
 document.getElementById('back-to-info').addEventListener('click',function(){
@@ -518,8 +518,7 @@ submitChecklistData(sd,btn);
 document.addEventListener('click',function(e){
 if(e.target.closest('#native-share-btn'))handleShareButtonClick(e);
 });
-
-styleButtons(); // 初始化按鈕樣式
+styleButtons();
 }
 
 async function handleShareButtonClick(e){
@@ -550,7 +549,6 @@ document.head.appendChild(script);
 });
 }
 
-// 確保內容居中顯示
 scEl.style.textAlign='center';
 scEl.style.margin='0 auto';
 scEl.style.backgroundColor='#ffffff';
@@ -598,7 +596,6 @@ alert('分享功能異常，請手動截圖分享');
 }finally{
 btn.disabled=false;
 btn.innerHTML='<i class="fa fa-share-alt mr-1"></i> 分享到LINE';
-// 添加關閉按鈕 - 高級樣式
 let closeBtn=document.getElementById('close-page-btn');
 if(!closeBtn){
 closeBtn=document.createElement('button');
@@ -609,7 +606,6 @@ closeBtn.onclick=()=>{
   if(window.liff && liff.closeWindow) {
     liff.closeWindow();
   } else {
-    // 後備方案
     window.close();
   }
 };
@@ -621,7 +617,14 @@ closeBtn.style.display='flex';
 }
 
 function collectSubmitData(){
-const liffProfile=liff.getProfile()||{};
+// 確保獲取真實LINE用戶名稱
+let liffProfile = {};
+try {
+  liffProfile = liff.getProfile() || {};
+} catch (e) {
+  console.error("獲取LINE用戶資訊失敗：", e);
+}
+const lineUserName = liffProfile.displayName || '未獲取到LINE名稱';
 const selectedSymptoms=Array.from(document.querySelectorAll('.symptom-checkbox:checked')).map(cb=>{
 const seq=cb.dataset.seq,cd=cb.closest('.symptom-card');
 return{
@@ -634,7 +637,7 @@ severityText:cd.querySelector('.severity-select option:checked').textContent
 return{
 action:'submitChecklist',
 userId:liff.getDecodedIDToken()?.sub||'',
-displayName:liffProfile.displayName||'LINE用戶',
+displayName:lineUserName, // 傳送真實LINE名稱
 submitTime:new Date().toISOString(),
 userName:document.getElementById('user-name').value.trim(),
 userAge:document.getElementById('user-age').value.trim(),
@@ -644,12 +647,13 @@ userWeight:document.getElementById('user-weight').value.trim()||'',
 userBp:document.getElementById('user-bp').value.trim()||'',
 userGlucose:document.getElementById('user-glucose').value.trim()||'',
 userJob:document.getElementById('user-job').value.trim()||'',
-selectedSymptoms:JSON.stringify(selectedSymptoms)
+selectedSymptoms:JSON.stringify(selectedSymptoms),
+lineUserName:lineUserName // 單獨新增欄位傳送LINE名稱，確保工作表能接收到
 };
 }
 
 function submitChecklistData(data,btn){
-console.log("提交數據：",data);
+console.log("提交數據（含真實LINE名稱）：",data);
 setStatus('提交中...');
 document.getElementById('status').classList.remove('hidden');
 $.ajax({
@@ -707,7 +711,7 @@ rs.style.boxSizing='border-box';
 rs.style.backgroundColor='#ffffff';
 rs.style.borderRadius='16px';
 rs.style.boxShadow='0 8px 32px rgba(0,0,0,0.15)';
-rs.style.margin='0 auto'; // 整體居中
+rs.style.margin='0 auto';
 rs.style.width='100%';
 rs.style.maxWidth='800px';
 
@@ -717,11 +721,11 @@ sc.style.padding='1rem';
 sc.style.boxSizing='border-box';
 sc.style.lineHeight='1.6';
 sc.style.fontSize='0.95rem';
-sc.style.textAlign='center'; // 文字居中
+sc.style.textAlign='center';
 
 let html=`
 <div class="text-center mb-4">
-<h3 class="text-xl md:text-2xl font-bold text-[#2d3748] mb-1">🧬 彥彬自檢表系統</h3>
+<h3 class="text-xl md:text-2xl font-bold text-[#2d3748] mb-1">🧬 彥彬健康自檢表系統</h3>
 <div class="text-sm text-[#718096]">${formattedUserInfo.提交時間}</div>
 </div>
 <div class="bg-[#f8f9fa] rounded-10 p-4 mb-4">
@@ -754,7 +758,6 @@ html+=`</div></div>
 <i class="fa fa-heartbeat text-primary mr-2 text-base"></i>七大健康要素評估
 </div>`;
 
-// 調整排版：症狀名稱單獨一行，時間和程度另一行
 Object.entries(factorSymptoms).forEach(([fk,f])=>{
 const fn=factorStyles[fk].label;
 html+=`<div class="bg-white border border-[#e8f4f8] rounded-10 p-3 mb-3 shadow-sm hover:shadow-md transition-shadow mx-auto max-w-lg">
@@ -850,7 +853,7 @@ function getProfileAndVerify(){
 setStatus('正在獲取用戶資訊...');
 liff.getProfile()
 .then(profile=>{
-console.log("獲取LINE資料成功：",profile);
+console.log("獲取LINE資料成功（真實名稱）：",profile.displayName);
 callGasBackend(profile.userId,profile.displayName||'LINE用戶');
 })
 .catch(err=>{
