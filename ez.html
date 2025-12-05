@@ -315,10 +315,12 @@ const fullSymptomData=[
 {seq:98,symptom:"淋巴結大",氣血:"",微循環:"",毒素:"○",血脂:"",寒涼濕:"",免疫:"○",情緒:""},
 {seq:99,symptom:"黑痣變大變多",氣血:"",微循環:"",毒素:"○",血脂:"",寒涼濕:"",免疫:"○",情緒:""},
 {seq:100,symptom:"形體消瘦",氣血:"○",微循環:"",毒素:"",血脂:"",寒涼濕:"",免疫:"",情緒:""}];
+
 const setStatus=text=>{
   const e=document.getElementById('status-text');
   e&&(e.textContent=text);
 };
+
 const showError=msg=>{
   document.getElementById('status').classList.add('hidden');
   document.getElementById('result-card').classList.add('hidden');
@@ -327,6 +329,7 @@ const showError=msg=>{
   const e=document.getElementById('error-message'),c=document.getElementById('error-content');
   e&&c&&(c.innerHTML=`<p class="font-medium">${msg}</p><div class="mt-3 flex justify-center"><button onclick="window.location.reload()" class="text-primary hover:text-[#007A69] font-medium flex items-center gap-1"><i class="fa fa-refresh"></i> 重新嘗試</button></div>`,e.classList.remove('hidden'));
 };
+
 const calculateRemainingDaysByDate=expiryDateStr=>{
   try{
     if(expiryDateStr===PERMANENT_EXPIRY_DATE)return{displayDate:"永久有效",remainingDays:"永久有效"};
@@ -346,6 +349,7 @@ const calculateRemainingDaysByDate=expiryDateStr=>{
     return{displayDate:"計算錯誤",remainingDays:"計算錯誤"};
   }
 };
+
 function renderSymptomCards(){
   try{
     const c=document.getElementById('symptoms-container');
@@ -383,6 +387,7 @@ function renderSymptomCards(){
     return false;
   }
 }
+
 function bindCheckboxEvents(){
   document.querySelectorAll('.symptom-checkbox').forEach(cb=>{
     cb.addEventListener('change',function(){
@@ -392,11 +397,13 @@ function bindCheckboxEvents(){
     });
   });
 }
+
 function updateSelectedCount(){
   const cnt=document.querySelectorAll('.symptom-checkbox:checked').length;
   document.getElementById('selected-count').textContent=cnt;
   return cnt;
 }
+
 function initFilterButtons(){
   const fb=document.querySelectorAll('[data-factor], #filter-all');
   let cf='all',sos=false;
@@ -440,6 +447,7 @@ function initFilterButtons(){
     });
   }
 }
+
 function organizeReportData(submitData){
   const {userBasicInfo,selectedSymptoms,displayName,submitTime}=submitData,fs={氣血:[],微循環:[],毒素:[],血脂:[],寒涼濕:[],免疫:[],情緒:[]};
   selectedSymptoms.forEach(s=>{
@@ -470,6 +478,7 @@ function organizeReportData(submitData){
   st+=`\n💡 建議：根據自檢結果關注對應健康問題，必要時諮詢專業醫師`;
   return {formattedUserInfo:fui,factorSymptoms:ffs,summaryText:st};
 }
+
 const styleButtons = () => {
   const buttons = document.querySelectorAll('button');
   buttons.forEach(btn => {
@@ -491,6 +500,7 @@ const styleButtons = () => {
     btn.classList.add('bg-primary','text-white','hover:bg-primary/90');
   });
 };
+
 function initControlButtons(){
   document.getElementById('next-to-checklist').addEventListener('click',function(){
     const n=document.getElementById('user-name').value.trim(),a=document.getElementById('user-age').value.trim(),g=document.getElementById('user-gender').value;
@@ -559,6 +569,7 @@ function initControlButtons(){
   });
   styleButtons();
 }
+
 async function handleShareButtonClick(e){
   e.stopPropagation();e.preventDefault();
   const btn=e.target.closest('#native-share-btn');
@@ -642,54 +653,47 @@ async function handleShareButtonClick(e){
       closeBtn=document.createElement('button');
       closeBtn.id='close-page-btn';
       closeBtn.className='w-full sm:w-auto px-5 py-2 bg-gray-600 text-white rounded-lg font-medium flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 custom-styled';
-      closeBtn.innerHTML='<i class="fa fa-times"></i> 關閉網頁';
+      closeBtn.innerHTML='<i class="fa fa-times"></i> 關閉頁面';
       closeBtn.onclick=()=>{
         try {
-          // 修正关闭逻辑：优先判断LIFF环境
+          // 關閉當前標籤頁（瀏覽器安全限制無法直接關閉整個瀏覽器）
           if (window.liff && liff.getContext && liff.closeWindow) {
             const context = liff.getContext();
-            // 判斷是否在LINE容器內
             if (context && (context.viewType === 'compact' || context.viewType === 'tall' || context.viewType === 'full')) {
-              liff.closeWindow(); // LIFF環境關閉視窗
-            } else if (window.opener) {
-              window.close(); // 彈窗環境關閉
+              liff.closeWindow();
             } else {
-              // 瀏覽器環境給出提示
-              if(confirm('確定要關閉此頁面嗎？')){
+              // 嘗試關閉當前標籤頁
+              if(confirm('確定要關閉當前頁面嗎？')){
                 window.close();
-                // 備案：部分瀏覽器限制，提示用戶手動關閉
+                // 備案提示
                 setTimeout(()=>{
-                  alert('瀏覽器限制無法自動關閉，請手動關閉此標籤頁');
-                }, 1000);
+                  alert('若頁面未關閉，請手動關閉此標籤頁');
+                }, 500);
               }
             }
-          } else if (window.opener) {
-            window.close();
           } else {
-            if(confirm('確定要關閉此頁面嗎？')){
+            if(confirm('確定要關閉當前頁面嗎？')){
               window.close();
               setTimeout(()=>{
-                alert('瀏覽器限制無法自動關閉，請手動關閉此標籤頁');
-              }, 1000);
+                alert('若頁面未關閉，請手動關閉此標籤頁');
+              }, 500);
             }
           }
         } catch (e) {
-          alert('已完成報告分享，您可以手動關閉此頁面');
+          alert('請手動關閉此頁面');
         }
       };
-      // 修正按鈕排列：創建按鈕組容器
       const btnGroup = document.createElement('div');
       btnGroup.className = 'flex gap-2 justify-center w-full';
       btn.parentNode.appendChild(btnGroup);
-      // 移動分享按鈕到按鈕組
       btnGroup.appendChild(btn);
-      // 添加關閉按鈕到按鈕組
       btnGroup.appendChild(closeBtn);
     }else{
       closeBtn.style.display='flex';
     }
   }
 }
+
 async function collectSubmitData(){
   let lineUserName = '未獲取到LINE名稱';
   try {
@@ -737,6 +741,7 @@ async function collectSubmitData(){
     lineUserName:lineUserName
   };
 }
+
 function submitChecklistData(data,btn){
   console.log("提交數據（含真實LINE名稱）：",data);
   setStatus('提交中...');
@@ -773,6 +778,7 @@ function submitChecklistData(data,btn){
     }
   });
 }
+
 function renderReportSummary(reportData){
   const {formattedUserInfo,factorSymptoms,summaryText}=reportData;
   let sc=document.getElementById('summary-content');
@@ -871,6 +877,7 @@ function renderReportSummary(reportData){
     rs.style.display='block';
   },150);
 }
+
 function resetChecklist(){
   document.querySelectorAll('.symptom-checkbox').forEach(cb=>{
     cb.checked&&(cb.checked=false,cb.dispatchEvent(new Event('change')));
@@ -889,15 +896,16 @@ function resetChecklist(){
   document.getElementById('user-glucose').value='';
   document.getElementById('user-job').value='';
 }
+
 function forceShowUserInfo(){
   try{
-    // 修正頁面加載失敗問題：增加DOM元素檢查的健壯性
     const uis = document.querySelector('#user-info-section');
     if(!uis){
-      // 嘗試重新加載頁面
       if(confirm('頁面元素加載異常，是否重新加載頁面？')){
         window.location.reload();
+        return false;
       }
+      alert('無法加載用戶資訊區域，請手動刷新頁面');
       return false;
     }
     uis.classList.remove('hidden');
@@ -905,12 +913,16 @@ function forceShowUserInfo(){
     return true;
   }catch(e){
     console.error("顯示用戶資訊出錯：",e);
-    if(confirm('頁面加載失敗，是否重新加載？')){
-      window.location.reload();
+    if(!window.pageReloadConfirmed){
+      window.pageReloadConfirmed = true;
+      if(confirm('頁面加載失敗，是否重新加載？')){
+        window.location.reload();
+      }
     }
     return false;
   }
 }
+
 document.addEventListener('DOMContentLoaded',function(){
   console.log("頁面加載完成，初始化系統");
   setStatus('正在初始化...');
@@ -943,6 +955,7 @@ document.addEventListener('DOMContentLoaded',function(){
     }
   });
 });
+
 function getProfileAndVerify(){
   setStatus('正在獲取用戶資訊...');
   if (globalLiffProfile) {
@@ -968,6 +981,7 @@ function getProfileAndVerify(){
     }
   });
 }
+
 function callGasBackend(userId,displayName){
   setStatus('正在驗證用戶權限...');
   $.ajax({
@@ -989,6 +1003,7 @@ function callGasBackend(userId,displayName){
     }
   });
 }
+
 function renderResult(resp){
   document.getElementById('status').classList.add('hidden');
   document.getElementById('error-message').classList.add('hidden');
@@ -1026,6 +1041,7 @@ function renderResult(resp){
   card.classList.remove('hidden');
   setTimeout(()=>forceShowUserInfo(),300);
 }
+
 window.submitCallback=resp=>{console.log("submitCallback:",resp);return resp;};
 window.verifyCallback=resp=>{console.log("verifyCallback:",resp);return resp;};
 </script>
