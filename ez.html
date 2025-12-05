@@ -426,29 +426,39 @@ const ffs=Object.fromEntries(Object.entries(fs).filter(([_,f])=>f.length>0)),fui
 職業:userBasicInfo.job||'未填寫',提交時間:new Date(submitTime).toLocaleString('zh-TW',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'})
 };
 const totalSymptomCount = fullSymptomData.length;
-// 核心修改：收集所有选中症状名称并去重，重复症状只算一种
 const allSelectedSymptoms = new Set();
 Object.values(ffs).forEach(factorSymptoms => {
   factorSymptoms.forEach(symptom => allSelectedSymptoms.add(symptom.name));
 });
 const selectedTotal = allSelectedSymptoms.size;
-let st=`🧬 彥彬自檢表系統\n\n👤 用戶：${displayName}\n📅 提交時間：${fui.提交時間}\n\n📋 基本資料：\n`;
-Object.entries(fui).forEach(([k,v])=>k!=='提交時間'&&(st+=`  ${k}：${v}\n`));
-st+=`\n📊 統計資訊：\n  總選取症狀數：${selectedTotal} 項 (共${totalSymptomCount}種症狀)\n`;
-if(topFactors.length > 0){
-  if(topFactors.length === 1){
-    st+=`  調整方向：${topFactors[0].name} (${topFactors[0].count}項)\n`;
-  } else {
-    st+=`  調整方向：${topFactors[0].name} (${topFactors[0].count}項)、${topFactors[1].name} (${topFactors[1].count}項)\n`;
-  }
-}
-st+=`\n🩺 七大健康要素評估：\n`;
+// 优化分享文字，补充姓名、年龄、总症状数、调整方向
+let st=`🧬 彥彬自檢表系統
+👤 姓名：${fui.姓名} | 年齡：${fui.年齡}
+📊 總選取症狀數：${selectedTotal} 項 (共${totalSymptomCount}種症狀)
+🎯 調整方向：${topFactors.length > 0 ? (topFactors.length === 1 ? `${topFactors[0].name} (${topFactors[0].count}項)` : `${topFactors[0].name} (${topFactors[0].count}項)、${topFactors[1].name} (${topFactors[1].count}項)`) : '無'}
+
+📋 詳細資訊：
+  用戶：${displayName}
+  提交時間：${fui.提交時間}
+  性別：${fui.性別}
+  身高：${fui.身高}
+  體重：${fui.體重}
+  血壓：${fui.血壓}
+  血糖：${fui.血糖}
+  職業：${fui.職業}
+
+🩺 七大健康要素評估：
+`;
 Object.entries(ffs).forEach(([fk,f])=>{
 const fn=factorStyles[fk].label;
-st+=`\n【${fn}】(${f.length}項)：\n`;
-f.forEach((i,idx)=>st+=`  ${idx+1}. ${i.name}\n     ⏱️ 時間：${i.duration}\n     ⚠️ 程度：${i.severity}\n`);
+st+=`【${fn}】(${f.length}項)：
+`;
+f.forEach((i,idx)=>st+=`  ${idx+1}. ${i.name}
+     ⏱️ 時間：${i.duration}
+     ⚠️ 程度：${i.severity}
+`);
 });
-st+=`\n💡 建議：根據自檢結果關注對應健康問題，必要時諮詢專業醫師`;
+st+=`💡 建議：根據自檢結果關注對應健康問題，必要時諮詢專業醫師`;
 return {formattedUserInfo:fui,factorSymptoms:ffs,summaryText:st,totalSymptomCount, selectedTotal, topFactors};
 }
 function initControlButtons(){
@@ -529,7 +539,7 @@ const rs=document.getElementById('report-summary');
 if(rs)scEl=rs.querySelector('.summary-content')||rs;
 if(!scEl){alert('報告內容加載中，請稍候再試');setTimeout(()=>btn.click(),500);return;}
 }
-st='🧬 彥彬自檢表系統';
+st=window.reportData.summaryText;
 btn.disabled=true;
 btn.innerHTML='<i class="fa fa-spinner fa-spin mr-1"></i> 處理中...';
 if(shareBtn)shareBtn.style.display='none';
@@ -562,7 +572,12 @@ file=new File([compressedBlob],fileName,{type:'image/png'});
 }else file=new File([imgBlob],fileName,{type:'image/png'});
 if(navigator.share&&typeof navigator.share==='function'){
 try{
-const shareData={title:'🧬 彥彬自檢表系統',text:st,files:[file]};
+// 调整分享顺序：图片在前，文字在后
+const shareData={
+title:'🧬 彥彬自檢表系統',
+files:[file], // 图片优先
+text:st       // 文字在后
+};
 const canShare=navigator.canShare?await navigator.canShare(shareData):true;
 if(canShare){await navigator.share(shareData);alert('分享成功！\n報告已發送到LINE群組/好友');}
 }catch(err){
