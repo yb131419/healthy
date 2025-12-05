@@ -191,7 +191,6 @@ body{font-feature-settings:"palt";letter-spacing:0.02em;}
 <h4 class="text-sm font-medium text-textPrimary mb-2 flex items-center"><i class="fa fa-file-text-o text-primary mr-1.5"></i>健康報告摘要</h4>
 <div id="summary-content" class="text-xs space-y-1.5"></div>
 <script>
-
 const LIFF_ID="2008578880-NznKeG2a";
 const GAS_URL="https://script.google.com/macros/s/AKfycbykBtM2_PM7IZ-ZUU4tgTqVa1xGhVQFaZ523FXc4ivdLz_GZ09sdmL6s5zk7SdloFuG/exec";
 const JSONP_TIMEOUT=12000;
@@ -417,6 +416,13 @@ selectedSymptoms.forEach(s=>{
 const os=fullSymptomData.find(ss=>ss.seq===s.seq);
 os&&Object.keys(fs).forEach(f=>os[f]==="○"&&fs[f].push({name:s.symptom,duration:s.durationText,severity:s.severityText}));
 });
+// 計算最多的健康要素
+let maxFactor = {name: '', count: 0};
+Object.entries(fs).forEach(([key, list]) => {
+  if(list.length > maxFactor.count){
+    maxFactor = {name: factorStyles[key].label, count: list.length};
+  }
+});
 const ffs=Object.fromEntries(Object.entries(fs).filter(([_,f])=>f.length>0)),fui={
 姓名:userBasicInfo.name||'未填寫',年齡:userBasicInfo.age?`${userBasicInfo.age}歲`:'未填寫',
 性別:userBasicInfo.gender==='male'?'男':userBasicInfo.gender==='female'?'女':'未填寫',
@@ -424,17 +430,23 @@ const ffs=Object.fromEntries(Object.entries(fs).filter(([_,f])=>f.length>0)),fui
 血壓:userBasicInfo.bp||'未填寫',血糖:userBasicInfo.glucose?`${userBasicInfo.glucose}%`:'未填寫',
 職業:userBasicInfo.job||'未填寫',提交時間:new Date(submitTime).toLocaleString('zh-TW',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'})
 };
+const totalSymptomCount = fullSymptomData.length; // 總症狀數95
+const selectedTotal = Object.values(ffs).reduce((s,f)=>s+f.length,0);
 let st=`🧬 彥彬自檢表系統\n\n👤 用戶：${displayName}\n📅 提交時間：${fui.提交時間}\n\n📋 基本資料：\n`;
 Object.entries(fui).forEach(([k,v])=>k!=='提交時間'&&(st+=`  ${k}：${v}\n`));
-const ts=Object.values(ffs).reduce((s,f)=>s+f.length,0);
-st+=`\n📊 統計資訊：\n  總選取症狀數：${ts} 項\n\n🩺 七大健康要素評估：\n`;
+st+=`\n📊 統計資訊：\n  總選取症狀數：${selectedTotal} 項 (共${totalSymptomCount}種症狀)\n`;
+if(maxFactor.count > 0){
+  st+=`  最多健康要素：${maxFactor.name} (${maxFactor.count}項)\n`;
+}
+st+=`\n🩺 七大健康要素評估：\n`;
 Object.entries(ffs).forEach(([fk,f])=>{
 const fn=factorStyles[fk].label;
 st+=`\n【${fn}】(${f.length}項)：\n`;
 f.forEach((i,idx)=>st+=`  ${idx+1}. ${i.name}\n     ⏱️ 時間：${i.duration}\n     ⚠️ 程度：${i.severity}\n`);
 });
 st+=`\n💡 建議：根據自檢結果關注對應健康問題，必要時諮詢專業醫師`;
-return {formattedUserInfo:fui,factorSymptoms:ffs,summaryText:st};
+return {formattedUserInfo:fui,factorSymptoms:ffs,summaryText:st, 
+        totalSymptomCount, selectedTotal, maxFactor}; // 返回統計數據
 }
 function initControlButtons(){
 const styleButtons = () => {
@@ -647,7 +659,7 @@ btn.disabled=false;btn.innerHTML='提交檢查表';
 });
 }
 function renderReportSummary(reportData){
-const {formattedUserInfo,factorSymptoms,summaryText}=reportData;
+const {formattedUserInfo,factorSymptoms,summaryText,totalSymptomCount,selectedTotal,maxFactor}=reportData;
 let sc=document.getElementById('summary-content');
 if(!sc){
 sc=document.createElement('div');sc.id='summary-content';
@@ -690,10 +702,16 @@ html+=`</div></div>
 <div class="text-lg font-semibold text-[#2d3748] flex items-center justify-center mb-1">
 <i class="fa fa-chart-pie text-primary mr-2 text-base"></i>統計資訊
 </div>
-<div class="bg-green-100 text-green-800 px-4 py-2 rounded-full text-sm font-medium inline-flex items-center justify-center mx-auto">
-總症狀數：${ts} 項
-</div>
-</div>
+<div class="bg-green-100 text-green-800 px-4 py-2 rounded-full text-sm font-medium inline-flex items-center justify-center mx-auto mb-2">
+總症狀數：${selectedTotal} 項 (共${totalSymptomCount}種症狀)
+</div>`;
+// 新增最多健康要素顯示
+if(maxFactor.count > 0){
+html+=`<div class="bg-blue-100 text-blue-800 px-4 py-2 rounded-full text-sm font-medium inline-flex items-center justify-center mx-auto">
+最多健康要素：${maxFactor.name} (${maxFactor.count}項)
+</div>`;
+}
+html+=`</div>
 <div class="text-lg font-semibold text-[#2d3748] mb-3 flex items-center justify-center">
 <i class="fa fa-heartbeat text-primary mr-2 text-base"></i>七大健康要素評估
 </div>`;
