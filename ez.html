@@ -484,7 +484,6 @@ document.getElementById('user-job').value=window.userBasicInfo.job||'';
 }
 document.getElementById('user-info-section').scrollIntoView({behavior:'smooth'});
 });
-// 核心修正1：改為async函數，等待LINE用戶信息獲取
 document.getElementById('submit-checklist').addEventListener('click',async function(){
 const btn=this;
 btn.disabled=true;
@@ -497,7 +496,6 @@ const cd=cb.closest('.symptom-card'),d=cd.querySelector('.duration-select').valu
 if(!d||!s){iv=false;fic=fic||cd;cd.classList.add('border-red-500');cd.style.transform='scale(1.03)';setTimeout(()=>{cd.classList.remove('border-red-500');cd.style.transform='';},1500);}
 });
 if(!iv){alert('部分已選症狀未填寫完整資訊，請檢查後再提交');fic&&fic.scrollIntoView({behavior:'smooth',block:'center'});btn.disabled=false;btn.innerHTML='提交檢查表';return;}
-// 等待collectSubmitData執行完成
 const sd=await collectSubmitData();
 submitChecklistData(sd,btn);
 });
@@ -576,17 +574,33 @@ closeBtn=document.createElement('button');
 closeBtn.id='close-page-btn';
 closeBtn.className='w-full sm:w-auto px-6 py-2.5 bg-gray-600 text-white rounded-lg font-medium flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 mt-2';
 closeBtn.innerHTML='<i class="fa fa-times"></i> 關閉網頁';
-closeBtn.onclick=()=>{
-  if(window.liff && liff.closeWindow) liff.closeWindow();
-  else window.close();
+closeBtn.onclick=async()=>{
+  try {
+    if(window.liff) {
+      if(!liff.isLoggedIn()) await liff.login();
+      liff.closeWindow();
+    } else {
+      window.close();
+    }
+  } catch (error) {
+    console.error('關閉窗口失敗:', error);
+    window.close(); // 備用方案
+  }
 };
-btn.parentNode.appendChild(closeBtn);
-}else closeBtn.style.display='flex';
+// 创建按钮容器，实现上下排列
+const btnContainer = document.createElement('div');
+btnContainer.className = 'flex flex-col w-full gap-2';
+btn.parentNode.appendChild(btnContainer);
+// 移動分享按鈕到容器
+btnContainer.appendChild(btn);
+// 添加關閉按鈕到容器
+btnContainer.appendChild(closeBtn);
+} else {
+  closeBtn.style.display = 'flex';
 }
 }
-// 核心修正2：改為async函數，正確異步獲取LINE用戶信息
+}
 async function collectSubmitData(){
-// 等待getProfile返回真實用戶信息（而非Promise對象）
 const liffProfile=await liff.getProfile().catch(err=>{
 console.error("獲取LINE用戶信息失敗：",err);
 return {displayName:'LINE用戶'};
@@ -601,7 +615,6 @@ severityText:cd.querySelector('.severity-select option:checked').textContent
 });
 return{
 action:'submitChecklist',userId:liff.getDecodedIDToken()?.sub||'',
-// 核心修正3：優先使用真實displayName，兜底為LINE用戶
 displayName:liffProfile.displayName||'LINE用戶',
 submitTime:new Date().toISOString(),
 userName:document.getElementById('user-name').value.trim(),userAge:document.getElementById('user-age').value.trim(),
