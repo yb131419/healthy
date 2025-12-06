@@ -529,22 +529,26 @@ script.onload=resolve;script.onerror=reject;
 document.head.appendChild(script);
 });
 }
-// 固定截图宽度为1024px
+// 設置截圖容器寬度為1024px，高度自適應
 scEl.style.textAlign='center';
 scEl.style.margin='0 auto';
 scEl.style.backgroundColor='#ffffff';
 scEl.style.padding='1rem';
-scEl.style.width='1024px'; // 固定宽度
-scEl.style.maxWidth='100%'; // 适配小屏幕
+scEl.style.width='1024px'; // 固定截圖寬度1024px
+scEl.style.maxWidth='100%';
 scEl.style.boxSizing='border-box';
 scEl.style.borderRadius='16px';
 scEl.style.boxShadow='0 4px 24px rgba(0,0,0,0.12)';
+// 調整截圖參數，確保寬度1024、高度適中
 canvas=await html2canvas(scEl,{
-scale:2.0,useCORS:true,allowTaint:true,logging:false,
+scale:1.5, // 適中縮放保證清晰度，避免過大
+useCORS:true,
+allowTaint:true,
+logging:false,
 backgroundColor:'#ffffff',
-width:1024, // 截图宽度固定为1024px
-height:scEl.offsetHeight,
-dpi:300
+width:1024, // 強制截圖寬度1024px
+height:Math.min(scEl.offsetHeight, 3000), // 限制最大高度3000px，避免過長
+dpi:150 // 適中解析度，平衡清晰度和文件大小
 });
 if(shareBtn)shareBtn.style.display='flex';
 dataUrl=canvas.toDataURL('image/png',0.9);
