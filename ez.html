@@ -431,7 +431,6 @@ Object.values(ffs).forEach(factorSymptoms => {
   factorSymptoms.forEach(symptom => allSelectedSymptoms.add(symptom.name));
 });
 const selectedTotal = allSelectedSymptoms.size;
-// 優化分享文字：移除詳細資訊和七大健康要素評估
 let st=`🧬 彥彬自檢表系統\n
 👤 姓名：${fui.姓名} \n🕶️ 年齡：${fui.年齡}\n
 📊 總選取症狀數：\n${selectedTotal} 項 (共${totalSymptomCount}種症狀)\n
@@ -530,12 +529,22 @@ script.onload=resolve;script.onerror=reject;
 document.head.appendChild(script);
 });
 }
-scEl.style.textAlign='center';scEl.style.margin='0 auto';scEl.style.backgroundColor='#ffffff';
-scEl.style.padding='1rem';scEl.style.width='100%';scEl.style.boxSizing='border-box';
-scEl.style.borderRadius='16px';scEl.style.boxShadow='0 4px 24px rgba(0,0,0,0.12)';
+// 固定截图宽度为1024px
+scEl.style.textAlign='center';
+scEl.style.margin='0 auto';
+scEl.style.backgroundColor='#ffffff';
+scEl.style.padding='1rem';
+scEl.style.width='1024px'; // 固定宽度
+scEl.style.maxWidth='100%'; // 适配小屏幕
+scEl.style.boxSizing='border-box';
+scEl.style.borderRadius='16px';
+scEl.style.boxShadow='0 4px 24px rgba(0,0,0,0.12)';
 canvas=await html2canvas(scEl,{
 scale:2.0,useCORS:true,allowTaint:true,logging:false,
-backgroundColor:'#ffffff',width:scEl.offsetWidth,height:scEl.offsetHeight,dpi:300
+backgroundColor:'#ffffff',
+width:1024, // 截图宽度固定为1024px
+height:scEl.offsetHeight,
+dpi:300
 });
 if(shareBtn)shareBtn.style.display='flex';
 dataUrl=canvas.toDataURL('image/png',0.9);
