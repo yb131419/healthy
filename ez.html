@@ -190,7 +190,6 @@ body{font-feature-settings:"palt";letter-spacing:0.02em;}
 <div id="report-summary" class="border border-gray-100 rounded-xl p-3 mb-3 bg-neutral/50 text-left result-summary">
 <h4 class="text-sm font-medium text-textPrimary mb-2 flex items-center"><i class="fa fa-file-text-o text-primary mr-1.5"></i>健康報告摘要</h4>
 <div id="summary-content" class="text-xs space-y-1.5"></div>
-<script>
 const LIFF_ID="2008578880-NznKeG2a";
 const GAS_URL="https://script.google.com/macros/s/AKfycbykBtM2_PM7IZ-ZUU4tgTqVa1xGhVQFaZ523FXc4ivdLz_GZ09sdmL6s5zk7SdloFuG/exec";
 const JSONP_TIMEOUT=12000;
@@ -431,11 +430,10 @@ Object.values(ffs).forEach(factorSymptoms => {
   factorSymptoms.forEach(symptom => allSelectedSymptoms.add(symptom.name));
 });
 const selectedTotal = allSelectedSymptoms.size;
-// 優化分享文字：移除詳細資訊和七大健康要素評估
 let st=`🧬 彥彬自檢表系統\n
-👤 姓名：${fui.姓名} \n 🕶️ 年齡：${fui.年齡}\n
+👤 姓名：${fui.姓名} \n🕶️ 年齡：${fui.年齡}\n
 📊 總選取症狀數：\n${selectedTotal} 項 (共${totalSymptomCount}種症狀)\n
-🎯 調整方向：\n${topFactors.length > 0 ? (topFactors.length === 1 ? `${topFactors[0].name} (${topFactors[0].count}項)` : `${topFactors[0].name} (${topFactors[0].count}項)、${topFactors[1].name} (${topFactors[1].count}項)`) : '無'}
+🎯 調整方向：\n${topFactors.length > 0 ? (topFactors.length === 1 ? `${topFactors[0].name} (${topFactors[0].count}項)` : `${topFactors[0].name} (${topFactors[0].count}項)\n${topFactors[1].name} (${topFactors[1].count}項)`) : '無'}
 `;
 return {formattedUserInfo:fui,factorSymptoms:ffs,summaryText:st,totalSymptomCount, selectedTotal, topFactors};
 }
@@ -530,12 +528,22 @@ script.onload=resolve;script.onerror=reject;
 document.head.appendChild(script);
 });
 }
-scEl.style.textAlign='center';scEl.style.margin='0 auto';scEl.style.backgroundColor='#ffffff';
-scEl.style.padding='1rem';scEl.style.width='100%';scEl.style.boxSizing='border-box';
-scEl.style.borderRadius='16px';scEl.style.boxShadow='0 4px 24px rgba(0,0,0,0.12)';
+// 固定宽度为1024px
+scEl.style.textAlign='center';
+scEl.style.margin='0 auto';
+scEl.style.backgroundColor='#ffffff';
+scEl.style.padding='1rem';
+scEl.style.width='1024px'; // 固定宽度
+scEl.style.maxWidth='1024px'; // 防止超出
+scEl.style.boxSizing='border-box';
+scEl.style.borderRadius='16px';
+scEl.style.boxShadow='0 4px 24px rgba(0,0,0,0.12)';
 canvas=await html2canvas(scEl,{
 scale:2.0,useCORS:true,allowTaint:true,logging:false,
-backgroundColor:'#ffffff',width:scEl.offsetWidth,height:scEl.offsetHeight,dpi:300
+backgroundColor:'#ffffff',
+width:1024, // 截图宽度固定为1024
+height:scEl.offsetHeight,
+dpi:300
 });
 if(shareBtn)shareBtn.style.display='flex';
 dataUrl=canvas.toDataURL('image/png',0.9);
@@ -665,12 +673,22 @@ document.querySelector('#success-modal .modal-content')?.appendChild(rs)||docume
 sc.dataset.summary=summaryText;
 const ts=Object.values(factorSymptoms).reduce((s,f)=>s+f.length,0);
 const rs=document.getElementById('report-summary');
-rs.style.maxHeight='80vh';rs.style.overflowY='auto';rs.style.padding='1rem';
-rs.style.boxSizing='border-box';rs.style.backgroundColor='#ffffff';rs.style.borderRadius='16px';
-rs.style.boxShadow='0 8px 32px rgba(0,0,0,0.15)';rs.style.margin='0 auto';
-rs.style.width='100%';rs.style.maxWidth='800px';
-sc.style.width='100%';sc.style.backgroundColor='#ffffff';sc.style.padding='1rem';
-sc.style.boxSizing='border-box';sc.style.lineHeight='1.6';sc.style.fontSize='0.95rem';
+rs.style.maxHeight='80vh';
+rs.style.overflowY='auto';
+rs.style.padding='1rem';
+rs.style.boxSizing='border-box';
+rs.style.backgroundColor='#ffffff';
+rs.style.borderRadius='16px';
+rs.style.boxShadow='0 8px 32px rgba(0,0,0,0.15)';
+rs.style.margin='0 auto';
+rs.style.width='1024px'; // 固定宽度为1024px
+rs.style.maxWidth='1024px'; // 防止超出
+sc.style.width='100%';
+sc.style.backgroundColor='#ffffff';
+sc.style.padding='1rem';
+sc.style.boxSizing='border-box';
+sc.style.lineHeight='1.6';
+sc.style.fontSize='0.95rem';
 sc.style.textAlign='center';
 let html=`
 <div class="text-center mb-4">
@@ -860,6 +878,5 @@ setTimeout(()=>forceShowUserInfo(),300);
 }
 window.submitCallback=resp=>{console.log("submitCallback:",resp);return resp;};
 window.verifyCallback=resp=>{console.log("verifyCallback:",resp);return resp;};
-</script>
 </body>
 </html>
