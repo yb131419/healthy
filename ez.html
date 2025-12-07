@@ -529,24 +529,24 @@ script.onload=resolve;script.onerror=reject;
 document.head.appendChild(script);
 });
 }
-// 关键修改：适配1024宽度，去除多余留白，让图片完全填满
+// 統一截圖寬度樣式
 scEl.style.textAlign='center';
 scEl.style.margin='0 auto';
 scEl.style.backgroundColor='#ffffff';
-scEl.style.padding='0.5rem'; // 减少内边距
-scEl.style.width='1024px'; // 固定1024宽度
-scEl.style.maxWidth='1024px'; // 强制最大宽度1024
+scEl.style.padding='0.5rem';
+scEl.style.width='1024px';
+scEl.style.maxWidth='1024px';
 scEl.style.boxSizing='border-box';
 scEl.style.borderRadius='16px';
 scEl.style.boxShadow='0 4px 24px rgba(0,0,0,0.12)';
-// 关键修改：调整截图配置，确保1024宽度完全填满，无留白
+// 優化截圖配置，確保寬度統一
 canvas=await html2canvas(scEl,{
 scale:2.0,useCORS:true,allowTaint:true,logging:false,
 backgroundColor:'#ffffff',
-width:1024, // 强制截图宽度为1024
+width:1024,
 height:scEl.offsetHeight,
 dpi:300,
-windowWidth:1024, // 模拟窗口宽度
+windowWidth:1024,
 windowHeight:scEl.offsetHeight
 });
 if(shareBtn)shareBtn.style.display='flex';
@@ -680,17 +680,18 @@ const rs=document.getElementById('report-summary');
 rs.style.maxHeight='80vh';rs.style.overflowY='auto';rs.style.padding='1rem';
 rs.style.boxSizing='border-box';rs.style.backgroundColor='#ffffff';rs.style.borderRadius='16px';
 rs.style.boxShadow='0 8px 32px rgba(0,0,0,0.15)';rs.style.margin='0 auto';
-rs.style.width='100%';rs.style.maxWidth='1024px'; // 适配1024宽度
-sc.style.width='100%';sc.style.backgroundColor='#ffffff';sc.style.padding='0.5rem'; // 减少内边距
-sc.style.boxSizing='border-box';sc.style.lineHeight='1.4'; // 缩小行高
-sc.style.fontSize='0.8rem'; // 整体缩小字体
+rs.style.width='100%';rs.style.maxWidth='1024px';
+sc.style.width='100%';sc.style.backgroundColor='#ffffff';sc.style.padding='0.5rem';
+sc.style.boxSizing='border-box';sc.style.lineHeight='1.4';
+sc.style.fontSize='0.8rem';
 sc.style.textAlign='center';
 let html=`
 <div class="text-center mb-3">
 <h3 class="text-lg md:text-xl font-bold text-[#2d3748] mb-1">🧬 彥彬自檢表系統</h3>
 <div class="text-xs text-[#718096]">${formattedUserInfo.提交時間}</div>
 </div>
-<div class="bg-[#f8f9fa] rounded-10 p-3 mb-3">
+<!-- 基本資料：統一寬度 -->
+<div class="bg-[#f8f9fa] rounded-10 p-3 mb-3 mx-auto max-w-full">
 <div class="text-base font-semibold text-[#2d3748] mb-2 flex items-center justify-center">
 <i class="fa fa-user-circle text-primary mr-2 text-sm"></i>基本資料
 </div>
@@ -728,27 +729,32 @@ html+=`</div>
 <div class="text-base font-semibold text-[#2d3748] mb-2 flex items-center justify-center">
 <i class="fa fa-heartbeat text-primary mr-2 text-sm"></i>七大健康要素評估
 </div>`;
-// 关键修改：缩小七大健康要素的文字大小，调整布局显示更多项目
+// 七大健康要素：統一寬度 + 嚴重程度樣式優化
 Object.entries(factorSymptoms).forEach(([fk,f])=>{
 const fn=factorStyles[fk].label;
-html+=`<div class="bg-white border border-[#e8f4f8] rounded-10 p-2 mb-2 shadow-sm hover:shadow-md transition-shadow mx-auto max-w-lg">
+html+=`<div class="bg-white border border-[#e8f4f8] rounded-10 p-2 mb-2 shadow-sm hover:shadow-md transition-shadow mx-auto max-w-full">
 <div class="font-semibold text-xs text-[#2d3748] mb-1 flex items-center justify-center">
 <span class="inline-block w-2.5 h-2.5 rounded-full ${factorStyles[fk].className.split(' ')[0]} mr-1.5"></span>
 【${fn}】（${f.length}項）
 </div>
-<div class="grid grid-cols-2 md:grid-cols-3 gap-1 text-[10px]">`; // 多列布局+超小字体
+<div class="grid grid-cols-2 md:grid-cols-3 gap-1 text-[10px]">`;
 f.forEach((i,idx)=>{
+// 判斷嚴重程度並添加對應背景樣式
+let severityClass = '';
+if(i.severity.includes('中度')) severityClass = 'bg-yellow-100 text-yellow-800';
+else if(i.severity.includes('重度')) severityClass = 'bg-red-100 text-red-800';
+else severityClass = 'bg-gray-100 text-gray-800';
 html+=`<div class="p-1.5 bg-[#fafafa] rounded-lg">
 <div class="font-medium text-[#2d3748] text-[10px]">${idx+1}. ${i.name}</div>
 <div class="flex justify-between mt-0.5 text-[9px]">
 <div class="text-[#4a5568]">⏱️ ${i.duration}</div>
-<div class="text-[#718096]">⚠️ ${i.severity}</div>
+<div class="${severityClass} px-1 rounded">⚠️ ${i.severity}</div>
 </div>
 </div>`;
 });
 html+=`</div></div>`;
 });
-html+=`<div class="mt-4 bg-primary/5 border border-primary/20 rounded-10 p-3 text-[10px] text-[#4a5568] font-bold mx-auto max-w-lg">
+html+=`<div class="mt-4 bg-primary/5 border border-primary/20 rounded-10 p-3 text-[10px] text-[#4a5568] font-bold mx-auto max-w-full">
 💡 建議：根據自檢結果關注對應健康問題，必要時諮詢專業醫師
 </div>
 <div class="mt-6 mb-3 flex justify-center px-3">
