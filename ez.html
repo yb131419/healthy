@@ -516,12 +516,14 @@ const rs=document.getElementById('report-summary');
 if(rs)scEl=rs.querySelector('.summary-content')||rs;
 if(!scEl){alert('報告內容加載中，請稍候再試');setTimeout(()=>btn.click(),500);return;}
 }
+// 保存分享按钮原始状态
 const shareButton = scEl.querySelector('#native-share-btn');
 const shareBtnOriginalDisplay = shareButton ? shareButton.style.display : 'flex';
 if(shareButton) shareButton.style.display = 'none';
 st=window.reportData.summaryText;
 btn.disabled=true;
 btn.innerHTML='<i class="fa fa-spinner fa-spin mr-1"></i> 處理中...';
+// 加载html2canvas
 if(!window.html2canvas){
 alert('正在加載分享所需組件，請稍候...');
 await new Promise((resolve,reject)=>{
@@ -531,6 +533,7 @@ script.onload=resolve;script.onerror=reject;
 document.head.appendChild(script);
 });
 }
+// 设置截图容器样式
 scEl.style.textAlign='center';
 scEl.style.margin='0 auto';
 scEl.style.backgroundColor='#121212';
@@ -541,6 +544,7 @@ scEl.style.boxSizing='border-box';
 scEl.style.borderRadius='16px';
 scEl.style.boxShadow='0 4px 20px rgba(0,0,0,0.5)';
 scEl.style.color='#FFFFFF';
+// 生成截图
 canvas=await html2canvas(scEl,{
 scale:2.0,useCORS:true,allowTaint:true,logging:false,
 backgroundColor:'#121212',
@@ -550,7 +554,9 @@ dpi:300,
 windowWidth:1024,
 windowHeight:scEl.offsetHeight
 });
+// 恢复分享按钮显示
 if(shareButton) shareButton.style.display = shareBtnOriginalDisplay;
+// 处理截图数据
 dataUrl=canvas.toDataURL('image/png',0.9);
 fileName=`🧬 彥彬自檢表系統_${new Date().toLocaleDateString()}.png`;
 const imgBlob=await (await fetch(dataUrl)).blob();
@@ -561,6 +567,7 @@ dataUrl=canvas.toDataURL('image/png',0.8);
 const compressedBlob=await (await fetch(dataUrl)).blob();
 file=new File([compressedBlob],fileName,{type:'image/png'});
 }else file=new File([imgBlob],fileName,{type:'image/png'});
+// 分享逻辑
 if(navigator.share&&typeof navigator.share==='function'){
 try{
 const shareData={
@@ -582,8 +589,10 @@ catch(cbErr){alert('請手動截圖並複製文字分享');}
 console.error('分享總體錯誤：',err);
 alert('分享功能異常，請手動截圖分享');
 }finally{
+// 恢复按钮状态
 btn.disabled=false;
-btn.style.display='none';
+btn.innerHTML='<i class="fa fa-share-alt mr-1"></i> 分享到LINE';
+// 创建/显示关闭按钮
 let closeBtn=document.getElementById('close-page-btn');
 if(!closeBtn){
 closeBtn=document.createElement('button');
@@ -603,6 +612,7 @@ closeBtn.onclick=async()=>{
     window.close();
   }
 };
+// 确保按钮容器存在且按钮不丢失
 const btnContainer = btn.parentNode;
 if(!btnContainer.classList.contains('share-btn-container')){
   const newContainer = document.createElement('div');
@@ -731,7 +741,33 @@ if(topFactors.length > 0){
   }
 }
 html+=`</div>
-<div class="mt-4 bg-gray-800 border border-gray-700 rounded-lg p-3 text-sm text-gray-300 font-bold mx-auto max-w-full">
+<div class="text-base font-semibold text-white mb-3 flex items-center justify-center">
+<i class="fa fa-heartbeat text-primary mr-2 text-sm"></i>七大健康要素評估
+</div>`;
+Object.entries(factorSymptoms).forEach(([fk,f])=>{
+const fn=factorStyles[fk].label;
+html+=`<div class="bg-gray-800 border border-gray-700 rounded-lg p-3 mb-3 shadow-sm hover:shadow-md transition-shadow mx-auto max-w-full">
+<div class="font-semibold text-sm text-white mb-2 flex items-center justify-center">
+<span class="inline-block w-2.5 h-2.5 rounded-full ${factorStyles[fk].className.split(' ')[0]} mr-1.5"></span>
+【${fn}】（${f.length}項）
+</div>
+<div class="grid grid-cols-3 gap-2 text-sm">`;
+f.forEach((i,idx)=>{
+let severityClass = '';
+if(i.severity.includes('中度')) severityClass = 'bg-yellow-900/30 text-yellow-400';
+else if(i.severity.includes('重度')) severityClass = 'bg-red-900/30 text-red-400';
+else severityClass = 'bg-gray-700 text-gray-300';
+html+=`<div class="p-2 bg-gray-700 rounded-lg border border-gray-600">
+<div class="font-medium text-white text-sm">${idx+1}. ${i.name}</div>
+<div class="flex justify-between mt-1 text-xs">
+<div class="text-gray-400">⏱️ ${i.duration}</div>
+<div class="${severityClass} px-2 py-0.5 rounded text-xs">⚠️ ${i.severity}</div>
+</div>
+</div>`;
+});
+html+=`</div></div>`;
+});
+html+=`<div class="mt-4 bg-gray-800 border border-gray-700 rounded-lg p-3 text-sm text-gray-300 font-bold mx-auto max-w-full">
 💡 建議：根據自檢結果關注對應健康問題，必要時諮詢專業醫師
 </div>
 <div class="mt-6 mb-3 flex justify-center px-3">
