@@ -691,14 +691,16 @@ async function handleShareButtonClick(e) {
         document.head.appendChild(script);
       });
     }
-    const screenWidth = window.innerWidth;
+    // 優化截圖寬度 - 適配移動端，增加寬度避免擠壓
+    const screenWidth = Math.max(window.innerWidth, 750); // 最小寬度750px
     summaryEl.style.cssText = `
       text-align:center;margin:0 auto!important;background-color:#121212;padding:1rem;
-      width:100vw;height:auto;box-sizing:border-box;color:#FFFFFF;border-radius:0;
+      width:${screenWidth}px;height:auto;box-sizing:border-box;color:#FFFFFF;border-radius:0;
       box-shadow:none;max-width:none;display:block;
     `;
+    // 優化html2canvas參數，提升截圖質量和寬度
     const canvas = await html2canvas(summaryEl, {
-      scale: 2.5,
+      scale: 3, // 提高解析度
       useCORS: true,
       allowTaint: true,
       logging: false,
@@ -707,7 +709,9 @@ async function handleShareButtonClick(e) {
       height: summaryEl.offsetHeight,
       dpi: 300,
       windowWidth: screenWidth,
-      windowHeight: summaryEl.offsetHeight
+      windowHeight: summaryEl.offsetHeight,
+      scrollX: 0,
+      scrollY: 0
     });
     shareButton && (shareButton.style.display = shareBtnStyle.display, shareButton.className = shareBtnStyle.className);
     let dataUrl = canvas.toDataURL('image/png', 0.9);
@@ -884,10 +888,12 @@ function renderReportSummary(reportData) {
     background-color:#121212;border-radius:0;box-shadow:none;margin:0 auto!important;
     width:100%;max-width:none;text-align:center;
   `;
+  // 優化容器樣式，適配移動端
   summaryContainer.style.cssText = `
     width:100%;background-color:#121212;padding:1rem;box-sizing:border-box;
     line-height:1.4;font-size:0.9rem;text-align:center!important;color:#FFFFFF;
     margin:0 auto!important;border-radius:0;box-shadow:none;max-width:none;
+    min-width:320px;
   `;
   let html = `
 <div class="text-center mb-4">
@@ -938,16 +944,18 @@ function renderReportSummary(reportData) {
         <span class="inline-block w-2.5 h-2.5 rounded-full ${factorStyles[factorKey].className.split(' ')[0]} mr-1.5"></span>
         【${factorName}】（${factorItems.length}項）
       </div>
-      <div class="grid grid-cols-3 gap-1.5 text-xs min-w-0">`;
+      <!-- 優化網格布局 - 移動端適配，避免文字擠壓 -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-1.5 text-[10px] min-w-0">`;
     factorItems.forEach((item, index) => {
       let severityClass = '';
       if (item.severity.includes('輕度')) severityClass = 'text-gray-300 font-bold';
       else if (item.severity.includes('中度')) severityClass = 'text-yellow-400 font-bold';
       else if (item.severity.includes('重度')) severityClass = 'text-red-400 font-bold';
+      // 優化文字大小和排版，時間/嚴重程度字體調小到10px
       html += `<div class="p-1.5 rounded-lg border border-gray-700/50 min-w-0 flex flex-col items-center justify-center text-center font-bold">
-        <div class="text-white text-xs font-bold truncate">${index+1}. ${item.name}</div>
-        <div class="mt-0.5 text-xs ${severityClass} font-bold">⏱️ ${item.duration}</div>
-        <div class="text-xs ${severityClass} font-bold">⚠️ ${item.severity.replace('（不影響生活）','').replace('（偶爾影響）','').replace('（明顯影響）','')}（${item.severity.includes('輕度')?'不影響生活':item.severity.includes('中度')?'偶爾影響':'明顯影響'}）</div>
+        <div class="text-white text-[11px] font-bold truncate">${index+1}. ${item.name}</div>
+        <div class="mt-0.5 text-[9px] ${severityClass} font-bold">⏱️ ${item.duration}</div>
+        <div class="text-[9px] ${severityClass} font-bold">⚠️ ${item.severity.replace('（不影響生活）','').replace('（偶爾影響）','').replace('（明顯影響）','')}（${item.severity.includes('輕度')?'不影響生活':item.severity.includes('中度')?'偶爾影響':'明顯影響'}）</div>
       </div>`;
     });
     html += `</div></div>`;
