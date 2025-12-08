@@ -530,12 +530,12 @@ async function handleShareButtonClick(e){
     // 适配移动端全屏截图样式（100vw全屏，去除圆角/阴影，强制居中）
     const screenWidth = window.innerWidth;
     scEl.style.cssText = `
-text-align:center!important;margin:0 auto!important;background-color:#121212;padding:1rem;width:100vw;height:auto;
-box-sizing:border-box;color:#FFFFFF;border-radius:0!important;box-shadow:none!important;max-width:none!important;display:block!important;
+text-align:center;margin:0 auto!important;background-color:#121212;padding:1rem;width:100vw;height:auto;
+box-sizing:border-box;color:#FFFFFF;border-radius:0;box-shadow:none;max-width:none;display:block;
 `;
-    // 优化截图参数：缩放比例3.0，基于屏幕宽度计算尺寸，降低体积
+    // 优化截图参数：缩放比例2.5，基于屏幕宽度计算尺寸，降低体积
     const canvas=await html2canvas(scEl,{
-      scale:3.0,useCORS:true,allowTaint:true,logging:false,
+      scale:2.5,useCORS:true,allowTaint:true,logging:false,
       backgroundColor:'#121212',width:screenWidth,height:scEl.offsetHeight,
       dpi:300,windowWidth:screenWidth,windowHeight:scEl.offsetHeight
     });
@@ -677,13 +677,13 @@ function renderReportSummary(reportData){
   // 报告容器自适应屏幕宽度（去除固定宽度/圆角/阴影，强制居中）
   rs.style.cssText = `
 max-height:80vh;overflow-y:auto;padding:1rem;box-sizing:border-box;
-background-color:#121212;border-radius:0!important;box-shadow:none!important;margin:0 auto!important;
-width:100%;max-width:none!important;text-align:center!important;
+background-color:#121212;border-radius:0;box-shadow:none;margin:0 auto!important;
+width:100%;max-width:none;text-align:center;
 `;
   sc.style.cssText = `
 width:100%;background-color:#121212;padding:1rem;box-sizing:border-box;
 line-height:1.4;font-size:0.9rem;text-align:center!important;color:#FFFFFF;
-margin:0 auto!important;border-radius:0!important;box-shadow:none!important;max-width:none!important;
+margin:0 auto!important;border-radius:0;box-shadow:none;max-width:none;
 `;
   let html=`
 <div class="text-center mb-4">
@@ -735,7 +735,7 @@ margin:0 auto!important;border-radius:0!important;box-shadow:none!important;max-
 <span class="inline-block w-2.5 h-2.5 rounded-full ${factorStyles[fk].className.split(' ')[0]} mr-1.5"></span>
 【${fn}】（${f.length}項）
 </div>
-<div class="grid grid-cols-5 gap-2 text-sm">`; // 修改为5列布局适配移动端
+<div class="grid grid-cols-3 gap-2 text-sm">`;
     f.forEach((i,idx)=>{
       let severityClass = '';
       if(i.severity.includes('中度')) severityClass = 'bg-yellow-900/30 text-yellow-400';
