@@ -525,24 +525,16 @@ async function handleShareButtonClick(e){
         document.head.appendChild(script);
       });
     }
-    // 固定截图宽度850px，适配画面尺寸
-    const targetWidth = 850;
-    const originalStyle = scEl.getAttribute('style') || '';
-    // 强制容器适配850px宽度，同时保证内容自适应
+    const screenWidth = window.innerWidth;
     scEl.style.cssText = `
-text-align:center;margin:0 auto!important;background-color:#121212;padding:1rem;
-width:${targetWidth}px;height:auto;max-width:100%;box-sizing:border-box;color:#FFFFFF;
-border-radius:0;box-shadow:none;display:block;
+text-align:center;margin:0 auto!important;background-color:#121212;padding:1rem;width:100vw;height:auto;
+box-sizing:border-box;color:#FFFFFF;border-radius:0;box-shadow:none;max-width:none;display:block;
 `;
-    // 截图配置确保尺寸统一
     const canvas=await html2canvas(scEl,{
-      scale:2.5,useCORS:true,allowTaint:true,logging:false,
-      backgroundColor:'#121212',width:targetWidth,height:scEl.offsetHeight,
-      dpi:300,windowWidth:targetWidth,windowHeight:scEl.offsetHeight,
-      scrollX:0,scrollY:0
+      scale:4.5,useCORS:true,allowTaint:true,logging:false,
+      backgroundColor:'#121212',width:screenWidth,height:scEl.offsetHeight,
+      dpi:300,windowWidth:screenWidth,windowHeight:scEl.offsetHeight
     });
-    // 恢复原样式
-    scEl.setAttribute('style', originalStyle);
     shareButton&&(shareButton.style.display=shareBtnStyle.display,shareButton.className=shareBtnStyle.className);
     let dataUrl=canvas.toDataURL('image/png',0.9);
     const fileName=`🧬 彥彬自檢表系統_${new Date().toLocaleDateString()}.png`;
@@ -680,7 +672,6 @@ width:100%;max-width:none;text-align:center;
 width:100%;background-color:#121212;padding:1rem;box-sizing:border-box;
 line-height:1.4;font-size:0.9rem;text-align:center!important;color:#FFFFFF;
 margin:0 auto!important;border-radius:0;box-shadow:none;max-width:none;
-.text-glow { text-shadow: 0 0 4px #00ffff, 0 0 8px #00ffff; }
 `;
   let html=`
 <div class="text-center mb-4">
@@ -732,18 +723,17 @@ margin:0 auto!important;border-radius:0;box-shadow:none;max-width:none;
 <span class="inline-block w-2.5 h-2.5 rounded-full ${factorStyles[fk].className.split(' ')[0]} mr-1.5"></span>
 【${fn}】（${f.length}項）
 </div>
-<!-- 固定一行4列展示，紧凑布局 -->
-<div class="grid grid-cols-4 gap-1.5 text-xs">`;
+<div class="grid grid-cols-4 gap-2 text-sm">`;
     f.forEach((i,idx)=>{
       let severityClass = '';
       if(i.severity.includes('中度')) severityClass = 'bg-yellow-900/30 text-yellow-400';
       else if(i.severity.includes('重度')) severityClass = 'bg-red-900/30 text-red-400';
       else severityClass = 'bg-gray-700 text-gray-300';
-      html+=`<div class="p-1.5 bg-gray-700 rounded-lg border border-gray-600">
-<div class="font-medium text-white text-xs">${idx+1}. ${i.name}</div>
-<div class="flex justify-between mt-1 text-xs">
-<div class="text-gray-400 text-xs text-glow">⏱️ ${i.duration}</div>
-<div class="${severityClass} px-1.5 py-0.25 rounded text-xs">⚠️ ${i.severity}</div>
+      html+=`<div class="p-2 bg-gray-700 rounded-lg border border-gray-600">
+<div class="font-medium text-white text-sm">${idx+1}. ${i.name}</div>
+<div class="flex justify-between mt-1">
+<div class="text-gray-400 text-[9px] text-shadow-glow" style="text-shadow: 0 0 3px #00C300;">⏱️ ${i.duration}</div>
+<div class="${severityClass} px-2 py-0.5 rounded text-[8px]">⚠️ ${i.severity}</div>
 </div>
 </div>`;
     });
