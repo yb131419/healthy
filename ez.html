@@ -605,10 +605,9 @@ async function handleShareButtonClick(e){
         return;
       }
     }
-    // 隐藏分享按钮区域（只截图到建议部分）
+    // 只截取到建议部分，完全移除分享按钮区域
     const shareBtnArea = scEl.querySelector('.mt-6.mb-3.flex.justify-center.px-3');
-    const shareBtnAreaDisplay = shareBtnArea ? shareBtnArea.style.display : 'flex';
-    if(shareBtnArea) shareBtnArea.style.display = 'none';
+    if(shareBtnArea) shareBtnArea.remove();
     
     st=window.reportData.summaryText;
     btn.disabled=true;
@@ -624,7 +623,7 @@ async function handleShareButtonClick(e){
         document.head.appendChild(script);
       });
     }
-    // 设置截图容器样式 - 最小宽度1024px解决移动端挤压
+    // 设置截图容器样式 - 居中+粗体+紧凑排版
     scEl.style.textAlign='center';
     scEl.style.margin='0 auto';
     scEl.style.backgroundColor='#121212';
@@ -635,7 +634,11 @@ async function handleShareButtonClick(e){
     scEl.style.borderRadius='16px';
     scEl.style.boxShadow='0 4px 20px rgba(0,0,0,0.5)';
     scEl.style.color='#FFFFFF';
-    scEl.style.fontWeight='bold';
+    scEl.style.fontWeight='900'; // 加粗字体
+    scEl.style.display='flex';
+    scEl.style.flexDirection='column';
+    scEl.style.justifyContent='center';
+    scEl.style.alignItems='center';
     // 生成截图
     canvas=await html2canvas(scEl,{
       scale:2.0,
@@ -649,8 +652,6 @@ async function handleShareButtonClick(e){
       windowWidth:Math.max(scEl.offsetWidth,1024),
       windowHeight:scEl.offsetHeight
     });
-    // 恢复分享按钮区域显示
-    if(shareBtnArea) shareBtnArea.style.display = shareBtnAreaDisplay;
     // 处理截图数据
     dataUrl=canvas.toDataURL('image/png',0.9);
     fileName=`🧬 彥彬自檢表系統_${new Date().toLocaleDateString()}.png`;
@@ -831,29 +832,33 @@ function renderReportSummary(reportData){
   sc.style.fontSize='0.9rem';
   sc.style.textAlign='center';
   sc.style.color='#FFFFFF';
-  sc.style.fontWeight='bold';
+  sc.style.fontWeight='900'; // 全局粗体
+  sc.style.display='flex';
+  sc.style.flexDirection='column';
+  sc.style.justifyContent='center';
+  sc.style.alignItems='center';
   let html=`
-<div class="text-center mb-4 font-bold">
+<div class="text-center mb-4 font-bold" style="width:100%;">
   <h3 class="text-lg md:text-xl font-bold text-white mb-2 font-bold">🧬 彥彬自檢表系統</h3>
   <div class="text-xs text-gray-400 font-bold font-bold">${formattedUserInfo.提交時間}</div>
 </div>
-<div class="bg-gray-800 rounded-lg p-3 mb-4 mx-auto max-w-full border border-gray-700 font-bold">
+<div class="bg-gray-800 rounded-lg p-3 mb-4 mx-auto max-w-full border border-gray-700 font-bold" style="width:100%;">
   <div class="text-base font-bold text-white mb-2 flex items-center justify-center font-bold">
     <i class="fa fa-user-circle text-primary mr-2 text-sm font-bold"></i>基本資料
   </div>
-  <div class="grid grid-cols-2 gap-x-3 gap-y-1 text-sm text-gray-200 font-bold font-bold">`;
+  <div class="grid grid-cols-2 gap-x-3 gap-y-1 text-sm text-gray-200 font-bold font-bold" style="width:100%;">`;
   const infoEntries=Object.entries(formattedUserInfo);
   infoEntries.forEach(([k,v])=>{
     if(k!=='提交時間'){
       const label=k==='血糖'?'血糖':k;
-      html+=`<div class="flex justify-between font-bold">
+      html+=`<div class="flex justify-between font-bold" style="width:100%;">
         <span class="text-gray-400 font-bold font-bold">${label}：</span>
         <span class="text-white font-bold font-bold">${v}</span>
       </div>`;
     }
   });
   html+=`</div></div>
-<div class="mb-4 font-bold">
+<div class="mb-4 font-bold" style="width:100%;">
   <div class="text-base font-bold text-white flex items-center justify-center mb-2 font-bold">
     <i class="fa fa-chart-pie text-primary mr-2 text-sm font-bold"></i>統計資訊
   </div>
@@ -872,24 +877,23 @@ function renderReportSummary(reportData){
     }
   }
   html+=`</div>
-<div class="text-base font-bold text-white mb-3 flex items-center justify-center font-bold">
+<div class="text-base font-bold text-white mb-3 flex items-center justify-center font-bold" style="width:100%;">
   <i class="fa fa-heartbeat text-primary mr-2 text-sm font-bold"></i>七大健康要素評估
 </div>`;
   Object.entries(factorSymptoms).forEach(([fk,f])=>{
     const fn=factorStyles[fk].label;
-    html+=`<div class="bg-gray-800 border border-gray-700 rounded-lg p-3 mb-3 shadow-sm hover:shadow-md transition-shadow mx-auto max-w-full font-bold">
+    html+=`<div class="bg-gray-800 border border-gray-700 rounded-lg p-3 mb-3 shadow-sm hover:shadow-md transition-shadow mx-auto max-w-full font-bold" style="width:100%;">
   <div class="font-bold text-sm text-white mb-2 flex items-center justify-center font-bold">
     <span class="inline-block w-2.5 h-2.5 rounded-full ${factorStyles[fk].className.split(' ')[0]} mr-1.5 font-bold"></span>
     【${fn}】（${f.length}項）
   </div>
-  <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2 font-bold">`;
+  <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2 font-bold" style="width:100%;">`;
     f.forEach((i,idx)=>{
       let severityClass = '';
       if(i.severity.includes('中度')) severityClass = 'bg-yellow-900/30 text-yellow-400 font-bold';
       else if(i.severity.includes('重度')) severityClass = 'bg-red-900/30 text-red-400 font-bold';
       else severityClass = 'bg-gray-700 text-gray-300 font-bold';
-      // 修改：持續時間文字颜色改为亮色系（text-gray-200）
-      html+=`<div class="p-2 bg-gray-700 rounded-lg border border-gray-600 font-bold">
+      html+=`<div class="p-2 bg-gray-700 rounded-lg border border-gray-600 font-bold" style="width:100%;">
         <div class="font-bold text-[11px] text-white font-bold">${idx+1}. ${i.name}</div>
         <div class="flex justify-between mt-1 text-[9px] font-bold font-bold">
           <div class="text-gray-200 font-bold font-bold">⏱️ ${i.duration}</div>
@@ -899,10 +903,10 @@ function renderReportSummary(reportData){
     });
     html+=`</div></div>`;
   });
-  html+=`<div class="mt-4 bg-gray-800 border border-gray-700 rounded-lg p-3 text-sm text-gray-300 font-bold mx-auto max-w-full font-bold">
+  html+=`<div class="mt-4 bg-gray-800 border border-gray-700 rounded-lg p-3 text-sm text-gray-300 font-bold mx-auto max-w-full font-bold" style="width:100%;">
 💡 建議：根據自檢結果關注對應健康問題，必要時諮詢專業醫師
 </div>
-<div class="mt-6 mb-3 flex justify-center px-3 font-bold">
+<div class="mt-6 mb-3 flex justify-center px-3 font-bold" style="width:100%;">
   <button id="native-share-btn" class="w-full sm:w-auto px-5 py-2 bg-[#00C300] text-white rounded-lg font-bold flex items-center justify-center gap-1.5 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 font-bold">
     <i class="fa fa-share-alt font-bold"></i> 分享到LINE
   </button>
