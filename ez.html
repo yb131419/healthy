@@ -723,17 +723,18 @@ margin:0 auto!important;border-radius:0;box-shadow:none;max-width:none;
 <span class="inline-block w-2.5 h-2.5 rounded-full ${factorStyles[fk].className.split(' ')[0]} mr-1.5"></span>
 【${fn}】（${f.length}項）
 </div>
-<div class="grid grid-cols-1 gap-1.5 text-xs">`;
+<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-1.5 text-xs">`;
     f.forEach((i,idx)=>{
-      let severityTextClass = '';
-      if(i.severity.includes('中度')) severityTextClass = 'text-yellow-400 font-medium';
-      else if(i.severity.includes('重度')) severityTextClass = 'text-red-400 font-medium';
-      else severityTextClass = 'text-gray-300';
+      // 根據嚴重程度設置時間和嚴重程度文字顏色
+      let severityClass = '';
+      if(i.severity.includes('中度')) severityClass = 'text-yellow-400 font-medium';
+      else if(i.severity.includes('重度')) severityClass = 'text-red-400 font-medium';
+      else severityClass = 'text-gray-300';
       html+=`<div class="p-1.5 rounded-lg border border-gray-700/50">
 <div class="font-medium text-white text-xs">${idx+1}. ${i.name}</div>
 <div class="flex justify-between mt-0.5 text-xs">
-<div class="text-gray-400">⏱️ ${i.duration}</div>
-<div class="${severityTextClass}">⚠️ ${i.severity}</div>
+<div class="${severityClass}">⏱️ ${i.duration}</div>
+<div class="${severityClass}">⚠️ ${i.severity}</div>
 </div>
 </div>`;
     });
