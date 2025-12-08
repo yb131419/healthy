@@ -605,10 +605,11 @@ async function handleShareButtonClick(e){
         return;
       }
     }
-    // 保存分享按钮原始状态
-    const shareButton = scEl.querySelector('#native-share-btn');
-    const shareBtnOriginalDisplay = shareButton ? shareButton.style.display : 'flex';
-    if(shareButton) shareButton.style.display = 'none';
+    // 隐藏分享按钮区域（只截图到建议部分）
+    const shareBtnArea = scEl.querySelector('.mt-6.mb-3.flex.justify-center.px-3');
+    const shareBtnAreaDisplay = shareBtnArea ? shareBtnArea.style.display : 'flex';
+    if(shareBtnArea) shareBtnArea.style.display = 'none';
+    
     st=window.reportData.summaryText;
     btn.disabled=true;
     btn.innerHTML='<i class="fa fa-spinner fa-spin mr-1"></i> 處理中...';
@@ -628,13 +629,13 @@ async function handleShareButtonClick(e){
     scEl.style.margin='0 auto';
     scEl.style.backgroundColor='#121212';
     scEl.style.padding='1rem';
-    scEl.style.minWidth='1024px'; // 修改：提升至1024px
+    scEl.style.minWidth='1024px';
     scEl.style.maxWidth='100%';
     scEl.style.boxSizing='border-box';
     scEl.style.borderRadius='16px';
     scEl.style.boxShadow='0 4px 20px rgba(0,0,0,0.5)';
     scEl.style.color='#FFFFFF';
-    scEl.style.fontWeight='bold'; // 确保所有文字粗体
+    scEl.style.fontWeight='bold';
     // 生成截图
     canvas=await html2canvas(scEl,{
       scale:2.0,
@@ -642,14 +643,14 @@ async function handleShareButtonClick(e){
       allowTaint:true,
       logging:false,
       backgroundColor:'#121212',
-      width:Math.max(scEl.offsetWidth,1024), // 修改：确保宽度不小于1024px
+      width:Math.max(scEl.offsetWidth,1024),
       height:scEl.offsetHeight,
       dpi:300,
-      windowWidth:Math.max(scEl.offsetWidth,1024), // 修改：窗口宽度最小1024px
+      windowWidth:Math.max(scEl.offsetWidth,1024),
       windowHeight:scEl.offsetHeight
     });
-    // 恢复分享按钮显示
-    if(shareButton) shareButton.style.display = shareBtnOriginalDisplay;
+    // 恢复分享按钮区域显示
+    if(shareBtnArea) shareBtnArea.style.display = shareBtnAreaDisplay;
     // 处理截图数据
     dataUrl=canvas.toDataURL('image/png',0.9);
     fileName=`🧬 彥彬自檢表系統_${new Date().toLocaleDateString()}.png`;
@@ -820,7 +821,7 @@ function renderReportSummary(reportData){
   rs.style.boxShadow='0 4px 20px rgba(0,0,0,0.5)';
   rs.style.margin='0 auto';
   rs.style.width='100%';
-  rs.style.minWidth='1024px'; // 修改：截图容器最小宽度1024px
+  rs.style.minWidth='1024px';
   rs.style.maxWidth='100%';
   sc.style.width='100%';
   sc.style.backgroundColor='#121212';
@@ -830,7 +831,7 @@ function renderReportSummary(reportData){
   sc.style.fontSize='0.9rem';
   sc.style.textAlign='center';
   sc.style.color='#FFFFFF';
-  sc.style.fontWeight='bold'; // 全局粗体
+  sc.style.fontWeight='bold';
   let html=`
 <div class="text-center mb-4 font-bold">
   <h3 class="text-lg md:text-xl font-bold text-white mb-2 font-bold">🧬 彥彬自檢表系統</h3>
@@ -881,18 +882,17 @@ function renderReportSummary(reportData){
     <span class="inline-block w-2.5 h-2.5 rounded-full ${factorStyles[fk].className.split(' ')[0]} mr-1.5 font-bold"></span>
     【${fn}】（${f.length}項）
   </div>
-  <!-- 修改：響應式四列布局 -->
-  <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2 font-bold">`; // 修改：md:grid-cols-4 实现一行四列
+  <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2 font-bold">`;
     f.forEach((i,idx)=>{
       let severityClass = '';
       if(i.severity.includes('中度')) severityClass = 'bg-yellow-900/30 text-yellow-400 font-bold';
       else if(i.severity.includes('重度')) severityClass = 'bg-red-900/30 text-red-400 font-bold';
       else severityClass = 'bg-gray-700 text-gray-300 font-bold';
-      // 确认：症狀名稱11px，時間/嚴重程度9px，全粗體
+      // 修改：持續時間文字颜色改为亮色系（text-gray-200）
       html+=`<div class="p-2 bg-gray-700 rounded-lg border border-gray-600 font-bold">
         <div class="font-bold text-[11px] text-white font-bold">${idx+1}. ${i.name}</div>
         <div class="flex justify-between mt-1 text-[9px] font-bold font-bold">
-          <div class="text-gray-400 font-bold font-bold">⏱️ ${i.duration}</div>
+          <div class="text-gray-200 font-bold font-bold">⏱️ ${i.duration}</div>
           <div class="${severityClass} px-2 py-0.5 rounded text-[9px] font-bold font-bold">⚠️ ${i.severity}</div>
         </div>
       </div>`;
