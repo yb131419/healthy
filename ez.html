@@ -359,7 +359,7 @@ function renderSymptomCards(){
 <div class="flex justify-between items-start mb-1"><label for="symptom-${s.seq}" class="text-gray-200 font-medium cursor-pointer text-sm"><span class="text-primary mr-1 font-semibold">[${s.seq}]</span>${s.symptom}</label></div>
 <div class="flex flex-wrap gap-1 mb-1">${rf.length>0?rf.join(''):'<span class="factor-tag bg-gray-700 text-gray-400">無相關要素</span>'}</div>
 <div class="symptom-details hidden mt-2 pt-2 border-t border-gray-700">
-<div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+<div class="grid grid-cols-2 gap-2">
 <div><label class="block text-xs text-gray-400 mb-1">時間長短</label><select class="duration-select w-full border border-gray-700 rounded-lg px-2 py-1 text-xs input-focus bg-gray-800 text-gray-200">${doh}</select></div>
 <div><label class="block text-xs text-gray-400 mb-1">症狀輕重</label><select class="severity-select w-full border border-gray-700 rounded-lg px-2 py-1 text-xs input-focus bg-gray-800 text-gray-200">${soh}</select><div class="severity-note text-gray-500 text-xs">備注：輕度(不影響生活)、中度(偶爾影響)、重度(明顯影響)</div></div>
 </div></div></div></div>`;
@@ -723,13 +723,13 @@ margin:0 auto!important;border-radius:0;box-shadow:none;max-width:none;
 <span class="inline-block w-2.5 h-2.5 rounded-full ${factorStyles[fk].className.split(' ')[0]} mr-1.5"></span>
 【${fn}】（${f.length}項）
 </div>
-<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-1.5 text-xs">`;
+<div class="grid grid-cols-3 gap-1.5 text-xs">`;
     f.forEach((i,idx)=>{
-      // 根據嚴重程度設置時間和嚴重程度文字顏色
+      // 統一嚴重程度樣式變量
       let severityClass = '';
-      if(i.severity.includes('中度')) severityClass = 'text-yellow-400 font-medium';
+      if(i.severity.includes('輕度')) severityClass = 'text-gray-300';
+      else if(i.severity.includes('中度')) severityClass = 'text-yellow-400 font-medium';
       else if(i.severity.includes('重度')) severityClass = 'text-red-400 font-medium';
-      else severityClass = 'text-gray-300';
       html+=`<div class="p-1.5 rounded-lg border border-gray-700/50">
 <div class="font-medium text-white text-xs">${idx+1}. ${i.name}</div>
 <div class="flex justify-between mt-0.5 text-xs">
