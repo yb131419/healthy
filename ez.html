@@ -525,22 +525,21 @@ async function handleShareButtonClick(e){
         document.head.appendChild(script);
       });
     }
+    // 核心修改：设置9:16比例（手机竖屏）
+    const targetRatio = 9/16; // 9:16竖屏比例
     const screenWidth = window.innerWidth;
-    // ✅ 可调整：修改此处的width/height/padding等样式，解决图片比例/长度问题
+    const targetWidth = screenWidth;
+    const targetHeight = targetWidth / targetRatio; // 按9:16计算高度
+    // 调整容器样式适配9:16
     scEl.style.cssText = `
-text-align:center;margin:0 auto!important;background-color:#121212;padding:0.8rem;width:${screenWidth*0.9}px;height:auto; // 限制宽度为屏幕90%
-box-sizing:border-box;color:#FFFFFF;border-radius:0;box-shadow:none;max-width:600px;display:block; // 最大宽度600px，避免过宽
+text-align:center;margin:0 auto!important;background-color:#121212;padding:1rem;width:${targetWidth}px;height:${targetHeight}px;
+box-sizing:border-box;color:#FFFFFF;border-radius:0;box-shadow:none;max-width:none;display:block;overflow-y:auto;
 `;
-    // ✅ 可调整：修改scale（缩放比例）、width/height，解决图片尺寸/比例问题
+    // 生成9:16比例的canvas
     const canvas=await html2canvas(scEl,{
-      scale:2.5, // 降低缩放比例，减少图片长度（原4.5）
-      useCORS:true,allowTaint:true,logging:false,
-      backgroundColor:'#121212',
-      width:Math.min(screenWidth*0.9,600), // 画布宽度限制
-      height:scEl.offsetHeight,
-      dpi:150, // 降低dpi，减少图片大小（原300）
-      windowWidth:Math.min(screenWidth*0.9,600),
-      windowHeight:scEl.offsetHeight
+      scale:4.5,useCORS:true,allowTaint:true,logging:false,
+      backgroundColor:'#121212',width:targetWidth,height:targetHeight,
+      dpi:300,windowWidth:targetWidth,windowHeight:targetHeight
     });
     shareButton&&(shareButton.style.display=shareBtnStyle.display,shareButton.className=shareBtnStyle.className);
     let dataUrl=canvas.toDataURL('image/png',0.9);
@@ -677,19 +676,19 @@ width:100%;max-width:none;text-align:center;
 `;
   sc.style.cssText = `
 width:100%;background-color:#121212;padding:1rem;box-sizing:border-box;
-line-height:1.4;font-size:0.85rem;text-align:center!important;color:#FFFFFF; // 缩小字体（原0.9rem）
+line-height:1.4;font-size:0.9rem;text-align:center!important;color:#FFFFFF;
 margin:0 auto!important;border-radius:0;box-shadow:none;max-width:none;
 `;
   let html=`
-<div class="text-center mb-3">
+<div class="text-center mb-4">
 <h3 class="text-lg md:text-xl font-bold text-white mb-2">🧬 彥彬自檢表系統</h3>
 <div class="text-xs text-gray-400">${formattedUserInfo.提交時間}</div>
 </div>
-<div class="bg-gray-800 rounded-lg p-3 mb-3 mx-auto max-w-full border border-gray-700">
+<div class="bg-gray-800 rounded-lg p-3 mb-4 mx-auto max-w-full border border-gray-700">
 <div class="text-base font-semibold text-white mb-2 flex items-center justify-center">
 <i class="fa fa-user-circle text-primary mr-2 text-sm"></i>基本資料
 </div>
-<div class="grid grid-cols-2 gap-x-2 gap-y-1 text-sm text-gray-200">`; // 缩小网格间距（原gap-x-3）
+<div class="grid grid-cols-2 gap-x-3 gap-y-1 text-sm text-gray-200">`;
   const infoEntries=Object.entries(formattedUserInfo);
   infoEntries.forEach(([k,v])=>{
     if(k!=='提交時間'){
@@ -701,7 +700,7 @@ margin:0 auto!important;border-radius:0;box-shadow:none;max-width:none;
     }
   });
   html+=`</div></div>
-<div class="mb-3">
+<div class="mb-4">
 <div class="text-base font-semibold text-white flex items-center justify-center mb-2">
 <i class="fa fa-chart-pie text-primary mr-2 text-sm"></i>統計資訊
 </div>
@@ -720,36 +719,36 @@ margin:0 auto!important;border-radius:0;box-shadow:none;max-width:none;
     }
   }
   html+=`</div>
-<div class="text-base font-semibold text-white mb-2 flex items-center justify-center">
+<div class="text-base font-semibold text-white mb-3 flex items-center justify-center">
 <i class="fa fa-heartbeat text-primary mr-2 text-sm"></i>七大健康要素評估
 </div>`;
   Object.entries(factorSymptoms).forEach(([fk,f])=>{
     const fn=factorStyles[fk].label;
-    html+=`<div class="bg-gray-800 border border-gray-700 rounded-lg p-2 mb-2 shadow-sm hover:shadow-md transition-shadow mx-auto max-w-full"> // 缩小内边距（原p-3 mb-3）
-<div class="font-semibold text-sm text-white mb-1 flex items-center justify-center"> // 缩小间距（原mb-2）
+    html+=`<div class="bg-gray-800 border border-gray-700 rounded-lg p-3 mb-3 shadow-sm hover:shadow-md transition-shadow mx-auto max-w-full">
+<div class="font-semibold text-sm text-white mb-2 flex items-center justify-center">
 <span class="inline-block w-2.5 h-2.5 rounded-full ${factorStyles[fk].className.split(' ')[0]} mr-1.5"></span>
 【${fn}】（${f.length}項）
 </div>
-<div class="grid grid-cols-2 gap-1 text-sm">`; // ✅ 可调整：修改grid-cols-2（原4），解决文字排版错乱
+<div class="grid grid-cols-4 gap-2 text-sm">`;
     f.forEach((i,idx)=>{
       let severityClass = '';
       if(i.severity.includes('中度')) severityClass = 'bg-yellow-900/30 text-yellow-400';
       else if(i.severity.includes('重度')) severityClass = 'bg-red-900/30 text-red-400';
       else severityClass = 'bg-gray-700 text-gray-300';
-      html+=`<div class="p-1.5 bg-gray-700 rounded-lg border border-gray-600"> // 缩小内边距（原p-2）
+      html+=`<div class="p-2 bg-gray-700 rounded-lg border border-gray-600">
 <div class="font-medium text-white text-sm">${idx+1}. ${i.name}</div>
 <div class="flex justify-between mt-1">
 <div class="text-gray-400 text-[9px] text-shadow-glow" style="text-shadow: 0 0 3px #00C300;">⏱️ ${i.duration}</div>
-<div class="${severityClass} px-1.5 py-0.5 rounded text-[8px]">⚠️ ${i.severity}</div> // 缩小内边距（原px-2）
+<div class="${severityClass} px-2 py-0.5 rounded text-[8px]">⚠️ ${i.severity}</div>
 </div>
 </div>`;
     });
     html+=`</div></div>`;
   });
-  html+=`<div class="mt-3 bg-gray-800 border border-gray-700 rounded-lg p-2 text-sm text-gray-300 font-bold mx-auto max-w-full"> // 缩小间距和内边距
+  html+=`<div class="mt-4 bg-gray-800 border border-gray-700 rounded-lg p-3 text-sm text-gray-300 font-bold mx-auto max-w-full">
 💡 建議：根據自檢結果關注對應健康問題，必要時諮詢專業醫師
 </div>
-<div class="mt-4 mb-2 flex justify-center px-3"> // 缩小间距
+<div class="mt-6 mb-3 flex justify-center px-3">
   <button id="native-share-btn" class="w-full sm:w-auto px-5 py-2 bg-[#00C300] text-white rounded-lg font-medium flex items-center justify-center gap-1.5 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0">
     <i class="fa fa-share-alt"></i> 分享到LINE
   </button>
