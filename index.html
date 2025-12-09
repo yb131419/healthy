@@ -290,7 +290,7 @@ const fullSymptomData=[
   {seq:67,symptom:"夜尿多",氣血:"○",循環:"○",毒素:"",血脂:"○",寒濕:"○",免疫:"",情緒:""},
   {seq:68,symptom:"便秘",氣血:"○",循環:"○",毒素:"○",血脂:"○",寒濕:"○",免疫:"",情緒:"○"},
   {seq:69,symptom:"大便不成形",氣血:"",循環:"",毒素:"",血脂:"○",寒濕:"○",免疫:"",情緒:"○"},
-  {seq:70,symptom:"便溏不淨",氣血:"",循環:"",毒素:"",血脂:"○",寒濕:"○",免疫:"",情緒:""},
+  {seq:70,symptom:"便溏不淨",氣血:"",循環:"",毒素:"",血脂:"○",寒濕:"○",免疫:"",情緒:"○"},
   {seq:71,symptom:"經期頭痛",氣血:"○",循環:"",毒素:"○",血脂:"",寒濕:"○",免疫:"○",情緒:"○"},
   {seq:72,symptom:"月經量少",氣血:"○",循環:"○",毒素:"",血脂:"",寒濕:"○",免疫:"",情緒:"○"},
   {seq:73,symptom:"經期時長",氣血:"○",循環:"○",毒素:"○",血脂:"○",寒濕:"○",免疫:"",情緒:"○"},
@@ -370,9 +370,9 @@ function renderSymptomCards(){
     <div class="flex justify-between items-start mb-1"><label for="symptom-${symptom.seq}" class="text-gray-200 font-medium cursor-pointer text-sm"><span class="text-primary mr-1 font-semibold">[${symptom.seq}]</span>${symptom.symptom}</label></div>
     <div class="flex flex-wrap gap-1 mb-1">${factors.length>0?factors.join(''):'<span class="factor-tag bg-gray-700 text-gray-400">無相關要素</span>'}</div>
     <div class="symptom-details hidden mt-2 pt-2 border-t border-gray-700">
-      <div class="flex flex-wrap gap-3 items-end">
-        <div class="flex-1 min-w-[120px]"><label class="block text-xs text-gray-400 mb-1">時間長短</label><select class="duration-select w-full border border-gray-700 rounded-lg px-2 py-1 text-xs input-focus bg-gray-800 text-gray-200">${durationHtml}</select></div>
-        <div class="flex-1 min-w-[120px]"><label class="block text-xs text-gray-400 mb-1">症狀輕重</label><select class="severity-select w-full border border-gray-700 rounded-lg px-2 py-1 text-xs input-focus bg-gray-800 text-gray-200">${severityHtml}</select><div class="severity-note text-gray-500 text-[8px] mt-1">輕度(不影響)、中度(偶爾)、重度(明顯)</div></div>
+      <div class="flex flex-row gap-2 items-center w-full">
+        <div class="flex-1 min-w-[100px]"><label class="block text-xs text-gray-400 mb-1">時間長短</label><select class="duration-select w-full border border-gray-700 rounded-lg px-2 py-1 text-xs input-focus bg-gray-800 text-gray-200">${durationHtml}</select></div>
+        <div class="flex-1 min-w-[100px]"><label class="block text-xs text-gray-400 mb-1">症狀輕重</label><select class="severity-select w-full border border-gray-700 rounded-lg px-2 py-1 text-xs input-focus bg-gray-800 text-gray-200">${severityHtml}</select><div class="severity-note text-gray-500 text-[8px] mt-1">輕度(不影響)、中度(偶爾)、重度(明顯)</div></div>
       </div>
     </div>
   </div>
@@ -777,7 +777,7 @@ function renderReportSummary(reportData){
         <span class="inline-block w-2.5 h-2.5 rounded-full ${factorStyle.cls.split(' ')[0]} mr-1.5"></span>
         【${factorStyle.label}】（${symptoms.length}項）
       </div>
-      <div class="grid grid-cols-4 sm:grid-cols-4 md:grid-cols-4 lg:grid-cols-4 gap-1.5 text-sm">`; // 核心修改：强制所有设备四列
+      <div class="grid grid-cols-4 gap-1.5 text-sm">`;
     symptoms.forEach((item,idx)=>{
       let severityClass=STYLES.severity.mild;
       if(item.severity.includes('中度'))severityClass=STYLES.severity.moderate;
