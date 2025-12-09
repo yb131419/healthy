@@ -525,21 +525,18 @@ async function handleShareButtonClick(e){
         document.head.appendChild(script);
       });
     }
-    // 核心修改：设置9:16比例（手机竖屏）
-    const targetRatio = 9/16; // 9:16竖屏比例
-    const screenWidth = window.innerWidth;
-    const targetWidth = screenWidth;
-    const targetHeight = targetWidth / targetRatio; // 按9:16计算高度
-    // 调整容器样式适配9:16
+    // 修复截图裁切问题：自适应内容尺寸，确保完整渲染
     scEl.style.cssText = `
-text-align:center;margin:0 auto!important;background-color:#121212;padding:1rem;width:${targetWidth}px;height:${targetHeight}px;
-box-sizing:border-box;color:#FFFFFF;border-radius:0;box-shadow:none;max-width:none;display:block;overflow-y:auto;
+text-align:center;margin:0 auto!important;background-color:#121212;padding:1rem;box-sizing:border-box;color:#FFFFFF;border-radius:0;box-shadow:none;max-width:none;display:block;overflow:visible;
 `;
-    // 生成9:16比例的canvas
+    // 获取内容实际尺寸
+    const contentWidth = scEl.offsetWidth;
+    const contentHeight = scEl.offsetHeight;
+    // 生成完整的canvas（关键修复：移除固定尺寸，增加scrollX/Y确保完整渲染）
     const canvas=await html2canvas(scEl,{
       scale:4.5,useCORS:true,allowTaint:true,logging:false,
-      backgroundColor:'#121212',width:targetWidth,height:targetHeight,
-      dpi:300,windowWidth:targetWidth,windowHeight:targetHeight
+      backgroundColor:'#121212',scrollX:0,scrollY:0,
+      width:contentWidth,height:contentHeight,dpi:300
     });
     shareButton&&(shareButton.style.display=shareBtnStyle.display,shareButton.className=shareBtnStyle.className);
     let dataUrl=canvas.toDataURL('image/png',0.9);
@@ -677,7 +674,7 @@ width:100%;max-width:none;text-align:center;
   sc.style.cssText = `
 width:100%;background-color:#121212;padding:1rem;box-sizing:border-box;
 line-height:1.4;font-size:0.9rem;text-align:center!important;color:#FFFFFF;
-margin:0 auto!important;border-radius:0;box-shadow:none;max-width:none;
+margin:0 auto!important;border-radius:0;box-shadow:none;max-width:none;overflow:visible;
 `;
   let html=`
 <div class="text-center mb-4">
