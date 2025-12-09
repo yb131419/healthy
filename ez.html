@@ -351,8 +351,7 @@ function renderSymptomCards(){
       const rf=[],doh=durationOptions.map(o=>`<option value="${o.value}">${o.label}</option>`).join(''),soh=severityOptions.map(o=>`<option value="${o.value}">${o.label}</option>`).join('');
       Object.entries(factorStyles).forEach(([k,st])=>s[k]==="○"&&rf.push(`<span class="factor-tag ${st.className}">${st.label}</span>`));
       const cd=document.createElement('div');
-      // 修改：症状卡片内边距 p-2 → p-2.5
-      cd.className='symptom-card bg-gray-800 border border-gray-700 rounded-xl p-2.5 shadow-sm card-hover';
+      cd.className='symptom-card bg-gray-800 border border-gray-700 rounded-xl p-2.5 shadow-sm card-hover w-full';
       cd.dataset.seq=s.seq;
       cd.dataset.factors=Object.entries(factorStyles).filter(([k])=>s[k]==="○").map(([k])=>k).join(',');
       cd.style.opacity='0';
@@ -360,14 +359,13 @@ function renderSymptomCards(){
       cd.style.transition='all 0.3s cubic-bezier(0.34,1.56,0.64,1)';
       cd.style.transitionDelay=`${i*15}ms`;
       cd.innerHTML=`
-<div class="flex items-start gap-2">
+<div class="flex items-start gap-2 w-full">
   <div class="flex-shrink-0 mt-1"><input type="checkbox" id="symptom-${s.seq}" class="symptom-checkbox h-4 w-4 text-primary rounded border-gray-600 input-focus" data-seq="${s.seq}"></div>
-  <div class="flex-1">
-    <!-- 修改：移除 justify-between，改为 flex gap-1；文字大小 text-sm → text-xs -->
-    <div class="flex items-start mb-1 gap-1"><label for="symptom-${s.seq}" class="text-gray-200 font-medium cursor-pointer text-xs"><span class="text-primary mr-1 font-semibold">[${s.seq}]</span>${s.symptom}</label></div>
-    <div class="flex flex-wrap gap-1 mb-1">${rf.length>0?rf.join(''):'<span class="factor-tag bg-gray-700 text-gray-400">無相關要素</span>'}</div>
-    <div class="symptom-details hidden mt-2 pt-2 border-t border-gray-700">
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+  <div class="flex-1 w-full">
+    <div class="flex items-start mb-1 gap-1 w-full"><label for="symptom-${s.seq}" class="text-gray-200 font-medium cursor-pointer text-xs whitespace-nowrap overflow-hidden text-ellipsis w-full"><span class="text-primary mr-1 font-semibold">[${s.seq}]</span>${s.symptom}</label></div>
+    <div class="flex flex-wrap gap-1 mb-1 w-full">${rf.length>0?rf.join(''):'<span class="factor-tag bg-gray-700 text-gray-400">無相關要素</span>'}</div>
+    <div class="symptom-details hidden mt-2 pt-2 border-t border-gray-700 w-full">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3 w-full">
         <div><label class="block text-xs text-gray-400 mb-1">時間長短</label><select class="duration-select w-full border border-gray-700 rounded-lg px-2 py-1 text-xs input-focus bg-gray-800 text-gray-200">${doh}</select></div>
         <div><label class="block text-xs text-gray-400 mb-1">症狀輕重</label><select class="severity-select w-full border border-gray-700 rounded-lg px-2 py-1 text-xs input-focus bg-gray-800 text-gray-200">${soh}</select><div class="severity-note text-gray-500 text-xs">備注：輕度(不影響生活)、中度(偶爾影響)、重度(明顯影響)</div></div>
       </div>
@@ -486,7 +484,7 @@ function initControlButtons(){
     const buttons = document.querySelectorAll('button');
     buttons.forEach(btn => {
       if(!btn.classList.contains('custom-styled')) {
-        btn.classList.add('custom-styled', 'px-6', 'py-2.5', 'rounded-lg', 'font-medium', 'transition-all', 'duration-300', 'shadow-sm', 'hover:shadow-md', 'transform', 'hover:-translate-y-0.5', 'active:translate-y-0');
+        btn.classList.add('custom-styled', 'px-6', 'py-2.5', 'rounded-lg', 'font-medium', 'transition-all', 'duration-300', 'shadow-sm', 'hover:shadow-md', 'transform', 'hover:-translate-y-0.5', 'active:translate-y-0', 'w-full');
         btn.classList.remove('px-8', 'py-3');
       }
     });
@@ -609,7 +607,7 @@ async function handleShareButtonClick(e){
     }
     const screenWidth = window.innerWidth;
     scEl.style.cssText = `
-text-align:center;margin:0 auto!important;background-color:#121212;padding:1rem;width:100vw;height:auto;
+text-align:center;margin:0 auto!important;background-color:#121212;padding:1rem;width:100%;height:auto;
 box-sizing:border-box;color:#FFFFFF;border-radius:0;box-shadow:none;max-width:none;display:block;
 `;
     const canvas=await html2canvas(scEl,{
@@ -787,7 +785,7 @@ line-height:1.4;font-size:0.9rem;text-align:center!important;color:#FFFFFF;
 margin:0 auto!important;border-radius:0;box-shadow:none;max-width:none;
 `;
   let html=`
-<div class="text-center mb-4">
+<div class="text-center mb-4 w-full">
   <h3 class="text-lg md:text-xl font-bold text-white mb-2">🧬 彥彬自檢表系統</h3>
   <div class="text-xs text-gray-400">${formattedUserInfo.提交時間}</div>
 </div>
@@ -795,12 +793,12 @@ margin:0 auto!important;border-radius:0;box-shadow:none;max-width:none;
   <div class="text-base font-semibold text-white mb-2 flex items-center justify-center">
     <i class="fa fa-user-circle text-primary mr-2 text-sm"></i>基本資料
   </div>
-  <div class="grid grid-cols-2 gap-x-3 gap-y-1 text-sm text-gray-200">`;
+  <div class="grid grid-cols-2 gap-x-3 gap-y-1 text-sm text-gray-200 w-full">`;
   const infoEntries=Object.entries(formattedUserInfo);
   infoEntries.forEach(([k,v])=>{
     if(k!=='提交時間'){
       const label=k==='血糖'?'血糖':k;
-      html+=`<div class="flex gap-1">
+      html+=`<div class="flex gap-1 w-full">
         <span class="text-gray-400 font-medium">${label}：</span>
         <span class="text-white">${v}</span>
       </div>`;
@@ -808,7 +806,7 @@ margin:0 auto!important;border-radius:0;box-shadow:none;max-width:none;
   });
   html+=`</div>
 </div>
-<div class="mb-4">
+<div class="mb-4 w-full">
   <div class="text-base font-semibold text-white flex items-center justify-center mb-2">
     <i class="fa fa-chart-pie text-primary mr-2 text-sm"></i>統計資訊
   </div>
@@ -827,28 +825,27 @@ margin:0 auto!important;border-radius:0;box-shadow:none;max-width:none;
     }
   }
   html+=`</div>
-<div class="text-base font-semibold text-white mb-3 flex items-center justify-center">
+<div class="text-base font-semibold text-white mb-3 flex items-center justify-center w-full">
   <i class="fa fa-heartbeat text-primary mr-2 text-sm"></i>七大健康要素評估
 </div>`;
   Object.entries(factorSymptoms).forEach(([fk,f])=>{
     const fn=factorStyles[fk].label;
-    // 修改：症状列表 grid-cols-3 → grid-cols-5；gap-1 → gap-3
-    html+=`<div class="bg-gray-800 border border-gray-700 rounded-lg p-3 mb-3 shadow-sm hover:shadow-md transition-shadow mx-auto w-full">
-      <div class="font-semibold text-sm text-white mb-2 flex items-center justify-center">
+    html+=`<div class="bg-gray-800 border border-gray-700 rounded-lg p-2 mb-3 shadow-sm hover:shadow-md transition-shadow mx-auto w-full">
+      <div class="font-semibold text-sm text-white mb-2 flex items-center justify-center w-full">
         <span class="inline-block w-2.5 h-2.5 rounded-full ${factorStyles[fk].className.split(' ')[0]} mr-1.5"></span>
         【${fn}】（${f.length}項）
       </div>
-      <div class="grid grid-cols-5 gap-3 text-xs">`;
+      <div class="grid grid-cols-5 gap-1 text-xs w-full">`;
     f.forEach((i,idx)=>{
       let severityClass = '';
       if(i.severity.includes('中度')) severityClass = 'bg-yellow-900/30 text-yellow-400';
       else if(i.severity.includes('重度')) severityClass = 'bg-red-900/30 text-red-400';
       else severityClass = 'bg-gray-700 text-gray-300';
-      html+=`<div class="p-1.5 bg-gray-700 rounded-lg border border-gray-600">
-        <div class="font-medium text-white text-xs">${idx+1}. ${i.name}</div>
-        <div class="flex gap-1 mt-1 text-xs">
-          <div class="text-gray-400">⏱️ ${i.duration}</div>
-          <div class="${severityClass} px-2 py-0.5 rounded text-xs">⚠️ ${i.severity}</div>
+      html+=`<div class="p-1 bg-gray-700 rounded-lg border border-gray-600 w-full whitespace-nowrap overflow-hidden text-ellipsis">
+        <div class="font-medium text-white text-xs whitespace-nowrap overflow-hidden text-ellipsis">${idx+1}. ${i.name}</div>
+        <div class="flex gap-0.5 mt-0.5 text-xs w-full items-center">
+          <div class="text-gray-400 whitespace-nowrap text-[10px]">⏱️${i.duration}</div>
+          <div class="${severityClass} px-1 py-0.5 rounded text-[10px] whitespace-nowrap">⚠️${i.severity.replace('（不影響生活）','').replace('（偶爾影響）','').replace('（明顯影響）','')}</div>
         </div>
       </div>`;
     });
@@ -858,7 +855,7 @@ margin:0 auto!important;border-radius:0;box-shadow:none;max-width:none;
   html+=`<div class="mt-4 bg-gray-800 border border-gray-700 rounded-lg p-3 text-sm text-gray-300 font-bold mx-auto w-full">
   💡 建議：根據自檢結果關注對應健康問題，必要時諮詢專業醫師
 </div>
-<div class="mt-6 mb-3 flex justify-center px-3">
+<div class="mt-6 mb-3 flex justify-center px-3 w-full">
   <button id="native-share-btn" class="w-full sm:w-auto px-5 py-2 bg-[#00C300] text-white rounded-lg font-medium flex items-center justify-center gap-1.5 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0">
     <i class="fa fa-share-alt"></i> 分享到LINE
   </button>
