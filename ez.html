@@ -196,14 +196,25 @@ const LIFF_ID="2008578880-NznKeG2a";
 const GAS_URL="https://script.google.com/macros/s/AKfycbykBtM2_PM7IZ-ZUU4tgTqVa1xGhVQFaZ523FXc4ivdLz_GZ09sdmL6s5zk7SdloFuG/exec";
 const JSONP_TIMEOUT=12000;
 const PERMANENT_EXPIRY_DATE="9999/12/31";
-const factorStyles={
-  氣血:{className:'bg-blue-500/20 text-blue-400',label:'氣血'},
-  循環:{className:'bg-green-500/20 text-green-400',label:'循環'},
-  毒素:{className:'bg-yellow-500/20 text-yellow-400',label:'毒素'},
-  血脂:{className:'bg-orange-500/20 text-orange-400',label:'血脂'},
-  寒濕:{className:'bg-purple-500/20 text-purple-400',label:'寒濕'},
-  免疫:{className:'bg-pink-500/20 text-pink-400',label:'免疫'},
-  情緒:{className:'bg-indigo-500/20 text-indigo-400',label:'情緒'}
+// 合并重复样式常量
+const STYLES = {
+  factor: {
+    氣血:{cls:'bg-blue-500/20 text-blue-400',label:'氣血'},
+    循環:{cls:'bg-green-500/20 text-green-400',label:'循環'},
+    毒素:{cls:'bg-yellow-500/20 text-yellow-400',label:'毒素'},
+    血脂:{cls:'bg-orange-500/20 text-orange-400',label:'血脂'},
+    寒濕:{cls:'bg-purple-500/20 text-purple-400',label:'寒濕'},
+    免疫:{cls:'bg-pink-500/20 text-pink-400',label:'免疫'},
+    情緒:{cls:'bg-indigo-500/20 text-indigo-400',label:'情緒'}
+  },
+  button: 'custom-styled px-6 py-2.5 rounded-lg font-medium transition-all duration-300 shadow-sm hover:shadow-md transform hover:-translate-y-0.5 active:translate-y-0',
+  card: 'symptom-card bg-gray-800 border border-gray-700 rounded-xl p-2 shadow-sm card-hover',
+  severity: {
+    mild: 'bg-gray-700 text-gray-300',
+    moderate: 'bg-yellow-900/30 text-yellow-400',
+    severe: 'bg-red-900/30 text-red-400'
+  },
+  summaryContainer: 'width:100%;background-color:#121212;padding:1rem;box-sizing:border-box;line-height:1.4;font-size:0.9rem;text-align:center!important;color:#FFFFFF;margin:0 auto!important;border-radius:0;box-shadow:none;max-width:none;overflow:visible;'
 };
 const durationOptions=[
   {value:'',label:'請選擇時間'},{value:'1w',label:'1周內'},{value:'1-3m',label:'1-3個月'},
@@ -311,157 +322,265 @@ const fullSymptomData=[
   {seq:94,symptom:"黑痣變大變多",氣血:"",循環:"",毒素:"○",血脂:"",寒濕:"",免疫:"○",情緒:""},
   {seq:95,symptom:"形體消瘦",氣血:"○",循環:"",毒素:"",血脂:"",寒濕:"",免疫:"○",情緒:"○"}
 ];
-const setStatus=text=>{const e=document.getElementById('status-text');e&&(e.textContent=text);};
-const showError=msg=>{
-  document.getElementById('status').classList.add('hidden');
-  document.getElementById('result-card').classList.add('hidden');
-  document.getElementById('user-info-section').classList.add('hidden');
-  document.getElementById('checklist-section').classList.add('hidden');
-  const e=document.getElementById('error-message'),c=document.getElementById('error-content');
-  e&&c&&(c.innerHTML=`<p class="font-medium">${msg}</p><div class="mt-3 flex justify-center"><button onclick="window.location.reload()" class="text-primary hover:text-[#007A69] font-medium flex items-center gap-1"><i class="fa fa-refresh"></i> 重新嘗試</button></div>`,e.classList.remove('hidden'));
+
+// 简化状态设置函数
+const setStatus = text => {
+  const el = document.getElementById('status-text');
+  el && (el.textContent = text);
 };
-const calculateRemainingDaysByDate=expiryDateStr=>{
-  try{
-    if(expiryDateStr===PERMANENT_EXPIRY_DATE)return{displayDate:"永久有效",remainingDays:"永久有效"};
-    const r=/^\d{4}[-\/]\d{2}[-\/]\d{2}$/;
-    if(!r.test(expiryDateStr))return{displayDate:"格式錯誤",remainingDays:"格式錯誤"};
-    const d=expiryDateStr.replace(/-/g,'/').split('/').map(Number),ed=new Date(Date.UTC(d[0],d[1]-1,d[2])),td=new Date(),tutc=new Date(Date.UTC(td.getFullYear(),td.getMonth(),td.getDate()));
-    if(isNaN(ed.getTime()))return{displayDate:"日期無效",remainingDays:"日期無效"};
-    const tdiff=ed-tutc,rd=Math.ceil(tdiff/(1000*3600*24)),fd=`${d[0]}/${String(d[1]).padStart(2,'0')}/${String(d[2]).padStart(2,'0')}`;
-    let rt;
-    if(rd<0)rt="<span class='text-red-500 font-medium'>已過期</span>";
-    else if(rd===0)rt="<span class='text-orange-500 font-medium'>最後1天</span>";
-    else if(rd<=30)rt=`<span class='text-orange-500 font-medium'>${rd} 天</span>`;
-    else rt=`${rd} 天`;
-    return{displayDate:fd,remainingDays:rt};
-  }catch(e){console.error("計算剩餘天數失敗：",e,expiryDateStr);return{displayDate:"計算錯誤",remainingDays:"計算錯誤"}};
+
+// 简化错误显示函数
+const showError = msg => {
+  ['status','result-card','user-info-section','checklist-section'].forEach(id => {
+    document.getElementById(id)?.classList.add('hidden');
+  });
+  const errEl = document.getElementById('error-message'), errContent = document.getElementById('error-content');
+  if (errEl && errContent) {
+    errContent.innerHTML = `<p class="font-medium">${msg}</p><div class="mt-3 flex justify-center"><button onclick="window.location.reload()" class="text-primary hover:text-[#007A69] font-medium flex items-center gap-1"><i class="fa fa-refresh"></i> 重新嘗試</button></div>`;
+    errEl.classList.remove('hidden');
+  }
 };
-function renderSymptomCards(){
-  try{
-    const c=document.getElementById('symptoms-container');
-    if(!c)return false;
-    c.innerHTML='';
-    fullSymptomData.forEach((s,i)=>{
-      const rf=[],doh=durationOptions.map(o=>`<option value="${o.value}">${o.label}</option>`).join(''),soh=severityOptions.map(o=>`<option value="${o.value}">${o.label}</option>`).join('');
-      Object.entries(factorStyles).forEach(([k,st])=>s[k]==="○"&&rf.push(`<span class="factor-tag ${st.className}">${st.label}</span>`));
-      const cd=document.createElement('div');
-      cd.className='symptom-card bg-gray-800 border border-gray-700 rounded-xl p-2 shadow-sm card-hover';
-      cd.dataset.seq=s.seq;
-      cd.dataset.factors=Object.entries(factorStyles).filter(([k])=>s[k]==="○").map(([k])=>k).join(',');
-      cd.style.opacity='0';
-      cd.style.transform='translateY(20px)';
-      cd.style.transition='all 0.3s cubic-bezier(0.34,1.56,0.64,1)';
-      cd.style.transitionDelay=`${i*15}ms`;
-      cd.innerHTML=`
+
+// 简化日期计算函数（合并重复判断）
+const calculateRemainingDaysByDate = expiryDateStr => {
+  try {
+    if (expiryDateStr === PERMANENT_EXPIRY_DATE) return {displayDate:"永久有效",remainingDays:"永久有效"};
+    const reg = /^\d{4}[-\/]\d{2}[-\/]\d{2}$/;
+    if (!reg.test(expiryDateStr)) return {displayDate:"格式錯誤",remainingDays:"格式錯誤"};
+    
+    const d = expiryDateStr.replace(/-/g,'/').split('/').map(Number);
+    const expiryDate = new Date(Date.UTC(d[0],d[1]-1,d[2])), today = new Date(), todayUTC = new Date(Date.UTC(today.getFullYear(),today.getMonth(),today.getDate()));
+    
+    if (isNaN(expiryDate.getTime())) return {displayDate:"日期無效",remainingDays:"日期無效"};
+    
+    const diff = expiryDate - todayUTC;
+    const remainingDays = Math.ceil(diff/(1000*3600*24));
+    const displayDate = `${d[0]}/${String(d[1]).padStart(2,'0')}/${String(d[2]).padStart(2,'0')}`;
+    let remainingText;
+
+    if (remainingDays < 0) remainingText = "<span class='text-red-500 font-medium'>已過期</span>";
+    else if (remainingDays === 0) remainingText = "<span class='text-orange-500 font-medium'>最後1天</span>";
+    else if (remainingDays <= 30) remainingText = `<span class='text-orange-500 font-medium'>${remainingDays} 天</span>`;
+    else remainingText = `${remainingDays} 天`;
+
+    return {displayDate, remainingDays: remainingText};
+  } catch (e) {
+    console.error("計算剩餘天數失敗：",e,expiryDateStr);
+    return {displayDate:"計算錯誤",remainingDays:"計算錯誤"};
+  }
+};
+
+// 渲染症状卡片（简化DOM操作）
+function renderSymptomCards() {
+  try {
+    const container = document.getElementById('symptoms-container');
+    if (!container) return false;
+    container.innerHTML = '';
+    
+    const durationHtml = durationOptions.map(o => `<option value="${o.value}">${o.label}</option>`).join('');
+    const severityHtml = severityOptions.map(o => `<option value="${o.value}">${o.label}</option>`).join('');
+
+    fullSymptomData.forEach((symptom, idx) => {
+      const factors = [];
+      Object.entries(STYLES.factor).forEach(([key, style]) => {
+        if (symptom[key] === "○") factors.push(`<span class="factor-tag ${style.cls}">${style.label}</span>`);
+      });
+
+      const card = document.createElement('div');
+      card.className = STYLES.card;
+      card.dataset.seq = symptom.seq;
+      card.dataset.factors = Object.entries(STYLES.factor).filter(([k]) => symptom[k]==="○").map(([k])=>k).join(',');
+      card.style.cssText = 'opacity:0;transform:translateY(20px);transition:all 0.3s cubic-bezier(0.34,1.56,0.64,1);transition-delay:' + (idx*15) + 'ms;';
+      
+      card.innerHTML = `
 <div class="flex items-start gap-2">
-<div class="flex-shrink-0 mt-1"><input type="checkbox" id="symptom-${s.seq}" class="symptom-checkbox h-4 w-4 text-primary rounded border-gray-600 input-focus" data-seq="${s.seq}"></div>
-<div class="flex-1">
-<div class="flex justify-between items-start mb-1"><label for="symptom-${s.seq}" class="text-gray-200 font-medium cursor-pointer text-sm"><span class="text-primary mr-1 font-semibold">[${s.seq}]</span>${s.symptom}</label></div>
-<div class="flex flex-wrap gap-1 mb-1">${rf.length>0?rf.join(''):'<span class="factor-tag bg-gray-700 text-gray-400">無相關要素</span>'}</div>
-<div class="symptom-details hidden mt-2 pt-2 border-t border-gray-700">
-<div class="grid grid-cols-1 md:grid-cols-2 gap-2">
-<div><label class="block text-xs text-gray-400 mb-1">時間長短</label><select class="duration-select w-full border border-gray-700 rounded-lg px-2 py-1 text-xs input-focus bg-gray-800 text-gray-200">${doh}</select></div>
-<div><label class="block text-xs text-gray-400 mb-1">症狀輕重</label><select class="severity-select w-full border border-gray-700 rounded-lg px-2 py-1 text-xs input-focus bg-gray-800 text-gray-200">${soh}</select><div class="severity-note text-gray-500 text-xs">備注：輕度(不影響生活)、中度(偶爾影響)、重度(明顯影響)</div></div>
-</div></div></div></div>`;
-      c.appendChild(cd);
-      setTimeout(()=>{cd.style.opacity='1';cd.style.transform='translateY(0)';},50);
+  <div class="flex-shrink-0 mt-1"><input type="checkbox" id="symptom-${symptom.seq}" class="symptom-checkbox h-4 w-4 text-primary rounded border-gray-600 input-focus" data-seq="${symptom.seq}"></div>
+  <div class="flex-1">
+    <div class="flex justify-between items-start mb-1"><label for="symptom-${symptom.seq}" class="text-gray-200 font-medium cursor-pointer text-sm"><span class="text-primary mr-1 font-semibold">[${symptom.seq}]</span>${symptom.symptom}</label></div>
+    <div class="flex flex-wrap gap-1 mb-1">${factors.length>0?factors.join(''):'<span class="factor-tag bg-gray-700 text-gray-400">無相關要素</span>'}</div>
+    <div class="symptom-details hidden mt-2 pt-2 border-t border-gray-700">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+        <div><label class="block text-xs text-gray-400 mb-1">時間長短</label><select class="duration-select w-full border border-gray-700 rounded-lg px-2 py-1 text-xs input-focus bg-gray-800 text-gray-200">${durationHtml}</select></div>
+        <div><label class="block text-xs text-gray-400 mb-1">症狀輕重</label><select class="severity-select w-full border border-gray-700 rounded-lg px-2 py-1 text-xs input-focus bg-gray-800 text-gray-200">${severityHtml}</select><div class="severity-note text-gray-500 text-xs">備注：輕度(不影響生活)、中度(偶爾影響)、重度(明顯影響)</div></div>
+      </div>
+    </div>
+  </div>
+</div>`;
+
+      container.appendChild(card);
+      setTimeout(() => {
+        card.style.opacity = '1';
+        card.style.transform = 'translateY(0)';
+      }, 50);
     });
+
     bindCheckboxEvents();
     return true;
-  }catch(e){console.error("渲染症狀卡片出錯：",e);return false;}
+  } catch (e) {
+    console.error("渲染症狀卡片出錯：",e);
+    return false;
+  }
 }
-function bindCheckboxEvents(){
-  document.querySelectorAll('.symptom-checkbox').forEach(cb=>{
-    cb.addEventListener('change',function(){
-      const cd=this.closest('.symptom-card'),dt=cd.querySelector('.symptom-details');
-      this.checked?(dt.classList.remove('hidden'),cd.classList.add('border-primary/30','bg-gray-700','shadow-md')):(dt.classList.add('hidden'),cd.classList.remove('border-primary/30','bg-gray-700','shadow-md'),cd.querySelector('.duration-select').value='',cd.querySelector('.severity-select').value='');
+
+// 绑定复选框事件（简化逻辑）
+function bindCheckboxEvents() {
+  document.querySelectorAll('.symptom-checkbox').forEach(cb => {
+    cb.addEventListener('change', function() {
+      const card = this.closest('.symptom-card');
+      const details = card.querySelector('.symptom-details');
+      if (this.checked) {
+        details.classList.remove('hidden');
+        card.classList.add('border-primary/30','bg-gray-700','shadow-md');
+      } else {
+        details.classList.add('hidden');
+        card.classList.remove('border-primary/30','bg-gray-700','shadow-md');
+        card.querySelector('.duration-select').value = '';
+        card.querySelector('.severity-select').value = '';
+      }
       updateSelectedCount();
     });
   });
 }
-function updateSelectedCount(){
-  const cnt=document.querySelectorAll('.symptom-checkbox:checked').length;
-  document.getElementById('selected-count').textContent=cnt;
-  return cnt;
+
+// 更新选中数量（简化）
+function updateSelectedCount() {
+  const count = document.querySelectorAll('.symptom-checkbox:checked').length;
+  document.getElementById('selected-count').textContent = count;
+  return count;
 }
-function initFilterButtons(){
-  const fb=document.querySelectorAll('[data-factor], #filter-all');
-  let cf='all',sos=false;
-  fb.forEach(b=>{
-    b.addEventListener('click',function(){
-      fb.forEach(bt=>bt.classList.remove('shadow-md','scale-105'));
+
+// 初始化筛选按钮（简化状态管理）
+function initFilterButtons() {
+  const filterBtns = document.querySelectorAll('[data-factor], #filter-all');
+  let currentFactor = 'all', showOnlySelected = false;
+
+  filterBtns.forEach(btn => {
+    btn.addEventListener('click', function() {
+      filterBtns.forEach(b => b.classList.remove('shadow-md','scale-105'));
       this.classList.add('shadow-md','scale-105');
-      cf=this.id==='filter-all'?'all':this.dataset.factor;
+      currentFactor = this.id === 'filter-all' ? 'all' : this.dataset.factor;
       applyFilters();
     });
   });
-  document.getElementById('filter-selected').addEventListener('click',function(){
-    sos=!sos;
-    if(sos){this.classList.remove('bg-gray-700','hover:bg-gray-600');this.classList.add('bg-red-900/50','hover:bg-red-800/50','shadow-md');this.innerHTML='<i class="fa fa-filter mr-1"></i>顯示全部已勾選';}
-    else{this.classList.remove('bg-red-900/50','hover:bg-red-800/50','shadow-md');this.classList.add('bg-gray-700','hover:bg-gray-600');this.innerHTML='<i class="fa fa-filter mr-1"></i>只看已選';}
+
+  document.getElementById('filter-selected').addEventListener('click', function() {
+    showOnlySelected = !showOnlySelected;
+    this.classList.toggle('bg-red-900/50', showOnlySelected);
+    this.classList.toggle('hover:bg-red-800/50', showOnlySelected);
+    this.classList.toggle('shadow-md', showOnlySelected);
+    this.classList.toggle('bg-gray-700', !showOnlySelected);
+    this.classList.toggle('hover:bg-gray-600', !showOnlySelected);
+    this.innerHTML = showOnlySelected ? '<i class="fa fa-filter mr-1"></i>顯示全部已勾選' : '<i class="fa fa-filter mr-1"></i>只看已選';
     applyFilters();
   });
-  function applyFilters(){
-    document.querySelectorAll('.symptom-card').forEach(cd=>{
-      let ss=true;
-      if(cf!=='all'){const cfs=cd.dataset.factors.split(',');ss=cfs.includes(cf);}
-      if(sos&&ss)ss=cd.querySelector('.symptom-checkbox').checked;
-      if(ss){cd.style.display='block';setTimeout(()=>{cd.style.opacity='1';cd.style.transform='translateY(0)';},10);}
-      else{cd.style.opacity='0';cd.style.transform='translateY(10px)';setTimeout(()=>{cd.style.display='none';},300);}
+
+  // 合并筛选逻辑
+  function applyFilters() {
+    document.querySelectorAll('.symptom-card').forEach(card => {
+      let show = true;
+      if (currentFactor !== 'all') {
+        const cardFactors = card.dataset.factors.split(',');
+        show = cardFactors.includes(currentFactor);
+      }
+      if (showOnlySelected && show) {
+        show = card.querySelector('.symptom-checkbox').checked;
+      }
+      if (show) {
+        card.style.display = 'block';
+        setTimeout(() => {
+          card.style.opacity = '1';
+          card.style.transform = 'translateY(0)';
+        }, 10);
+      } else {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(10px)';
+        setTimeout(() => {
+          card.style.display = 'none';
+        }, 300);
+      }
     });
   }
 }
-function organizeReportData(submitData){
-  const {userBasicInfo,selectedSymptoms,displayName,submitTime}=submitData,fs={氣血:[],循環:[],毒素:[],血脂:[],寒濕:[],免疫:[],情緒:[]};
-  selectedSymptoms.forEach(s=>{
-    const os=fullSymptomData.find(ss=>ss.seq===s.seq);
-    os&&Object.keys(fs).forEach(f=>os[f]==="○"&&fs[f].push({name:s.symptom,duration:s.durationText,severity:s.severityText}));
+
+// 整理报告数据（简化逻辑）
+function organizeReportData(submitData) {
+  const {userBasicInfo,selectedSymptoms,displayName,submitTime} = submitData;
+  const factorSymptoms = {氣血:[],循環:[],毒素:[],血脂:[],寒濕:[],免疫:[],情緒:[]};
+  
+  selectedSymptoms.forEach(s => {
+    const originSymptom = fullSymptomData.find(ss => ss.seq === s.seq);
+    if (originSymptom) {
+      Object.keys(factorSymptoms).forEach(f => {
+        if (originSymptom[f] === "○") {
+          factorSymptoms[f].push({name:s.symptom,duration:s.durationText,severity:s.severityText});
+        }
+      });
+    }
   });
-  const factorCounts = Object.entries(fs).map(([key, list]) => ({name: factorStyles[key].label,count: list.length,key: key})).filter(item => item.count > 0).sort((a, b) => b.count - a.count);
+
+  const factorCounts = Object.entries(factorSymptoms)
+    .map(([key, list]) => ({name: STYLES.factor[key].label, count: list.length, key}))
+    .filter(item => item.count > 0)
+    .sort((a, b) => b.count - a.count);
+  
   const topFactors = factorCounts.slice(0, 2);
-  const ffs=Object.fromEntries(Object.entries(fs).filter(([_,f])=>f.length>0)),fui={
-    姓名:userBasicInfo.name||'未填寫',年齡:userBasicInfo.age?`${userBasicInfo.age}歲`:'未填寫',
+  const filteredFactors = Object.fromEntries(Object.entries(factorSymptoms).filter(([_,f])=>f.length>0));
+  
+  const userInfo = {
+    姓名:userBasicInfo.name||'未填寫',
+    年齡:userBasicInfo.age?`${userBasicInfo.age}歲`:'未填寫',
     性別:userBasicInfo.gender==='male'?'男':userBasicInfo.gender==='female'?'女':'未填寫',
-    身高:userBasicInfo.height?`${userBasicInfo.height}cm`:'未填寫',體重:userBasicInfo.weight?`${userBasicInfo.weight}kg`:'未填寫',
-    血壓:userBasicInfo.bp||'未填寫',血糖:userBasicInfo.glucose?`${userBasicInfo.glucose}%`:'未填寫',
-    職業:userBasicInfo.job||'未填寫',提交時間:new Date(submitTime).toLocaleString('zh-TW',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'})
+    身高:userBasicInfo.height?`${userBasicInfo.height}cm`:'未填寫',
+    體重:userBasicInfo.weight?`${userBasicInfo.weight}kg`:'未填寫',
+    血壓:userBasicInfo.bp||'未填寫',
+    血糖:userBasicInfo.glucose?`${userBasicInfo.glucose}%`:'未填寫',
+    職業:userBasicInfo.job||'未填寫',
+    提交時間:new Date(submitTime).toLocaleString('zh-TW',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'})
   };
+
   const totalSymptomCount = fullSymptomData.length;
   const allSelectedSymptoms = new Set();
-  Object.values(ffs).forEach(factorSymptoms => {
+  Object.values(filteredFactors).forEach(factorSymptoms => {
     factorSymptoms.forEach(symptom => allSelectedSymptoms.add(symptom.name));
   });
   const selectedTotal = allSelectedSymptoms.size;
-  let st=`🧬 彥彬自檢表系統\n
-👤 姓名：${fui.姓名} \n🕶️ 年齡：${fui.年齡}\n
-📊 總選取症狀數：\n${selectedTotal} 項 (共${totalSymptomCount}種症狀)\n
-🎯 調整方向：\n${topFactors.length > 0 ? (topFactors.length === 1 ? `${topFactors[0].name} (${topFactors[0].count}項)` : `${topFactors[0].name} (${topFactors[0].count}項)\n${topFactors[1].name} (${topFactors[1].count}項)`) : '無'}
-`;
-  return {formattedUserInfo:fui,factorSymptoms:ffs,summaryText:st,totalSymptomCount, selectedTotal, topFactors};
+
+  let summaryText = `🧬 彥彬自檢表系統\n👤 姓名：${userInfo.姓名} \n🕶️ 年齡：${userInfo.年齡}\n📊 總選取症狀數：\n${selectedTotal} 項 (共${totalSymptomCount}種症狀)\n🎯 調整方向：\n${topFactors.length > 0 ? (topFactors.length === 1 ? `${topFactors[0].name} (${topFactors[0].count}項)` : `${topFactors[0].name} (${topFactors[0].count}項)\n${topFactors[1].name} (${topFactors[1].count}項)`) : '無'}`;
+
+  return {formattedUserInfo:userInfo,factorSymptoms:filteredFactors,summaryText,totalSymptomCount, selectedTotal, topFactors};
 }
-function initControlButtons(){
+
+// 初始化控制按钮（合并重复样式）
+function initControlButtons() {
+  // 统一按钮样式（合并重复逻辑）
   const styleButtons = () => {
-    const buttons = document.querySelectorAll('button');
-    buttons.forEach(btn => {
-      if(!btn.classList.contains('custom-styled')) {
-        btn.classList.add('custom-styled', 'px-6', 'py-2.5', 'rounded-lg', 'font-medium', 'transition-all', 'duration-300', 'shadow-sm', 'hover:shadow-md', 'transform', 'hover:-translate-y-0.5', 'active:translate-y-0');
+    document.querySelectorAll('button').forEach(btn => {
+      if (!btn.classList.contains('custom-styled')) {
+        btn.classList.add(...STYLES.button.split(' '));
         btn.classList.remove('px-8', 'py-3');
       }
     });
   };
-  document.getElementById('next-to-checklist').addEventListener('click',function(){
-    const n=document.getElementById('user-name').value.trim(),a=document.getElementById('user-age').value.trim(),g=document.getElementById('user-gender').value;
-    if(!n){alert('請輸入姓名');document.getElementById('user-name').focus();return;}
-    if(!a||isNaN(a)||a<0||a>120){alert('請輸入有效年齡');document.getElementById('user-age').focus();return;}
-    if(!g){alert('請選擇性別');document.getElementById('user-gender').focus();return;}
-    window.userBasicInfo={
-      name:n,age:parseInt(a),gender:g,
+
+  // 下一步按钮
+  document.getElementById('next-to-checklist').addEventListener('click', function() {
+    const name = document.getElementById('user-name').value.trim();
+    const age = document.getElementById('user-age').value.trim();
+    const gender = document.getElementById('user-gender').value;
+    
+    if (!name) {alert('請輸入姓名');document.getElementById('user-name').focus();return;}
+    if (!age || isNaN(age) || age < 0 || age > 120) {alert('請輸入有效年齡');document.getElementById('user-age').focus();return;}
+    if (!gender) {alert('請選擇性別');document.getElementById('user-gender').focus();return;}
+
+    window.userBasicInfo = {
+      name,age:parseInt(age),gender,
       height:document.getElementById('user-height').value?parseInt(document.getElementById('user-height').value):null,
       weight:document.getElementById('user-weight').value?parseFloat(document.getElementById('user-weight').value):null,
       bp:document.getElementById('user-bp').value.trim()||null,
       glucose:document.getElementById('user-glucose').value?parseFloat(document.getElementById('user-glucose').value):null,
       job:document.getElementById('user-job').value.trim()||null
     };
+
     document.getElementById('user-info-section').classList.add('hidden');
     document.getElementById('checklist-section').classList.remove('hidden');
     renderSymptomCards();
@@ -469,115 +588,204 @@ function initControlButtons(){
     document.getElementById('checklist-section').scrollIntoView({behavior:'smooth'});
     styleButtons();
   });
-  document.getElementById('back-to-info').addEventListener('click',function(){
+
+  // 返回按钮
+  document.getElementById('back-to-info').addEventListener('click', function() {
     document.getElementById('checklist-section').classList.add('hidden');
     document.getElementById('user-info-section').classList.remove('hidden');
-    if(window.userBasicInfo){
-      document.getElementById('user-name').value=window.userBasicInfo.name||'';
-      document.getElementById('user-age').value=window.userBasicInfo.age||'';
-      document.getElementById('user-gender').value=window.userBasicInfo.gender||'';
-      document.getElementById('user-height').value=window.userBasicInfo.height||'';
-      document.getElementById('user-weight').value=window.userBasicInfo.weight||'';
-      document.getElementById('user-bp').value=window.userBasicInfo.bp||'';
-      document.getElementById('user-glucose').value=window.userBasicInfo.glucose||'';
-      document.getElementById('user-job').value=window.userBasicInfo.job||'';
+    if (window.userBasicInfo) {
+      document.getElementById('user-name').value = window.userBasicInfo.name || '';
+      document.getElementById('user-age').value = window.userBasicInfo.age || '';
+      document.getElementById('user-gender').value = window.userBasicInfo.gender || '';
+      document.getElementById('user-height').value = window.userBasicInfo.height || '';
+      document.getElementById('user-weight').value = window.userBasicInfo.weight || '';
+      document.getElementById('user-bp').value = window.userBasicInfo.bp || '';
+      document.getElementById('user-glucose').value = window.userBasicInfo.glucose || '';
+      document.getElementById('user-job').value = window.userBasicInfo.job || '';
     }
     document.getElementById('user-info-section').scrollIntoView({behavior:'smooth'});
   });
-  document.getElementById('submit-checklist').addEventListener('click',async function(){
-    const btn=this;
-    btn.disabled=true;
-    btn.innerHTML='<i class="fa fa-spinner fa-spin mr-1"></i> 提交中...';
-    const sc=updateSelectedCount();
-    if(sc===0){alert('請至少勾選一個症狀');btn.disabled=false;btn.innerHTML='提交檢查表';return;}
-    let iv=true,fic=null;
-    document.querySelectorAll('.symptom-checkbox:checked').forEach(cb=>{
-      const cd=cb.closest('.symptom-card'),d=cd.querySelector('.duration-select').value,s=cd.querySelector('.severity-select').value;
-      if(!d||!s){iv=false;fic=fic||cd;cd.classList.add('border-red-700');cd.style.transform='scale(1.03)';setTimeout(()=>{cd.classList.remove('border-red-700');cd.style.transform='';},1500);}
+
+  // 提交按钮
+  document.getElementById('submit-checklist').addEventListener('click', async function() {
+    const btn = this;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa fa-spinner fa-spin mr-1"></i> 提交中...';
+    
+    const selectedCount = updateSelectedCount();
+    if (selectedCount === 0) {
+      alert('請至少勾選一個症狀');
+      btn.disabled = false;
+      btn.innerHTML = '提交檢查表';
+      return;
+    }
+
+    let isValid = true, firstInvalidCard = null;
+    document.querySelectorAll('.symptom-checkbox:checked').forEach(cb => {
+      const card = cb.closest('.symptom-card');
+      const duration = card.querySelector('.duration-select').value;
+      const severity = card.querySelector('.severity-select').value;
+      if (!duration || !severity) {
+        isValid = false;
+        firstInvalidCard = firstInvalidCard || card;
+        card.classList.add('border-red-700');
+        card.style.transform = 'scale(1.03)';
+        setTimeout(() => {
+          card.classList.remove('border-red-700');
+          card.style.transform = '';
+        }, 1500);
+      }
     });
-    if(!iv){alert('部分已選症狀未填寫完整資訊，請檢查後再提交');fic&&fic.scrollIntoView({behavior:'smooth',block:'center'});btn.disabled=false;btn.innerHTML='提交檢查表';return;}
-    const sd=await collectSubmitData();
-    submitChecklistData(sd,btn);
+
+    if (!isValid) {
+      alert('部分已選症狀未填寫完整資訊，請檢查後再提交');
+      firstInvalidCard && firstInvalidCard.scrollIntoView({behavior:'smooth',block:'center'});
+      btn.disabled = false;
+      btn.innerHTML = '提交檢查表';
+      return;
+    }
+
+    const submitData = await collectSubmitData();
+    submitChecklistData(submitData, btn);
   });
-  document.addEventListener('click',function(e){
-    if(e.target.closest('#native-share-btn'))handleShareButtonClick(e);
+
+  // 分享按钮点击事件
+  document.addEventListener('click', function(e) {
+    if (e.target.closest('#native-share-btn')) handleShareButtonClick(e);
   });
+
   styleButtons();
 }
-async function handleShareButtonClick(e){
-  e.stopPropagation();e.preventDefault();
-  const btn=e.target.closest('#native-share-btn');
-  try{
-    const scEl=document.getElementById('summary-content')||document.querySelector('#report-summary .summary-content')||document.getElementById('report-summary');
-    if(!scEl){alert('報告內容加載中，請稍候再試');setTimeout(()=>btn.click(),500);return;}
-    const shareButton = scEl.querySelector('#native-share-btn');
-    const shareBtnStyle = shareButton ? {display: shareButton.style.display, className: shareButton.className} : {display: 'flex', className: shareButton?.className};
-    shareButton&&(shareButton.style.display='none');
-    const st=window.reportData.summaryText;
-    btn.disabled=true;
-    btn.innerHTML='<i class="fa fa-spinner fa-spin mr-1"></i> 處理中...';
-    if(!window.html2canvas){
+
+// 处理分享按钮点击（核心修改：16:9截图尺寸）
+async function handleShareButtonClick(e) {
+  e.stopPropagation();
+  e.preventDefault();
+  const btn = e.target.closest('#native-share-btn');
+  
+  try {
+    const summaryEl = document.getElementById('summary-content') || document.querySelector('#report-summary .summary-content') || document.getElementById('report-summary');
+    if (!summaryEl) {
+      alert('報告內容加載中，請稍候再試');
+      setTimeout(() => btn.click(), 500);
+      return;
+    }
+
+    // 保存分享按钮原始样式
+    const shareBtn = summaryEl.querySelector('#native-share-btn');
+    const shareBtnStyle = shareBtn ? {display: shareBtn.style.display, className: shareBtn.className} : {display: 'flex', className: shareBtn?.className};
+    shareBtn && (shareBtn.style.display = 'none');
+
+    const summaryText = window.reportData.summaryText;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa fa-spinner fa-spin mr-1"></i> 處理中...';
+
+    // 加载html2canvas
+    if (!window.html2canvas) {
       alert('正在加載分享所需組件，請稍候...');
-      await new Promise((resolve,reject)=>{
-        const script=document.createElement('script');
-        script.src='https://html2canvas.hertzen.com/dist/html2canvas.min.js';
-        script.onload=resolve;script.onerror=reject;
+      await new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = 'https://html2canvas.hertzen.com/dist/html2canvas.min.js';
+        script.onload = resolve;
+        script.onerror = reject;
         document.head.appendChild(script);
       });
     }
-    // 修复截图裁切问题：自适应内容尺寸，确保完整渲染
-    scEl.style.cssText = `
-text-align:center;margin:0 auto!important;background-color:#121212;padding:1rem;box-sizing:border-box;color:#FFFFFF;border-radius:0;box-shadow:none;max-width:none;display:block;overflow:visible;
-`;
+
+    // 核心修改：设置16:9尺寸的截图容器
+    summaryEl.style.cssText = STYLES.summaryContainer;
+    
     // 获取内容实际尺寸
-    const contentWidth = scEl.offsetWidth;
-    const contentHeight = scEl.offsetHeight;
-    // 生成完整的canvas（关键修复：移除固定尺寸，增加scrollX/Y确保完整渲染）
-    const canvas=await html2canvas(scEl,{
-      scale:4.5,useCORS:true,allowTaint:true,logging:false,
-      backgroundColor:'#121212',scrollX:0,scrollY:0,
-      width:contentWidth,height:contentHeight,dpi:300
-    });
-    shareButton&&(shareButton.style.display=shareBtnStyle.display,shareButton.className=shareBtnStyle.className);
-    let dataUrl=canvas.toDataURL('image/png',0.9);
-    const fileName=`🧬 彥彬自檢表系統_${new Date().toLocaleDateString()}.png`;
-    const imgBlob=await (await fetch(dataUrl)).blob();
-    let file;
-    if(imgBlob.size>5*1024*1024){
-      alert('圖片體積過大，輕微壓縮保持清晰...');
-      dataUrl=canvas.toDataURL('image/png',0.8);
-      const compressedBlob=await (await fetch(dataUrl)).blob();
-      file=new File([compressedBlob],fileName,{type:'image/png'});
-    }else file=new File([imgBlob],fileName,{type:'image/png'});
-    if(navigator.share&&typeof navigator.share==='function'){
-      try{
-        const shareData={title:'🧬 彥彬自檢表系統',files:[file],text:st};
-        const canShare=navigator.canShare?await navigator.canShare(shareData):true;
-        if(canShare){await navigator.share(shareData);alert('分享成功！\n報告已發送到LINE群組/好友');}
-      }catch(err){
-        console.error('LINE分享失敗：',err);
-        if(err.name!=='AbortError')alert(`分享失敗：${err.message||'未知錯誤'}`);
-      }
-    }else{
-      try{await navigator.clipboard.writeText(st);alert('文字已複製到剪貼板，請手動截圖分享');}
-      catch(cbErr){alert('請手動截圖並複製文字分享');}
+    const contentWidth = summaryEl.offsetWidth;
+    const contentHeight = summaryEl.offsetHeight;
+    
+    // 计算16:9的画布尺寸（确保内容完整）
+    const aspectRatio = 16/9;
+    let canvasWidth, canvasHeight;
+    
+    // 适配内容到16:9画布，居中显示
+    if (contentWidth / contentHeight > aspectRatio) {
+      canvasWidth = contentWidth;
+      canvasHeight = contentWidth / aspectRatio;
+    } else {
+      canvasHeight = contentHeight;
+      canvasWidth = contentHeight * aspectRatio;
     }
-  }catch(err){
+
+    // 创建16:9的画布（核心修改）
+    const canvas = await html2canvas(summaryEl, {
+      scale: 4.5,
+      useCORS: true,
+      allowTaint: true,
+      logging: false,
+      backgroundColor: '#121212',
+      scrollX: 0,
+      scrollY: 0,
+      width: canvasWidth,
+      height: canvasHeight,
+      dpi: 300,
+      // 确保内容居中
+      windowWidth: canvasWidth,
+      windowHeight: canvasHeight
+    });
+
+    // 恢复分享按钮样式
+    shareBtn && (shareBtn.style.display = shareBtnStyle.display, shareBtn.className = shareBtnStyle.className);
+
+    // 处理图片压缩
+    let dataUrl = canvas.toDataURL('image/png', 0.9);
+    const fileName = `🧬 彥彬自檢表系統_${new Date().toLocaleDateString()}.png`;
+    const imgBlob = await (await fetch(dataUrl)).blob();
+    let file;
+
+    if (imgBlob.size > 5*1024*1024) {
+      alert('圖片體積過大，輕微壓縮保持清晰...');
+      dataUrl = canvas.toDataURL('image/png', 0.8);
+      const compressedBlob = await (await fetch(dataUrl)).blob();
+      file = new File([compressedBlob], fileName, {type:'image/png'});
+    } else {
+      file = new File([imgBlob], fileName, {type:'image/png'});
+    }
+
+    // 分享逻辑
+    if (navigator.share && typeof navigator.share === 'function') {
+      try {
+        const shareData = {title:'🧬 彥彬自檢表系統',files:[file],text:summaryText};
+        const canShare = navigator.canShare ? await navigator.canShare(shareData) : true;
+        if (canShare) {
+          await navigator.share(shareData);
+          alert('分享成功！\n報告已發送到LINE群組/好友');
+        }
+      } catch (err) {
+        console.error('LINE分享失敗：',err);
+        if (err.name !== 'AbortError') alert(`分享失敗：${err.message||'未知錯誤'}`);
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(summaryText);
+        alert('文字已複製到剪貼板，請手動截圖分享');
+      } catch (cbErr) {
+        alert('請手動截圖並複製文字分享');
+      }
+    }
+  } catch (err) {
     console.error('分享總體錯誤：',err);
     alert('分享功能異常，請手動截圖分享');
-  }finally{
-    btn.disabled=false;
-    btn.innerHTML='<i class="fa fa-share-alt mr-1"></i> 分享到LINE';
-    let closeBtn=document.getElementById('close-page-btn');
-    if(!closeBtn){
-      closeBtn=document.createElement('button');
-      closeBtn.id='close-page-btn';
-      closeBtn.className='w-full sm:w-auto px-6 py-2.5 bg-gray-800 text-gray-200 rounded-lg font-medium flex items-center justify-center gap-2 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 mt-2';
-      closeBtn.innerHTML='<i class="fa fa-times"></i> 關閉網頁';
-      closeBtn.onclick=async()=>{
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fa fa-share-alt mr-1"></i> 分享到LINE';
+    
+    // 关闭按钮逻辑（简化）
+    let closeBtn = document.getElementById('close-page-btn');
+    if (!closeBtn) {
+      closeBtn = document.createElement('button');
+      closeBtn.id = 'close-page-btn';
+      closeBtn.className = 'w-full sm:w-auto px-6 py-2.5 bg-gray-800 text-gray-200 rounded-lg font-medium flex items-center justify-center gap-2 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 mt-2';
+      closeBtn.innerHTML = '<i class="fa fa-times"></i> 關閉網頁';
+      closeBtn.onclick = async () => {
         try {
-          if(window.liff) {
-            if(!liff.isLoggedIn()) await liff.login();
+          if (window.liff) {
+            if (!liff.isLoggedIn()) await liff.login();
             liff.closeWindow();
           } else {
             window.close();
@@ -588,286 +796,357 @@ text-align:center;margin:0 auto!important;background-color:#121212;padding:1rem;
         }
       };
       const btnContainer = btn.parentNode;
-      if(!btnContainer.classList.contains('share-btn-container')){
+      if (!btnContainer.classList.contains('share-btn-container')) {
         const newContainer = document.createElement('div');
         newContainer.className = 'share-btn-container flex flex-col w-full gap-2';
         btnContainer.appendChild(newContainer);
         newContainer.appendChild(btn);
         newContainer.appendChild(closeBtn);
-      }else{
+      } else {
         btnContainer.appendChild(closeBtn);
       }
-    }else{
+    } else {
       closeBtn.style.display = 'flex';
     }
   }
 }
-async function collectSubmitData(){
-  const liffProfile=await liff.getProfile().catch(err=>{
+
+// 收集提交数据（简化）
+async function collectSubmitData() {
+  const liffProfile = await liff.getProfile().catch(err => {
     console.error("獲取LINE用戶信息失敗：",err);
     return {displayName:'LINE用戶'};
   });
-  const selectedSymptoms=Array.from(document.querySelectorAll('.symptom-checkbox:checked')).map(cb=>{
-    const seq=cb.dataset.seq,cd=cb.closest('.symptom-card');
-    return{
-      seq:parseInt(seq),symptom:cd.querySelector('label').textContent.replace(/^\[\d+\]/,'').trim(),
-      durationText:cd.querySelector('.duration-select option:checked').textContent,
-      severityText:cd.querySelector('.severity-select option:checked').textContent
+
+  const selectedSymptoms = Array.from(document.querySelectorAll('.symptom-checkbox:checked')).map(cb => {
+    const seq = cb.dataset.seq;
+    const card = cb.closest('.symptom-card');
+    return {
+      seq: parseInt(seq),
+      symptom: card.querySelector('label').textContent.replace(/^\[\d+\]/,'').trim(),
+      durationText: card.querySelector('.duration-select option:checked').textContent,
+      severityText: card.querySelector('.severity-select option:checked').textContent
     };
   });
-  return{
-    action:'submitChecklist',userId:liff.getDecodedIDToken()?.sub||'',
-    displayName:liffProfile.displayName||'LINE用戶',
-    submitTime:new Date().toISOString(),
-    userName:document.getElementById('user-name').value.trim(),userAge:document.getElementById('user-age').value.trim(),
-    userGender:document.getElementById('user-gender').value,userHeight:document.getElementById('user-height').value.trim()||'',
-    userWeight:document.getElementById('user-weight').value.trim()||'',userBp:document.getElementById('user-bp').value.trim()||'',
-    userGlucose:document.getElementById('user-glucose').value.trim()||'',userJob:document.getElementById('user-job').value.trim()||'',
-    selectedSymptoms:JSON.stringify(selectedSymptoms)
+
+  return {
+    action:'submitChecklist',
+    userId: liff.getDecodedIDToken()?.sub || '',
+    displayName: liffProfile.displayName || 'LINE用戶',
+    submitTime: new Date().toISOString(),
+    userName: document.getElementById('user-name').value.trim(),
+    userAge: document.getElementById('user-age').value.trim(),
+    userGender: document.getElementById('user-gender').value,
+    userHeight: document.getElementById('user-height').value.trim() || '',
+    userWeight: document.getElementById('user-weight').value.trim() || '',
+    userBp: document.getElementById('user-bp').value.trim() || '',
+    userGlucose: document.getElementById('user-glucose').value.trim() || '',
+    userJob: document.getElementById('user-job').value.trim() || '',
+    selectedSymptoms: JSON.stringify(selectedSymptoms)
   };
 }
-function submitChecklistData(data,btn){
+
+// 提交检查表数据（简化）
+function submitChecklistData(data, btn) {
   console.log("提交數據（含真實LINE名稱）：",data);
   setStatus('提交中...');
   document.getElementById('status').classList.remove('hidden');
+  
   $.ajax({
-    url:GAS_URL,dataType:'jsonp',jsonp:'callback',jsonpCallback:'submitCallback',
-    timeout:JSONP_TIMEOUT,data:data,
-    success:function(resp){
+    url: GAS_URL,
+    dataType: 'jsonp',
+    jsonp: 'callback',
+    jsonpCallback: 'submitCallback',
+    timeout: JSONP_TIMEOUT,
+    data: data,
+    success: function(resp) {
       document.getElementById('status').classList.add('hidden');
       alert('提交成功！正在生成健康報告...');
-      const rd=organizeReportData({...data,userBasicInfo:window.userBasicInfo,selectedSymptoms:JSON.parse(data.selectedSymptoms)});
-      window.reportData=rd;renderReportSummary(rd);
+      const reportData = organizeReportData({...data,userBasicInfo:window.userBasicInfo,selectedSymptoms:JSON.parse(data.selectedSymptoms)});
+      window.reportData = reportData;
+      renderReportSummary(reportData);
       document.getElementById('success-modal').classList.remove('hidden');
-      setTimeout(()=>{
-        document.getElementById('report-summary')&&(document.getElementById('report-summary').style.maxHeight='80vh');
-      },100);
-      btn.disabled=false;btn.innerHTML='提交檢查表';
+      setTimeout(() => {
+        document.getElementById('report-summary') && (document.getElementById('report-summary').style.maxHeight = '80vh');
+      }, 100);
+      btn.disabled = false;
+      btn.innerHTML = '提交檢查表';
     },
-    error:function(xhr,status,err){
+    error: function(xhr, status, err) {
       console.error("提交失敗：",status,err);
       document.getElementById('status').classList.add('hidden');
-      const errMsg=status==='timeout'?'請求超時，請檢查網絡連接':
-      status==='parsererror'?'數據解析錯誤，伺服器返回無效數據':'與伺服器通訊失敗，請稍後再試';
+      const errMsg = status === 'timeout' ? '請求超時，請檢查網絡連接' : status === 'parsererror' ? '數據解析錯誤，伺服器返回無效數據' : '與伺服器通訊失敗，請稍後再試';
       showError(`${errMsg}（錯誤：${err.message || status}）`);
-      btn.disabled=false;btn.innerHTML='提交檢查表';
+      btn.disabled = false;
+      btn.innerHTML = '提交檢查表';
     }
   });
 }
-function renderReportSummary(reportData){
-  const {formattedUserInfo,factorSymptoms,summaryText,totalSymptomCount,selectedTotal,topFactors}=reportData;
-  let sc=document.getElementById('summary-content');
-  if(!sc){
-    sc=document.createElement('div');sc.id='summary-content';
-    const rs=document.getElementById('report-summary')||document.createElement('div');
-    rs.id='report-summary';rs.appendChild(sc);
-    document.querySelector('#success-modal .modal-content')?.appendChild(rs)||document.body.appendChild(rs);
+
+// 渲染报告摘要（简化样式逻辑）
+function renderReportSummary(reportData) {
+  const {formattedUserInfo,factorSymptoms,summaryText,totalSymptomCount,selectedTotal,topFactors} = reportData;
+  let summaryContainer = document.getElementById('summary-content');
+  
+  if (!summaryContainer) {
+    summaryContainer = document.createElement('div');
+    summaryContainer.id = 'summary-content';
+    const reportSummary = document.getElementById('report-summary') || document.createElement('div');
+    reportSummary.id = 'report-summary';
+    reportSummary.appendChild(summaryContainer);
+    document.querySelector('#success-modal .modal-content')?.appendChild(reportSummary) || document.body.appendChild(reportSummary);
   }
-  sc.dataset.summary=summaryText;
-  const ts=Object.values(factorSymptoms).reduce((s,f)=>s+f.length,0);
-  const rs=document.getElementById('report-summary');
-  rs.style.cssText = `
-max-height:80vh;overflow-y:auto;padding:1rem;box-sizing:border-box;
-background-color:#121212;border-radius:0;box-shadow:none;margin:0 auto!important;
-width:100%;max-width:none;text-align:center;
-`;
-  sc.style.cssText = `
-width:100%;background-color:#121212;padding:1rem;box-sizing:border-box;
-line-height:1.4;font-size:0.9rem;text-align:center!important;color:#FFFFFF;
-margin:0 auto!important;border-radius:0;box-shadow:none;max-width:none;overflow:visible;
-`;
-  let html=`
+
+  summaryContainer.dataset.summary = summaryText;
+  const totalSelected = Object.values(factorSymptoms).reduce((s,f)=>s+f.length,0);
+  const reportSummary = document.getElementById('report-summary');
+  
+  // 简化样式设置
+  reportSummary.style.cssText = 'max-height:80vh;overflow-y:auto;padding:1rem;box-sizing:border-box;background-color:#121212;border-radius:0;box-shadow:none;margin:0 auto!important;width:100%;max-width:none;text-align:center;';
+  summaryContainer.style.cssText = STYLES.summaryContainer;
+
+  // 简化HTML拼接
+  let html = `
 <div class="text-center mb-4">
-<h3 class="text-lg md:text-xl font-bold text-white mb-2">🧬 彥彬自檢表系統</h3>
-<div class="text-xs text-gray-400">${formattedUserInfo.提交時間}</div>
+  <h3 class="text-lg md:text-xl font-bold text-white mb-2">🧬 彥彬自檢表系統</h3>
+  <div class="text-xs text-gray-400">${formattedUserInfo.提交時間}</div>
 </div>
 <div class="bg-gray-800 rounded-lg p-3 mb-4 mx-auto max-w-full border border-gray-700">
-<div class="text-base font-semibold text-white mb-2 flex items-center justify-center">
-<i class="fa fa-user-circle text-primary mr-2 text-sm"></i>基本資料
-</div>
-<div class="grid grid-cols-2 gap-x-3 gap-y-1 text-sm text-gray-200">`;
-  const infoEntries=Object.entries(formattedUserInfo);
-  infoEntries.forEach(([k,v])=>{
-    if(k!=='提交時間'){
-      const label=k==='血糖'?'血糖':k;
-      html+=`<div class="flex justify-between">
-<span class="text-gray-400 font-medium">${label}：</span>
-<span class="text-white">${v}</span>
-</div>`;
+  <div class="text-base font-semibold text-white mb-2 flex items-center justify-center">
+    <i class="fa fa-user-circle text-primary mr-2 text-sm"></i>基本資料
+  </div>
+  <div class="grid grid-cols-2 gap-x-3 gap-y-1 text-sm text-gray-200">`;
+
+  // 简化用户信息渲染
+  Object.entries(formattedUserInfo).forEach(([key, value]) => {
+    if (key !== '提交時間') {
+      html += `<div class="flex justify-between"><span class="text-gray-400 font-medium">${key}：</span><span class="text-white">${value}</span></div>`;
     }
   });
-  html+=`</div></div>
+
+  html += `</div></div>
 <div class="mb-4">
-<div class="text-base font-semibold text-white flex items-center justify-center mb-2">
-<i class="fa fa-chart-pie text-primary mr-2 text-sm"></i>統計資訊
-</div>
-<div class="bg-green-900/30 text-green-400 px-3 py-1.5 rounded-full text-sm font-medium inline-flex items-center justify-center mx-auto mb-2">
-總症狀數：${selectedTotal} 項 (共${totalSymptomCount}種症狀)
-</div>`;
-  if(topFactors.length > 0){
-    if(topFactors.length === 1){
-      html+=`<div class="bg-blue-900/30 text-blue-400 px-3 py-1.5 rounded-full text-sm font-medium inline-flex items-center justify-center mx-auto">
-調整方向：${topFactors[0].name} (${topFactors[0].count}項)
-</div>`;
-    } else {
-      html+=`<div class="bg-blue-900/30 text-blue-400 px-3 py-1.5 rounded-full text-sm font-medium inline-flex items-center justify-center mx-auto">
-調整方向：${topFactors[0].name} (${topFactors[0].count}項)、${topFactors[1].name} (${topFactors[1].count}項)
-</div>`;
-    }
+  <div class="text-base font-semibold text-white flex items-center justify-center mb-2">
+    <i class="fa fa-chart-pie text-primary mr-2 text-sm"></i>統計資訊
+  </div>
+  <div class="bg-green-900/30 text-green-400 px-3 py-1.5 rounded-full text-sm font-medium inline-flex items-center justify-center mx-auto mb-2">
+    總症狀數：${selectedTotal} 項 (共${totalSymptomCount}種症狀)
+  </div>`;
+
+  // 简化顶部因素渲染
+  if (topFactors.length > 0) {
+    html += `<div class="bg-blue-900/30 text-blue-400 px-3 py-1.5 rounded-full text-sm font-medium inline-flex items-center justify-center mx-auto">
+      調整方向：${topFactors.length === 1 ? `${topFactors[0].name} (${topFactors[0].count}項)` : `${topFactors[0].name} (${topFactors[0].count}項)、${topFactors[1].name} (${topFactors[1].count}項)`}
+    </div>`;
   }
-  html+=`</div>
+
+  html += `</div>
 <div class="text-base font-semibold text-white mb-3 flex items-center justify-center">
-<i class="fa fa-heartbeat text-primary mr-2 text-sm"></i>七大健康要素評估
+  <i class="fa fa-heartbeat text-primary mr-2 text-sm"></i>七大健康要素評估
 </div>`;
-  Object.entries(factorSymptoms).forEach(([fk,f])=>{
-    const fn=factorStyles[fk].label;
-    html+=`<div class="bg-gray-800 border border-gray-700 rounded-lg p-3 mb-3 shadow-sm hover:shadow-md transition-shadow mx-auto max-w-full">
-<div class="font-semibold text-sm text-white mb-2 flex items-center justify-center">
-<span class="inline-block w-2.5 h-2.5 rounded-full ${factorStyles[fk].className.split(' ')[0]} mr-1.5"></span>
-【${fn}】（${f.length}項）
-</div>
-<div class="grid grid-cols-4 gap-2 text-sm">`;
-    f.forEach((i,idx)=>{
-      let severityClass = '';
-      if(i.severity.includes('中度')) severityClass = 'bg-yellow-900/30 text-yellow-400';
-      else if(i.severity.includes('重度')) severityClass = 'bg-red-900/30 text-red-400';
-      else severityClass = 'bg-gray-700 text-gray-300';
-      html+=`<div class="p-2 bg-gray-700 rounded-lg border border-gray-600">
-<div class="font-medium text-white text-sm">${idx+1}. ${i.name}</div>
-<div class="flex justify-between mt-1">
-<div class="text-gray-400 text-[9px] text-shadow-glow" style="text-shadow: 0 0 3px #00C300;">⏱️ ${i.duration}</div>
-<div class="${severityClass} px-2 py-0.5 rounded text-[8px]">⚠️ ${i.severity}</div>
-</div>
-</div>`;
+
+  // 简化因素症状渲染
+  Object.entries(factorSymptoms).forEach(([factorKey, symptoms]) => {
+    const factorStyle = STYLES.factor[factorKey];
+    html += `<div class="bg-gray-800 border border-gray-700 rounded-lg p-3 mb-3 shadow-sm hover:shadow-md transition-shadow mx-auto max-w-full">
+      <div class="font-semibold text-sm text-white mb-2 flex items-center justify-center">
+        <span class="inline-block w-2.5 h-2.5 rounded-full ${factorStyle.cls.split(' ')[0]} mr-1.5"></span>
+        【${factorStyle.label}】（${symptoms.length}項）
+      </div>
+      <div class="grid grid-cols-4 gap-2 text-sm">`;
+    
+    symptoms.forEach((item, idx) => {
+      // 简化严重程度样式
+      let severityClass = STYLES.severity.mild;
+      if (item.severity.includes('中度')) severityClass = STYLES.severity.moderate;
+      else if (item.severity.includes('重度')) severityClass = STYLES.severity.severe;
+      
+      html += `<div class="p-2 bg-gray-700 rounded-lg border border-gray-600">
+        <div class="font-medium text-white text-sm">${idx+1}. ${item.name}</div>
+        <div class="flex justify-between mt-1">
+          <div class="text-gray-400 text-[9px] text-shadow-glow" style="text-shadow: 0 0 3px #00C300;">⏱️ ${item.duration}</div>
+          <div class="${severityClass} px-2 py-0.5 rounded text-[8px]">⚠️ ${item.severity}</div>
+        </div>
+      </div>`;
     });
-    html+=`</div></div>`;
+
+    html += `</div></div>`;
   });
-  html+=`<div class="mt-4 bg-gray-800 border border-gray-700 rounded-lg p-3 text-sm text-gray-300 font-bold mx-auto max-w-full">
-💡 建議：根據自檢結果關注對應健康問題，必要時諮詢專業醫師
-</div>
-<div class="mt-6 mb-3 flex justify-center px-3">
-  <button id="native-share-btn" class="w-full sm:w-auto px-5 py-2 bg-[#00C300] text-white rounded-lg font-medium flex items-center justify-center gap-1.5 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0">
-    <i class="fa fa-share-alt"></i> 分享到LINE
-  </button>
-</div>`;
-  sc.innerHTML=html;
-  setTimeout(()=>{
-    rs.style.height=sc.offsetHeight+60+'px';
-    rs.style.display='none';rs.offsetHeight;rs.style.display='block';
-  },150);
+
+  // 简化底部内容
+  html += `<div class="mt-4 bg-gray-800 border border-gray-700 rounded-lg p-3 text-sm text-gray-300 font-bold mx-auto max-w-full">
+    💡 建議：根據自檢結果關注對應健康問題，必要時諮詢專業醫師
+  </div>
+  <div class="mt-6 mb-3 flex justify-center px-3">
+    <button id="native-share-btn" class="w-full sm:w-auto px-5 py-2 bg-[#00C300] text-white rounded-lg font-medium flex items-center justify-center gap-1.5 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0">
+      <i class="fa fa-share-alt"></i> 分享到LINE
+    </button>
+  </div>`;
+
+  summaryContainer.innerHTML = html;
+  
+  setTimeout(() => {
+    reportSummary.style.height = summaryContainer.offsetHeight + 60 + 'px';
+    reportSummary.style.display = 'none';
+    reportSummary.offsetHeight;
+    reportSummary.style.display = 'block';
+  }, 150);
 }
-function resetChecklist(){
-  document.querySelectorAll('.symptom-checkbox').forEach(cb=>{cb.checked&&(cb.checked=false,cb.dispatchEvent(new Event('change')));});
+
+// 重置检查表（简化）
+function resetChecklist() {
+  document.querySelectorAll('.symptom-checkbox').forEach(cb => {
+    if (cb.checked) {
+      cb.checked = false;
+      cb.dispatchEvent(new Event('change'));
+    }
+  });
   document.getElementById('filter-all').click();
-  const fsBtn=document.getElementById('filter-selected');
-  fsBtn.classList.contains('bg-red-900/50')&&fsBtn.click();
-  window.userBasicInfo=null;window.reportData=null;
-  document.getElementById('user-name').value='';document.getElementById('user-age').value='';
-  document.getElementById('user-gender').value='';document.getElementById('user-height').value='';
-  document.getElementById('user-weight').value='';document.getElementById('user-bp').value='';
-  document.getElementById('user-glucose').value='';document.getElementById('user-job').value='';
-}
-function forceShowUserInfo(){
-  try{
-    const uis=document.getElementById('user-info-section');
-    if(!uis){alert("頁面加載失敗，請刷新");return false;}
-    uis.classList.remove('hidden');initControlButtons();
-    return true;
-  }catch(e){console.error("顯示用戶資訊出錯：",e);alert("頁面加載失敗，請刷新");return false;}
-}
-document.addEventListener('DOMContentLoaded',function(){
-  console.log("頁面加載完成，初始化系統");
-  setStatus('正在初始化...');
-  if(!window.liff){
-    showError('LINE LIFF初始化失敗，請檢查網絡或重新打開頁面');
-    return;
-  }
-  liff.init({ liffId: LIFF_ID, enableAnonymousLogin: false }, { disableRedirect: true })
-  .then(()=>{
-    console.log("LIFF初始化成功");
-    liff.isLoggedIn()?getProfileAndVerify():liff.login();
-  })
-  .catch(err=>{
-    console.error("LIFF初始化失敗：",err);
-    if(err.message.includes('expired')||err.message.includes('token')||err.message.includes('auth')){
-      setStatus('令牌無效，重新登錄...');
-      setTimeout(()=>liff.login(),1000);
-    }else showError('系統初始化失敗：'+err.message);
+  const filterBtn = document.getElementById('filter-selected');
+  if (filterBtn.classList.contains('bg-red-900/50')) filterBtn.click();
+  
+  window.userBasicInfo = null;
+  window.reportData = null;
+  
+  ['user-name','user-age','user-gender','user-height','user-weight','user-bp','user-glucose','user-job'].forEach(id => {
+    document.getElementById(id).value = '';
   });
-});
-function getProfileAndVerify(){
+}
+
+// 强制显示用户信息（简化）
+function forceShowUserInfo() {
+  try {
+    const userInfoSection = document.getElementById('user-info-section');
+    if (!userInfoSection) {
+      alert("頁面加載失敗，請刷新");
+      return false;
+    }
+    userInfoSection.classList.remove('hidden');
+    initControlButtons();
+    return true;
+  } catch (e) {
+    console.error("顯示用戶資訊出錯：",e);
+    alert("頁面加載失敗，請刷新");
+    return false;
+  }
+}
+
+// 获取用户资料并验证（简化）
+function getProfileAndVerify() {
   setStatus('正在獲取用戶資訊...');
   liff.getProfile()
-  .then(profile=>{
-    console.log("獲取LINE資料成功：",profile);
-    callGasBackend(profile.userId,profile.displayName||'LINE用戶');
-  })
-  .catch(err=>{
-    console.error("獲取LINE資料失敗：",err);
-    const tokenErrs=['expired','token','auth','invalid','session'];
-    const isTokenErr=tokenErrs.some(k=>err.message.toLowerCase().includes(k));
-    if(isTokenErr){
-      setStatus('令牌過期，重新登錄...');
-      liff.isLoggedIn()?liff.logout().then(()=>setTimeout(()=>liff.login(),1000)).catch(()=>liff.login()):setTimeout(()=>liff.login(),1000);
-    }else showError('取得用戶資料失敗：'+err.message);
-  });
+    .then(profile => {
+      console.log("獲取LINE資料成功：",profile);
+      callGasBackend(profile.userId, profile.displayName || 'LINE用戶');
+    })
+    .catch(err => {
+      console.error("獲取LINE資料失敗：",err);
+      const tokenErrors = ['expired','token','auth','invalid','session'];
+      const isTokenError = tokenErrors.some(k => err.message.toLowerCase().includes(k));
+      if (isTokenError) {
+        setStatus('令牌過期，重新登錄...');
+        liff.isLoggedIn() ? liff.logout().then(() => setTimeout(() => liff.login(), 1000)).catch(() => liff.login()) : setTimeout(() => liff.login(), 1000);
+      } else {
+        showError('取得用戶資料失敗：'+err.message);
+      }
+    });
 }
-function callGasBackend(userId,displayName){
+
+// 调用GAS后端（简化）
+function callGasBackend(userId, displayName) {
   setStatus('正在驗證用戶權限...');
   $.ajax({
-    url:GAS_URL,dataType:'jsonp',jsonp:'callback',jsonpCallback:'verifyCallback',
-    timeout:JSONP_TIMEOUT,data:{userId:userId,displayName:displayName,action:'verifyUser',needExpiryDate:true},
-    success:function(resp){
+    url: GAS_URL,
+    dataType: 'jsonp',
+    jsonp: 'callback',
+    jsonpCallback: 'verifyCallback',
+    timeout: JSONP_TIMEOUT,
+    data: {userId, displayName, action:'verifyUser', needExpiryDate:true},
+    success: function(resp) {
       console.log("後端返回：",resp);
-      resp.status==="error"?showError(resp.message):renderResult(resp);
+      resp.status === "error" ? showError(resp.message) : renderResult(resp);
     },
-    error:function(xhr,status,err){
+    error: function(xhr, status, err) {
       console.error("AJAX錯誤：",status,err);
-      const errMsg=status==='timeout'?'請求超時，檢查網絡':
-      status==='parsererror'?'數據解析錯誤':'與伺服器通訊失敗';
+      const errMsg = status === 'timeout' ? '請求超時，檢查網絡' : status === 'parsererror' ? '數據解析錯誤' : '與伺服器通訊失敗';
       showError(errMsg);
     }
   });
 }
-function renderResult(resp){
+
+// 渲染验证结果（简化）
+function renderResult(resp) {
   document.getElementById('status').classList.add('hidden');
   document.getElementById('error-message').classList.add('hidden');
-  const card=document.getElementById('result-card'),main=document.getElementById('result-main'),details=document.getElementById('result-details');
-  const isPro=resp.isAdmin===true,un=resp.displayName||'用戶',ed=resp.expiryDate||resp.endDate||resp.expireDate||'';
-  if(isPro){
-    const{displayDate,remainingDays}=calculateRemainingDaysByDate(ed);
-    main.innerHTML=`<span class="text-primary"><i class="fa fa-check-circle mr-1.5"></i>專業用戶驗證通過</span>`;
-    details.innerHTML=`
-<div><i class="fa fa-user-circle text-primary mr-1"></i>用戶名稱：<span class="font-medium">${un}</span></div>
+  
+  const card = document.getElementById('result-card');
+  const main = document.getElementById('result-main');
+  const details = document.getElementById('result-details');
+  
+  const isPro = resp.isAdmin === true;
+  const userName = resp.displayName || '用戶';
+  const expiryDate = resp.expiryDate || resp.endDate || resp.expireDate || '';
+  
+  if (isPro) {
+    const {displayDate, remainingDays} = calculateRemainingDaysByDate(expiryDate);
+    main.innerHTML = `<span class="text-primary"><i class="fa fa-check-circle mr-1.5"></i>專業用戶驗證通過</span>`;
+    details.innerHTML = `
+<div><i class="fa fa-user-circle text-primary mr-1"></i>用戶名稱：<span class="font-medium">${userName}</span></div>
 <div><i class="fa fa-calendar-check-o text-primary mr-1"></i>使用期限：<span class="font-medium">${displayDate}</span></div>
-<div><i class="fa fa-clock-o text-primary mr-1"></i>剩餘天數：${remainingDays}</div>
-`;
-  }else{
-    const uc=resp.usageCount||0,rt=Math.max(0,3-uc);
-    if(rt<=0){
-      main.innerHTML=`<span class="text-orange-600"><i class="fa fa-exclamation-circle mr-1.5"></i>普通用戶使用次數已用完</span>`;
-      details.innerHTML=`
-<div><i class="fa fa-user-circle text-orange-600 mr-1"></i>用戶名稱：<span class="font-medium">${un}</span></div>
+<div><i class="fa fa-clock-o text-primary mr-1"></i>剩餘天數：${remainingDays}</div>`;
+  } else {
+    const usageCount = resp.usageCount || 0;
+    const remainingTimes = Math.max(0, 3 - usageCount);
+    
+    if (remainingTimes <= 0) {
+      main.innerHTML = `<span class="text-orange-600"><i class="fa fa-exclamation-circle mr-1.5"></i>普通用戶使用次數已用完</span>`;
+      details.innerHTML = `
+<div><i class="fa fa-user-circle text-orange-600 mr-1"></i>用戶名稱：<span class="font-medium">${userName}</span></div>
 <div><i class="fa fa-calendar-o text-orange-600 mr-1"></i>使用期限：<span class="font-medium">-</span></div>
-<div><i class="fa fa-refresh text-orange-600 mr-1"></i>剩餘次數：<span class="text-red-500 font-medium">${rt} 次</span></div>
-<div><i class="fa fa-info-circle text-orange-600 mr-1"></i>提示：請聯繫管理員升級</div>
-`;
-      card.classList.remove('hidden');
-      return;
-    }else{
-      main.innerHTML=`<span class="text-textPrimary"><i class="fa fa-user mr-1.5"></i>普通用戶驗證通過</span>`;
-      details.innerHTML=`
-<div><i class="fa fa-user-circle text-textPrimary mr-1"></i>用戶名稱：<span class="font-medium">${un}</span></div>
+<div><i class="fa fa-refresh text-orange-600 mr-1"></i>剩餘次數：<span class="text-red-500 font-medium">${remainingTimes} 次</span></div>
+<div><i class="fa fa-info-circle text-orange-600 mr-1"></i>提示：請聯繫管理員升級</div>`;
+    } else {
+      main.innerHTML = `<span class="text-textPrimary"><i class="fa fa-user mr-1.5"></i>普通用戶驗證通過</span>`;
+      details.innerHTML = `
+<div><i class="fa fa-user-circle text-textPrimary mr-1"></i>用戶名稱：<span class="font-medium">${userName}</span></div>
 <div><i class="fa fa-calendar-o text-textPrimary mr-1"></i>使用期限：<span class="font-medium">-</span></div>
-<div><i class="fa fa-refresh text-textPrimary mr-1"></i>剩餘次數：<span class="font-medium text-primary">${rt} 次</span></div>
-`;
+<div><i class="fa fa-refresh text-textPrimary mr-1"></i>剩餘次數：<span class="font-medium text-primary">${remainingTimes} 次</span></div>`;
     }
   }
+  
   card.classList.remove('hidden');
-  setTimeout(()=>forceShowUserInfo(),300);
+  setTimeout(() => forceShowUserInfo(), 300);
 }
-window.submitCallback=resp=>{console.log("submitCallback:",resp);return resp;};
-window.verifyCallback=resp=>{console.log("verifyCallback:",resp);return resp;};
+
+// 页面初始化（简化）
+document.addEventListener('DOMContentLoaded', function() {
+  console.log("頁面加載完成，初始化系統");
+  setStatus('正在初始化...');
+  
+  if (!window.liff) {
+    showError('LINE LIFF初始化失敗，請檢查網絡或重新打開頁面');
+    return;
+  }
+  
+  liff.init({ liffId: LIFF_ID, enableAnonymousLogin: false }, { disableRedirect: true })
+    .then(() => {
+      console.log("LIFF初始化成功");
+      liff.isLoggedIn() ? getProfileAndVerify() : liff.login();
+    })
+    .catch(err => {
+      console.error("LIFF初始化失敗：",err);
+      if (err.message.includes('expired') || err.message.includes('token') || err.message.includes('auth')) {
+        setStatus('令牌無效，重新登錄...');
+        setTimeout(() => liff.login(), 1000);
+      } else {
+        showError('系統初始化失敗：'+err.message);
+      }
+    });
+});
+
+// 全局回调函数
+window.submitCallback = resp => {console.log("submitCallback:",resp);return resp;};
+window.verifyCallback = resp => {console.log("verifyCallback:",resp);return resp;};
 </script>
 
 </body>
