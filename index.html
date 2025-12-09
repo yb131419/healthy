@@ -777,7 +777,7 @@ function renderReportSummary(reportData){
         <span class="inline-block w-2.5 h-2.5 rounded-full ${factorStyle.cls.split(' ')[0]} mr-1.5"></span>
         【${factorStyle.label}】（${symptoms.length}項）
       </div>
-      <div class="grid grid-cols-4 gap-1.5 text-sm">`;
+      <div class="grid grid-cols-4 sm:grid-cols-4 md:grid-cols-4 lg:grid-cols-4 gap-1.5 text-sm">`; // 核心修改：强制所有设备四列
     symptoms.forEach((item,idx)=>{
       let severityClass=STYLES.severity.mild;
       if(item.severity.includes('中度'))severityClass=STYLES.severity.moderate;
