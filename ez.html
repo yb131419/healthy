@@ -723,17 +723,19 @@ margin:0 auto!important;border-radius:0;box-shadow:none;max-width:none;
 <span class="inline-block w-2.5 h-2.5 rounded-full ${factorStyles[fk].className.split(' ')[0]} mr-1.5"></span>
 【${fn}】（${f.length}項）
 </div>
-<div class="grid grid-cols-5 gap-2 text-sm w-full">`;
+<!-- 修復1：使用響應式列數，而非固定5列 -->
+<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 text-sm w-full">`;
     f.forEach((i,idx)=>{
       let severityClass = '';
       if(i.severity.includes('中度')) severityClass = 'bg-yellow-900/30 text-yellow-400';
       else if(i.severity.includes('重度')) severityClass = 'bg-red-900/30 text-red-400';
       else severityClass = 'bg-gray-700 text-gray-300';
-      html+=`<div class="p-4 bg-gray-700 rounded-lg border border-gray-600 min-h-[120px] flex flex-col justify-between w-full">
-<div class="font-medium text-white text-base whitespace-nowrap overflow-hidden text-ellipsis">${idx+1}. ${i.name}</div>
-<div class="flex justify-between mt-2 text-sm whitespace-nowrap">
+      // 修復2：移除whitespace-nowrap，降低最小高度，允許文字換行
+      html+=`<div class="p-3 bg-gray-700 rounded-lg border border-gray-600 min-h-[80px] flex flex-col justify-between w-full">
+<div class="font-medium text-white text-sm">${idx+1}. ${i.name}</div>
+<div class="flex justify-between mt-2 text-xs flex-wrap gap-1">
 <div class="text-gray-300">⏱️ ${i.duration}</div>
-<div class="${severityClass} px-2 py-1 rounded text-sm">⚠️ ${i.severity}</div>
+<div class="${severityClass} px-2 py-0.5 rounded text-xs">⚠️ ${i.severity}</div>
 </div>
 </div>`;
     });
@@ -748,11 +750,16 @@ margin:0 auto!important;border-radius:0;box-shadow:none;max-width:none;
   </button>
 </div>`;
   sc.innerHTML=html;
+  
+  // 修復3：延遲截圖，確保DOM完全渲染
   setTimeout(()=>{
-    rs.style.height=sc.offsetHeight+60+'px';
-    rs.style.display='none';rs.offsetHeight;rs.style.display='block';
-  },150);
+    rs.style.height='auto'; // 改為自動高度，適應內容
+    rs.style.display='none';
+    rs.offsetHeight; // 強制重排
+    rs.style.display='block';
+  },300); // 增加延遲時間
 }
+
 function resetChecklist(){
   document.querySelectorAll('.symptom-checkbox').forEach(cb=>{cb.checked&&(cb.checked=false,cb.dispatchEvent(new Event('change')));});
   document.getElementById('filter-all').click();
