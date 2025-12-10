@@ -723,19 +723,19 @@ margin:0 auto!important;border-radius:0;box-shadow:none;max-width:none;
 <span class="inline-block w-2.5 h-2.5 rounded-full ${factorStyles[fk].className.split(' ')[0]} mr-1.5"></span>
 【${fn}】（${f.length}項）
 </div>
-<div class="grid grid-cols-5 gap-5 text-sm">`; // 修改：將5列改為3列，間距加大，卡片更寬
+<div class="grid grid-cols-5 gap-2 text-sm w-full">`;
     f.forEach((i,idx)=>{
       let severityClass = '';
       if(i.severity.includes('中度')) severityClass = 'bg-yellow-900/30 text-yellow-400';
       else if(i.severity.includes('重度')) severityClass = 'bg-red-900/30 text-red-400';
       else severityClass = 'bg-gray-700 text-gray-300';
-      html+=`<div class="p-4 bg-gray-700 rounded-lg border border-gray-600 min-h-[70px] flex flex-col justify-between w-full">
-<div class="font-medium text-white text-base whitespace-normal break-words">${idx+1}. ${i.name}</div>
-<div class="flex justify-between mt-2 text-sm">
-<div class="text-gray-400">⏱️ ${i.duration}</div>
-<div class="${severityClass} px-3 py-1 rounded text-sm">⚠️ ${i.severity}</div>
+      html+=`<div class="p-4 bg-gray-700 rounded-lg border border-gray-600 min-h-[100px] flex flex-col justify-between w-full">
+<div class="font-medium text-white text-base whitespace-nowrap overflow-hidden text-ellipsis">${idx+1}. ${i.name}</div>
+<div class="flex justify-between mt-2 text-sm whitespace-nowrap">
+<div class="text-gray-300">⏱️ ${i.duration}</div>
+<div class="${severityClass} px-2 py-1 rounded text-sm">⚠️ ${i.severity}</div>
 </div>
-</div>`; // 修改：加大內邊距、最小高度，字體放大，寬度100%
+</div>`;
     });
     html+=`</div></div>`;
   });
