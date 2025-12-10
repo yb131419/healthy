@@ -662,6 +662,8 @@ function submitChecklistData(data,btn){
     }
   });
 }
+
+
 function renderReportSummary(reportData){
   const {formattedUserInfo,factorSymptoms,summaryText,totalSymptomCount,selectedTotal,topFactors}=reportData;
   let sc=document.getElementById('summary-content');
@@ -735,7 +737,8 @@ margin:0 auto!important;border-radius:0;box-shadow:none;max-width:none;
 <span class="inline-block w-2.5 h-2.5 rounded-full ${factorStyles[fk].className.split(' ')[0]} mr-1.5"></span>
 【${fn}】（${f.length}項）
 </div>
-<div class="grid grid-cols-3 gap-2 text-sm">`;
+<!-- 核心修改：從 grid-cols-3 改為 grid-cols-5 -->
+<div class="grid grid-cols-5 gap-2 text-sm">`; // 這裡是主要修改點
     f.forEach((i,idx)=>{
       let severityClass = '';
       if(i.severity.includes('中度')) severityClass = 'bg-yellow-900/30 text-yellow-400';
@@ -765,6 +768,7 @@ margin:0 auto!important;border-radius:0;box-shadow:none;max-width:none;
     rs.style.display='none';rs.offsetHeight;rs.style.display='block';
   },150);
 }
+
 function resetChecklist(){
   document.querySelectorAll('.symptom-checkbox').forEach(cb=>{cb.checked&&(cb.checked=false,cb.dispatchEvent(new Event('change')));});
   document.getElementById('filter-all').click();
