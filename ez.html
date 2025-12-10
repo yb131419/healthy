@@ -662,326 +662,109 @@ function submitChecklistData(data,btn){
     }
   });
 }
-
-
-function renderReportSummary(reportData) {
-  const { formattedUserInfo, factorSymptoms, summaryText, totalSymptomCount, selectedTotal, topFactors } = reportData;
-  let sc = document.getElementById('summary-content');
-  
-  // 重置容器：确保每次渲染都是全新的结构
-  if (sc) {
-    sc.innerHTML = '';
-  } else {
-    sc = document.createElement('div');
-    sc.id = 'summary-content';
-    const rs = document.getElementById('report-summary') || document.createElement('div');
-    rs.id = 'report-summary';
-    rs.innerHTML = '';
-    rs.appendChild(sc);
-    const modalContent = document.querySelector('#success-modal .modal-content');
-    if (modalContent) {
-      modalContent.appendChild(rs);
-    } else {
-      document.body.appendChild(rs);
-    }
+function renderReportSummary(reportData){
+  const {formattedUserInfo,factorSymptoms,summaryText,totalSymptomCount,selectedTotal,topFactors}=reportData;
+  let sc=document.getElementById('summary-content');
+  if(!sc){
+    sc=document.createElement('div');sc.id='summary-content';
+    const rs=document.getElementById('report-summary')||document.createElement('div');
+    rs.id='report-summary';rs.appendChild(sc);
+    document.querySelector('#success-modal .modal-content')?.appendChild(rs)||document.body.appendChild(rs);
   }
-
-  sc.dataset.summary = summaryText;
-  const ts = Object.values(factorSymptoms).reduce((s, f) => s + f.length, 0);
-  const rs = document.getElementById('report-summary');
-
-  // 基础布局样式（用户观看模式）
-  const normalStyles = {
-    rs: `
-max-height:100vh!important;
-overflow-y:auto!important;
-overflow-x:hidden!important;
-padding:0.5rem!important;
-box-sizing:border-box!important;
-background-color:#121212!important;
-border-radius:0!important;
-box-shadow:none!important;
-margin:0 auto!important;
-width:100%!important;
-max-width:none!important;
-text-align:center!important;
-z-index:9999!important;
-position:relative!important;
-transform-origin: top center!important;
-transition: transform 0.2s ease-out!important; /* 更快的过渡动画 */
-    `,
-    sc: `
-width:1024px!important;
-background-color:#121212!important;
-padding:0.5rem!important;
-box-sizing:border-box!important;
-line-height:1.4!important; /* 减小行高，节省空间 */
-font-size:0.75rem!important; /* 进一步缩小字号 */
-text-align:center!important;
-color:#FFFFFF!important;
-margin:0 auto!important;
-border-radius:0!important;
-box-shadow:none!important;
-display:block!important;
-    `
-  };
-
-  // 分享截图专用样式（适配截图尺寸）
-  const shareStyles = {
-    rs: `
-max-height:none!important;
-overflow:hidden!important;
-padding:0!important;
-width:1024px!important;
-max-width:1024px!important;
-transform: scale(1)!important;
-position:relative!important;
-    `,
-    sc: `
-width:1024px!important;
-padding:0.5rem!important;
-font-size:0.75rem!important; /* 匹配缩小后的字号 */
-line-height:1.4!important;
-    `
-  };
-
-  // 应用正常样式
-  rs.style.cssText = normalStyles.rs;
-  sc.style.cssText = normalStyles.sc;
-
-  // 构建HTML内容（优化手机端显示密度）
-  let html = `
-<div class="text-center mb-2 px-1"> <!-- 减小外边距 -->
-  <h3 class="text-md font-bold text-white mb-1">🧬 彥彬自檢表系統</h3> <!-- 缩小标题字号 -->
-  <div class="text-[9px] text-gray-400">${formattedUserInfo.提交時間 || ''}</div> <!-- 更小的时间字号 -->
+  sc.dataset.summary=summaryText;
+  const ts=Object.values(factorSymptoms).reduce((s,f)=>s+f.length,0);
+  const rs=document.getElementById('report-summary');
+  // 报告容器自适应屏幕宽度（去除固定宽度/圆角/阴影，强制居中）
+  rs.style.cssText = `
+max-height:80vh;overflow-y:auto;padding:1rem;box-sizing:border-box;
+background-color:#121212;border-radius:0;box-shadow:none;margin:0 auto!important;
+width:100%;max-width:none;text-align:center;
+`;
+  sc.style.cssText = `
+width:100%;background-color:#121212;padding:1rem;box-sizing:border-box;
+line-height:1.4;font-size:0.9rem;text-align:center!important;color:#FFFFFF;
+margin:0 auto!important;border-radius:0;box-shadow:none;max-width:none;
+`;
+  let html=`
+<div class="text-center mb-4">
+<h3 class="text-lg md:text-xl font-bold text-white mb-2">🧬 彥彬自檢表系統</h3>
+<div class="text-xs text-gray-400">${formattedUserInfo.提交時間}</div>
 </div>
-
-<div class="bg-gray-800 rounded-lg p-2 mb-2 mx-auto w-[1024px] border border-gray-700"> <!-- 减小内边距和外边距 -->
-  <div class="text-sm font-semibold text-white mb-1 flex items-center justify-center"> <!-- 缩小字号 -->
-    <i class="fa fa-user-circle text-primary mr-1 text-xs"></i>基本資料 <!-- 缩小图标 -->
-  </div>
-  <div class="grid grid-cols-2 gap-x-3 gap-y-1 text-[11px] text-gray-200 px-1"> <!-- 更小的字号和间距 -->
-`;
-
-  const infoEntries = Object.entries(formattedUserInfo || {});
-  infoEntries.forEach(([k, v]) => {
-    if (k !== '提交時間' && v) {
-      const label = k === '血糖' ? '血糖' : k;
-      html += `<div class="flex justify-between py-0.5"> <!-- 减小内边距 -->
-        <span class="text-gray-400 font-medium w-18 text-left">${label}：</span> <!-- 缩小标签宽度 -->
-        <span class="text-white flex-1 text-left ml-1">${v || ''}</span> <!-- 减小间距 -->
-      </div>`;
-    }
-  });
-
-  html += `</div></div>
-
-<div class="mb-2 px-1"> <!-- 减小外边距 -->
-  <div class="text-sm font-semibold text-white flex items-center justify-center mb-1"> <!-- 缩小字号 -->
-    <i class="fa fa-chart-pie text-primary mr-1 text-xs"></i>統計資訊 <!-- 缩小图标 -->
-  </div>
-  <div class="bg-green-900/30 text-green-400 px-2 py-0.5 rounded-full text-[11px] font-medium inline-flex items-center justify-center mx-auto mb-1"> <!-- 更小的字号和内边距 -->
-    總症狀數：${selectedTotal || 0} 項 (共${totalSymptomCount || 0}種症狀)
-  </div>`;
-
-  if (topFactors && topFactors.length > 0) {
-    const topFactorText = topFactors.length === 1 
-      ? `${topFactors[0].name || ''} (${topFactors[0].count || 0}項)` 
-      : `${topFactors[0].name || ''} (${topFactors[0].count || 0}項)、${topFactors[1].name || ''} (${topFactors[1].count || 0}項)`;
-    
-    html += `<div class="bg-blue-900/30 text-blue-400 px-2 py-0.5 rounded-full text-[11px] font-medium inline-flex items-center justify-center mx-auto"> <!-- 更小的字号和内边距 -->
-      調整方向：${topFactorText}
-    </div>`;
-  }
-
-  html += `</div>
-
-<div class="text-sm font-semibold text-white mb-2 flex items-center justify-center px-1"> <!-- 缩小字号和外边距 -->
-  <i class="fa fa-heartbeat text-primary mr-1 text-xs"></i>七大健康要素評估 <!-- 缩小图标 -->
+<div class="bg-gray-800 rounded-lg p-3 mb-4 mx-auto max-w-full border border-gray-700">
+<div class="text-base font-semibold text-white mb-2 flex items-center justify-center">
+<i class="fa fa-user-circle text-primary mr-2 text-sm"></i>基本資料
+</div>
+<div class="grid grid-cols-2 gap-x-3 gap-y-1 text-sm text-gray-200">`;
+  const infoEntries=Object.entries(formattedUserInfo);
+  infoEntries.forEach(([k,v])=>{
+    if(k!=='提交時間'){
+      const label=k==='血糖'?'血糖':k;
+      html+=`<div class="flex justify-between">
+<span class="text-gray-400 font-medium">${label}：</span>
+<span class="text-white">${v}</span>
 </div>`;
-
-  if (factorSymptoms && Object.keys(factorSymptoms).length > 0) {
-    Object.entries(factorSymptoms).forEach(([fk, f]) => {
-      if (!f || f.length === 0) return;
-      const fn = factorStyles?.[fk]?.label || fk;
-      const colorClass = factorStyles?.[fk]?.className ? factorStyles[fk].className.split(' ')[0] : 'bg-gray-500';
-
-      html += `<div class="bg-gray-800 border border-gray-700 rounded-lg p-2 mb-2 mx-auto w-[1024px]"> <!-- 减小内边距和外边距 -->
-        <div class="font-semibold text-[11px] text-white mb-1 flex items-center justify-center"> <!-- 更小的字号和外边距 -->
-          <span class="inline-block w-1.5 h-1.5 rounded-full ${colorClass} mr-1"></span> <!-- 缩小颜色圆点 -->
-          【${fn}】（${f.length}項）
-        </div>
-        <div class="grid grid-cols-5 gap-0.5 text-[10px] px-0.5"> <!-- 更小的间距和字号 -->
-`;
-
-      f.forEach((i, idx) => {
-        if (!i) return;
-        let severityClass = 'bg-gray-700 text-gray-300';
-        if (i.severity?.includes('中度')) severityClass = 'bg-yellow-900/30 text-yellow-400';
-        else if (i.severity?.includes('重度')) severityClass = 'bg-red-900/30 text-red-400';
-
-        html += `<div class="p-0.5 bg-gray-700 rounded-lg border border-gray-600 min-width:80px"> <!-- 更小的内边距和最小宽度 -->
-          <div class="font-medium text-white text-[9px]">${idx + 1}. ${i.name || ''}</div> <!-- 更小的字号 -->
-          <div class="flex justify-between mt-0.5 text-[8px]"> <!-- 更小的字号和间距 -->
-            <div class="text-gray-400">⏱️ ${i.duration || ''}</div>
-            <div class="${severityClass} px-0.5 py-0.25 rounded text-[8px]">⚠️ ${i.severity || '輕度'}</div> <!-- 更小的内边距和字号 -->
-          </div>
-        </div>`;
-      });
-
-      html += `</div></div>`;
-    });
-  }
-
-  html += `<div class="mt-2 bg-gray-800 border border-gray-700 rounded-lg p-1 text-[9px] text-gray-300 font-bold mx-auto w-[1024px]"> <!-- 减小内边距和字号 -->
-    💡 建議：根據自檢結果關注對應健康問題，必要時諮詢專業醫師
-  </div>
-
-  <div class="mt-3 mb-3 flex justify-center px-2 mx-auto w-[1024px]"> <!-- 减小外边距和内边距 -->
-    <button id="native-share-btn" class="w-full px-3 py-1.5 bg-[#00C300] text-white rounded-lg font-medium flex items-center justify-center gap-1 text-sm" style="z-index:99999!important;position:relative!important;"> <!-- 更小的内边距和字号 -->
-      <i class="fa fa-share-alt"></i> 分享到LINE
-    </button>
-  </div>`;
-
-  sc.innerHTML = html;
-
-  // 优化的缩放逻辑：缩到更小比例，适配手机完整显示
-  function adjustMobileScale() {
-    const screenWidth = window.innerWidth;
-    const screenHeight = window.innerHeight;
-    
-    if (screenWidth < 1024) {
-      // 核心优化：计算双向缩放比例（宽度+高度），取更小值
-      const widthScale = screenWidth / 1024; // 按宽度缩放
-      const heightScale = (screenHeight * 0.95) / rs.scrollHeight; // 按高度缩放（预留5%空间）
-      // 最小缩放到0.35倍（比原来的0.5更小），确保手机能完整显示
-      const finalScale = Math.max(Math.min(widthScale, heightScale), 0.35);
-      
-      rs.style.transform = `scale(${finalScale})`;
-      rs.style.width = `${screenWidth}px`;
-      // 确保容器居中
-      rs.style.marginLeft = 'auto';
-      rs.style.marginRight = 'auto';
-    } else {
-      rs.style.transform = 'scale(1)';
     }
-    void rs.offsetHeight;
-  }
-
-  // 初始化缩放（延迟执行，确保DOM完全加载）
-  setTimeout(() => {
-    adjustMobileScale();
-  }, 100);
-  
-  window.addEventListener('resize', adjustMobileScale);
-
-  // 核心：分享截图专用处理函数（适配更小比例）
-  async function prepareShareScreenshot() {
-    // 1. 临时切换到分享截图样式
-    rs.style.cssText = shareStyles.rs;
-    sc.style.cssText = shareStyles.sc;
-    
-    // 2. 强制DOM重绘
-    void rs.offsetHeight;
-    
-    // 3. 等待布局稳定
-    await new Promise(resolve => setTimeout(resolve, 200));
-    
-    // 4. 执行截图（进一步缩小比例，适配手机显示）
-    let imageData = '';
-    if (window.html2canvas) {
-      const canvas = await html2canvas(rs, {
-        scale: 0.6, // 进一步缩小到0.6倍（更小的截图尺寸）
-        useCORS: true,
-        logging: false,
-        backgroundColor: '#121212',
-        width: 1024,
-        height: rs.scrollHeight,
-        windowWidth: 1024,
-        windowHeight: rs.scrollHeight,
-        // 优化截图质量和速度
-        letterRendering: true,
-        allowTaint: false
-      });
-      // 进一步压缩图片质量，减小尺寸
-      imageData = canvas.toDataURL('image/png', 0.85);
-    }
-    
-    // 5. 恢复用户观看样式并重新调整缩放
-    rs.style.cssText = normalStyles.rs;
-    sc.style.cssText = normalStyles.sc;
-    adjustMobileScale();
-    
-    return imageData;
-  }
-
-  // 修复后的分享处理函数
-  const shareBtn = document.getElementById('native-share-btn');
-  shareBtn?.removeEventListener('click', handleShare);
-  shareBtn?.addEventListener('click', handleShare);
-
-  async function handleShare(e) {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    try {
-      shareBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> 準備分享...';
-      shareBtn.disabled = true;
-      
-      const imageData = await prepareShareScreenshot();
-      
-      // 分享逻辑保持不变
-      if (window.nativeShare) {
-        window.nativeShare({
-          title: '彥彬自檢表系統',
-          text: '我的自檢表報告',
-          image: imageData || window.location.href
-        });
-      } else if (navigator.share) {
-        const shareData = {
-          title: '彥彬自檢表系統',
-          text: '我的自檢表報告',
-          url: window.location.href
-        };
-        if (imageData && navigator.canShare && navigator.canShare({ files: [new File([imageData], 'report.png', { type: 'image/png' })] })) {
-          shareData.files = [new File([imageData], 'report.png', { type: 'image/png' })];
-        }
-        await navigator.share(shareData);
-      } else {
-        if (imageData) {
-          try {
-            const blob = await (await fetch(imageData)).blob();
-            await navigator.clipboard.write([
-              new ClipboardItem({ 'image/png': blob })
-            ]);
-            alert('報告圖片已複製到剪貼簿，請手動分享到LINE！');
-          } catch (clipErr) {
-            alert('當前設備不支援分享功能，請截圖後手動分享！');
-          }
-        } else {
-          alert('當前設備不支援分享功能，請截圖後手動分享！');
-        }
-      }
-    } catch (err) {
-      console.error('分享錯誤:', err);
-      alert('分享失敗，請稍後再試！');
-    } finally {
-      shareBtn.innerHTML = '<i class="fa fa-share-alt"></i> 分享到LINE';
-      shareBtn.disabled = false;
-      rs.style.cssText = normalStyles.rs;
-      sc.style.cssText = normalStyles.sc;
-      adjustMobileScale();
-    }
-  }
-
-  // 清理函数
-  window.addEventListener('beforeunload', () => {
-    window.removeEventListener('resize', adjustMobileScale);
-    shareBtn?.removeEventListener('click', handleShare);
   });
+  html+=`</div></div>
+<div class="mb-4">
+<div class="text-base font-semibold text-white flex items-center justify-center mb-2">
+<i class="fa fa-chart-pie text-primary mr-2 text-sm"></i>統計資訊
+</div>
+<div class="bg-green-900/30 text-green-400 px-3 py-1.5 rounded-full text-sm font-medium inline-flex items-center justify-center mx-auto mb-2">
+總症狀數：${selectedTotal} 項 (共${totalSymptomCount}種症狀)
+</div>`;
+  if(topFactors.length > 0){
+    if(topFactors.length === 1){
+      html+=`<div class="bg-blue-900/30 text-blue-400 px-3 py-1.5 rounded-full text-sm font-medium inline-flex items-center justify-center mx-auto">
+調整方向：${topFactors[0].name} (${topFactors[0].count}項)
+</div>`;
+    } else {
+      html+=`<div class="bg-blue-900/30 text-blue-400 px-3 py-1.5 rounded-full text-sm font-medium inline-flex items-center justify-center mx-auto">
+調整方向：${topFactors[0].name} (${topFactors[0].count}項)、${topFactors[1].name} (${topFactors[1].count}項)
+</div>`;
+    }
+  }
+  html+=`</div>
+<div class="text-base font-semibold text-white mb-3 flex items-center justify-center">
+<i class="fa fa-heartbeat text-primary mr-2 text-sm"></i>七大健康要素評估
+</div>`;
+  Object.entries(factorSymptoms).forEach(([fk,f])=>{
+    const fn=factorStyles[fk].label;
+    html+=`<div class="bg-gray-800 border border-gray-700 rounded-lg p-3 mb-3 shadow-sm hover:shadow-md transition-shadow mx-auto max-w-full">
+<div class="font-semibold text-sm text-white mb-2 flex items-center justify-center">
+<span class="inline-block w-2.5 h-2.5 rounded-full ${factorStyles[fk].className.split(' ')[0]} mr-1.5"></span>
+【${fn}】（${f.length}項）
+</div>
+<div class="grid grid-cols-3 gap-2 text-sm">`;
+    f.forEach((i,idx)=>{
+      let severityClass = '';
+      if(i.severity.includes('中度')) severityClass = 'bg-yellow-900/30 text-yellow-400';
+      else if(i.severity.includes('重度')) severityClass = 'bg-red-900/30 text-red-400';
+      else severityClass = 'bg-gray-700 text-gray-300';
+      html+=`<div class="p-2 bg-gray-700 rounded-lg border border-gray-600">
+<div class="font-medium text-white text-sm">${idx+1}. ${i.name}</div>
+<div class="flex justify-between mt-1 text-xs">
+<div class="text-gray-400">⏱️ ${i.duration}</div>
+<div class="${severityClass} px-2 py-0.5 rounded text-xs">⚠️ ${i.severity}</div>
+</div>
+</div>`;
+    });
+    html+=`</div></div>`;
+  });
+  html+=`<div class="mt-4 bg-gray-800 border border-gray-700 rounded-lg p-3 text-sm text-gray-300 font-bold mx-auto max-w-full">
+💡 建議：根據自檢結果關注對應健康問題，必要時諮詢專業醫師
+</div>
+<div class="mt-6 mb-3 flex justify-center px-3">
+  <button id="native-share-btn" class="w-full sm:w-auto px-5 py-2 bg-[#00C300] text-white rounded-lg font-medium flex items-center justify-center gap-1.5 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0">
+    <i class="fa fa-share-alt"></i> 分享到LINE
+  </button>
+</div>`;
+  sc.innerHTML=html;
+  setTimeout(()=>{
+    rs.style.height=sc.offsetHeight+60+'px';
+    rs.style.display='none';rs.offsetHeight;rs.style.display='block';
+  },150);
 }
-
-
 function resetChecklist(){
   document.querySelectorAll('.symptom-checkbox').forEach(cb=>{cb.checked&&(cb.checked=false,cb.dispatchEvent(new Event('change')));});
   document.getElementById('filter-all').click();
