@@ -653,119 +653,27 @@ function submitChecklistData(data,btn){
 }
 
 
-function renderReportSummary(reportData){
-  const {formattedUserInfo,factorSymptoms,summaryText,totalSymptomCount,selectedTotal,topFactors}=reportData;
-  let sc=document.getElementById('summary-content');
-  if(!sc){
-    sc=document.createElement('div');sc.id='summary-content';
-    const rs=document.getElementById('report-summary')||document.createElement('div');
-    rs.id='report-summary';rs.appendChild(sc);
-    document.querySelector('#success-modal .modal-content')?.appendChild(rs)||document.body.appendChild(rs);
-  }
-  sc.dataset.summary=summaryText;
-  const ts=Object.values(factorSymptoms).reduce((s,f)=>s+f.length,0);
-  const rs=document.getElementById('report-summary');
-  rs.style.cssText = `
-max-height:80vh;overflow-y:auto;padding:1rem;box-sizing:border-box;
-background-color:#121212;border-radius:0;box-shadow:none;margin:0 auto!important;
-width:100%;max-width:none;text-align:center;
-`;
-  sc.style.cssText = `
-width:100%;background-color:#121212;padding:1rem;box-sizing:border-box;
-line-height:1.4;font-size:0.9rem;text-align:center!important;color:#FFFFFF;
-margin:0 auto!important;border-radius:0;box-shadow:none;max-width:none;
-`;
-  let html=`
-<div class="text-center mb-4">
-<h3 class="text-lg md:text-xl font-bold text-white mb-2">🧬 彥彬自檢表系統</h3>
-<div class="text-xs text-gray-400">${formattedUserInfo.提交時間}</div>
-</div>
-<div class="bg-gray-800 rounded-lg p-3 mb-4 mx-auto max-w-full border border-gray-700">
-<div class="text-base font-semibold text-white mb-2 flex items-center justify-center">
-<i class="fa fa-user-circle text-primary mr-2 text-sm"></i>基本資料
-</div>
-<div class="grid grid-cols-2 gap-x-3 gap-y-1 text-sm text-gray-200">`;
-  const infoEntries=Object.entries(formattedUserInfo);
-  infoEntries.forEach(([k,v])=>{
-    if(k!=='提交時間'){
-      const label=k==='血糖'?'血糖':k;
-      html+=`<div class="flex justify-between">
-<span class="text-gray-400 font-medium">${label}：</span>
-<span class="text-white">${v}</span>
-</div>`;
-    }
-  });
-  html+=`</div></div>
-<div class="mb-4">
-<div class="text-base font-semibold text-white flex items-center justify-center mb-2">
-<i class="fa fa-chart-pie text-primary mr-2 text-sm"></i>統計資訊
-</div>
-<div class="bg-green-900/30 text-green-400 px-3 py-1.5 rounded-full text-sm font-medium inline-flex items-center justify-center mx-auto mb-2">
-總症狀數：${selectedTotal} 項 (共${totalSymptomCount}種症狀)
-</div>`;
-  if(topFactors.length > 0){
-    if(topFactors.length === 1){
-      html+=`<div class="bg-blue-900/30 text-blue-400 px-3 py-1.5 rounded-full text-sm font-medium inline-flex items-center justify-center mx-auto">
-調整方向：${topFactors[0].name} (${topFactors[0].count}項)
-</div>`;
-    } else {
-      html+=`<div class="bg-blue-900/30 text-blue-400 px-3 py-1.5 rounded-full text-sm font-medium inline-flex items-center justify-center mx-auto">
-調整方向：${topFactors[0].name} (${topFactors[0].count}項)、${topFactors[1].name} (${topFactors[1].count}項)
-</div>`;
-    }
-  }
-  html+=`</div>
-<div class="text-base font-semibold text-white mb-3 flex items-center justify-center">
-<i class="fa fa-heartbeat text-primary mr-2 text-sm"></i>七大健康要素評估
-</div>`;
-  // 核心修改：横向滚动容器 + 强制一行5列（横向排列）
-  html += `<div style="width: 100%; padding: 0; margin: 0 auto; overflow-x: auto; -webkit-overflow-scrolling: touch;">`;
-  Object.entries(factorSymptoms).forEach(([fk,f])=>{
-    const fn=factorStyles[fk].label;
-    html+=`<div class="bg-gray-800 border border-gray-700 rounded-lg p-3 mb-3 shadow-sm hover:shadow-md transition-shadow mx-auto w-full">
-<div class="font-semibold text-sm text-white mb-2 flex items-center justify-center">
-<span class="inline-block w-2.5 h-2.5 rounded-full ${factorStyles[fk].className.split(' ')[0]} mr-1.5"></span>
-【${fn}】（${f.length}項）
-</div>
-<!-- 横向一行5列：flex布局强制横向排列，不换行 -->
-<div class="flex flex-nowrap gap-2 w-fit min-w-full">`; 
-    // 计算每列宽度：强制5列均分，每列20%宽度
-    const columnWidth = `calc(20% - 1.6px)`; 
-    f.forEach((i,idx)=>{
-      let severityClass = '';
-      if(i.severity.includes('中度')) severityClass = 'bg-yellow-900/30 text-yellow-400';
-      else if(i.severity.includes('重度')) severityClass = 'bg-red-900/30 text-red-400';
-      else severityClass = 'bg-gray-700 text-gray-300';
-      // 核心修改：固定列宽、横向排列、文字不换行
-      html+=`<div style="width: ${columnWidth}; flex-shrink: 0;" class="p-2 bg-gray-700 rounded-lg border border-gray-600 min-h-[70px] flex flex-col justify-between">
-<div class="font-medium text-white text-xs overflow-hidden text-ellipsis whitespace-nowrap">${idx+1}. ${i.name}</div>
-<div class="flex justify-between mt-1 text-[10px]">
-<div class="text-gray-300 whitespace-nowrap">⏱️ ${i.duration}</div>
-<div class="${severityClass} px-1.5 py-0.5 rounded text-[10px] whitespace-nowrap">⚠️ ${i.severity}</div>
-</div>
-</div>`;
-    });
-    html+=`</div></div>`;
-  });
-  html += `</div>`; // 闭合横向滚动容器
-  html+=`<div class="mt-4 bg-gray-800 rounded-lg p-3 text-sm text-gray-300 font-bold mx-auto max-w-full">
-💡 建議：根據自檢結果關注對應健康問題，必要時諮詢專業醫師
-</div>
-<div class="mt-6 mb-3 flex justify-center px-3">
-  <button id="native-share-btn" class="w-full sm:w-auto px-5 py-2 bg-[#00C300] text-white rounded-lg font-medium flex items-center justify-center gap-1.5 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0">
-    <i class="fa fa-share-alt"></i> 分享到LINE
-  </button>
-</div>`;
-  sc.innerHTML=html;
+// 给分享按钮添加点击事件（可追加到代码末尾）
+document.getElementById('native-share-btn')?.addEventListener('click', async () => {
+  const rs = document.getElementById('report-summary');
+  const originalStyle = rs.style.cssText;
   
-  // 延迟截图，确保DOM完全渲染
-  setTimeout(()=>{
-    rs.style.height='auto'; 
-    rs.style.display='none';
-    rs.offsetHeight; 
-    rs.style.display='block';
-  },300);
-}
+  // 点击分享时临时缩小尺寸
+  rs.style.transform = 'scale(0.8)';
+  rs.style.transformOrigin = 'top center';
+  rs.style.width = '375px';
+  
+  // 等待样式生效后再执行截图
+  await new Promise(resolve => setTimeout(resolve, 200));
+  
+  // 这里执行你的截图/分享逻辑
+  // html2canvas(rs).then(canvas => { ... });
+  
+  // 截图后恢复样式
+  setTimeout(() => {
+    rs.style.cssText = originalStyle;
+  }, 500);
+});
 
 
 function resetChecklist(){
