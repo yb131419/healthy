@@ -675,49 +675,61 @@ function renderReportSummary(reportData){
   sc.dataset.summary=summaryText;
   const ts=Object.values(factorSymptoms).reduce((s,f)=>s+f.length,0);
   const rs=document.getElementById('report-summary');
-  // 报告容器自适应屏幕宽度（去除固定宽度/圆角/阴影，强制居中）
+  
+  // 响应式容器样式：适配不同设备宽度
   rs.style.cssText = `
-max-height:80vh;overflow-y:auto;padding:1rem;box-sizing:border-box;
+max-height:80vh;overflow-y:auto;padding:0.5rem;box-sizing:border-box;
 background-color:#121212;border-radius:0;box-shadow:none;margin:0 auto!important;
-width:100%;max-width:100vw!important;text-align:center;
-min-width:fit-content; /* 确保容器能容纳内容不换行 */
+width:100%;max-width:100%!important;text-align:center;
+min-width:fit-content; /* 确保容器能容纳内容 */
+-webkit-overflow-scrolling: touch; /* 移动端顺滑滚动 */
 `;
+  
   sc.style.cssText = `
-width:100%;background-color:#121212;padding:1rem 0.5rem;box-sizing:border-box;
+width:100%;background-color:#121212;padding:0.5rem;box-sizing:border-box;
 line-height:1.4;font-size:0.9rem;text-align:center!important;color:#FFFFFF;
 margin:0 auto!important;border-radius:0;box-shadow:none;max-width:none;
-min-width:fit-content; /* 确保内容容器能容纳五列布局 */
+min-width:fit-content;
 `;
+
+  // 动态计算基础字号（适配不同设备）
+  const baseFontSize = window.innerWidth < 768 ? '0.85rem' : '0.9rem';
+  sc.style.fontSize = baseFontSize;
+
   let html=`
-<div class="text-center mb-4">
-<h3 class="text-lg md:text-xl font-bold text-white mb-2">🧬 彥彬自檢表系統</h3>
+<div class="text-center mb-4 px-2">
+<h3 class="text-lg md:text-xl lg:text-2xl font-bold text-white mb-2">🧬 彥彬自檢表系統</h3>
 <div class="text-xs text-gray-400">${formattedUserInfo.提交時間}</div>
 </div>
-<!-- 加宽基本资料卡片，调整内边距和最大宽度 -->
-<div class="bg-gray-800 rounded-lg p-4 mb-4 mx-auto w-full max-w-4xl border border-gray-700">
+
+<!-- 基本資料：响应式宽度适配 -->
+<div class="bg-gray-800 rounded-lg p-3 md:p-4 mb-4 mx-auto w-full max-w-full md:max-w-4xl lg:max-w-5xl border border-gray-700">
 <div class="text-base font-semibold text-white mb-2 flex items-center justify-center">
 <i class="fa fa-user-circle text-primary mr-2 text-sm"></i>基本資料
 </div>
-<!-- 调整基本资料网格间距，加宽列宽 -->
-<div class="grid grid-cols-2 gap-x-6 gap-y-2 text-sm text-gray-200 px-2">`;
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-sm text-gray-200 px-2">`;
+
   const infoEntries=Object.entries(formattedUserInfo);
   infoEntries.forEach(([k,v])=>{
     if(k!=='提交時間'){
       const label=k==='血糖'?'血糖':k;
       html+=`<div class="flex justify-between py-1">
-<span class="text-gray-400 font-medium w-24 text-left">${label}：</span>
+<span class="text-gray-400 font-medium w-20 sm:w-24 text-left">${label}：</span>
 <span class="text-white flex-1 text-left ml-2">${v}</span>
 </div>`;
     }
   });
+
   html+=`</div></div>
-<div class="mb-4">
+
+<div class="mb-4 px-2">
 <div class="text-base font-semibold text-white flex items-center justify-center mb-2">
 <i class="fa fa-chart-pie text-primary mr-2 text-sm"></i>統計資訊
 </div>
 <div class="bg-green-900/30 text-green-400 px-3 py-1.5 rounded-full text-sm font-medium inline-flex items-center justify-center mx-auto mb-2">
 總症狀數：${selectedTotal} 項 (共${totalSymptomCount}種症狀)
 </div>`;
+
   if(topFactors.length > 0){
     if(topFactors.length === 1){
       html+=`<div class="bg-blue-900/30 text-blue-400 px-3 py-1.5 rounded-full text-sm font-medium inline-flex items-center justify-center mx-auto">
@@ -729,27 +741,35 @@ min-width:fit-content; /* 确保内容容器能容纳五列布局 */
 </div>`;
     }
   }
+
   html+=`</div>
-<div class="text-base font-semibold text-white mb-3 flex items-center justify-center">
+
+<div class="text-base font-semibold text-white mb-3 flex items-center justify-center px-2">
 <i class="fa fa-heartbeat text-primary mr-2 text-sm"></i>七大健康要素評估
 </div>`;
+
+  // 遍历健康要素：核心响应式五列布局
   Object.entries(factorSymptoms).forEach(([fk,f])=>{
     const fn=factorStyles[fk].label;
-    // 加宽健康要素卡片容器，调整内边距和最大宽度
-    html+=`<div class="bg-gray-800 border border-gray-700 rounded-lg p-4 mb-3 shadow-sm hover:shadow-md transition-shadow mx-auto w-full max-w-5xl">
+    
+    html+=`<div class="bg-gray-800 border border-gray-700 rounded-lg p-3 md:p-4 mb-3 shadow-sm hover:shadow-md transition-shadow mx-auto w-full max-w-full md:max-w-5xl lg:max-w-6xl">
 <div class="font-semibold text-sm text-white mb-3 flex items-center justify-center">
 <span class="inline-block w-2.5 h-2.5 rounded-full ${factorStyles[fk].className.split(' ')[0]} mr-1.5"></span>
 【${fn}】（${f.length}項）
 </div>
-<!-- 关键调整：缩小间距、确保五列不换行、设置最小宽度 -->
-<div class="grid grid-cols-5 gap-1.5 text-sm px-1 min-w-max">`;
+
+<!-- 核心：响应式网格 - 移动端横向滚动，大屏固定五列 -->
+<div class="relative overflow-x-auto md:overflow-x-visible pb-2 md:pb-0">
+  <div class="grid grid-cols-5 gap-1 md:gap-1.5 text-sm px-1 min-w-[600px] md:min-w-0">`;
+    
     f.forEach((i,idx)=>{
       let severityClass = '';
       if(i.severity.includes('中度')) severityClass = 'bg-yellow-900/30 text-yellow-400';
       else if(i.severity.includes('重度')) severityClass = 'bg-red-900/30 text-red-400';
       else severityClass = 'bg-gray-700 text-gray-300';
-      // 调整卡片内边距和最小宽度，确保内容不换行
-      html+=`<div class="p-1.5 bg-gray-700 rounded-lg border border-gray-600 min-w-[120px]">
+      
+      // 响应式卡片尺寸：适配不同设备
+      html+=`<div class="p-1.5 bg-gray-700 rounded-lg border border-gray-600 min-w-[110px] sm:min-w-[120px]">
 <div class="font-medium text-white text-sm whitespace-nowrap overflow-hidden text-ellipsis">${idx+1}. ${i.name}</div>
 <div class="flex justify-between mt-1 text-xs">
 <div class="text-gray-400 whitespace-nowrap">⏱️ ${i.duration}</div>
@@ -757,20 +777,35 @@ min-width:fit-content; /* 确保内容容器能容纳五列布局 */
 </div>
 </div>`;
     });
-    html+=`</div></div>`;
+
+    html+=`  </div>
+</div>
+</div>`;
   });
-  html+=`<div class="mt-4 bg-gray-800 border border-gray-700 rounded-lg p-3 text-sm text-gray-300 font-bold mx-auto w-full max-w-4xl">
+
+  html+=`<div class="mt-4 bg-gray-800 border border-gray-700 rounded-lg p-3 text-sm text-gray-300 font-bold mx-auto w-full max-w-full md:max-w-4xl lg:max-w-5xl">
 💡 建議：根據自檢結果關注對應健康問題，必要時諮詢專業醫師
 </div>
-<div class="mt-6 mb-3 flex justify-center px-3 max-w-4xl mx-auto">
+
+<div class="mt-6 mb-3 flex justify-center px-3 mx-auto w-full max-w-full md:max-w-4xl">
   <button id="native-share-btn" class="w-full sm:w-auto px-5 py-2 bg-[#00C300] text-white rounded-lg font-medium flex items-center justify-center gap-1.5 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0">
     <i class="fa fa-share-alt"></i> 分享到LINE
   </button>
 </div>`;
+
   sc.innerHTML=html;
+  
+  // 自适应高度调整：兼容不同设备
   setTimeout(()=>{
-    rs.style.height='auto'; // 改为自动高度，避免固定高度导致的布局问题
-    rs.style.display='none';rs.offsetHeight;rs.style.display='block';
+    rs.style.height='auto';
+    rs.style.display='none';
+    rs.offsetHeight; // 触发重绘
+    rs.style.display='block';
+    
+    // 移动端优化：调整滚动条样式
+    if(window.innerWidth < 768){
+      rs.style.overflowX = 'hidden'; // 只保留垂直滚动
+    }
   },150);
 }
 
