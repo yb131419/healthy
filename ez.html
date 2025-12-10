@@ -651,6 +651,8 @@ function submitChecklistData(data,btn){
     }
   });
 }
+
+
 function renderReportSummary(reportData){
   const {formattedUserInfo,factorSymptoms,summaryText,totalSymptomCount,selectedTotal,topFactors}=reportData;
   let sc=document.getElementById('summary-content');
@@ -723,19 +725,19 @@ margin:0 auto!important;border-radius:0;box-shadow:none;max-width:none;
 <span class="inline-block w-2.5 h-2.5 rounded-full ${factorStyles[fk].className.split(' ')[0]} mr-1.5"></span>
 【${fn}】（${f.length}項）
 </div>
-<!-- 修復1：使用響應式列數，而非固定5列 -->
-<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 text-sm w-full">`;
+<!-- 修改：固定一行5列显示，适配小屏幕也保持5列 -->
+<div class="grid grid-cols-5 gap-2 text-xs w-full">`; // 核心修改1：grid-cols-5 固定5列，text-xs 最小字体
     f.forEach((i,idx)=>{
       let severityClass = '';
       if(i.severity.includes('中度')) severityClass = 'bg-yellow-900/30 text-yellow-400';
       else if(i.severity.includes('重度')) severityClass = 'bg-red-900/30 text-red-400';
       else severityClass = 'bg-gray-700 text-gray-300';
-      // 修復2：移除whitespace-nowrap，降低最小高度，允許文字換行
-      html+=`<div class="p-3 bg-gray-700 rounded-lg border border-gray-600 min-h-[80px] flex flex-col justify-between w-full">
-<div class="font-medium text-white text-sm">${idx+1}. ${i.name}</div>
-<div class="flex justify-between mt-2 text-xs flex-wrap gap-1">
+      // 核心修改2：最小化字体（text-[10px]）、缩小内边距、降低最小高度
+      html+=`<div class="p-1.5 bg-gray-700 rounded-lg border border-gray-600 min-h-[60px] flex flex-col justify-between w-full">
+<div class="font-medium text-white text-[10px]">${idx+1}. ${i.name}</div> <!-- 最小字体10px -->
+<div class="flex justify-between mt-1 text-[9px] flex-wrap gap-1"> <!-- 状态文字更小 -->
 <div class="text-gray-300">⏱️ ${i.duration}</div>
-<div class="${severityClass} px-2 py-0.5 rounded text-xs">⚠️ ${i.severity}</div>
+<div class="${severityClass} px-1 py-0.25 rounded text-[9px]">⚠️ ${i.severity}</div> <!-- 严重度标签最小字体 -->
 </div>
 </div>`;
     });
@@ -751,14 +753,15 @@ margin:0 auto!important;border-radius:0;box-shadow:none;max-width:none;
 </div>`;
   sc.innerHTML=html;
   
-  // 修復3：延遲截圖，確保DOM完全渲染
+  // 延迟截图，确保DOM完全渲染
   setTimeout(()=>{
-    rs.style.height='auto'; // 改為自動高度，適應內容
+    rs.style.height='auto'; // 改为自动高度，适应内容
     rs.style.display='none';
-    rs.offsetHeight; // 強制重排
+    rs.offsetHeight; // 强制重排
     rs.style.display='block';
-  },300); // 增加延遲時間
+  },300); // 增加延迟时间
 }
+
 
 function resetChecklist(){
   document.querySelectorAll('.symptom-checkbox').forEach(cb=>{cb.checked&&(cb.checked=false,cb.dispatchEvent(new Event('change')));});
