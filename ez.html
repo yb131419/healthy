@@ -668,15 +668,15 @@ function renderReportSummary(reportData) {
   const { formattedUserInfo, factorSymptoms, summaryText, totalSymptomCount, selectedTotal, topFactors } = reportData;
   let sc = document.getElementById('summary-content');
   
-  // 重置容器：确保每次渲染都是全新的结构（解决分享图片错乱）
+  // 重置容器：确保每次渲染都是全新的结构
   if (sc) {
-    sc.innerHTML = ''; // 清空旧内容
+    sc.innerHTML = '';
   } else {
     sc = document.createElement('div');
     sc.id = 'summary-content';
     const rs = document.getElementById('report-summary') || document.createElement('div');
     rs.id = 'report-summary';
-    rs.innerHTML = ''; // 清空旧容器内容
+    rs.innerHTML = '';
     rs.appendChild(sc);
     const modalContent = document.querySelector('#success-modal .modal-content');
     if (modalContent) {
@@ -690,11 +690,12 @@ function renderReportSummary(reportData) {
   const ts = Object.values(factorSymptoms).reduce((s, f) => s + f.length, 0);
   const rs = document.getElementById('report-summary');
 
-  // 基础布局样式：适配手机端+支持缩放
-  rs.style.cssText = `
+  // 基础布局样式（用户观看模式）
+  const normalStyles = {
+    rs: `
 max-height:100vh!important;
 overflow-y:auto!important;
-overflow-x:hidden!important; /* 关闭横向滚动，通过缩放适配 */
+overflow-x:hidden!important;
 padding:0.5rem!important;
 box-sizing:border-box!important;
 background-color:#121212!important;
@@ -706,12 +707,11 @@ max-width:none!important;
 text-align:center!important;
 z-index:9999!important;
 position:relative!important;
-transform-origin: top center!important; /* 缩放原点：顶部居中 */
-transition: transform 0.3s ease!important; /* 平滑缩放过渡 */
-`;
-
-  sc.style.cssText = `
-width:1024px!important; /* 核心内容固定1024px */
+transform-origin: top center!important;
+transition: transform 0.3s ease!important;
+    `,
+    sc: `
+width:1024px!important;
 background-color:#121212!important;
 padding:0.5rem!important;
 box-sizing:border-box!important;
@@ -723,23 +723,44 @@ margin:0 auto!important;
 border-radius:0!important;
 box-shadow:none!important;
 display:block!important;
-`;
+    `
+  };
 
-  // 固定布局的HTML结构（优化手机端分享可见性）
+  // 分享截图专用样式（适配截图尺寸）
+  const shareStyles = {
+    rs: `
+max-height:none!important;
+overflow:hidden!important;
+padding:0!important;
+width:1024px!important;
+max-width:1024px!important;
+transform: scale(1)!important;
+position:relative!important;
+    `,
+    sc: `
+width:1024px!important;
+padding:0.5rem!important;
+font-size:0.85rem!important;
+    `
+  };
+
+  // 应用正常样式
+  rs.style.cssText = normalStyles.rs;
+  sc.style.cssText = normalStyles.sc;
+
+  // 构建HTML内容（保持原有结构）
   let html = `
 <div class="text-center mb-3 px-2">
   <h3 class="text-lg font-bold text-white mb-2">🧬 彥彬自檢表系統</h3>
   <div class="text-xs text-gray-400">${formattedUserInfo.提交時間 || ''}</div>
 </div>
 
-<!-- 基本資料：1024px宽度 -->
 <div class="bg-gray-800 rounded-lg p-3 mb-3 mx-auto w-[1024px] border border-gray-700">
   <div class="text-base font-semibold text-white mb-2 flex items-center justify-center">
     <i class="fa fa-user-circle text-primary mr-2 text-sm"></i>基本資料
   </div>
   <div class="grid grid-cols-2 gap-x-4 gap-y-2 text-sm text-gray-200 px-2">`;
 
-  // 处理基本資料：过滤空值
   const infoEntries = Object.entries(formattedUserInfo || {});
   infoEntries.forEach(([k, v]) => {
     if (k !== '提交時間' && v) {
@@ -761,7 +782,6 @@ display:block!important;
     總症狀數：${selectedTotal || 0} 項 (共${totalSymptomCount || 0}種症狀)
   </div>`;
 
-  // 处理调整方向：避免空值
   if (topFactors && topFactors.length > 0) {
     const topFactorText = topFactors.length === 1 
       ? `${topFactors[0].name || ''} (${topFactors[0].count || 0}項)` 
@@ -778,7 +798,6 @@ display:block!important;
   <i class="fa fa-heartbeat text-primary mr-2 text-sm"></i>七大健康要素評估
 </div>`;
 
-  // 遍历健康要素：1024px宽度
   if (factorSymptoms && Object.keys(factorSymptoms).length > 0) {
     Object.entries(factorSymptoms).forEach(([fk, f]) => {
       if (!f || f.length === 0) return;
@@ -811,109 +830,140 @@ display:block!important;
     });
   }
 
-  // 建议区域：1024px宽度
   html += `<div class="mt-3 bg-gray-800 border border-gray-700 rounded-lg p-2 text-xs text-gray-300 font-bold mx-auto w-[1024px]">
     💡 建議：根據自檢結果關注對應健康問題，必要時諮詢專業醫師
   </div>
 
-  <!-- 修复分享按钮：绑定修复后的分享逻辑 -->
   <div class="mt-4 mb-4 flex justify-center px-3 mx-auto w-[1024px]">
     <button id="native-share-btn" class="w-full px-4 py-2 bg-[#00C300] text-white rounded-lg font-medium flex items-center justify-center gap-1.5" style="z-index:99999!important;position:relative!important;">
       <i class="fa fa-share-alt"></i> 分享到LINE
     </button>
   </div>`;
 
-  // 强制同步渲染HTML
   sc.innerHTML = html;
 
-  // 初始化缩放：根据手机屏幕宽度自动缩适配
+  // 初始化用户观看时的缩放
   function adjustMobileScale() {
     const screenWidth = window.innerWidth;
     if (screenWidth < 1024) {
-      // 计算缩放比例：手机屏幕宽度 / 1024px（核心内容宽度），最小缩放到0.5倍
       const scale = Math.max(screenWidth / 1024, 0.5);
       rs.style.transform = `scale(${scale})`;
-      rs.style.width = `${screenWidth}px`; // 容器宽度匹配屏幕
+      rs.style.width = `${screenWidth}px`;
     } else {
-      rs.style.transform = 'scale(1)'; // 大屏不缩放
+      rs.style.transform = 'scale(1)';
     }
-    // 强制重绘
     void rs.offsetHeight;
   }
 
-  // 初始化缩放
   adjustMobileScale();
-  // 窗口大小变化时重新调整缩放
   window.addEventListener('resize', adjustMobileScale);
 
-  // 修复分享按钮点击事件（核心：修复分享错误）
-  const shareBtn = document.getElementById('native-share-btn');
-  // 先移除所有旧事件
-  shareBtn?.removeEventListener('click', handleShare);
-  // 绑定新的分享处理函数
-  shareBtn?.addEventListener('click', handleShare);
+  // 核心：分享截图专用处理函数
+  async function prepareShareScreenshot() {
+    // 1. 临时切换到分享截图样式（取消缩放，恢复原始1024px尺寸）
+    rs.style.cssText = shareStyles.rs;
+    sc.style.cssText = shareStyles.sc;
+    
+    // 2. 强制DOM重绘，确保样式生效
+    void rs.offsetHeight;
+    
+    // 3. 等待一小段时间，确保布局完全稳定
+    await new Promise(resolve => setTimeout(resolve, 200));
+    
+    // 4. 执行截图（适配不同截图库）
+    let imageData = '';
+    if (window.html2canvas) {
+      // 使用html2canvas截图（推荐）
+      const canvas = await html2canvas(rs, {
+        scale: 0.8, // 缩小截图比例，避免尺寸过大
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#121212',
+        width: 1024, // 固定截图宽度
+        height: rs.scrollHeight, // 自适应高度，包含所有内容
+        windowWidth: 1024,
+        windowHeight: rs.scrollHeight
+      });
+      imageData = canvas.toDataURL('image/png', 0.9); // 降低画质，减小尺寸
+    }
+    
+    // 5. 恢复用户观看样式
+    rs.style.cssText = normalStyles.rs;
+    sc.style.cssText = normalStyles.sc;
+    adjustMobileScale();
+    
+    return imageData;
+  }
 
   // 修复后的分享处理函数
-  function handleShare(e) {
+  const shareBtn = document.getElementById('native-share-btn');
+  shareBtn?.removeEventListener('click', handleShare);
+  shareBtn?.addEventListener('click', handleShare);
+
+  async function handleShare(e) {
     e.preventDefault();
     e.stopPropagation();
     
     try {
-      // 1. 分享前确保内容完全渲染且缩放到适配尺寸
-      adjustMobileScale();
+      // 显示加载提示
+      shareBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> 準備分享...';
+      shareBtn.disabled = true;
       
-      // 2. 强制DOM重绘，确保分享截图完整
-      void rs.offsetHeight;
+      // 1. 准备分享截图（核心修复）
+      const imageData = await prepareShareScreenshot();
       
-      // 3. 模拟原生分享逻辑（替换为你实际的分享代码）
-      // 这里是通用修复模板，你需要替换为项目实际的分享API
+      // 2. 执行分享逻辑
       if (window.nativeShare) {
-        // 原生APP分享（如WebView中的LINE分享）
+        // 原生APP分享（LINE/WebView）
         window.nativeShare({
           title: '彥彬自檢表系統',
           text: '我的自檢表報告',
-          // 确保截图时使用当前缩放后的完整DOM
-          image: captureShareImage() // 截图函数适配缩放
+          image: imageData || window.location.href
         });
       } else if (navigator.share) {
-        // Web Share API（浏览器原生分享）
-        navigator.share({
+        // 浏览器原生分享（无图片则分享链接）
+        const shareData = {
           title: '彥彬自檢表系統',
           text: '我的自檢表報告',
           url: window.location.href
-        }).catch(err => {
-          console.error('分享失败:', err);
-          alert('分享失敗，請稍後再試！');
-        });
+        };
+        // 如果有截图数据，尝试添加（部分浏览器支持）
+        if (imageData && navigator.canShare && navigator.canShare({ files: [new File([imageData], 'report.png', { type: 'image/png' })] })) {
+          shareData.files = [new File([imageData], 'report.png', { type: 'image/png' })];
+        }
+        await navigator.share(shareData);
       } else {
-        // 降级处理：提示用户截图分享
-        alert('當前設備不支援分享功能，請截圖後手動分享！');
+        // 降级处理：复制图片到剪贴板或提示截图
+        if (imageData) {
+          // 尝试复制图片到剪贴板
+          try {
+            const blob = await (await fetch(imageData)).blob();
+            await navigator.clipboard.write([
+              new ClipboardItem({ 'image/png': blob })
+            ]);
+            alert('報告圖片已複製到剪貼簿，請手動分享到LINE！');
+          } catch (clipErr) {
+            alert('當前設備不支援分享功能，請截圖後手動分享！');
+          }
+        } else {
+          alert('當前設備不支援分享功能，請截圖後手動分享！');
+        }
       }
     } catch (err) {
-      console.error('分享功能錯誤:', err);
-      // 错误兜底：确保界面不会卡死
-      alert('分享發生錯誤，已自動恢復！');
-      adjustMobileScale(); // 恢复缩放
+      console.error('分享錯誤:', err);
+      alert('分享失敗，請稍後再試！');
+    } finally {
+      // 恢复按钮状态
+      shareBtn.innerHTML = '<i class="fa fa-share-alt"></i> 分享到LINE';
+      shareBtn.disabled = false;
+      // 确保恢复正常样式
+      rs.style.cssText = normalStyles.rs;
+      sc.style.cssText = normalStyles.sc;
+      adjustMobileScale();
     }
   }
 
-  // 适配缩放的截图辅助函数（如果项目使用html2canvas等截图库）
-  function captureShareImage() {
-    // 如果使用html2canvas截图，需要适配缩放
-    if (window.html2canvas) {
-      return html2canvas(rs, {
-        scale: 1, // 截图比例恢复1:1，避免缩放导致模糊
-        useCORS: true,
-        logging: false,
-        backgroundColor: '#121212'
-      }).then(canvas => {
-        return canvas.toDataURL('image/png');
-      });
-    }
-    return '';
-  }
-
-  // 清理函数：避免内存泄漏
+  // 清理函数
   window.addEventListener('beforeunload', () => {
     window.removeEventListener('resize', adjustMobileScale);
     shareBtn?.removeEventListener('click', handleShare);
