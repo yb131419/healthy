@@ -723,7 +723,7 @@ margin:0 auto!important;border-radius:0;box-shadow:none;max-width:none;
 <span class="inline-block w-2.5 h-2.5 rounded-full ${factorStyles[fk].className.split(' ')[0]} mr-1.5"></span>
 【${fn}】（${f.length}項）
 </div>
-<div class="grid grid-cols-5 gap-3 text-sm">`; // 修改：將5列改為3列，間距加大，卡片更寬
+<div class="grid grid-cols-5 gap-5 text-sm">`; // 修改：將5列改為3列，間距加大，卡片更寬
     f.forEach((i,idx)=>{
       let severityClass = '';
       if(i.severity.includes('中度')) severityClass = 'bg-yellow-900/30 text-yellow-400';
