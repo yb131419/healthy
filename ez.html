@@ -980,7 +980,7 @@ line-height:1.4!important;
     shareBtn?.removeEventListener('click', handleShare);
   });
 }
-}
+
 
 function resetChecklist(){
   document.querySelectorAll('.symptom-checkbox').forEach(cb=>{cb.checked&&(cb.checked=false,cb.dispatchEvent(new Event('change')));});
