@@ -651,8 +651,6 @@ function submitChecklistData(data,btn){
     }
   });
 }
-
-
 function renderReportSummary(reportData){
   const {formattedUserInfo,factorSymptoms,summaryText,totalSymptomCount,selectedTotal,topFactors}=reportData;
   let sc=document.getElementById('summary-content');
@@ -718,37 +716,30 @@ margin:0 auto!important;border-radius:0;box-shadow:none;max-width:none;
 <div class="text-base font-semibold text-white mb-3 flex items-center justify-center">
 <i class="fa fa-heartbeat text-primary mr-2 text-sm"></i>七大健康要素評估
 </div>`;
-  // 核心修改：横向滚动容器 + 强制一行5列（横向排列）
-  html += `<div style="width: 100%; padding: 0; margin: 0 auto; overflow-x: auto; -webkit-overflow-scrolling: touch;">`;
   Object.entries(factorSymptoms).forEach(([fk,f])=>{
     const fn=factorStyles[fk].label;
-    html+=`<div class="bg-gray-800 border border-gray-700 rounded-lg p-3 mb-3 shadow-sm hover:shadow-md transition-shadow mx-auto w-full">
+    html+=`<div class="bg-gray-800 border border-gray-700 rounded-lg p-3 mb-3 shadow-sm hover:shadow-md transition-shadow mx-auto max-w-full">
 <div class="font-semibold text-sm text-white mb-2 flex items-center justify-center">
 <span class="inline-block w-2.5 h-2.5 rounded-full ${factorStyles[fk].className.split(' ')[0]} mr-1.5"></span>
 【${fn}】（${f.length}項）
 </div>
-<!-- 横向一行5列：flex布局强制横向排列，不换行 -->
-<div class="flex flex-nowrap gap-2 w-fit min-w-full">`; 
-    // 计算每列宽度：强制5列均分，每列20%宽度
-    const columnWidth = `calc(20% - 1.6px)`; 
+<div class="grid grid-cols-5 gap-5 text-sm">`; // 修改：將5列改為5列，間距加大，卡片更寬
     f.forEach((i,idx)=>{
       let severityClass = '';
       if(i.severity.includes('中度')) severityClass = 'bg-yellow-900/30 text-yellow-400';
       else if(i.severity.includes('重度')) severityClass = 'bg-red-900/30 text-red-400';
       else severityClass = 'bg-gray-700 text-gray-300';
-      // 核心修改：固定列宽、横向排列、文字不换行
-      html+=`<div style="width: ${columnWidth}; flex-shrink: 0;" class="p-2 bg-gray-700 rounded-lg border border-gray-600 min-h-[70px] flex flex-col justify-between">
-<div class="font-medium text-white text-xs overflow-hidden text-ellipsis whitespace-nowrap">${idx+1}. ${i.name}</div>
-<div class="flex justify-between mt-1 text-[10px]">
-<div class="text-gray-300 whitespace-nowrap">⏱️ ${i.duration}</div>
-<div class="${severityClass} px-1.5 py-0.5 rounded text-[10px] whitespace-nowrap">⚠️ ${i.severity}</div>
+      html+=`<div class="p-4 bg-gray-700 rounded-lg border border-gray-600 min-h-[70px] flex flex-col justify-between w-full">
+<div class="font-medium text-white text-base whitespace-normal break-words">${idx+1}. ${i.name}</div>
+<div class="flex justify-between mt-2 text-sm">
+<div class="text-gray-400">⏱️ ${i.duration}</div>
+<div class="${severityClass} px-3 py-1 rounded text-sm">⚠️ ${i.severity}</div>
 </div>
-</div>`;
+</div>`; // 修改：加大內邊距、最小高度，字體放大，寬度100%
     });
     html+=`</div></div>`;
   });
-  html += `</div>`; // 闭合横向滚动容器
-  html+=`<div class="mt-4 bg-gray-800 rounded-lg p-3 text-sm text-gray-300 font-bold mx-auto max-w-full">
+  html+=`<div class="mt-4 bg-gray-800 border border-gray-700 rounded-lg p-3 text-sm text-gray-300 font-bold mx-auto max-w-full">
 💡 建議：根據自檢結果關注對應健康問題，必要時諮詢專業醫師
 </div>
 <div class="mt-6 mb-3 flex justify-center px-3">
@@ -757,17 +748,11 @@ margin:0 auto!important;border-radius:0;box-shadow:none;max-width:none;
   </button>
 </div>`;
   sc.innerHTML=html;
-  
-  // 延迟截图，确保DOM完全渲染
   setTimeout(()=>{
-    rs.style.height='auto'; 
-    rs.style.display='none';
-    rs.offsetHeight; 
-    rs.style.display='block';
-  },300);
+    rs.style.height=sc.offsetHeight+60+'px';
+    rs.style.display='none';rs.offsetHeight;rs.style.display='block';
+  },150);
 }
-
-
 function resetChecklist(){
   document.querySelectorAll('.symptom-checkbox').forEach(cb=>{cb.checked&&(cb.checked=false,cb.dispatchEvent(new Event('change')));});
   document.getElementById('filter-all').click();
