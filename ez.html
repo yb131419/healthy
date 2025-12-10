@@ -701,9 +701,9 @@ border-radius:0;
 box-shadow:none;
 margin:0 auto!important;
 width:100%;
-max-width:1200px!important; /* 固定最大宽度，保证分享图片比例 */
+max-width:1200px!important; /* 外层容器略宽，容纳1024px的卡片 */
 text-align:center;
-min-width:800px; /* 固定最小宽度，确保五列不换行 */
+min-width:1024px; /* 匹配卡片宽度，确保不挤压 */
 overflow-x:hidden; /* 禁止横向滚动，避免分享裁剪问题 */
 `;
 
@@ -720,7 +720,7 @@ margin:0 auto!important;
 border-radius:0;
 box-shadow:none;
 max-width:1200px; /* 和外层容器一致 */
-min-width:800px;
+min-width:1024px;
 `;
 
   // 固定布局的HTML结构（完全移除响应式类）
@@ -730,8 +730,8 @@ min-width:800px;
   <div class="text-xs text-gray-400">${formattedUserInfo.提交時間 || ''}</div>
 </div>
 
-<!-- 基本資料：固定宽度布局 -->
-<div class="bg-gray-800 rounded-lg p-4 mb-4 mx-auto w-full max-w-4xl border border-gray-700">
+<!-- 基本資料：固定宽度1024px -->
+<div class="bg-gray-800 rounded-lg p-4 mb-4 mx-auto w-[1024px] border border-gray-700">
   <div class="text-base font-semibold text-white mb-2 flex items-center justify-center">
     <i class="fa fa-user-circle text-primary mr-2 text-sm"></i>基本資料
   </div>
@@ -776,14 +776,15 @@ min-width:800px;
   <i class="fa fa-heartbeat text-primary mr-2 text-sm"></i>七大健康要素評估
 </div>`;
 
-  // 遍历健康要素：固定五列布局（无响应式）
+  // 遍历健康要素：固定五列布局 + 卡片宽度1024px
   if (factorSymptoms && Object.keys(factorSymptoms).length > 0) {
     Object.entries(factorSymptoms).forEach(([fk, f]) => {
       if (!f || f.length === 0) return; // 跳过空的健康要素
       const fn = factorStyles?.[fk]?.label || fk; // 兼容factorStyles不存在的情况
       const colorClass = factorStyles?.[fk]?.className ? factorStyles[fk].className.split(' ')[0] : 'bg-gray-500';
 
-      html += `<div class="bg-gray-800 border border-gray-700 rounded-lg p-4 mb-3 mx-auto w-full max-w-5xl">
+      // 七大健康要素卡片固定宽度1024px
+      html += `<div class="bg-gray-800 border border-gray-700 rounded-lg p-4 mb-3 mx-auto w-[1024px]">
         <div class="font-semibold text-sm text-white mb-3 flex items-center justify-center">
           <span class="inline-block w-2.5 h-2.5 rounded-full ${colorClass} mr-1.5"></span>
           【${fn}】（${f.length}項）
@@ -798,7 +799,8 @@ min-width:800px;
         if (i.severity?.includes('中度')) severityClass = 'bg-yellow-900/30 text-yellow-400';
         else if (i.severity?.includes('重度')) severityClass = 'bg-red-900/30 text-red-400';
 
-        html += `<div class="p-1.5 bg-gray-700 rounded-lg border border-gray-600 min-width:120px">
+        // 加宽症状卡片的最小宽度，适配1024px的外层卡片
+        html += `<div class="p-1.5 bg-gray-700 rounded-lg border border-gray-600 min-width:180px">
           <div class="font-medium text-white text-sm">${idx + 1}. ${i.name || ''}</div>
           <div class="flex justify-between mt-1 text-xs">
             <div class="text-gray-400">⏱️ ${i.duration || ''}</div>
@@ -811,13 +813,13 @@ min-width:800px;
     });
   }
 
-  // 建议区域：固定宽度
-  html += `<div class="mt-4 bg-gray-800 border border-gray-700 rounded-lg p-3 text-sm text-gray-300 font-bold mx-auto w-full max-w-4xl">
+  // 建议区域：匹配1024px宽度，保持布局统一
+  html += `<div class="mt-4 bg-gray-800 border border-gray-700 rounded-lg p-3 text-sm text-gray-300 font-bold mx-auto w-[1024px]">
     💡 建議：根據自檢結果關注對應健康問題，必要時諮詢專業醫師
   </div>
 
-  <!-- 分享按钮：固定样式，避免分享功能触发错误 -->
-  <div class="mt-6 mb-3 flex justify-center px-3 mx-auto w-full max-w-4xl">
+  <!-- 分享按钮：匹配1024px宽度 -->
+  <div class="mt-6 mb-3 flex justify-center px-3 mx-auto w-[1024px]">
     <button id="native-share-btn" class="w-full sm:w-auto px-5 py-2 bg-[#00C300] text-white rounded-lg font-medium flex items-center justify-center gap-1.5">
       <i class="fa fa-share-alt"></i> 分享到LINE
     </button>
