@@ -736,10 +736,10 @@ margin:0 auto!important;border-radius:0;box-shadow:none;max-width:none;
       if(i.severity.includes('中度')) severityClass = 'bg-yellow-900/30 text-yellow-400';
       else if(i.severity.includes('重度')) severityClass = 'bg-red-900/30 text-red-400';
       else severityClass = 'bg-gray-700 text-gray-300';
-      // 核心修改：固定列宽、横向排列、文字不换行
-      html+=`<div style="width: ${columnWidth}; flex-shrink: 0;" class="p-2 bg-gray-700 rounded-lg border border-gray-600 min-h-[70px] flex flex-col justify-between">
-<div class="font-medium text-white text-xs overflow-hidden text-ellipsis whitespace-nowrap">${idx+1}. ${i.name}</div>
-<div class="flex justify-between mt-1 text-[10px]">
+      // 核心修改：提高最小高度到85px，确保文字完整显示不被切一半
+      html+=`<div style="width: ${columnWidth}; flex-shrink: 0;" class="p-2 bg-gray-700 rounded-lg border border-gray-600 min-h-[85px] flex flex-col justify-center">
+<div class="font-medium text-white text-xs overflow-hidden text-ellipsis whitespace-nowrap mb-2">${idx+1}. ${i.name}</div>
+<div class="flex justify-between text-[10px]">
 <div class="text-gray-300 whitespace-nowrap">⏱️ ${i.duration}</div>
 <div class="${severityClass} px-1.5 py-0.5 rounded text-[10px] whitespace-nowrap">⚠️ ${i.severity}</div>
 </div>
