@@ -690,11 +690,11 @@ function renderReportSummary(reportData) {
   const ts = Object.values(factorSymptoms).reduce((s, f) => s + f.length, 0);
   const rs = document.getElementById('report-summary');
 
-  // 移动端优先的布局样式：解决手机端看不到内容的问题
+  // 基础布局样式：适配手机端+支持缩放
   rs.style.cssText = `
-max-height:100vh!important; /* 手机端使用全屏高度 */
+max-height:100vh!important;
 overflow-y:auto!important;
-overflow-x:auto!important; /* 允许横向滚动查看1024px宽内容 */
+overflow-x:hidden!important; /* 关闭横向滚动，通过缩放适配 */
 padding:0.5rem!important;
 box-sizing:border-box!important;
 background-color:#121212!important;
@@ -702,28 +702,27 @@ border-radius:0!important;
 box-shadow:none!important;
 margin:0 auto!important;
 width:100%!important;
-max-width:none!important; /* 移除最大宽度限制，适配手机屏幕 */
+max-width:none!important;
 text-align:center!important;
-min-width:100%!important; /* 手机端最小宽度为屏幕宽度 */
-z-index:9999!important; /* 确保内容在最上层可见 */
+z-index:9999!important;
 position:relative!important;
+transform-origin: top center!important; /* 缩放原点：顶部居中 */
+transition: transform 0.3s ease!important; /* 平滑缩放过渡 */
 `;
 
   sc.style.cssText = `
-width:100%!important;
+width:1024px!important; /* 核心内容固定1024px */
 background-color:#121212!important;
-padding:0.5rem 0!important;
+padding:0.5rem!important;
 box-sizing:border-box!important;
-line-height:1.5!important; /* 加大行高，提升手机端可读性 */
-font-size:0.85rem!important; /* 适配手机端字号 */
+line-height:1.5!important;
+font-size:0.85rem!important;
 text-align:center!important;
 color:#FFFFFF!important;
 margin:0 auto!important;
 border-radius:0!important;
 box-shadow:none!important;
-max-width:none!important;
-min-width:1024px!important; /* 核心内容宽度保持1024px，手机端横向滚动 */
-display:block!important; /* 强制显示 */
+display:block!important;
 `;
 
   // 固定布局的HTML结构（优化手机端分享可见性）
@@ -733,17 +732,17 @@ display:block!important; /* 强制显示 */
   <div class="text-xs text-gray-400">${formattedUserInfo.提交時間 || ''}</div>
 </div>
 
-<!-- 基本資料：1024px宽度 + 手机端横向滚动 -->
+<!-- 基本資料：1024px宽度 -->
 <div class="bg-gray-800 rounded-lg p-3 mb-3 mx-auto w-[1024px] border border-gray-700">
   <div class="text-base font-semibold text-white mb-2 flex items-center justify-center">
     <i class="fa fa-user-circle text-primary mr-2 text-sm"></i>基本資料
   </div>
   <div class="grid grid-cols-2 gap-x-4 gap-y-2 text-sm text-gray-200 px-2">`;
 
-  // 处理基本資料：过滤空值，避免渲染错误
+  // 处理基本資料：过滤空值
   const infoEntries = Object.entries(formattedUserInfo || {});
   infoEntries.forEach(([k, v]) => {
-    if (k !== '提交時間' && v) { // 排除提交时间且值不为空
+    if (k !== '提交時間' && v) {
       const label = k === '血糖' ? '血糖' : k;
       html += `<div class="flex justify-between py-1">
         <span class="text-gray-400 font-medium w-20 text-left">${label}：</span>
@@ -762,7 +761,7 @@ display:block!important; /* 强制显示 */
     總症狀數：${selectedTotal || 0} 項 (共${totalSymptomCount || 0}種症狀)
   </div>`;
 
-  // 处理调整方向：避免空值导致的渲染错误
+  // 处理调整方向：避免空值
   if (topFactors && topFactors.length > 0) {
     const topFactorText = topFactors.length === 1 
       ? `${topFactors[0].name || ''} (${topFactors[0].count || 0}項)` 
@@ -779,30 +778,26 @@ display:block!important; /* 强制显示 */
   <i class="fa fa-heartbeat text-primary mr-2 text-sm"></i>七大健康要素評估
 </div>`;
 
-  // 遍历健康要素：1024px宽度 + 手机端适配
+  // 遍历健康要素：1024px宽度
   if (factorSymptoms && Object.keys(factorSymptoms).length > 0) {
     Object.entries(factorSymptoms).forEach(([fk, f]) => {
-      if (!f || f.length === 0) return; // 跳过空的健康要素
-      const fn = factorStyles?.[fk]?.label || fk; // 兼容factorStyles不存在的情况
+      if (!f || f.length === 0) return;
+      const fn = factorStyles?.[fk]?.label || fk;
       const colorClass = factorStyles?.[fk]?.className ? factorStyles[fk].className.split(' ')[0] : 'bg-gray-500';
 
-      // 七大健康要素卡片固定宽度1024px
       html += `<div class="bg-gray-800 border border-gray-700 rounded-lg p-3 mb-3 mx-auto w-[1024px]">
         <div class="font-semibold text-sm text-white mb-2 flex items-center justify-center">
           <span class="inline-block w-2 h-2 rounded-full ${colorClass} mr-1.5"></span>
           【${fn}】（${f.length}項）
         </div>
-        <!-- 手机端适配的五列布局 -->
         <div class="grid grid-cols-5 gap-1 text-sm px-1">`;
 
       f.forEach((i, idx) => {
-        if (!i) return; // 跳过空症状
-        // 固定严重程度样式，避免空值错误
+        if (!i) return;
         let severityClass = 'bg-gray-700 text-gray-300';
         if (i.severity?.includes('中度')) severityClass = 'bg-yellow-900/30 text-yellow-400';
         else if (i.severity?.includes('重度')) severityClass = 'bg-red-900/30 text-red-400';
 
-        // 手机端优化的症状卡片
         html += `<div class="p-1 bg-gray-700 rounded-lg border border-gray-600 min-width:100px">
           <div class="font-medium text-white text-xs">${idx + 1}. ${i.name || ''}</div>
           <div class="flex justify-between mt-1 text-[10px]">
@@ -816,45 +811,113 @@ display:block!important; /* 强制显示 */
     });
   }
 
-  // 建议区域：1024px宽度 + 手机端适配
+  // 建议区域：1024px宽度
   html += `<div class="mt-3 bg-gray-800 border border-gray-700 rounded-lg p-2 text-xs text-gray-300 font-bold mx-auto w-[1024px]">
     💡 建議：根據自檢結果關注對應健康問題，必要時諮詢專業醫師
   </div>
 
-  <!-- 修复分享按钮：手机端优先 + 避免点击错误 -->
+  <!-- 修复分享按钮：绑定修复后的分享逻辑 -->
   <div class="mt-4 mb-4 flex justify-center px-3 mx-auto w-[1024px]">
     <button id="native-share-btn" class="w-full px-4 py-2 bg-[#00C300] text-white rounded-lg font-medium flex items-center justify-center gap-1.5" style="z-index:99999!important;position:relative!important;">
       <i class="fa fa-share-alt"></i> 分享到LINE
     </button>
   </div>`;
 
-  // 强制同步渲染HTML：解决手机端分享时内容未加载
+  // 强制同步渲染HTML
   sc.innerHTML = html;
 
-  // 修复手机端重绘逻辑：立即执行，不使用异步
-  rs.style.height = 'auto';
-  rs.style.display = 'block!important';
-  rs.style.visibility = 'visible!important';
-  
-  // 强制触发DOM重绘（解决手机端分享图片空白）
-  setTimeout(() => {
-    void rs.offsetHeight;
-    // 手机端滚动到顶部，确保用户能看到内容
-    rs.scrollTop = 0;
-    rs.scrollLeft = 0;
-  }, 0);
-  
-  // 修复分享按钮点击事件（防止手机端事件丢失）
-  setTimeout(() => {
-    const shareBtn = document.getElementById('native-share-btn');
-    if (shareBtn) {
-      // 移除原有事件，避免重复绑定
-      shareBtn.onclick = null;
-      // 确保按钮可点击
-      shareBtn.style.pointerEvents = 'auto';
-      shareBtn.style.opacity = '1';
+  // 初始化缩放：根据手机屏幕宽度自动缩适配
+  function adjustMobileScale() {
+    const screenWidth = window.innerWidth;
+    if (screenWidth < 1024) {
+      // 计算缩放比例：手机屏幕宽度 / 1024px（核心内容宽度），最小缩放到0.5倍
+      const scale = Math.max(screenWidth / 1024, 0.5);
+      rs.style.transform = `scale(${scale})`;
+      rs.style.width = `${screenWidth}px`; // 容器宽度匹配屏幕
+    } else {
+      rs.style.transform = 'scale(1)'; // 大屏不缩放
     }
-  }, 100);
+    // 强制重绘
+    void rs.offsetHeight;
+  }
+
+  // 初始化缩放
+  adjustMobileScale();
+  // 窗口大小变化时重新调整缩放
+  window.addEventListener('resize', adjustMobileScale);
+
+  // 修复分享按钮点击事件（核心：修复分享错误）
+  const shareBtn = document.getElementById('native-share-btn');
+  // 先移除所有旧事件
+  shareBtn?.removeEventListener('click', handleShare);
+  // 绑定新的分享处理函数
+  shareBtn?.addEventListener('click', handleShare);
+
+  // 修复后的分享处理函数
+  function handleShare(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    try {
+      // 1. 分享前确保内容完全渲染且缩放到适配尺寸
+      adjustMobileScale();
+      
+      // 2. 强制DOM重绘，确保分享截图完整
+      void rs.offsetHeight;
+      
+      // 3. 模拟原生分享逻辑（替换为你实际的分享代码）
+      // 这里是通用修复模板，你需要替换为项目实际的分享API
+      if (window.nativeShare) {
+        // 原生APP分享（如WebView中的LINE分享）
+        window.nativeShare({
+          title: '彥彬自檢表系統',
+          text: '我的自檢表報告',
+          // 确保截图时使用当前缩放后的完整DOM
+          image: captureShareImage() // 截图函数适配缩放
+        });
+      } else if (navigator.share) {
+        // Web Share API（浏览器原生分享）
+        navigator.share({
+          title: '彥彬自檢表系統',
+          text: '我的自檢表報告',
+          url: window.location.href
+        }).catch(err => {
+          console.error('分享失败:', err);
+          alert('分享失敗，請稍後再試！');
+        });
+      } else {
+        // 降级处理：提示用户截图分享
+        alert('當前設備不支援分享功能，請截圖後手動分享！');
+      }
+    } catch (err) {
+      console.error('分享功能錯誤:', err);
+      // 错误兜底：确保界面不会卡死
+      alert('分享發生錯誤，已自動恢復！');
+      adjustMobileScale(); // 恢复缩放
+    }
+  }
+
+  // 适配缩放的截图辅助函数（如果项目使用html2canvas等截图库）
+  function captureShareImage() {
+    // 如果使用html2canvas截图，需要适配缩放
+    if (window.html2canvas) {
+      return html2canvas(rs, {
+        scale: 1, // 截图比例恢复1:1，避免缩放导致模糊
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#121212'
+      }).then(canvas => {
+        return canvas.toDataURL('image/png');
+      });
+    }
+    return '';
+  }
+
+  // 清理函数：避免内存泄漏
+  window.addEventListener('beforeunload', () => {
+    window.removeEventListener('resize', adjustMobileScale);
+    shareBtn?.removeEventListener('click', handleShare);
+  });
 }
 
 
