@@ -690,52 +690,55 @@ function renderReportSummary(reportData) {
   const ts = Object.values(factorSymptoms).reduce((s, f) => s + f.length, 0);
   const rs = document.getElementById('report-summary');
 
-  // 固定布局样式：移除所有响应式，保证分享图片尺寸稳定
+  // 移动端优先的布局样式：解决手机端看不到内容的问题
   rs.style.cssText = `
-max-height:80vh;
-overflow-y:auto;
-padding:1rem;
-box-sizing:border-box;
-background-color:#121212;
-border-radius:0;
-box-shadow:none;
+max-height:100vh!important; /* 手机端使用全屏高度 */
+overflow-y:auto!important;
+overflow-x:auto!important; /* 允许横向滚动查看1024px宽内容 */
+padding:0.5rem!important;
+box-sizing:border-box!important;
+background-color:#121212!important;
+border-radius:0!important;
+box-shadow:none!important;
 margin:0 auto!important;
-width:100%;
-max-width:1200px!important; /* 外层容器略宽，容纳1024px的卡片 */
-text-align:center;
-min-width:1024px; /* 匹配卡片宽度，确保不挤压 */
-overflow-x:hidden; /* 禁止横向滚动，避免分享裁剪问题 */
+width:100%!important;
+max-width:none!important; /* 移除最大宽度限制，适配手机屏幕 */
+text-align:center!important;
+min-width:100%!important; /* 手机端最小宽度为屏幕宽度 */
+z-index:9999!important; /* 确保内容在最上层可见 */
+position:relative!important;
 `;
 
   sc.style.cssText = `
-width:100%;
-background-color:#121212;
-padding:1rem;
-box-sizing:border-box;
-line-height:1.4;
-font-size:0.9rem;
+width:100%!important;
+background-color:#121212!important;
+padding:0.5rem 0!important;
+box-sizing:border-box!important;
+line-height:1.5!important; /* 加大行高，提升手机端可读性 */
+font-size:0.85rem!important; /* 适配手机端字号 */
 text-align:center!important;
-color:#FFFFFF;
+color:#FFFFFF!important;
 margin:0 auto!important;
-border-radius:0;
-box-shadow:none;
-max-width:1200px; /* 和外层容器一致 */
-min-width:1024px;
+border-radius:0!important;
+box-shadow:none!important;
+max-width:none!important;
+min-width:1024px!important; /* 核心内容宽度保持1024px，手机端横向滚动 */
+display:block!important; /* 强制显示 */
 `;
 
-  // 固定布局的HTML结构（完全移除响应式类）
+  // 固定布局的HTML结构（优化手机端分享可见性）
   let html = `
-<div class="text-center mb-4">
+<div class="text-center mb-3 px-2">
   <h3 class="text-lg font-bold text-white mb-2">🧬 彥彬自檢表系統</h3>
   <div class="text-xs text-gray-400">${formattedUserInfo.提交時間 || ''}</div>
 </div>
 
-<!-- 基本資料：固定宽度1024px -->
-<div class="bg-gray-800 rounded-lg p-4 mb-4 mx-auto w-[1024px] border border-gray-700">
+<!-- 基本資料：1024px宽度 + 手机端横向滚动 -->
+<div class="bg-gray-800 rounded-lg p-3 mb-3 mx-auto w-[1024px] border border-gray-700">
   <div class="text-base font-semibold text-white mb-2 flex items-center justify-center">
     <i class="fa fa-user-circle text-primary mr-2 text-sm"></i>基本資料
   </div>
-  <div class="grid grid-cols-2 gap-x-6 gap-y-2 text-sm text-gray-200 px-2">`;
+  <div class="grid grid-cols-2 gap-x-4 gap-y-2 text-sm text-gray-200 px-2">`;
 
   // 处理基本資料：过滤空值，避免渲染错误
   const infoEntries = Object.entries(formattedUserInfo || {});
@@ -743,19 +746,19 @@ min-width:1024px;
     if (k !== '提交時間' && v) { // 排除提交时间且值不为空
       const label = k === '血糖' ? '血糖' : k;
       html += `<div class="flex justify-between py-1">
-        <span class="text-gray-400 font-medium w-24 text-left">${label}：</span>
-        <span class="text-white flex-1 text-left ml-2">${v}</span>
+        <span class="text-gray-400 font-medium w-20 text-left">${label}：</span>
+        <span class="text-white flex-1 text-left ml-2">${v || ''}</span>
       </div>`;
     }
   });
 
   html += `</div></div>
 
-<div class="mb-4">
+<div class="mb-3 px-2">
   <div class="text-base font-semibold text-white flex items-center justify-center mb-2">
     <i class="fa fa-chart-pie text-primary mr-2 text-sm"></i>統計資訊
   </div>
-  <div class="bg-green-900/30 text-green-400 px-3 py-1.5 rounded-full text-sm font-medium inline-flex items-center justify-center mx-auto mb-2">
+  <div class="bg-green-900/30 text-green-400 px-3 py-1 rounded-full text-sm font-medium inline-flex items-center justify-center mx-auto mb-2">
     總症狀數：${selectedTotal || 0} 項 (共${totalSymptomCount || 0}種症狀)
   </div>`;
 
@@ -765,18 +768,18 @@ min-width:1024px;
       ? `${topFactors[0].name || ''} (${topFactors[0].count || 0}項)` 
       : `${topFactors[0].name || ''} (${topFactors[0].count || 0}項)、${topFactors[1].name || ''} (${topFactors[1].count || 0}項)`;
     
-    html += `<div class="bg-blue-900/30 text-blue-400 px-3 py-1.5 rounded-full text-sm font-medium inline-flex items-center justify-center mx-auto">
+    html += `<div class="bg-blue-900/30 text-blue-400 px-3 py-1 rounded-full text-sm font-medium inline-flex items-center justify-center mx-auto">
       調整方向：${topFactorText}
     </div>`;
   }
 
   html += `</div>
 
-<div class="text-base font-semibold text-white mb-3 flex items-center justify-center">
+<div class="text-base font-semibold text-white mb-3 flex items-center justify-center px-2">
   <i class="fa fa-heartbeat text-primary mr-2 text-sm"></i>七大健康要素評估
 </div>`;
 
-  // 遍历健康要素：固定五列布局 + 卡片宽度1024px
+  // 遍历健康要素：1024px宽度 + 手机端适配
   if (factorSymptoms && Object.keys(factorSymptoms).length > 0) {
     Object.entries(factorSymptoms).forEach(([fk, f]) => {
       if (!f || f.length === 0) return; // 跳过空的健康要素
@@ -784,13 +787,13 @@ min-width:1024px;
       const colorClass = factorStyles?.[fk]?.className ? factorStyles[fk].className.split(' ')[0] : 'bg-gray-500';
 
       // 七大健康要素卡片固定宽度1024px
-      html += `<div class="bg-gray-800 border border-gray-700 rounded-lg p-4 mb-3 mx-auto w-[1024px]">
-        <div class="font-semibold text-sm text-white mb-3 flex items-center justify-center">
-          <span class="inline-block w-2.5 h-2.5 rounded-full ${colorClass} mr-1.5"></span>
+      html += `<div class="bg-gray-800 border border-gray-700 rounded-lg p-3 mb-3 mx-auto w-[1024px]">
+        <div class="font-semibold text-sm text-white mb-2 flex items-center justify-center">
+          <span class="inline-block w-2 h-2 rounded-full ${colorClass} mr-1.5"></span>
           【${fn}】（${f.length}項）
         </div>
-        <!-- 固定五列布局：无响应式，保证分享图片结构稳定 -->
-        <div class="grid grid-cols-5 gap-1.5 text-sm px-1">`;
+        <!-- 手机端适配的五列布局 -->
+        <div class="grid grid-cols-5 gap-1 text-sm px-1">`;
 
       f.forEach((i, idx) => {
         if (!i) return; // 跳过空症状
@@ -799,12 +802,12 @@ min-width:1024px;
         if (i.severity?.includes('中度')) severityClass = 'bg-yellow-900/30 text-yellow-400';
         else if (i.severity?.includes('重度')) severityClass = 'bg-red-900/30 text-red-400';
 
-        // 加宽症状卡片的最小宽度，适配1024px的外层卡片
-        html += `<div class="p-1.5 bg-gray-700 rounded-lg border border-gray-600 min-width:180px">
-          <div class="font-medium text-white text-sm">${idx + 1}. ${i.name || ''}</div>
-          <div class="flex justify-between mt-1 text-xs">
+        // 手机端优化的症状卡片
+        html += `<div class="p-1 bg-gray-700 rounded-lg border border-gray-600 min-width:100px">
+          <div class="font-medium text-white text-xs">${idx + 1}. ${i.name || ''}</div>
+          <div class="flex justify-between mt-1 text-[10px]">
             <div class="text-gray-400">⏱️ ${i.duration || ''}</div>
-            <div class="${severityClass} px-1.5 py-0.5 rounded text-xs">⚠️ ${i.severity || '輕度'}</div>
+            <div class="${severityClass} px-1 py-0.5 rounded text-[10px]">⚠️ ${i.severity || '輕度'}</div>
           </div>
         </div>`;
       });
@@ -813,27 +816,45 @@ min-width:1024px;
     });
   }
 
-  // 建议区域：匹配1024px宽度，保持布局统一
-  html += `<div class="mt-4 bg-gray-800 border border-gray-700 rounded-lg p-3 text-sm text-gray-300 font-bold mx-auto w-[1024px]">
+  // 建议区域：1024px宽度 + 手机端适配
+  html += `<div class="mt-3 bg-gray-800 border border-gray-700 rounded-lg p-2 text-xs text-gray-300 font-bold mx-auto w-[1024px]">
     💡 建議：根據自檢結果關注對應健康問題，必要時諮詢專業醫師
   </div>
 
-  <!-- 分享按钮：匹配1024px宽度 -->
-  <div class="mt-6 mb-3 flex justify-center px-3 mx-auto w-[1024px]">
-    <button id="native-share-btn" class="w-full sm:w-auto px-5 py-2 bg-[#00C300] text-white rounded-lg font-medium flex items-center justify-center gap-1.5">
+  <!-- 修复分享按钮：手机端优先 + 避免点击错误 -->
+  <div class="mt-4 mb-4 flex justify-center px-3 mx-auto w-[1024px]">
+    <button id="native-share-btn" class="w-full px-4 py-2 bg-[#00C300] text-white rounded-lg font-medium flex items-center justify-center gap-1.5" style="z-index:99999!important;position:relative!important;">
       <i class="fa fa-share-alt"></i> 分享到LINE
     </button>
   </div>`;
 
-  // 渲染HTML：确保同步渲染，避免分享时内容未加载
+  // 强制同步渲染HTML：解决手机端分享时内容未加载
   sc.innerHTML = html;
 
-  // 简化重绘逻辑：避免异步导致分享截图错误
+  // 修复手机端重绘逻辑：立即执行，不使用异步
   rs.style.height = 'auto';
-  rs.style.display = 'block';
+  rs.style.display = 'block!important';
+  rs.style.visibility = 'visible!important';
   
-  // 强制触发DOM重绘（解决分享图片空白/错位）
-  void rs.offsetHeight;
+  // 强制触发DOM重绘（解决手机端分享图片空白）
+  setTimeout(() => {
+    void rs.offsetHeight;
+    // 手机端滚动到顶部，确保用户能看到内容
+    rs.scrollTop = 0;
+    rs.scrollLeft = 0;
+  }, 0);
+  
+  // 修复分享按钮点击事件（防止手机端事件丢失）
+  setTimeout(() => {
+    const shareBtn = document.getElementById('native-share-btn');
+    if (shareBtn) {
+      // 移除原有事件，避免重复绑定
+      shareBtn.onclick = null;
+      // 确保按钮可点击
+      shareBtn.style.pointerEvents = 'auto';
+      shareBtn.style.opacity = '1';
+    }
+  }, 100);
 }
 
 
