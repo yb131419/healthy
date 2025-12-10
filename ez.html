@@ -652,6 +652,7 @@ function submitChecklistData(data,btn){
   });
 }
 
+
 function renderReportSummary(reportData){
   const {formattedUserInfo,factorSymptoms,summaryText,totalSymptomCount,selectedTotal,topFactors}=reportData;
   let sc=document.getElementById('summary-content');
@@ -696,7 +697,7 @@ margin:0 auto!important;border-radius:0;box-shadow:none;max-width:none;
   });
   html+=`</div></div>
 <div class="mb-4">
-<div class="text-base font-semibold text-white mb-2 flex items-center justify-center">
+<div class="text-base font-semibold text-white flex items-center justify-center mb-2">
 <i class="fa fa-chart-pie text-primary mr-2 text-sm"></i>統計資訊
 </div>
 <div class="bg-green-900/30 text-green-400 px-3 py-1.5 rounded-full text-sm font-medium inline-flex items-center justify-center mx-auto mb-2">
@@ -735,10 +736,10 @@ margin:0 auto!important;border-radius:0;box-shadow:none;max-width:none;
       if(i.severity.includes('中度')) severityClass = 'bg-yellow-900/30 text-yellow-400';
       else if(i.severity.includes('重度')) severityClass = 'bg-red-900/30 text-red-400';
       else severityClass = 'bg-gray-700 text-gray-300';
-      // 核心修改：提高最小高度到85px，确保文字完整显示不被切一半
-      html+=`<div style="width: ${columnWidth}; flex-shrink: 0;" class="p-2 bg-gray-700 rounded-lg border border-gray-600 min-h-[85px] flex flex-col justify-center">
-<div class="font-medium text-white text-xs overflow-hidden text-ellipsis whitespace-nowrap mb-2">${idx+1}. ${i.name}</div>
-<div class="flex justify-between text-[10px]">
+      // 核心修改：固定列宽、横向排列、文字不换行
+      html+=`<div style="width: ${columnWidth}; flex-shrink: 0;" class="p-2 bg-gray-700 rounded-lg border border-gray-600 min-h-[70px] flex flex-col justify-between">
+<div class="font-medium text-white text-xs overflow-hidden text-ellipsis whitespace-nowrap">${idx+1}. ${i.name}</div>
+<div class="flex justify-between mt-1 text-[10px]">
 <div class="text-gray-300 whitespace-nowrap">⏱️ ${i.duration}</div>
 <div class="${severityClass} px-1.5 py-0.5 rounded text-[10px] whitespace-nowrap">⚠️ ${i.severity}</div>
 </div>
@@ -757,91 +758,15 @@ margin:0 auto!important;border-radius:0;box-shadow:none;max-width:none;
 </div>`;
   sc.innerHTML=html;
   
-  // ========== 核心优化：手机端分享截图尺寸适配（仅修改此部分） ==========
-  // 1. 初始化时的轻量尺寸适配（不阻塞）
+  // 延迟截图，确保DOM完全渲染
   setTimeout(()=>{
     rs.style.height='auto'; 
     rs.style.display='none';
     rs.offsetHeight; 
     rs.style.display='block';
   },300);
-
-  // 2. 绑定分享按钮点击事件，优化截图尺寸（缩小到手机最小适配尺寸）
-  const shareBtn = document.getElementById('native-share-btn');
-  if (shareBtn) {
-    // 先移除原有事件，避免重复绑定导致卡住
-    const newShareBtn = shareBtn.cloneNode(true);
-    shareBtn.parentNode.replaceChild(newShareBtn, shareBtn);
-    
-    // 绑定稳定的分享截图事件
-    newShareBtn.addEventListener('click', async (e) => {
-      e.stopPropagation();
-      e.preventDefault();
-      
-      // 仅在手机端执行尺寸缩小
-      const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-      if (!isMobile) return;
-
-      // 保存原始样式，确保截图后恢复
-      const originalRsStyle = rs.style.cssText;
-      const originalScStyle = sc.style.cssText;
-      
-      try {
-        // 临时缩小到手机分享最小尺寸（320px宽度 + 0.7缩放，极致缩小）
-        rs.style.cssText = `
-max-height:100%;overflow:hidden;padding:0.3rem;box-sizing:border-box;
-background-color:#121212;border-radius:0;box-shadow:none;margin:0 auto!important;
-width:320px;max-width:320px;text-align:center;
-transform: scale(0.7);transform-origin: top center;
-        `;
-        sc.style.cssText = `
-width:100%;background-color:#121212;padding:0.3rem;box-sizing:border-box;
-line-height:1.1;font-size:0.6rem;text-align:center!important;color:#FFFFFF;
-margin:0 auto!important;border-radius:0;box-shadow:none;max-width:none;
-        `;
-        
-        // 强制重绘，确保尺寸生效
-        rs.offsetHeight;
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
-        // ======================
-        // 这里是你的截图/分享核心逻辑（保留原有逻辑，仅适配尺寸）
-        // 示例：如果使用html2canvas截图
-        if (window.html2canvas) {
-          const canvas = await html2canvas(rs, {
-            scale: 1, // 关闭二次缩放，仅用上面的transform缩小
-            useCORS: true,
-            logging: false,
-            timeout: 3000 // 缩短超时，避免卡住
-          });
-          // 转为压缩后的图片（进一步缩小体积）
-          const imgData = canvas.toDataURL('image/jpeg', 0.7);
-          
-          // LINE分享逻辑（替换为你实际的分享代码）
-          if (window.LINE?.Share) {
-            window.LINE.Share.send({ type: 'image', url: imgData });
-          } else {
-            // 备用：下载缩小后的图片
-            const link = document.createElement('a');
-            link.href = imgData;
-            link.download = '健康報告_縮小版.png';
-            link.click();
-          }
-        }
-        // ======================
-        
-      } catch (err) {
-        console.error('分享截图失败:', err);
-        alert('分享失敗，請稍後再試');
-      } finally {
-        // 无论成功失败，立即恢复原始样式，避免卡住
-        rs.style.cssText = originalRsStyle;
-        sc.style.cssText = originalScStyle;
-        rs.offsetHeight; // 强制恢复布局
-      }
-    });
-  }
 }
+
 
 function resetChecklist(){
   document.querySelectorAll('.symptom-checkbox').forEach(cb=>{cb.checked&&(cb.checked=false,cb.dispatchEvent(new Event('change')));});
