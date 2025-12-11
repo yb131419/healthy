@@ -432,23 +432,45 @@ function organizeReportData(submitData){
     factorSymptoms.forEach(symptom => allSelectedSymptoms.add(symptom.name));
   });
   const selectedTotal = allSelectedSymptoms.size;
-  // 構建七大健康要素文字內容
+  
+  // 重构分享文字 - 突出彥彬自檢表系統，优化排版
   let factorText = '';
   Object.entries(fs).forEach(([key, list]) => {
     if(list.length > 0) {
-      factorText += `${factorStyles[key].label} (${list.length}項)：`;
-      factorText += list.map(item => `${item.name}(${item.duration}/${item.severity})`).join('、');
-      factorText += '\n';
+      // 要素标题加粗，症状列表换行缩进
+      factorText += `\n【${factorStyles[key].label}】(${list.length}項)：`;
+      list.forEach((item, idx) => {
+        factorText += `\n  ${idx+1}. ${item.name}
+    └ 持續時間：${item.duration} | 症狀程度：${item.severity}`;
+      });
     }
   });
-  // 整合分享文字（包含七大健康要素）
-  let st=`🧬 彥彬自檢表系統
-👤 姓名：${fui.姓名} 🕶️ 年齡：${fui.年齡}
-📊 總選取症狀數：${selectedTotal} 項 (共${totalSymptomCount}種症狀)
-🎯 調整方向：${topFactors.length > 0 ? (topFactors.length === 1 ? `${topFactors[0].name} (${topFactors[0].count}項)` : `${topFactors[0].name} (${topFactors[0].count}項)、${topFactors[1].name} (${topFactors[1].count}項)`) : '無'}
-🩺 七大健康要素評估：
-${factorText || '無'}
-💡 建議：根據自檢結果關注對應健康問題，必要時諮詢專業醫師`;
+
+  // 最终分享文字 - 结构化排版，突出品牌
+  let st = `
+📋 彥彬自檢表系統 - 健康評估報告
+━━━━━━━━━━━━━━━━━━
+👤 基本資訊
+  姓名：${fui.姓名}
+  年齡：${fui.年齡}
+  性別：${fui.性別}
+  身高/體重：${fui.身高}/${fui.體重}
+  血壓/血糖：${fui.血壓}/${fui.血糖}
+  職業：${fui.職業}
+  提交時間：${fui.提交時間}
+
+📊 整體統計
+  總選取症狀：${selectedTotal} 項 (系統共${totalSymptomCount}種症狀)
+  優先調整方向：${topFactors.length > 0 ? (topFactors.length === 1 ? `${topFactors[0].name} (${topFactors[0].count}項)` : `${topFactors[0].name} (${topFactors[0].count}項)、${topFactors[1].name} (${topFactors[1].count}項)`) : '無'}
+
+🩺 七大健康要素詳情${factorText || '\n  暫無相關症狀記錄'}
+
+💡 健康建議
+  根據自檢結果關注對應健康問題，必要時諮詢專業醫師
+━━━━━━━━━━━━━━━━━━
+🔖 來源：彥彬自檢表系統
+`;
+
   return {formattedUserInfo:fui,factorSymptoms:ffs,summaryText:st,totalSymptomCount, selectedTotal, topFactors};
 }
 function initControlButtons(){
@@ -566,23 +588,40 @@ box-sizing:border-box;color:#FFFFFF;border-radius:0;box-shadow:none;max-width:no
       const compressedBlob=await (await fetch(dataUrl)).blob();
       file=new File([compressedBlob],fileName,{type:'image/png'});
     }else file=new File([imgBlob],fileName,{type:'image/png'});
-    // 分享逻辑
+    // 分享逻辑 - 优化文字分享体验
     if(navigator.share&&typeof navigator.share==='function'){
       try{
-        const shareData={title:'🧬 彥彬自檢表系統',files:[file],text:st};
+        const shareData={
+          title:'📋 彥彬自檢表系統 - 健康評估報告',
+          files:[file],
+          text:st // 使用重构后的排版文字
+        };
         const canShare=navigator.canShare?await navigator.canShare(shareData):true;
-        if(canShare){await navigator.share(shareData);alert('分享成功！\n報告已發送到LINE群組/好友');}
+        if(canShare){
+          await navigator.share(shareData);
+          alert('✅ 分享成功！\n報告已發送到LINE群組/好友');
+        }
       }catch(err){
         console.error('LINE分享失敗：',err);
-        if(err.name!=='AbortError')alert(`分享失敗：${err.message||'未知錯誤'}`);
+        if(err.name!=='AbortError'){
+          alert(`❌ 分享失敗：${err.message||'未知錯誤'}\n已自動複製文字報告到剪貼板`);
+          await navigator.clipboard.writeText(st); // 失败时自动复制文字
+        }
       }
     }else{
-      try{await navigator.clipboard.writeText(st);alert('文字已複製到剪貼板，請手動截圖分享');}
-      catch(cbErr){alert('請手動截圖並複製文字分享');}
+      // 无原生分享时，复制排版后的文字
+      await navigator.clipboard.writeText(st);
+      alert('📋 文字報告已複製到剪貼板，請手動截圖分享');
     }
   }catch(err){
     console.error('分享總體錯誤：',err);
-    alert('分享功能異常，請手動截圖分享');
+    // 异常时仍尝试复制文字
+    try {
+      await navigator.clipboard.writeText(window.reportData.summaryText);
+      alert('⚠️ 分享功能異常，已複製文字報告到剪貼板，請手動截圖分享');
+    } catch (cbErr) {
+      alert('⚠️ 分享功能異常，請手動截圖並複製以下文字分享：\n\n' + window.reportData.summaryText);
+    }
   }finally{
     // 恢复按钮状态
     btn.disabled=false;
