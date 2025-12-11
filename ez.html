@@ -432,19 +432,22 @@ function organizeReportData(submitData){
     factorSymptoms.forEach(symptom => allSelectedSymptoms.add(symptom.name));
   });
   const selectedTotal = allSelectedSymptoms.size;
-  // 重构文字分享内容：加入七大健康要素评估
-  let factorText = "\n📋 七大健康要素評估：\n";
-  Object.entries(ffs).forEach(([key, list]) => {
-    factorText += `${factorStyles[key].label}：${list.length}項\n`;
-    list.forEach((item, idx) => {
-      factorText += `  ${idx+1}.${item.name}（${item.duration} | ${item.severity}）\n`;
-    });
+  // 構建七大健康要素文字內容
+  let factorText = '';
+  Object.entries(fs).forEach(([key, list]) => {
+    if(list.length > 0) {
+      factorText += `${factorStyles[key].label} (${list.length}項)：`;
+      factorText += list.map(item => `${item.name}(${item.duration}/${item.severity})`).join('、');
+      factorText += '\n';
+    }
   });
-  let st=`🧬 彥彬自檢表系統\n
-👤 姓名：${fui.姓名} \n🕶️ 年齡：${fui.年齡}\n
-📊 總選取症狀數：\n${selectedTotal} 項 (共${totalSymptomCount}種症狀)\n
-🎯 調整方向：\n${topFactors.length > 0 ? (topFactors.length === 1 ? `${topFactors[0].name} (${topFactors[0].count}項)` : `${topFactors[0].name} (${topFactors[0].count}項)\n${topFactors[1].name} (${topFactors[1].count}項)`) : '無'}
-${factorText}
+  // 整合分享文字（包含七大健康要素）
+  let st=`🧬 彥彬自檢表系統
+👤 姓名：${fui.姓名} 🕶️ 年齡：${fui.年齡}
+📊 總選取症狀數：${selectedTotal} 項 (共${totalSymptomCount}種症狀)
+🎯 調整方向：${topFactors.length > 0 ? (topFactors.length === 1 ? `${topFactors[0].name} (${topFactors[0].count}項)` : `${topFactors[0].name} (${topFactors[0].count}項)、${topFactors[1].name} (${topFactors[1].count}項)`) : '無'}
+🩺 七大健康要素評估：
+${factorText || '無'}
 💡 建議：根據自檢結果關注對應健康問題，必要時諮詢專業醫師`;
   return {formattedUserInfo:fui,factorSymptoms:ffs,summaryText:st,totalSymptomCount, selectedTotal, topFactors};
 }
@@ -517,15 +520,17 @@ async function handleShareButtonClick(e){
   e.stopPropagation();e.preventDefault();
   const btn=e.target.closest('#native-share-btn');
   try{
-    // 修改截图目标：定位到统计资料区域（stat-info-container）
-    const scEl=document.getElementById('stat-info-container');
-    if(!scEl){alert('統計資料區域加載中，請稍候再試');setTimeout(()=>btn.click(),500);return;}
-    const shareButton = scEl.querySelector('#native-share-btn');
+    // 截圖目標改為「統計資訊」區域
+    const statisticsEl = document.getElementById('statistics-section');
+    if(!statisticsEl){alert('統計資訊區域加載失敗，請稍候再試');setTimeout(()=>btn.click(),500);return;}
+    // 保存分享按钮原始状态
+    const shareButton = statisticsEl.closest('#summary-content')?.querySelector('#native-share-btn');
     const shareBtnStyle = shareButton ? {display: shareButton.style.display, className: shareButton.className} : {display: 'flex', className: shareButton?.className};
     shareButton&&(shareButton.style.display='none');
     const st=window.reportData.summaryText;
     btn.disabled=true;
     btn.innerHTML='<i class="fa fa-spinner fa-spin mr-1"></i> 處理中...';
+    // 加载html2canvas
     if(!window.html2canvas){
       alert('正在加載分享所需組件，請稍候...');
       await new Promise((resolve,reject)=>{
@@ -535,20 +540,25 @@ async function handleShareButtonClick(e){
         document.head.appendChild(script);
       });
     }
+    // 适配移动端全屏截图样式
     const screenWidth = window.innerWidth;
-    scEl.style.cssText = `
+    statisticsEl.style.cssText = `
 text-align:center;margin:0 auto!important;background-color:#121212;padding:1rem;width:100vw;height:auto;
 box-sizing:border-box;color:#FFFFFF;border-radius:0;box-shadow:none;max-width:none;display:block;
 `;
-    const canvas=await html2canvas(scEl,{
+    // 优化截图参数
+    const canvas=await html2canvas(statisticsEl,{
       scale:2.5,useCORS:true,allowTaint:true,logging:false,
-      backgroundColor:'#121212',width:screenWidth,height:scEl.offsetHeight,
-      dpi:300,windowWidth:screenWidth,windowHeight:scEl.offsetHeight
+      backgroundColor:'#121212',width:screenWidth,height:statisticsEl.offsetHeight,
+      dpi:300,windowWidth:screenWidth,windowHeight:statisticsEl.offsetHeight
     });
+    // 恢复分享按钮原始状态
     shareButton&&(shareButton.style.display=shareBtnStyle.display,shareButton.className=shareBtnStyle.className);
+    // 处理截图数据
     let dataUrl=canvas.toDataURL('image/png',0.9);
     const fileName=`🧬 彥彬自檢表系統_${new Date().toLocaleDateString()}.png`;
     const imgBlob=await (await fetch(dataUrl)).blob();
+    // 体积超限压缩
     let file;
     if(imgBlob.size>5*1024*1024){
       alert('圖片體積過大，輕微壓縮保持清晰...');
@@ -556,6 +566,7 @@ box-sizing:border-box;color:#FFFFFF;border-radius:0;box-shadow:none;max-width:no
       const compressedBlob=await (await fetch(dataUrl)).blob();
       file=new File([compressedBlob],fileName,{type:'image/png'});
     }else file=new File([imgBlob],fileName,{type:'image/png'});
+    // 分享逻辑
     if(navigator.share&&typeof navigator.share==='function'){
       try{
         const shareData={title:'🧬 彥彬自檢表系統',files:[file],text:st};
@@ -573,8 +584,10 @@ box-sizing:border-box;color:#FFFFFF;border-radius:0;box-shadow:none;max-width:no
     console.error('分享總體錯誤：',err);
     alert('分享功能異常，請手動截圖分享');
   }finally{
+    // 恢复按钮状态
     btn.disabled=false;
     btn.innerHTML='<i class="fa fa-share-alt mr-1"></i> 分享到LINE';
+    // 创建/显示关闭按钮
     let closeBtn=document.getElementById('close-page-btn');
     if(!closeBtn){
       closeBtn=document.createElement('button');
@@ -704,8 +717,8 @@ margin:0 auto!important;border-radius:0;box-shadow:none;max-width:none;
     }
   });
   html+=`</div></div>
-<!-- 统计资料区域：添加id用于截图定位 -->
-<div id="stat-info-container" class="mb-4">
+<!-- 統計資訊區域（截圖目標） -->
+<div id="statistics-section" class="mb-4">
 <div class="text-base font-semibold text-white flex items-center justify-center mb-2">
 <i class="fa fa-chart-pie text-primary mr-2 text-sm"></i>統計資訊
 </div>
@@ -727,33 +740,30 @@ margin:0 auto!important;border-radius:0;box-shadow:none;max-width:none;
 <div class="text-base font-semibold text-white mb-3 flex items-center justify-center">
 <i class="fa fa-heartbeat text-primary mr-2 text-sm"></i>七大健康要素評估
 </div>`;
-  html += `<div style="width: 100%; padding: 0; margin: 0 auto; overflow-x: auto; -webkit-overflow-scrolling: touch;">`;
   Object.entries(factorSymptoms).forEach(([fk,f])=>{
     const fn=factorStyles[fk].label;
-    html+=`<div class="bg-gray-800 border border-gray-700 rounded-lg p-3 mb-3 shadow-sm hover:shadow-md transition-shadow mx-auto w-full">
+    html+=`<div class="bg-gray-800 border border-gray-700 rounded-lg p-3 mb-3 shadow-sm hover:shadow-md transition-shadow mx-auto max-w-full">
 <div class="font-semibold text-sm text-white mb-2 flex items-center justify-center">
 <span class="inline-block w-2.5 h-2.5 rounded-full ${factorStyles[fk].className.split(' ')[0]} mr-1.5"></span>
 【${fn}】（${f.length}項）
 </div>
-<div class="flex flex-nowrap gap-2 w-fit min-w-full">`; 
-    const columnWidth = `calc(20% - 1.6px)`; 
+<div class="grid grid-cols-3 gap-2 text-sm">`;
     f.forEach((i,idx)=>{
       let severityClass = '';
       if(i.severity.includes('中度')) severityClass = 'bg-yellow-900/30 text-yellow-400';
       else if(i.severity.includes('重度')) severityClass = 'bg-red-900/30 text-red-400';
       else severityClass = 'bg-gray-700 text-gray-300';
-      html+=`<div style="width: ${columnWidth}; flex-shrink: 0;" class="p-2 bg-gray-700 rounded-lg border border-gray-600 min-h-[70px] flex flex-col justify-between">
-<div class="font-medium text-white text-xs overflow-hidden text-ellipsis whitespace-nowrap">${idx+1}. ${i.name}</div>
-<div class="flex justify-between mt-1 text-[10px]">
-<div class="text-gray-300 whitespace-nowrap">⏱️ ${i.duration}</div>
-<div class="${severityClass} px-1.5 py-0.5 rounded text-[10px] whitespace-nowrap">⚠️ ${i.severity}</div>
+      html+=`<div class="p-2 bg-gray-700 rounded-lg border border-gray-600">
+<div class="font-medium text-white text-sm">${idx+1}. ${i.name}</div>
+<div class="flex justify-between mt-1 text-xs">
+<div class="text-gray-400">⏱️ ${i.duration}</div>
+<div class="${severityClass} px-2 py-0.5 rounded text-xs">⚠️ ${i.severity}</div>
 </div>
 </div>`;
     });
     html+=`</div></div>`;
   });
-  html += `</div>`;
-  html+=`<div class="mt-4 bg-gray-800 rounded-lg p-3 text-sm text-gray-300 font-bold mx-auto max-w-full">
+  html+=`<div class="mt-4 bg-gray-800 border border-gray-700 rounded-lg p-3 text-sm text-gray-300 font-bold mx-auto max-w-full">
 💡 建議：根據自檢結果關注對應健康問題，必要時諮詢專業醫師
 </div>
 <div class="mt-6 mb-3 flex justify-center px-3">
@@ -763,11 +773,9 @@ margin:0 auto!important;border-radius:0;box-shadow:none;max-width:none;
 </div>`;
   sc.innerHTML=html;
   setTimeout(()=>{
-    rs.style.height='auto'; 
-    rs.style.display='none';
-    rs.offsetHeight; 
-    rs.style.display='block';
-  },300);
+    rs.style.height=sc.offsetHeight+60+'px';
+    rs.style.display='none';rs.offsetHeight;rs.style.display='block';
+  },150);
 }
 function resetChecklist(){
   document.querySelectorAll('.symptom-checkbox').forEach(cb=>{cb.checked&&(cb.checked=false,cb.dispatchEvent(new Event('change')));});
