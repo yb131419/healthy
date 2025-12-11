@@ -473,6 +473,114 @@ function organizeReportData(submitData){
 
   return {formattedUserInfo:fui,factorSymptoms:ffs,summaryText:st,totalSymptomCount, selectedTotal, topFactors};
 }
+
+// 新增：創建右下角浮窗按鈕
+function createFloatingButtons() {
+  // 檢查是否已存在浮窗按鈕
+  if (document.getElementById('floating-buttons')) return;
+
+  // 創建浮窗容器
+  const floatContainer = document.createElement('div');
+  floatContainer.id = 'floating-buttons';
+  floatContainer.style.cssText = `
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  `;
+
+  // 分享按鈕
+  const shareBtn = document.createElement('button');
+  shareBtn.id = 'floating-share-btn';
+  shareBtn.className = 'custom-styled';
+  shareBtn.style.cssText = `
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background-color: #00C300;
+    color: white;
+    border: none;
+    box-shadow: 0 4px 12px rgba(0, 195, 0, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  `;
+  shareBtn.innerHTML = '<i class="fa fa-share-alt text-lg"></i>';
+  shareBtn.title = '分享報告';
+
+  // 關閉按鈕
+  const closeBtn = document.createElement('button');
+  closeBtn.id = 'floating-close-btn';
+  closeBtn.className = 'custom-styled';
+  closeBtn.style.cssText = `
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background-color: #666666;
+    color: white;
+    border: none;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  `;
+  closeBtn.innerHTML = '<i class="fa fa-times text-lg"></i>';
+  closeBtn.title = '關閉頁面';
+
+  // 按鈕懸浮效果
+  shareBtn.addEventListener('mouseenter', () => {
+    shareBtn.style.transform = 'scale(1.08)';
+    shareBtn.style.boxShadow = '0 6px 16px rgba(0, 195, 0, 0.4)';
+  });
+  shareBtn.addEventListener('mouseleave', () => {
+    shareBtn.style.transform = 'scale(1)';
+    shareBtn.style.boxShadow = '0 4px 12px rgba(0, 195, 0, 0.3)';
+  });
+  closeBtn.addEventListener('mouseenter', () => {
+    closeBtn.style.transform = 'scale(1.08)';
+    closeBtn.style.boxShadow = '0 6px 16px rgba(0, 0, 0, 0.3)';
+  });
+  closeBtn.addEventListener('mouseleave', () => {
+    closeBtn.style.transform = 'scale(1)';
+    closeBtn.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.2)';
+  });
+
+  // 綁定點擊事件
+  shareBtn.addEventListener('click', handleFloatingShareClick);
+  closeBtn.addEventListener('click', async () => {
+    try {
+      if(window.liff) {
+        if(!liff.isLoggedIn()) await liff.login();
+        liff.closeWindow();
+      } else {
+        window.close();
+      }
+    } catch (error) {
+      console.error('關閉窗口失敗:', error);
+      window.close();
+    }
+  });
+
+  // 添加到頁面
+  floatContainer.appendChild(shareBtn);
+  floatContainer.appendChild(closeBtn);
+  document.body.appendChild(floatContainer);
+
+  // 顯示浮窗
+  setTimeout(() => {
+    floatContainer.style.opacity = '1';
+  }, 300);
+}
+
 function initControlButtons(){
   const styleButtons = () => {
     const buttons = document.querySelectorAll('button');
@@ -533,68 +641,114 @@ function initControlButtons(){
     const sd=await collectSubmitData();
     submitChecklistData(sd,btn);
   });
-  document.addEventListener('click',function(e){
-    if(e.target.closest('#native-share-btn'))handleShareButtonClick(e);
-  });
   styleButtons();
 }
-async function handleShareButtonClick(e){
-  e.stopPropagation();e.preventDefault();
-  const btn=e.target.closest('#native-share-btn');
-  try{
-    // 截圖目標改為「統計資訊」區域
-    const statisticsEl = document.getElementById('statistics-section');
-    if(!statisticsEl){alert('統計資訊區域加載失敗，請稍候再試');setTimeout(()=>btn.click(),500);return;}
-    // 保存分享按钮原始状态
-    const shareButton = statisticsEl.closest('#summary-content')?.querySelector('#native-share-btn');
-    const shareBtnStyle = shareButton ? {display: shareButton.style.display, className: shareButton.className} : {display: 'flex', className: shareButton?.className};
-    shareButton&&(shareButton.style.display='none');
-    const st=window.reportData.summaryText;
-    btn.disabled=true;
-    btn.innerHTML='<i class="fa fa-spinner fa-spin mr-1"></i> 處理中...';
-    // 加载html2canvas
+
+// 浮窗分享按鈕點擊處理
+async function handleFloatingShareClick(e) {
+  e.stopPropagation();
+  const btn = e.target.closest('#floating-share-btn');
+  
+  if (!window.reportData) {
+    alert('尚未生成健康報告，無法分享');
+    return;
+  }
+
+  try {
+    // 截圖目標：包含基本資料+統計資訊的完整報告區域
+    const summaryEl = document.getElementById('summary-content');
+    if(!summaryEl){
+      alert('報告區域加載失敗，請稍候再試');
+      return;
+    }
+
+    // 隱藏浮窗按鈕（避免截圖包含）
+    const floatContainer = document.getElementById('floating-buttons');
+    const floatStyle = floatContainer.style.opacity;
+    floatContainer.style.opacity = '0';
+
+    // 保存原始樣式
+    const originalStyle = {
+      width: summaryEl.style.width,
+      backgroundColor: summaryEl.style.backgroundColor,
+      padding: summaryEl.style.padding,
+      borderRadius: summaryEl.style.borderRadius,
+      boxShadow: summaryEl.style.boxShadow,
+      maxWidth: summaryEl.style.maxWidth,
+      textAlign: summaryEl.style.textAlign,
+      margin: summaryEl.style.margin
+    };
+
+    // 優化截圖樣式
+    summaryEl.style.cssText = `
+      width: 100vw;
+      max-width: none;
+      background-color: #121212;
+      padding: 1.5rem;
+      box-sizing: border-box;
+      color: #FFFFFF;
+      border-radius: 0;
+      box-shadow: none;
+      margin: 0 auto;
+      text-align: center;
+    `;
+
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i>';
+
+    // 加載html2canvas
     if(!window.html2canvas){
       alert('正在加載分享所需組件，請稍候...');
       await new Promise((resolve,reject)=>{
         const script=document.createElement('script');
         script.src='https://html2canvas.hertzen.com/dist/html2canvas.min.js';
-        script.onload=resolve;script.onerror=reject;
+        script.onload=resolve;
+        script.onerror=reject;
         document.head.appendChild(script);
       });
     }
-    // 适配移动端全屏截图样式
-    const screenWidth = window.innerWidth;
-    statisticsEl.style.cssText = `
-text-align:center;margin:0 auto!important;background-color:#121212;padding:1rem;width:100vw;height:auto;
-box-sizing:border-box;color:#FFFFFF;border-radius:0;box-shadow:none;max-width:none;display:block;
-`;
-    // 优化截图参数
-    const canvas=await html2canvas(statisticsEl,{
-      scale:2.5,useCORS:true,allowTaint:true,logging:false,
-      backgroundColor:'#121212',width:screenWidth,height:statisticsEl.offsetHeight,
-      dpi:300,windowWidth:screenWidth,windowHeight:statisticsEl.offsetHeight
+
+    // 截圖配置（高解析度）
+    const canvas=await html2canvas(summaryEl,{
+      scale: 3,
+      useCORS: true,
+      allowTaint: true,
+      logging: false,
+      backgroundColor: '#121212',
+      dpi: 300,
+      windowWidth: window.innerWidth,
+      windowHeight: summaryEl.offsetHeight
     });
-    // 恢复分享按钮原始状态
-    shareButton&&(shareButton.style.display=shareBtnStyle.display,shareButton.className=shareBtnStyle.className);
-    // 处理截图数据
+
+    // 恢復原始樣式
+    Object.keys(originalStyle).forEach(key => {
+      summaryEl.style[key] = originalStyle[key];
+    });
+    floatContainer.style.opacity = floatStyle;
+
+    // 處理截圖數據
     let dataUrl=canvas.toDataURL('image/png',0.9);
     const fileName=`🧬 彥彬自檢表系統_${new Date().toLocaleDateString()}.png`;
     const imgBlob=await (await fetch(dataUrl)).blob();
-    // 体积超限压缩
+
+    // 體積超限壓縮
     let file;
     if(imgBlob.size>5*1024*1024){
       alert('圖片體積過大，輕微壓縮保持清晰...');
       dataUrl=canvas.toDataURL('image/png',0.8);
       const compressedBlob=await (await fetch(dataUrl)).blob();
       file=new File([compressedBlob],fileName,{type:'image/png'});
-    }else file=new File([imgBlob],fileName,{type:'image/png'});
-    // 分享逻辑 - 优化文字分享体验
+    }else{
+      file=new File([imgBlob],fileName,{type:'image/png'});
+    }
+
+    // 分享邏輯
     if(navigator.share&&typeof navigator.share==='function'){
       try{
         const shareData={
           title:'📋 彥彬自檢表系統 - 健康評估報告',
           files:[file],
-          text:st // 使用重构后的排版文字
+          text: window.reportData.summaryText
         };
         const canShare=navigator.canShare?await navigator.canShare(shareData):true;
         if(canShare){
@@ -605,17 +759,18 @@ box-sizing:border-box;color:#FFFFFF;border-radius:0;box-shadow:none;max-width:no
         console.error('LINE分享失敗：',err);
         if(err.name!=='AbortError'){
           alert(`❌ 分享失敗：${err.message||'未知錯誤'}\n已自動複製文字報告到剪貼板`);
-          await navigator.clipboard.writeText(st); // 失败时自动复制文字
+          await navigator.clipboard.writeText(window.reportData.summaryText);
         }
       }
     }else{
-      // 无原生分享时，复制排版后的文字
-      await navigator.clipboard.writeText(st);
+      // 無原生分享時複製文字
+      await navigator.clipboard.writeText(window.reportData.summaryText);
       alert('📋 文字報告已複製到剪貼板，請手動截圖分享');
     }
+
   }catch(err){
     console.error('分享總體錯誤：',err);
-    // 异常时仍尝试复制文字
+    // 異常時仍嘗試複製文字
     try {
       await navigator.clipboard.writeText(window.reportData.summaryText);
       alert('⚠️ 分享功能異常，已複製文字報告到剪貼板，請手動截圖分享');
@@ -623,44 +778,14 @@ box-sizing:border-box;color:#FFFFFF;border-radius:0;box-shadow:none;max-width:no
       alert('⚠️ 分享功能異常，請手動截圖並複製以下文字分享：\n\n' + window.reportData.summaryText);
     }
   }finally{
-    // 恢复按钮状态
+    // 恢復按鈕狀態
     btn.disabled=false;
-    btn.innerHTML='<i class="fa fa-share-alt mr-1"></i> 分享到LINE';
-    // 创建/显示关闭按钮
-    let closeBtn=document.getElementById('close-page-btn');
-    if(!closeBtn){
-      closeBtn=document.createElement('button');
-      closeBtn.id='close-page-btn';
-      closeBtn.className='w-full sm:w-auto px-6 py-2.5 bg-gray-800 text-gray-200 rounded-lg font-medium flex items-center justify-center gap-2 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 mt-2';
-      closeBtn.innerHTML='<i class="fa fa-times"></i> 關閉網頁';
-      closeBtn.onclick=async()=>{
-        try {
-          if(window.liff) {
-            if(!liff.isLoggedIn()) await liff.login();
-            liff.closeWindow();
-          } else {
-            window.close();
-          }
-        } catch (error) {
-          console.error('關閉窗口失敗:', error);
-          window.close();
-        }
-      };
-      const btnContainer = btn.parentNode;
-      if(!btnContainer.classList.contains('share-btn-container')){
-        const newContainer = document.createElement('div');
-        newContainer.className = 'share-btn-container flex flex-col w-full gap-2';
-        btnContainer.appendChild(newContainer);
-        newContainer.appendChild(btn);
-        newContainer.appendChild(closeBtn);
-      }else{
-        btnContainer.appendChild(closeBtn);
-      }
-    }else{
-      closeBtn.style.display = 'flex';
-    }
+    btn.innerHTML='<i class="fa fa-share-alt text-lg"></i>';
+    // 恢復浮窗顯示
+    document.getElementById('floating-buttons').style.opacity = '1';
   }
 }
+
 async function collectSubmitData(){
   const liffProfile=await liff.getProfile().catch(err=>{
     console.error("獲取LINE用戶信息失敗：",err);
@@ -696,7 +821,10 @@ function submitChecklistData(data,btn){
       document.getElementById('status').classList.add('hidden');
       alert('提交成功！正在生成健康報告...');
       const rd=organizeReportData({...data,userBasicInfo:window.userBasicInfo,selectedSymptoms:JSON.parse(data.selectedSymptoms)});
-      window.reportData=rd;renderReportSummary(rd);
+      window.reportData=rd;
+      renderReportSummary(rd);
+      // 創建浮窗按鈕
+      createFloatingButtons();
       document.getElementById('success-modal').classList.remove('hidden');
       setTimeout(()=>{
         document.getElementById('report-summary')&&(document.getElementById('report-summary').style.maxHeight='80vh');
@@ -756,7 +884,7 @@ margin:0 auto!important;border-radius:0;box-shadow:none;max-width:none;
     }
   });
   html+=`</div></div>
-<!-- 統計資訊區域（截圖目標） -->
+<!-- 統計資訊區域 -->
 <div id="statistics-section" class="mb-4">
 <div class="text-base font-semibold text-white flex items-center justify-center mb-2">
 <i class="fa fa-chart-pie text-primary mr-2 text-sm"></i>統計資訊
@@ -804,12 +932,8 @@ margin:0 auto!important;border-radius:0;box-shadow:none;max-width:none;
   });
   html+=`<div class="mt-4 bg-gray-800 border border-gray-700 rounded-lg p-3 text-sm text-gray-300 font-bold mx-auto max-w-full">
 💡 建議：根據自檢結果關注對應健康問題，必要時諮詢專業醫師
-</div>
-<div class="mt-6 mb-3 flex justify-center px-3">
-  <button id="native-share-btn" class="w-full sm:w-auto px-5 py-2 bg-[#00C300] text-white rounded-lg font-medium flex items-center justify-center gap-1.5 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0">
-    <i class="fa fa-share-alt"></i> 分享到LINE
-  </button>
 </div>`;
+  // 移除原來的分享按鈕（改用浮窗）
   sc.innerHTML=html;
   setTimeout(()=>{
     rs.style.height=sc.offsetHeight+60+'px';
