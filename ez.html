@@ -432,12 +432,9 @@ function organizeReportData(submitData){
     factorSymptoms.forEach(symptom => allSelectedSymptoms.add(symptom.name));
   });
   const selectedTotal = allSelectedSymptoms.size;
-  
-  // 重构分享文字 - 突出彥彬自檢表系統，优化排版
   let factorText = '';
   Object.entries(fs).forEach(([key, list]) => {
     if(list.length > 0) {
-      // 要素标题加粗，症状列表换行缩进
       factorText += `\n【${factorStyles[key].label}】(${list.length}項)：`;
       list.forEach((item, idx) => {
         factorText += `\n  ${idx+1}. ${item.name}
@@ -445,8 +442,6 @@ function organizeReportData(submitData){
       });
     }
   });
-
-  // 最终分享文字 - 结构化排版，突出品牌
   let st = `
 📋 彥彬自檢表系統 - 健康評估報告
 ━━━━━━━━━━━━━━━━━━
@@ -470,73 +465,31 @@ function organizeReportData(submitData){
 ━━━━━━━━━━━━━━━━━━
 🔖 來源：彥彬自檢表系統
 `;
-
   return {formattedUserInfo:fui,factorSymptoms:ffs,summaryText:st,totalSymptomCount, selectedTotal, topFactors};
 }
-
-// 新增：創建右下角浮窗按鈕
 function createFloatingButtons() {
-  // 檢查是否已存在浮窗按鈕
   if (document.getElementById('floating-buttons')) return;
-
-  // 創建浮窗容器
   const floatContainer = document.createElement('div');
   floatContainer.id = 'floating-buttons';
   floatContainer.style.cssText = `
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    z-index: 9999;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    opacity: 0;
-    transition: opacity 0.3s ease;
+    position: fixed;bottom: 20px;right: 20px;z-index: 9999;display: flex;flex-direction: column;gap: 10px;opacity: 0;transition: opacity 0.3s ease;
   `;
-
-  // 分享按鈕
   const shareBtn = document.createElement('button');
   shareBtn.id = 'floating-share-btn';
   shareBtn.className = 'custom-styled';
   shareBtn.style.cssText = `
-    width: 56px;
-    height: 56px;
-    border-radius: 50%;
-    background-color: #00C300;
-    color: white;
-    border: none;
-    box-shadow: 0 4px 12px rgba(0, 195, 0, 0.3);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all 0.2s ease;
+    width: 56px;height: 56px;border-radius: 50%;background-color: #00C300;color: white;border: none;box-shadow: 0 4px 12px rgba(0, 195, 0, 0.3);display: flex;align-items: center;justify-content: center;cursor: pointer;transition: all 0.2s ease;
   `;
   shareBtn.innerHTML = '<i class="fa fa-share-alt text-lg"></i>';
   shareBtn.title = '分享報告';
-
-  // 關閉按鈕
   const closeBtn = document.createElement('button');
   closeBtn.id = 'floating-close-btn';
   closeBtn.className = 'custom-styled';
   closeBtn.style.cssText = `
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    background-color: #666666;
-    color: white;
-    border: none;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all 0.2s ease;
+    width: 48px;height: 48px;border-radius: 50%;background-color: #666666;color: white;border: none;box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);display: none;align-items: center;justify-content: center;cursor: pointer;transition: all 0.2s ease;opacity: 0;
   `;
   closeBtn.innerHTML = '<i class="fa fa-times text-lg"></i>';
   closeBtn.title = '關閉頁面';
-
-  // 按鈕懸浮效果
   shareBtn.addEventListener('mouseenter', () => {
     shareBtn.style.transform = 'scale(1.08)';
     shareBtn.style.boxShadow = '0 6px 16px rgba(0, 195, 0, 0.4)';
@@ -553,8 +506,6 @@ function createFloatingButtons() {
     closeBtn.style.transform = 'scale(1)';
     closeBtn.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.2)';
   });
-
-  // 綁定點擊事件
   shareBtn.addEventListener('click', handleFloatingShareClick);
   closeBtn.addEventListener('click', async () => {
     try {
@@ -569,18 +520,13 @@ function createFloatingButtons() {
       window.close();
     }
   });
-
-  // 添加到頁面
   floatContainer.appendChild(shareBtn);
   floatContainer.appendChild(closeBtn);
   document.body.appendChild(floatContainer);
-
-  // 顯示浮窗
   setTimeout(() => {
     floatContainer.style.opacity = '1';
   }, 300);
 }
-
 function initControlButtons(){
   const styleButtons = () => {
     const buttons = document.querySelectorAll('button');
@@ -643,60 +589,37 @@ function initControlButtons(){
   });
   styleButtons();
 }
-
-// 浮窗分享按鈕點擊處理
 async function handleFloatingShareClick(e) {
   e.stopPropagation();
   const btn = e.target.closest('#floating-share-btn');
-  
   if (!window.reportData) {
     alert('尚未生成健康報告，無法分享');
     return;
   }
-
   try {
-    // 截圖目標：包含基本資料+統計資訊的完整報告區域
-    const summaryEl = document.getElementById('summary-content');
-    if(!summaryEl){
+    const screenshotTarget = document.getElementById('screenshot-target');
+    if(!screenshotTarget){
       alert('報告區域加載失敗，請稍候再試');
       return;
     }
-
-    // 隱藏浮窗按鈕（避免截圖包含）
     const floatContainer = document.getElementById('floating-buttons');
     const floatStyle = floatContainer.style.opacity;
     floatContainer.style.opacity = '0';
-
-    // 保存原始樣式
     const originalStyle = {
-      width: summaryEl.style.width,
-      backgroundColor: summaryEl.style.backgroundColor,
-      padding: summaryEl.style.padding,
-      borderRadius: summaryEl.style.borderRadius,
-      boxShadow: summaryEl.style.boxShadow,
-      maxWidth: summaryEl.style.maxWidth,
-      textAlign: summaryEl.style.textAlign,
-      margin: summaryEl.style.margin
+      width: screenshotTarget.style.width,
+      backgroundColor: screenshotTarget.style.backgroundColor,
+      padding: screenshotTarget.style.padding,
+      borderRadius: screenshotTarget.style.borderRadius,
+      boxShadow: screenshotTarget.style.boxShadow,
+      maxWidth: screenshotTarget.style.maxWidth,
+      textAlign: screenshotTarget.style.textAlign,
+      margin: screenshotTarget.style.margin
     };
-
-    // 優化截圖樣式
-    summaryEl.style.cssText = `
-      width: 100vw;
-      max-width: none;
-      background-color: #121212;
-      padding: 1.5rem;
-      box-sizing: border-box;
-      color: #FFFFFF;
-      border-radius: 0;
-      box-shadow: none;
-      margin: 0 auto;
-      text-align: center;
+    screenshotTarget.style.cssText = `
+      width: 100vw;max-width: none;background-color: #121212;padding: 1.5rem;box-sizing: border-box;color: #FFFFFF;border-radius: 0;box-shadow: none;margin: 0 auto;text-align: center;
     `;
-
     btn.disabled = true;
     btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i>';
-
-    // 加載html2canvas
     if(!window.html2canvas){
       alert('正在加載分享所需組件，請稍候...');
       await new Promise((resolve,reject)=>{
@@ -707,31 +630,17 @@ async function handleFloatingShareClick(e) {
         document.head.appendChild(script);
       });
     }
-
-    // 截圖配置（高解析度）
-    const canvas=await html2canvas(summaryEl,{
-      scale: 3,
-      useCORS: true,
-      allowTaint: true,
-      logging: false,
-      backgroundColor: '#121212',
-      dpi: 300,
-      windowWidth: window.innerWidth,
-      windowHeight: summaryEl.offsetHeight
+    const canvas=await html2canvas(screenshotTarget,{
+      scale: 3,useCORS: true,allowTaint: true,logging: false,backgroundColor: '#121212',dpi: 300,
+      windowWidth: window.innerWidth,windowHeight: screenshotTarget.offsetHeight
     });
-
-    // 恢復原始樣式
     Object.keys(originalStyle).forEach(key => {
-      summaryEl.style[key] = originalStyle[key];
+      screenshotTarget.style[key] = originalStyle[key];
     });
     floatContainer.style.opacity = floatStyle;
-
-    // 處理截圖數據
     let dataUrl=canvas.toDataURL('image/png',0.9);
     const fileName=`🧬 彥彬自檢表系統_${new Date().toLocaleDateString()}.png`;
     const imgBlob=await (await fetch(dataUrl)).blob();
-
-    // 體積超限壓縮
     let file;
     if(imgBlob.size>5*1024*1024){
       alert('圖片體積過大，輕微壓縮保持清晰...');
@@ -741,8 +650,6 @@ async function handleFloatingShareClick(e) {
     }else{
       file=new File([imgBlob],fileName,{type:'image/png'});
     }
-
-    // 分享邏輯
     if(navigator.share&&typeof navigator.share==='function'){
       try{
         const shareData={
@@ -754,6 +661,11 @@ async function handleFloatingShareClick(e) {
         if(canShare){
           await navigator.share(shareData);
           alert('✅ 分享成功！\n報告已發送到LINE群組/好友');
+          const closeBtn = document.getElementById('floating-close-btn');
+          closeBtn.style.display = 'flex';
+          setTimeout(() => {
+            closeBtn.style.opacity = '1';
+          }, 200);
         }
       }catch(err){
         console.error('LINE分享失敗：',err);
@@ -763,14 +675,11 @@ async function handleFloatingShareClick(e) {
         }
       }
     }else{
-      // 無原生分享時複製文字
       await navigator.clipboard.writeText(window.reportData.summaryText);
       alert('📋 文字報告已複製到剪貼板，請手動截圖分享');
     }
-
   }catch(err){
     console.error('分享總體錯誤：',err);
-    // 異常時仍嘗試複製文字
     try {
       await navigator.clipboard.writeText(window.reportData.summaryText);
       alert('⚠️ 分享功能異常，已複製文字報告到剪貼板，請手動截圖分享');
@@ -778,14 +687,11 @@ async function handleFloatingShareClick(e) {
       alert('⚠️ 分享功能異常，請手動截圖並複製以下文字分享：\n\n' + window.reportData.summaryText);
     }
   }finally{
-    // 恢復按鈕狀態
     btn.disabled=false;
     btn.innerHTML='<i class="fa fa-share-alt text-lg"></i>';
-    // 恢復浮窗顯示
     document.getElementById('floating-buttons').style.opacity = '1';
   }
 }
-
 async function collectSubmitData(){
   const liffProfile=await liff.getProfile().catch(err=>{
     console.error("獲取LINE用戶信息失敗：",err);
@@ -823,7 +729,6 @@ function submitChecklistData(data,btn){
       const rd=organizeReportData({...data,userBasicInfo:window.userBasicInfo,selectedSymptoms:JSON.parse(data.selectedSymptoms)});
       window.reportData=rd;
       renderReportSummary(rd);
-      // 創建浮窗按鈕
       createFloatingButtons();
       document.getElementById('success-modal').classList.remove('hidden');
       setTimeout(()=>{
@@ -868,6 +773,8 @@ margin:0 auto!important;border-radius:0;box-shadow:none;max-width:none;
 <h3 class="text-lg md:text-xl font-bold text-white mb-2">🧬 彥彬自檢表系統</h3>
 <div class="text-xs text-gray-400">${formattedUserInfo.提交時間}</div>
 </div>
+<!-- 截圖目標區域：僅包含基本資料+統計資料 -->
+<div id="screenshot-target" class="mb-4">
 <div class="bg-gray-800 rounded-lg p-3 mb-4 mx-auto max-w-full border border-gray-700">
 <div class="text-base font-semibold text-white mb-2 flex items-center justify-center">
 <i class="fa fa-user-circle text-primary mr-2 text-sm"></i>基本資料
@@ -884,7 +791,6 @@ margin:0 auto!important;border-radius:0;box-shadow:none;max-width:none;
     }
   });
   html+=`</div></div>
-<!-- 統計資訊區域 -->
 <div id="statistics-section" class="mb-4">
 <div class="text-base font-semibold text-white flex items-center justify-center mb-2">
 <i class="fa fa-chart-pie text-primary mr-2 text-sm"></i>統計資訊
@@ -903,7 +809,8 @@ margin:0 auto!important;border-radius:0;box-shadow:none;max-width:none;
 </div>`;
     }
   }
-  html+=`</div>
+  html+=`</div></div>
+<!-- 非截圖區域 -->
 <div class="text-base font-semibold text-white mb-3 flex items-center justify-center">
 <i class="fa fa-heartbeat text-primary mr-2 text-sm"></i>七大健康要素評估
 </div>`;
@@ -933,7 +840,6 @@ margin:0 auto!important;border-radius:0;box-shadow:none;max-width:none;
   html+=`<div class="mt-4 bg-gray-800 border border-gray-700 rounded-lg p-3 text-sm text-gray-300 font-bold mx-auto max-w-full">
 💡 建議：根據自檢結果關注對應健康問題，必要時諮詢專業醫師
 </div>`;
-  // 移除原來的分享按鈕（改用浮窗）
   sc.innerHTML=html;
   setTimeout(()=>{
     rs.style.height=sc.offsetHeight+60+'px';
