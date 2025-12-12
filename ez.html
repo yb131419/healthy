@@ -211,8 +211,8 @@ const durationOptions=[
   {value:'2-5y',label:'2-5年'},{value:'5y+',label:'5年以上'}
 ];
 const severityOptions=[
-  {value:'',label:'請選擇輕重'},{value:'mild',label:'輕度（不影響生活）'},
-  {value:'moderate',label:'中度（偶爾影響）'},{value:'severe',label:'重度（明顯影響）'}
+  {value:'',label:'請選擇輕重'},{value:'mild',label:'輕度'},{value:'moderate',label:'中度'},
+  {value:'severe',label:'重度'}
 ];
 const fullSymptomData=[
   {seq:1,symptom:"記憶力下降",氣血:"○",循環:"○",毒素:"○",血脂:"○",寒濕:"",免疫:"",情緒:""},
@@ -361,7 +361,7 @@ function renderSymptomCards(){
 <div class="symptom-details hidden mt-2 pt-2 border-t border-gray-700">
 <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
 <div><label class="block text-xs text-gray-400 mb-1">時間長短</label><select class="duration-select w-full border border-gray-700 rounded-lg px-2 py-1 text-xs input-focus bg-gray-800 text-gray-200">${doh}</select></div>
-<div><label class="block text-xs text-gray-400 mb-1">症狀輕重</label><select class="severity-select w-full border border-gray-700 rounded-lg px-2 py-1 text-xs input-focus bg-gray-800 text-gray-200">${soh}</select><div class="severity-note text-gray-500 text-xs">備注：輕度(不影響生活)、中度(偶爾影響)、重度(明顯影響)</div></div>
+<div><label class="block text-xs text-gray-400 mb-1">症狀輕重</label><select class="severity-select w-full border border-gray-700 rounded-lg px-2 py-1 text-xs input-focus bg-gray-800 text-gray-200">${soh}</select><div class="severity-note text-gray-500 text-xs">備注：輕度、中度、重度</div></div>
 </div></div></div></div>`;
       c.appendChild(cd);
       setTimeout(()=>{cd.style.opacity='1';cd.style.transform='translateY(0)';},50);
@@ -435,7 +435,7 @@ function organizeReportData(submitData){
   let factorText = '';
   Object.entries(fs).forEach(([key, list]) => {
     if(list.length > 0) {
-      factorText += `\n\n【${factorStyles[key].label}】(${list.length}項)`;
+      factorText += `\n\n🎯✨【${factorStyles[key].label}】✨(${list.length}項)`;
       list.forEach((item, idx) => {
         factorText += `\n  ${idx+1}. ${item.name}`;
         factorText += `\n     ├ 持續時間：${item.duration}`;
@@ -459,7 +459,7 @@ function organizeReportData(submitData){
   ├ 總選取症狀：${selectedTotal} 項 (系統共${totalSymptomCount}種症狀)
   └ 優先調整方向：${topFactors.length > 0 ? (topFactors.length === 1 ? `${topFactors[0].name} (${topFactors[0].count}項)` : `${topFactors[0].name} (${topFactors[0].count}項)、${topFactors[1].name} (${topFactors[1].count}項)`) : '無'}
 
-🩺 七大健康要素詳情${factorText || '\n  └ 暫無相關症狀記錄'}
+🩺 🌟七大健康要素評估🌟${factorText || '\n  └ 暫無相關症狀記錄'}
 
 💡 健康建議
   根據自檢結果關注對應健康問題，必要時諮詢專業醫師
@@ -472,23 +472,17 @@ function createFloatingButtons() {
   if (document.getElementById('floating-buttons')) return;
   const floatContainer = document.createElement('div');
   floatContainer.id = 'floating-buttons';
-  floatContainer.style.cssText = `
-    position: fixed;bottom: 20px;right: 20px;z-index: 9999;display: flex;flex-direction: column;gap: 10px;opacity: 0;transition: opacity 0.3s ease;
-  `;
+  floatContainer.style.cssText = `position: fixed;bottom: 20px;right: 20px;z-index: 9999;display: flex;flex-direction: column;gap: 10px;opacity: 0;transition: opacity 0.3s ease;`;
   const shareBtn = document.createElement('button');
   shareBtn.id = 'floating-share-btn';
   shareBtn.className = 'custom-styled';
-  shareBtn.style.cssText = `
-    width: 56px;height: 56px;border-radius: 50%;background-color: #00C300;color: white;border: none;box-shadow: 0 4px 12px rgba(0, 195, 0, 0.3);display: flex;align-items: center;justify-content: center;cursor: pointer;transition: all 0.2s ease;
-  `;
+  shareBtn.style.cssText = `width: 56px;height: 56px;border-radius: 50%;background-color: #00C300;color: white;border: none;box-shadow: 0 4px 12px rgba(0, 195, 0, 0.3);display: flex;align-items: center;justify-content: center;cursor: pointer;transition: all 0.2s ease;`;
   shareBtn.innerHTML = '<i class="fa fa-share-alt mr-1"></i>分享';
   shareBtn.title = '分享報告';
   const closeBtn = document.createElement('button');
   closeBtn.id = 'floating-close-btn';
   closeBtn.className = 'custom-styled';
-  closeBtn.style.cssText = `
-    width: 56px;height: 56px;border-radius: 50%;background-color: #666666;color: white;border: none;box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);display: none;align-items: center;justify-content: center;cursor: pointer;transition: all 0.2s ease;opacity: 0;
-  `;
+  closeBtn.style.cssText = `width: 56px;height: 56px;border-radius: 50%;background-color: #666666;color: white;border: none;box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);display: none;align-items: center;justify-content: center;cursor: pointer;transition: all 0.2s ease;opacity: 0;`;
   closeBtn.innerHTML = '<i class="fa fa-times mr-1"></i>關閉';
   closeBtn.title = '關閉頁面';
   shareBtn.addEventListener('mouseenter', () => {
@@ -603,6 +597,11 @@ async function handleFloatingShareClick(e) {
       alert('報告區域加載失敗，請稍候再試');
       return;
     }
+    // 臨時隱藏七大健康要素評估區域
+    const healthFactorsSection = screenshotTarget.querySelector('.health-factors-section');
+    const healthFactorsStyle = healthFactorsSection ? healthFactorsSection.style.display : '';
+    if (healthFactorsSection) healthFactorsSection.style.display = 'none';
+    
     const floatContainer = document.getElementById('floating-buttons');
     const floatStyle = floatContainer.style.opacity;
     floatContainer.style.opacity = '0';
@@ -618,20 +617,7 @@ async function handleFloatingShareClick(e) {
       height: screenshotTarget.style.height,
       overflow: screenshotTarget.style.overflow
     };
-    screenshotTarget.style.cssText = `
-      width: 100vw !important;
-      max-width: none !important;
-      background-color: #121212 !important;
-      padding: 2rem !important;
-      box-sizing: border-box !important;
-      color: #FFFFFF !important;
-      border-radius: 0 !important;
-      box-shadow: none !important;
-      margin: 0 auto !important;
-      text-align: center !important;
-      height: auto !important;
-      overflow: visible !important;
-    `;
+    screenshotTarget.style.cssText = `width: 100vw !important;max-width: none !important;background-color: #121212 !important;padding: 2rem !important;box-sizing: border-box !important;color: #FFFFFF !important;border-radius: 0 !important;box-shadow: none !important;margin: 0 auto !important;text-align: center !important;height: auto !important;overflow: visible !important;`;
     btn.disabled = true;
     btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i>';
     if(!window.html2canvas){
@@ -645,17 +631,12 @@ async function handleFloatingShareClick(e) {
       });
     }
     const canvas=await html2canvas(screenshotTarget,{
-      scale: 3,
-      useCORS: true,
-      allowTaint: true,
-      logging: false,
-      backgroundColor: '#121212',
-      dpi: 300,
-      windowWidth: window.innerWidth,
-      windowHeight: screenshotTarget.offsetHeight + 100,
-      scrollY: 0,
-      scrollX: 0
+      scale: 3,useCORS: true,allowTaint: true,logging: false,backgroundColor: '#121212',dpi: 300,
+      windowWidth: window.innerWidth,windowHeight: screenshotTarget.offsetHeight + 100,scrollY: 0,scrollX: 0
     });
+    // 恢復七大健康要素評估區域
+    if (healthFactorsSection) healthFactorsSection.style.display = healthFactorsStyle;
+    
     Object.keys(originalStyle).forEach(key => {
       screenshotTarget.style[key] = originalStyle[key];
     });
@@ -724,7 +705,7 @@ async function collectSubmitData(){
     return{
       seq:parseInt(seq),symptom:cd.querySelector('label').textContent.replace(/^\[\d+\]/,'').trim(),
       durationText:cd.querySelector('.duration-select option:checked').textContent,
-      severityText:cd.querySelector('.severity-select option:checked').textContent
+      severityText:cd.querySelector('.severity-select option:checked').textContent.replace(/（.*）/g, '')
     };
   });
   return{
@@ -780,16 +761,8 @@ function renderReportSummary(reportData){
   sc.dataset.summary=summaryText;
   const ts=Object.values(factorSymptoms).reduce((s,f)=>s+f.length,0);
   const rs=document.getElementById('report-summary');
-  rs.style.cssText = `
-max-height:80vh;overflow-y:auto;padding:1rem;box-sizing:border-box;
-background-color:#121212;border-radius:0;box-shadow:none;margin:0 auto!important;
-width:100%;max-width:none;text-align:center;
-`;
-  sc.style.cssText = `
-width:100%;background-color:#121212;padding:1rem;box-sizing:border-box;
-line-height:1.4;font-size:0.9rem;text-align:center!important;color:#FFFFFF;
-margin:0 auto!important;border-radius:0;box-shadow:none;max-width:none;
-`;
+  rs.style.cssText = `max-height:80vh;overflow-y:auto;padding:1rem;box-sizing:border-box;background-color:#121212;border-radius:0;box-shadow:none;margin:0 auto!important;width:100%;max-width:none;text-align:center;`;
+  sc.style.cssText = `width:100%;background-color:#121212;padding:1rem;box-sizing:border-box;line-height:1.4;font-size:0.9rem;text-align:center!important;color:#FFFFFF;margin:0 auto!important;border-radius:0;box-shadow:none;max-width:none;`;
   let html=`
 <div class="text-center mb-6">
   <h2 class="text-xl md:text-2xl font-bold text-white mb-2">🧬 彥彬自檢表系統</h2>
@@ -832,12 +805,12 @@ margin:0 auto!important;border-radius:0;box-shadow:none;max-width:none;
     }
   }
   html+=`</div></div>
-<div class="text-base font-semibold text-white mb-4 flex items-center justify-center">
-<i class="fa fa-heartbeat text-primary mr-2 text-sm"></i>七大健康要素評估
+<div class="text-base font-semibold text-white mb-4 flex items-center justify-center health-factors-section">
+<i class="fa fa-heartbeat text-primary mr-2 text-sm"></i>🌟七大健康要素評估🌟
 </div>`;
   Object.entries(factorSymptoms).forEach(([fk,f])=>{
     const fn=factorStyles[fk].label;
-    html+=`<div class="bg-gray-800 border border-gray-700 rounded-lg p-4 mb-4 shadow-sm hover:shadow-md transition-shadow mx-auto max-w-full">
+    html+=`<div class="bg-gray-800 border border-gray-700 rounded-lg p-4 mb-4 shadow-sm hover:shadow-md transition-shadow mx-auto max-w-full health-factors-section">
 <div class="font-semibold text-sm text-white mb-3 flex items-center justify-center">
 <span class="inline-block w-3 h-3 rounded-full ${factorStyles[fk].className.split(' ')[0]} mr-2"></span>
 【${fn}】（${f.length}項）
