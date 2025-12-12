@@ -211,8 +211,8 @@ const durationOptions=[
   {value:'2-5y',label:'2-5年'},{value:'5y+',label:'5年以上'}
 ];
 const severityOptions=[
-  {value:'',label:'請選擇輕重'},{value:'mild',label:'輕度（不影響生活）'},{value:'moderate',label:'中度（偶爾影響）'},
-  {value:'severe',label:'重度（嚴重影響）'}
+  {value:'',label:'請選擇輕重'},{value:'mild',label:'輕度'},{value:'moderate',label:'中度'},
+  {value:'severe',label:'重度'}
 ];
 const fullSymptomData=[
   {seq:1,symptom:"記憶力下降",氣血:"○",循環:"○",毒素:"○",血脂:"○",寒濕:"",免疫:"",情緒:""},
@@ -343,9 +343,9 @@ function renderSymptomCards(){
     c.innerHTML='';
     fullSymptomData.forEach((s,i)=>{
       const rf=[],doh=durationOptions.map(o=>`<option value="${o.value}">${o.label}</option>`).join(''),soh=severityOptions.map(o=>`<option value="${o.value}">${o.label}</option>`).join('');
-      Object.entries(factorStyles).forEach(([k,st])=>s[k]==="○"&&rf.push(`<span class="factor-tag ${st.className}">${st.label}</span>`));
+      Object.entries(factorStyles).forEach(([k,st])=>s[k]==="○"&&rf.push(`<span class="factor-tag ${st.className} px-2 py-1 text-sm rounded">${st.label}</span>`));
       const cd=document.createElement('div');
-      cd.className='symptom-card bg-gray-800 border border-gray-700 rounded-xl p-2 shadow-sm card-hover';
+      cd.className='symptom-card bg-gray-800 border border-gray-700 rounded-xl p-3 shadow-sm card-hover';
       cd.dataset.seq=s.seq;
       cd.dataset.factors=Object.entries(factorStyles).filter(([k])=>s[k]==="○").map(([k])=>k).join(',');
       cd.style.opacity='0';
@@ -353,15 +353,15 @@ function renderSymptomCards(){
       cd.style.transition='all 0.3s cubic-bezier(0.34,1.56,0.64,1)';
       cd.style.transitionDelay=`${i*15}ms`;
       cd.innerHTML=`
-<div class="flex items-start gap-2">
+<div class="flex items-start gap-3">
 <div class="flex-shrink-0 mt-1"><input type="checkbox" id="symptom-${s.seq}" class="symptom-checkbox h-5 w-5 text-primary rounded border-gray-600 input-focus" data-seq="${s.seq}"></div>
 <div class="flex-1">
-<div class="flex justify-between items-start mb-1"><label for="symptom-${s.seq}" class="text-gray-200 font-medium cursor-pointer text-sm"><span class="text-primary mr-1 font-semibold">[${s.seq}]</span>${s.symptom}</label></div>
-<div class="flex flex-wrap gap-1 mb-1">${rf.length>0?rf.join(''):'<span class="factor-tag bg-gray-700 text-gray-400">無相關要素</span>'}</div>
-<div class="symptom-details hidden mt-2 pt-2 border-t border-gray-700">
-<div class="grid grid-cols-1 md:grid-cols-2 gap-2">
-<div><label class="block text-sm text-gray-400 mb-1">時間長短</label><select class="duration-select w-full border border-gray-700 rounded-lg px-3 py-2 text-sm input-focus bg-gray-800 text-gray-200">${doh}</select><div class="duration-note text-gray-500 text-[10px] mt-1">備注：1周內(7天)、1-3個月(30-90天)、3-6個月(90-180天)、6個月-1年(180-365天)、1-2年(1-2年)、2-5年(2-5年)、5年以上(5年+)</div></div>
-<div><label class="block text-sm text-gray-400 mb-1">症狀輕重</label><select class="severity-select w-full border border-gray-700 rounded-lg px-3 py-2 text-sm input-focus bg-gray-800 text-gray-200">${soh}</select><div class="severity-note text-gray-500 text-[10px] mt-1">輕度=不影響生活、中度=偶爾影響、重度=嚴重影響</div></div>
+<div class="flex justify-between items-start mb-2"><label for="symptom-${s.seq}" class="text-gray-200 font-medium cursor-pointer text-base"><span class="text-primary mr-1 font-semibold">[${s.seq}]</span>${s.symptom}</label></div>
+<div class="flex flex-wrap gap-2 mb-2">${rf.length>0?rf.join(''):'<span class="factor-tag bg-gray-700 text-gray-400 px-2 py-1 text-sm rounded">無相關要素</span>'}</div>
+<div class="symptom-details hidden mt-3 pt-3 border-t border-gray-700">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+<div><label class="block text-sm text-gray-400 mb-1.5">時間長短</label><select class="duration-select w-full border border-gray-700 rounded-lg px-3 py-2 text-sm input-focus bg-gray-800 text-gray-200">${doh}</select></div>
+<div><label class="block text-sm text-gray-400 mb-1.5">症狀輕重</label><select class="severity-select w-full border border-gray-700 rounded-lg px-3 py-2 text-sm input-focus bg-gray-800 text-gray-200">${soh}</select><div class="severity-note text-gray-500 text-sm mt-1">備注：輕度（不影響生活）、中度（偶爾影響）、重度（嚴重影響）</div></div>
 </div></div></div></div>`;
       c.appendChild(cd);
       setTimeout(()=>{cd.style.opacity='1';cd.style.transform='translateY(0)';},50);
@@ -444,8 +444,8 @@ function organizeReportData(submitData){
     }
   });
   let st = `
-📋 彥彬自檢表系統
-━━━━━━━━━━━━━━━━━━━
+📋 彥彬自檢表系統 - 健康評估報告
+━━━━━━━━━━━━━━━━━━━━━━━━
 👤 基本資訊
   ├ 姓名：${fui.姓名}
   ├ 年齡：${fui.年齡}
@@ -463,7 +463,8 @@ function organizeReportData(submitData){
 
 💡 健康建議
   根據自檢結果關注對應健康問題，必要時諮詢專業醫師
-━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━━━
+🔖 來源：彥彬自檢表系統
 `;
   return {formattedUserInfo:fui,factorSymptoms:ffs,summaryText:st,totalSymptomCount, selectedTotal, topFactors};
 }
@@ -697,13 +698,10 @@ async function collectSubmitData(){
   });
   const selectedSymptoms=Array.from(document.querySelectorAll('.symptom-checkbox:checked')).map(cb=>{
     const seq=cb.dataset.seq,cd=cb.closest('.symptom-card');
-    const durationText = cd.querySelector('.duration-select option:checked').textContent;
-    let severityText = cd.querySelector('.severity-select option:checked').textContent;
-    severityText = severityText.replace(/（.*）/g, '').trim();
     return{
       seq:parseInt(seq),symptom:cd.querySelector('label').textContent.replace(/^\[\d+\]/,'').trim(),
-      durationText:durationText,
-      severityText:severityText
+      durationText:cd.querySelector('.duration-select option:checked').textContent,
+      severityText:cd.querySelector('.severity-select option:checked').textContent.replace(/（.*）/g, '')
     };
   });
   return{
