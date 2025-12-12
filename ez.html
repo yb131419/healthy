@@ -592,49 +592,41 @@ async function handleFloatingShareClick(e) {
     return;
   }
   try {
-    // 創建臨時截圖容器，只包含頂部到統計資訊（含填表時間）
+    // 修复：调整临时容器样式，确保html2canvas能捕获
     const tempScreenshotContainer = document.createElement('div');
     tempScreenshotContainer.id = 'temp-screenshot-container';
     tempScreenshotContainer.style.cssText = `
-      position: fixed;
+      position: absolute;
       top: 0;
       left: 0;
       z-index: 99999;
       background-color: #121212;
-      width: 100vw;
+      width: 100%;
+      max-width: 800px;
       height: auto;
       padding: 2rem;
       box-sizing: border-box;
-      visibility: hidden;
       opacity: 0;
+      pointer-events: none;
     `;
-
-    // 複製原報告中「頂部到統計資訊」的內容到臨時容器
+    // 确保获取到报告容器
     const originalReport = document.getElementById('summary-content');
-    const screenshotTarget = originalReport.querySelector('#screenshot-target');
-    if(!screenshotTarget){
+    if(!originalReport){
       alert('報告區域加載失敗，請稍候再試');
       return;
     }
-
-    // 複製頂部標題 + 基本資料 + 統計資訊（包含填表時間）
-    const reportHeader = originalReport.querySelector('.text-center.mb-6').cloneNode(true);
-    const basicInfo = screenshotTarget.querySelector('.bg-gray-800.rounded-lg.p-4.mb-4').cloneNode(true);
-    const statisticsSection = screenshotTarget.querySelector('#statistics-section').cloneNode(true);
-
-    tempScreenshotContainer.appendChild(reportHeader);
-    tempScreenshotContainer.appendChild(basicInfo);
-    tempScreenshotContainer.appendChild(statisticsSection);
+    // 克隆完整报告内容（修复无内容问题）
+    const reportClone = originalReport.cloneNode(true);
+    tempScreenshotContainer.appendChild(reportClone);
     document.body.appendChild(tempScreenshotContainer);
-
+    // 强制重绘
+    tempScreenshotContainer.offsetHeight;
     // 隱藏原浮動按鈕
     const floatContainer = document.getElementById('floating-buttons');
     const floatStyle = floatContainer.style.opacity;
     floatContainer.style.opacity = '0';
-
     btn.disabled = true;
     btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i>';
-
     // 加載html2canvas
     if(!window.html2canvas){
       alert('正在加載分享所需組件，請稍候...');
@@ -646,31 +638,27 @@ async function handleFloatingShareClick(e) {
         document.head.appendChild(script);
       });
     }
-
-    // 截圖臨時容器
+    // 截圖臨時容器（优化配置）
     const canvas=await html2canvas(tempScreenshotContainer,{
-      scale: 3,
+      scale: 2,
       useCORS: true,
       allowTaint: true,
       logging: false,
       backgroundColor: '#121212',
-      dpi: 300,
+      dpi: 150,
       windowWidth: tempScreenshotContainer.offsetWidth,
       windowHeight: tempScreenshotContainer.offsetHeight,
       scrollY: 0,
       scrollX: 0
     });
-
     // 刪除臨時容器
     document.body.removeChild(tempScreenshotContainer);
     // 恢復浮動按鈕
     floatContainer.style.opacity = floatStyle;
-
     let dataUrl=canvas.toDataURL('image/png',0.9);
     const fileName=`🧬 彥彬自檢表系統_${new Date().toLocaleDateString()}.png`;
     const imgBlob=await (await fetch(dataUrl)).blob();
     let file;
-
     // 壓縮過大的圖片
     if(imgBlob.size>5*1024*1024){
       alert('圖片體積過大，輕微壓縮保持清晰...');
@@ -680,7 +668,6 @@ async function handleFloatingShareClick(e) {
     }else{
       file=new File([imgBlob],fileName,{type:'image/png'});
     }
-
     // 分享邏輯
     if(navigator.share&&typeof navigator.share==='function'){
       try{
