@@ -595,9 +595,7 @@ async function handleFloatingShareClick(e) {
       alert('報告區域加載失敗，請稍候再試');
       return;
     }
-    const healthFactorsSection = screenshotTarget.querySelector('.health-factors-section');
-    const healthFactorsStyle = healthFactorsSection ? healthFactorsSection.style.display : '';
-    if (healthFactorsSection) healthFactorsSection.style.display = 'none';
+    // 保留标题和提交时间，不移除健康要素部分
     const floatContainer = document.getElementById('floating-buttons');
     const floatStyle = floatContainer.style.opacity;
     floatContainer.style.opacity = '0';
@@ -630,7 +628,7 @@ async function handleFloatingShareClick(e) {
       scale: 3,useCORS: true,allowTaint: true,logging: false,backgroundColor: '#121212',dpi: 300,
       windowWidth: window.innerWidth,windowHeight: screenshotTarget.offsetHeight + 100,scrollY: 0,scrollX: 0
     });
-    if (healthFactorsSection) healthFactorsSection.style.display = healthFactorsStyle;
+    // 恢复样式
     Object.keys(originalStyle).forEach(key => {
       screenshotTarget.style[key] = originalStyle[key];
     });
@@ -760,12 +758,12 @@ function renderReportSummary(reportData){
   let html=`
 <div class="text-center mb-6">
   <h2 class="text-xl md:text-2xl font-bold text-white mb-2">🧬 彥彬自檢表系統</h2>
-  <h3 class="text-lg md:text-xl font-semibold text-primary mb-1">健康評估報告</h3>
-  <div class="text-sm text-gray-400 mt-1">${formattedUserInfo.提交時間}</div>
+  <h3 class="text-lg md:text-xl font-bold text-white mb-1">健康評估報告</h3>
+  <div class="text-sm text-gray-400 mt-1 font-bold">${formattedUserInfo.提交時間}</div>
 </div>
 <div id="screenshot-target" class="mb-4">
 <div class="bg-gray-800 rounded-lg p-4 mb-4 mx-auto max-w-full border border-gray-700">
-<div class="text-base font-semibold text-white mb-3 flex items-center justify-center">
+<div class="text-base font-bold text-white mb-3 flex items-center justify-center">
 <i class="fa fa-user-circle text-primary mr-2 text-sm"></i>基本資料
 </div>
 <div class="grid grid-cols-2 gap-x-4 gap-y-2 text-sm text-gray-200">`;
@@ -781,7 +779,7 @@ function renderReportSummary(reportData){
   });
   html+=`</div></div>
 <div id="statistics-section" class="mb-6">
-<div class="text-base font-semibold text-white flex items-center justify-center mb-3">
+<div class="text-base font-bold text-white flex items-center justify-center mb-3">
 <i class="fa fa-chart-pie text-primary mr-2 text-sm"></i>統計資訊
 </div>
 <div class="bg-green-900/30 text-green-400 px-4 py-2 rounded-full text-sm font-medium inline-flex items-center justify-center mx-auto mb-3">
@@ -799,13 +797,13 @@ function renderReportSummary(reportData){
     }
   }
   html+=`</div></div>
-<div class="text-base font-semibold text-white mb-4 flex items-center justify-center health-factors-section">
+<div class="text-base font-bold text-white mb-4 flex items-center justify-center health-factors-section">
 <i class="fa fa-heartbeat text-primary mr-2 text-sm"></i>🌟七大健康要素評估🌟
 </div>`;
   Object.entries(factorSymptoms).forEach(([fk,f])=>{
     const fn=factorStyles[fk].label;
     html+=`<div class="bg-gray-800 border border-gray-700 rounded-lg p-4 mb-4 shadow-sm hover:shadow-md transition-shadow mx-auto max-w-full health-factors-section">
-<div class="font-semibold text-sm text-white mb-3 flex items-center justify-center">
+<div class="font-bold text-sm text-white mb-3 flex items-center justify-center">
 <span class="inline-block w-3 h-3 rounded-full ${factorStyles[fk].className.split(' ')[0]} mr-2"></span>
 【${fn}】（${f.length}項）
 </div>
@@ -947,6 +945,5 @@ function renderResult(resp){
 window.submitCallback=resp=>{console.log("submitCallback:",resp);return resp;};
 window.verifyCallback=resp=>{console.log("verifyCallback:",resp);return resp;};
 </script>
-
 </body>
 </html>
