@@ -432,11 +432,38 @@ function organizeReportData(submitData){
     factorSymptoms.forEach(symptom => allSelectedSymptoms.add(symptom.name));
   });
   const selectedTotal = allSelectedSymptoms.size;
-  // 重构分享文字：仅保留提交时间、总选取症状、优先调整方向并换行
-  let st = `📋 彥彬健康自檢表系統
-提交時間：${fui.提交時間}
-總選取症狀：${selectedTotal} 項 (系統共${totalSymptomCount}種症狀)
-優先調整方向：${topFactors.length > 0 ? (topFactors.length === 1 ? `${topFactors[0].name} (${topFactors[0].count}項)` : `${topFactors[0].name} (${topFactors[0].count}項)、${topFactors[1].name} (${topFactors[1].count}項)`) : '無'}`;
+  let factorText = '';
+  Object.entries(fs).forEach(([key, list]) => {
+    if(list.length > 0) {
+      factorText += `\n\n🎯✨【${factorStyles[key].label}】✨(${list.length}項)`;
+      list.forEach((item, idx) => {
+        factorText += `\n  ${idx+1}. ${item.name}`;
+        factorText += `\n     ├ 持續時間：${item.duration}`;
+        factorText += `\n     └ 症狀程度：${item.severity}`;
+      });
+    }
+  });
+let st = `📋 彥彬自檢表系統 
+━━━━━━━━
+👤 基本資訊
+  ├ 姓名：${fui.姓名}
+  ├ 年齡：${fui.年齡}
+  ├ 性別：${fui.性別}
+  ├ 身高/體重：${fui.身高}/${fui.體重}
+  ├ 血壓/血糖：${fui.血壓}/${fui.血糖}
+  ├ 職業：${fui.職業}
+  └ 提交時間：${fui.提交時間}
+
+📊 整體統計
+  ├ 總選取症狀：${selectedTotal} 項 (系統共${totalSymptomCount}種症狀)
+  └ 優先調整方向：${topFactors.length > 0 ? (topFactors.length === 1 ? `${topFactors[0].name} (${topFactors[0].count}項)` : `${topFactors[0].name} (${topFactors[0].count}項)、${topFactors[1].name} (${topFactors[1].count}項)`) : '無'}
+
+🩺 🌟七大健康要素評估🌟${factorText || '\n  └ 暫無相關症狀記錄'}
+
+💡 健康建議
+  根據自檢結果關注對應健康問題，必要時諮詢專業醫師
+━━━━━━━━
+🔖 來源：彥彬自檢表系統`;
   return {formattedUserInfo:fui,factorSymptoms:ffs,summaryText:st,totalSymptomCount, selectedTotal, topFactors};
 }
 function createFloatingButtons() {
@@ -568,6 +595,7 @@ async function handleFloatingShareClick(e) {
       alert('報告區域加載失敗，請稍候再試');
       return;
     }
+    // 保留标题和提交时间，不移除健康要素部分
     const floatContainer = document.getElementById('floating-buttons');
     const floatStyle = floatContainer.style.opacity;
     floatContainer.style.opacity = '0';
@@ -600,12 +628,13 @@ async function handleFloatingShareClick(e) {
       scale: 3,useCORS: true,allowTaint: true,logging: false,backgroundColor: '#121212',dpi: 300,
       windowWidth: window.innerWidth,windowHeight: screenshotTarget.offsetHeight + 100,scrollY: 0,scrollX: 0
     });
+    // 恢复样式
     Object.keys(originalStyle).forEach(key => {
       screenshotTarget.style[key] = originalStyle[key];
     });
     floatContainer.style.opacity = floatStyle;
     let dataUrl=canvas.toDataURL('image/png',0.9);
-    const fileName=`🧬 彥彬健康自檢表系統_${new Date().toLocaleDateString()}.png`;
+    const fileName=`🧬 彥彬自檢表系統_${new Date().toLocaleDateString()}.png`;
     const imgBlob=await (await fetch(dataUrl)).blob();
     let file;
     if(imgBlob.size>5*1024*1024){
@@ -619,7 +648,7 @@ async function handleFloatingShareClick(e) {
     if(navigator.share&&typeof navigator.share==='function'){
       try{
         const shareData={
-          title:'📋 彥彬健康自檢表系統 - 健康評估報告',
+          title:'📋 彥彬自檢表系統 - 健康評估報告',
           files:[file],
           text: window.reportData.summaryText
         };
@@ -728,7 +757,7 @@ function renderReportSummary(reportData){
   sc.style.cssText = `width:100%;background-color:#121212;padding:1rem;box-sizing:border-box;line-height:1.4;font-size:0.9rem;text-align:center!important;color:#FFFFFF;margin:0 auto!important;border-radius:0;box-shadow:none;max-width:none;`;
   let html=`
 <div class="text-center mb-6">
-  <h2 class="text-xl md:text-2xl font-bold text-white mb-2">🧬 彥彬健康自檢表系統</h2>
+  <h2 class="text-xl md:text-2xl font-bold text-white mb-2">🧬 彥彬自檢表系統</h2>
   <h3 class="text-lg md:text-xl font-bold text-white mb-1">健康評估報告</h3>
   <div class="text-sm text-gray-400 mt-1 font-bold">${formattedUserInfo.提交時間}</div>
 </div>
@@ -916,6 +945,5 @@ function renderResult(resp){
 window.submitCallback=resp=>{console.log("submitCallback:",resp);return resp;};
 window.verifyCallback=resp=>{console.log("verifyCallback:",resp);return resp;};
 </script>
-
 </body>
 </html>
