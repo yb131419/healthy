@@ -361,7 +361,7 @@ function renderSymptomCards(){
 <div class="symptom-details hidden mt-3 pt-3 border-t border-gray-700">
 <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
 <div><label class="block text-sm text-gray-400 mb-1.5">時間長短</label><select class="duration-select w-full border border-gray-700 rounded-lg px-3 py-2 text-sm input-focus bg-gray-800 text-gray-200">${doh}</select></div>
-<div><label class="block text-sm text-gray-400 mb-1.5">症狀輕重</label><select class="severity-select w-full border border-gray-700 rounded-lg px-3 py-2 text-sm input-focus bg-gray-800 text-gray-200">${soh}</select><div class="severity-note text-gray-500 text-[10px] mt-1">備注：輕度（不影響生活）、中度（偶爾影響）、重度（嚴重影響）</div></div>
+<div><label class="block text-sm text-gray-400 mb-1.5">症狀輕重</label><select class="severity-select w-full border border-gray-700 rounded-lg px-3 py-2 text-sm input-focus bg-gray-800 text-gray-200">${soh}</select><div class="severity-note text-gray-500 text-[10px] mt-1">備注：輕度（不影響）、中度（偶爾影響）、重度（嚴重影響）</div></div>
 </div></div></div></div>`;
       c.appendChild(cd);
       setTimeout(()=>{cd.style.opacity='1';cd.style.transform='translateY(0)';},50);
@@ -592,32 +592,50 @@ async function handleFloatingShareClick(e) {
     return;
   }
   try {
-    const screenshotTarget = document.getElementById('screenshot-target');
+    // 創建臨時截圖容器，只包含頂部到統計資訊（含填表時間）
+    const tempScreenshotContainer = document.createElement('div');
+    tempScreenshotContainer.id = 'temp-screenshot-container';
+    tempScreenshotContainer.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: 99999;
+      background-color: #121212;
+      width: 100vw;
+      height: auto;
+      padding: 2rem;
+      box-sizing: border-box;
+      visibility: hidden;
+      opacity: 0;
+    `;
+
+    // 複製原報告中「頂部到統計資訊」的內容到臨時容器
+    const originalReport = document.getElementById('summary-content');
+    const screenshotTarget = originalReport.querySelector('#screenshot-target');
     if(!screenshotTarget){
       alert('報告區域加載失敗，請稍候再試');
       return;
     }
-    const healthFactorsSection = screenshotTarget.querySelector('.health-factors-section');
-    const healthFactorsStyle = healthFactorsSection ? healthFactorsSection.style.display : '';
-    if (healthFactorsSection) healthFactorsSection.style.display = 'none';
+
+    // 複製頂部標題 + 基本資料 + 統計資訊（包含填表時間）
+    const reportHeader = originalReport.querySelector('.text-center.mb-6').cloneNode(true);
+    const basicInfo = screenshotTarget.querySelector('.bg-gray-800.rounded-lg.p-4.mb-4').cloneNode(true);
+    const statisticsSection = screenshotTarget.querySelector('#statistics-section').cloneNode(true);
+
+    tempScreenshotContainer.appendChild(reportHeader);
+    tempScreenshotContainer.appendChild(basicInfo);
+    tempScreenshotContainer.appendChild(statisticsSection);
+    document.body.appendChild(tempScreenshotContainer);
+
+    // 隱藏原浮動按鈕
     const floatContainer = document.getElementById('floating-buttons');
     const floatStyle = floatContainer.style.opacity;
     floatContainer.style.opacity = '0';
-    const originalStyle = {
-      width: screenshotTarget.style.width,
-      backgroundColor: screenshotTarget.style.backgroundColor,
-      padding: screenshotTarget.style.padding,
-      borderRadius: screenshotTarget.style.borderRadius,
-      boxShadow: screenshotTarget.style.boxShadow,
-      maxWidth: screenshotTarget.style.maxWidth,
-      textAlign: screenshotTarget.style.textAlign,
-      margin: screenshotTarget.style.margin,
-      height: screenshotTarget.style.height,
-      overflow: screenshotTarget.style.overflow
-    };
-    screenshotTarget.style.cssText = `width: 100vw !important;max-width: none !important;background-color: #121212 !important;padding: 2rem !important;box-sizing: border-box !important;color: #FFFFFF !important;border-radius: 0 !important;box-shadow: none !important;margin: 0 auto !important;text-align: center !important;height: auto !important;overflow: visible !important;`;
+
     btn.disabled = true;
     btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i>';
+
+    // 加載html2canvas
     if(!window.html2canvas){
       alert('正在加載分享所需組件，請稍候...');
       await new Promise((resolve,reject)=>{
@@ -628,19 +646,32 @@ async function handleFloatingShareClick(e) {
         document.head.appendChild(script);
       });
     }
-    const canvas=await html2canvas(screenshotTarget,{
-      scale: 3,useCORS: true,allowTaint: true,logging: false,backgroundColor: '#121212',dpi: 300,
-      windowWidth: window.innerWidth,windowHeight: screenshotTarget.offsetHeight + 100,scrollY: 0,scrollX: 0
+
+    // 截圖臨時容器
+    const canvas=await html2canvas(tempScreenshotContainer,{
+      scale: 3,
+      useCORS: true,
+      allowTaint: true,
+      logging: false,
+      backgroundColor: '#121212',
+      dpi: 300,
+      windowWidth: tempScreenshotContainer.offsetWidth,
+      windowHeight: tempScreenshotContainer.offsetHeight,
+      scrollY: 0,
+      scrollX: 0
     });
-    if (healthFactorsSection) healthFactorsSection.style.display = healthFactorsStyle;
-    Object.keys(originalStyle).forEach(key => {
-      screenshotTarget.style[key] = originalStyle[key];
-    });
+
+    // 刪除臨時容器
+    document.body.removeChild(tempScreenshotContainer);
+    // 恢復浮動按鈕
     floatContainer.style.opacity = floatStyle;
+
     let dataUrl=canvas.toDataURL('image/png',0.9);
     const fileName=`🧬 彥彬自檢表系統_${new Date().toLocaleDateString()}.png`;
     const imgBlob=await (await fetch(dataUrl)).blob();
     let file;
+
+    // 壓縮過大的圖片
     if(imgBlob.size>5*1024*1024){
       alert('圖片體積過大，輕微壓縮保持清晰...');
       dataUrl=canvas.toDataURL('image/png',0.8);
@@ -649,6 +680,8 @@ async function handleFloatingShareClick(e) {
     }else{
       file=new File([imgBlob],fileName,{type:'image/png'});
     }
+
+    // 分享邏輯
     if(navigator.share&&typeof navigator.share==='function'){
       try{
         const shareData={
