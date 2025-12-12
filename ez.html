@@ -361,7 +361,7 @@ function renderSymptomCards(){
 <div class="symptom-details hidden mt-3 pt-3 border-t border-gray-700">
 <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
 <div><label class="block text-sm text-gray-400 mb-1.5">時間長短</label><select class="duration-select w-full border border-gray-700 rounded-lg px-3 py-2 text-sm input-focus bg-gray-800 text-gray-200">${doh}</select></div>
-<div><label class="block text-sm text-gray-400 mb-1.5">症狀輕重</label><select class="severity-select w-full border border-gray-700 rounded-lg px-3 py-2 text-sm input-focus bg-gray-800 text-gray-200">${soh}</select><div class="severity-note text-gray-500 text-xs mt-1">備注：輕度（不影響生活）、中度（偶爾影響）、重度（嚴重影響）</div></div>
+<div><label class="block text-sm text-gray-400 mb-1.5">症狀輕重</label><select class="severity-select w-full border border-gray-700 rounded-lg px-3 py-2 text-sm input-focus bg-gray-800 text-gray-200">${soh}</select></div>
 </div></div></div></div>`;
       c.appendChild(cd);
       setTimeout(()=>{cd.style.opacity='1';cd.style.transform='translateY(0)';},50);
@@ -444,8 +444,8 @@ function organizeReportData(submitData){
     }
   });
   let st = `
-📋 彥彬自檢表系統 - 健康評估報告
-━━━━━━━━━━━━━━━━━━━━━━━━
+📋 彥彬自檢表系統 
+━━━━━━━━━━━━━━━━━━
 👤 基本資訊
   ├ 姓名：${fui.姓名}
   ├ 年齡：${fui.年齡}
@@ -463,7 +463,7 @@ function organizeReportData(submitData){
 
 💡 健康建議
   根據自檢結果關注對應健康問題，必要時諮詢專業醫師
-━━━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━
 🔖 來源：彥彬自檢表系統
 `;
   return {formattedUserInfo:fui,factorSymptoms:ffs,summaryText:st,totalSymptomCount, selectedTotal, topFactors};
