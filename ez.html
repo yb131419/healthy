@@ -443,8 +443,7 @@ function organizeReportData(submitData){
       });
     }
   });
-  let st = `
-📋 彥彬自檢表系統 
+let st = `📋 彥彬自檢表系統 
 ━━━━━━━━
 👤 基本資訊
   ├ 姓名：${fui.姓名}
@@ -453,19 +452,18 @@ function organizeReportData(submitData){
   ├ 身高/體重：${fui.身高}/${fui.體重}
   ├ 血壓/血糖：${fui.血壓}/${fui.血糖}
   ├ 職業：${fui.職業}
-  └ 提交時間：\n${fui.提交時間}
+  └ 提交時間：${fui.提交時間}
 
 📊 整體統計
-  ├ 總選取症狀：\n${selectedTotal} 項 (系統共${totalSymptomCount}種症狀)
-  └ 優先調整方向：\n${topFactors.length > 0 ? (topFactors.length === 1 ? `${topFactors[0].name} (${topFactors[0].count}項)` : `${topFactors[0].name} (${topFactors[0].count}項)、${topFactors[1].name} (${topFactors[1].count}項)`) : '無'}
+  ├ 總選取症狀：${selectedTotal} 項 (系統共${totalSymptomCount}種症狀)
+  └ 優先調整方向：${topFactors.length > 0 ? (topFactors.length === 1 ? `${topFactors[0].name} (${topFactors[0].count}項)` : `${topFactors[0].name} (${topFactors[0].count}項)、${topFactors[1].name} (${topFactors[1].count}項)`) : '無'}
 
 🩺 🌟七大健康要素評估🌟${factorText || '\n  └ 暫無相關症狀記錄'}
 
 💡 健康建議
   根據自檢結果關注對應健康問題，必要時諮詢專業醫師
 ━━━━━━━━
-🔖 來源：彥彬自檢表系統
-`;
+🔖 來源：彥彬自檢表系統`;
   return {formattedUserInfo:fui,factorSymptoms:ffs,summaryText:st,totalSymptomCount, selectedTotal, topFactors};
 }
 function createFloatingButtons() {
