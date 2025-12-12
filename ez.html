@@ -352,16 +352,17 @@ function renderSymptomCards(){
       cd.style.transform='translateY(20px)';
       cd.style.transition='all 0.3s cubic-bezier(0.34,1.56,0.64,1)';
       cd.style.transitionDelay=`${i*15}ms`;
+      // 調大複選框和下拉框尺寸：h-5 w-5（原h-4 w-4）、text-sm（原text-xs）、px-3 py-2（原px-2 py-1）
       cd.innerHTML=`
 <div class="flex items-start gap-2">
-<div class="flex-shrink-0 mt-1"><input type="checkbox" id="symptom-${s.seq}" class="symptom-checkbox h-4 w-4 text-primary rounded border-gray-600 input-focus" data-seq="${s.seq}"></div>
+<div class="flex-shrink-0 mt-1"><input type="checkbox" id="symptom-${s.seq}" class="symptom-checkbox h-5 w-5 text-primary rounded border-gray-600 input-focus" data-seq="${s.seq}"></div>
 <div class="flex-1">
 <div class="flex justify-between items-start mb-1"><label for="symptom-${s.seq}" class="text-gray-200 font-medium cursor-pointer text-sm"><span class="text-primary mr-1 font-semibold">[${s.seq}]</span>${s.symptom}</label></div>
 <div class="flex flex-wrap gap-1 mb-1">${rf.length>0?rf.join(''):'<span class="factor-tag bg-gray-700 text-gray-400">無相關要素</span>'}</div>
 <div class="symptom-details hidden mt-2 pt-2 border-t border-gray-700">
 <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
-<div><label class="block text-xs text-gray-400 mb-1">時間長短</label><select class="duration-select w-full border border-gray-700 rounded-lg px-2 py-1 text-xs input-focus bg-gray-800 text-gray-200">${doh}</select></div>
-<div><label class="block text-xs text-gray-400 mb-1">症狀輕重</label><select class="severity-select w-full border border-gray-700 rounded-lg px-2 py-1 text-xs input-focus bg-gray-800 text-gray-200">${soh}</select><div class="severity-note text-gray-500 text-xs">備注：輕度、中度、重度</div></div>
+<div><label class="block text-sm text-gray-400 mb-1">時間長短</label><select class="duration-select w-full border border-gray-700 rounded-lg px-3 py-2 text-sm input-focus bg-gray-800 text-gray-200">${doh}</select></div>
+<div><label class="block text-sm text-gray-400 mb-1">症狀輕重</label><select class="severity-select w-full border border-gray-700 rounded-lg px-3 py-2 text-sm input-focus bg-gray-800 text-gray-200">${soh}</select><div class="severity-note text-gray-500 text-sm">備注：輕度（不影響生活）、中度（偶爾影響）、重度（嚴重影響）</div></div>
 </div></div></div></div>`;
       c.appendChild(cd);
       setTimeout(()=>{cd.style.opacity='1';cd.style.transform='translateY(0)';},50);
@@ -597,11 +598,9 @@ async function handleFloatingShareClick(e) {
       alert('報告區域加載失敗，請稍候再試');
       return;
     }
-    // 臨時隱藏七大健康要素評估區域
     const healthFactorsSection = screenshotTarget.querySelector('.health-factors-section');
     const healthFactorsStyle = healthFactorsSection ? healthFactorsSection.style.display : '';
     if (healthFactorsSection) healthFactorsSection.style.display = 'none';
-    
     const floatContainer = document.getElementById('floating-buttons');
     const floatStyle = floatContainer.style.opacity;
     floatContainer.style.opacity = '0';
@@ -634,9 +633,7 @@ async function handleFloatingShareClick(e) {
       scale: 3,useCORS: true,allowTaint: true,logging: false,backgroundColor: '#121212',dpi: 300,
       windowWidth: window.innerWidth,windowHeight: screenshotTarget.offsetHeight + 100,scrollY: 0,scrollX: 0
     });
-    // 恢復七大健康要素評估區域
     if (healthFactorsSection) healthFactorsSection.style.display = healthFactorsStyle;
-    
     Object.keys(originalStyle).forEach(key => {
       screenshotTarget.style[key] = originalStyle[key];
     });
