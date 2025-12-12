@@ -432,8 +432,6 @@ function organizeReportData(submitData){
     factorSymptoms.forEach(symptom => allSelectedSymptoms.add(symptom.name));
   });
   const selectedTotal = allSelectedSymptoms.size;
-
-  // 重新排版分享文字 - 核心修改點1
   let factorText = '';
   Object.entries(fs).forEach(([key, list]) => {
     if(list.length > 0) {
@@ -445,8 +443,6 @@ function organizeReportData(submitData){
       });
     }
   });
-
-  // 優化整體分享文字格式
   let st = `
 📋 彥彬自檢表系統 - 健康評估報告
 ━━━━━━━━━━━━━━━━━━━━━━━━
@@ -485,15 +481,15 @@ function createFloatingButtons() {
   shareBtn.style.cssText = `
     width: 56px;height: 56px;border-radius: 50%;background-color: #00C300;color: white;border: none;box-shadow: 0 4px 12px rgba(0, 195, 0, 0.3);display: flex;align-items: center;justify-content: center;cursor: pointer;transition: all 0.2s ease;
   `;
-  shareBtn.innerHTML = '<i class="fa fa-share-alt text-lg"></i>';
+  shareBtn.innerHTML = '<i class="fa fa-share-alt mr-1"></i>分享';
   shareBtn.title = '分享報告';
   const closeBtn = document.createElement('button');
   closeBtn.id = 'floating-close-btn';
   closeBtn.className = 'custom-styled';
   closeBtn.style.cssText = `
-    width: 48px;height: 48px;border-radius: 50%;background-color: #666666;color: white;border: none;box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);display: none;align-items: center;justify-content: center;cursor: pointer;transition: all 0.2s ease;opacity: 0;
+    width: 56px;height: 56px;border-radius: 50%;background-color: #666666;color: white;border: none;box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);display: none;align-items: center;justify-content: center;cursor: pointer;transition: all 0.2s ease;opacity: 0;
   `;
-  closeBtn.innerHTML = '<i class="fa fa-times text-lg"></i>';
+  closeBtn.innerHTML = '<i class="fa fa-times mr-1"></i>關閉';
   closeBtn.title = '關閉頁面';
   shareBtn.addEventListener('mouseenter', () => {
     shareBtn.style.transform = 'scale(1.08)';
@@ -602,18 +598,14 @@ async function handleFloatingShareClick(e) {
     return;
   }
   try {
-    // 強化截圖目標區域 - 核心修改點2
     const screenshotTarget = document.getElementById('screenshot-target');
     if(!screenshotTarget){
       alert('報告區域加載失敗，請稍候再試');
       return;
     }
-
     const floatContainer = document.getElementById('floating-buttons');
     const floatStyle = floatContainer.style.opacity;
     floatContainer.style.opacity = '0';
-
-    // 保存原始樣式並強制擴展截圖區域，確保標題和時間包含在內
     const originalStyle = {
       width: screenshotTarget.style.width,
       backgroundColor: screenshotTarget.style.backgroundColor,
@@ -626,8 +618,6 @@ async function handleFloatingShareClick(e) {
       height: screenshotTarget.style.height,
       overflow: screenshotTarget.style.overflow
     };
-
-    // 強制截圖區域包含完整內容，避免裁切
     screenshotTarget.style.cssText = `
       width: 100vw !important;
       max-width: none !important;
@@ -642,10 +632,8 @@ async function handleFloatingShareClick(e) {
       height: auto !important;
       overflow: visible !important;
     `;
-
     btn.disabled = true;
     btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i>';
-
     if(!window.html2canvas){
       alert('正在加載分享所需組件，請稍候...');
       await new Promise((resolve,reject)=>{
@@ -656,8 +644,6 @@ async function handleFloatingShareClick(e) {
         document.head.appendChild(script);
       });
     }
-
-    // 優化截圖配置，確保完整捕捉內容
     const canvas=await html2canvas(screenshotTarget,{
       scale: 3,
       useCORS: true,
@@ -666,22 +652,18 @@ async function handleFloatingShareClick(e) {
       backgroundColor: '#121212',
       dpi: 300,
       windowWidth: window.innerWidth,
-      windowHeight: screenshotTarget.offsetHeight + 100, // 增加高度緩衝
+      windowHeight: screenshotTarget.offsetHeight + 100,
       scrollY: 0,
       scrollX: 0
     });
-
-    // 還原原始樣式
     Object.keys(originalStyle).forEach(key => {
       screenshotTarget.style[key] = originalStyle[key];
     });
     floatContainer.style.opacity = floatStyle;
-
     let dataUrl=canvas.toDataURL('image/png',0.9);
     const fileName=`🧬 彥彬自檢表系統_${new Date().toLocaleDateString()}.png`;
     const imgBlob=await (await fetch(dataUrl)).blob();
     let file;
-
     if(imgBlob.size>5*1024*1024){
       alert('圖片體積過大，輕微壓縮保持清晰...');
       dataUrl=canvas.toDataURL('image/png',0.8);
@@ -690,13 +672,12 @@ async function handleFloatingShareClick(e) {
     }else{
       file=new File([imgBlob],fileName,{type:'image/png'});
     }
-
     if(navigator.share&&typeof navigator.share==='function'){
       try{
         const shareData={
           title:'📋 彥彬自檢表系統 - 健康評估報告',
           files:[file],
-          text: window.reportData.summaryText // 使用重新排版後的文字
+          text: window.reportData.summaryText
         };
         const canShare=navigator.canShare?await navigator.canShare(shareData):true;
         if(canShare){
@@ -729,7 +710,7 @@ async function handleFloatingShareClick(e) {
     }
   }finally{
     btn.disabled=false;
-    btn.innerHTML='<i class="fa fa-share-alt text-lg"></i>';
+    btn.innerHTML='<i class="fa fa-share-alt mr-1"></i>分享';
     document.getElementById('floating-buttons').style.opacity = '1';
   }
 }
@@ -809,23 +790,18 @@ width:100%;background-color:#121212;padding:1rem;box-sizing:border-box;
 line-height:1.4;font-size:0.9rem;text-align:center!important;color:#FFFFFF;
 margin:0 auto!important;border-radius:0;box-shadow:none;max-width:none;
 `;
-
-  // 強化截圖區域的標題和時間展示 - 核心修改點3
   let html=`
 <div class="text-center mb-6">
   <h2 class="text-xl md:text-2xl font-bold text-white mb-2">🧬 彥彬自檢表系統</h2>
   <h3 class="text-lg md:text-xl font-semibold text-primary mb-1">健康評估報告</h3>
   <div class="text-sm text-gray-400 mt-1">${formattedUserInfo.提交時間}</div>
 </div>
-
-<!-- 截圖目標區域：強制包含標題+時間+所有核心內容 -->
 <div id="screenshot-target" class="mb-4">
 <div class="bg-gray-800 rounded-lg p-4 mb-4 mx-auto max-w-full border border-gray-700">
 <div class="text-base font-semibold text-white mb-3 flex items-center justify-center">
 <i class="fa fa-user-circle text-primary mr-2 text-sm"></i>基本資料
 </div>
 <div class="grid grid-cols-2 gap-x-4 gap-y-2 text-sm text-gray-200">`;
-  
   const infoEntries=Object.entries(formattedUserInfo);
   infoEntries.forEach(([k,v])=>{
     if(k!=='提交時間'){
@@ -837,7 +813,6 @@ margin:0 auto!important;border-radius:0;box-shadow:none;max-width:none;
     }
   });
   html+=`</div></div>
-
 <div id="statistics-section" class="mb-6">
 <div class="text-base font-semibold text-white flex items-center justify-center mb-3">
 <i class="fa fa-chart-pie text-primary mr-2 text-sm"></i>統計資訊
@@ -845,7 +820,6 @@ margin:0 auto!important;border-radius:0;box-shadow:none;max-width:none;
 <div class="bg-green-900/30 text-green-400 px-4 py-2 rounded-full text-sm font-medium inline-flex items-center justify-center mx-auto mb-3">
 總症狀數：${selectedTotal} 項 (共${totalSymptomCount}種症狀)
 </div>`;
-  
   if(topFactors.length > 0){
     if(topFactors.length === 1){
       html+=`<div class="bg-blue-900/30 text-blue-400 px-4 py-2 rounded-full text-sm font-medium inline-flex items-center justify-center mx-auto">
@@ -858,12 +832,9 @@ margin:0 auto!important;border-radius:0;box-shadow:none;max-width:none;
     }
   }
   html+=`</div></div>
-
-<!-- 健康要素評估（非截圖區域但保留樣式） -->
 <div class="text-base font-semibold text-white mb-4 flex items-center justify-center">
 <i class="fa fa-heartbeat text-primary mr-2 text-sm"></i>七大健康要素評估
 </div>`;
-  
   Object.entries(factorSymptoms).forEach(([fk,f])=>{
     const fn=factorStyles[fk].label;
     html+=`<div class="bg-gray-800 border border-gray-700 rounded-lg p-4 mb-4 shadow-sm hover:shadow-md transition-shadow mx-auto max-w-full">
@@ -887,11 +858,9 @@ margin:0 auto!important;border-radius:0;box-shadow:none;max-width:none;
     });
     html+=`</div></div>`;
   });
-  
   html+=`<div class="mt-6 bg-gray-800 border border-gray-700 rounded-lg p-4 text-sm text-gray-300 font-bold mx-auto max-w-full">
 💡 建議：根據自檢結果關注對應健康問題，必要時諮詢專業醫師
 </div>`;
-  
   sc.innerHTML=html;
   setTimeout(()=>{
     rs.style.height=sc.offsetHeight+80+'px';
