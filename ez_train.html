@@ -24,6 +24,7 @@ tailwind.config={theme:{extend:{colors:{primary:'#008C76',secondary:'#E8F9F7',ac
 ::-webkit-scrollbar-thumb:hover{background:#94A3B8;}
 body{font-feature-settings:"palt";letter-spacing:0.02em;}
 .video-container{position:relative;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:8px;background-color:#0F172A;min-height:280px;}
+.link-container{position:relative;height:280px;border-radius:8px;background-color:#F1F5F9;border:2px dashed #008C76;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;text-align:center;}
 .video-container iframe{position:absolute;top:0;left:0;width:100%;height:100%;border:0;opacity:0;transition:opacity 0.3s ease;}
 .video-container iframe.loaded{opacity:1;}
 .btn-disabled{opacity:0.7;cursor:not-allowed;pointer-events:none;}
@@ -40,6 +41,11 @@ body{font-feature-settings:"palt";letter-spacing:0.02em;}
 .watch-btn{padding:8px 16px !important;font-size:14px !important;font-weight:600 !important;border-radius:8px !important;}
 .mobile-btn{min-height:48px !important;padding:12px 20px !important;font-size:16px !important;border-radius:10px !important;}
 .mobile-btn-sm{min-height:40px !important;padding:8px 16px !important;font-size:15px !important;border-radius:8px !important;}
+.link-card-icon{font-size:48px;color:#008C76;margin-bottom:16px;}
+.link-card-title{font-size:18px;font-weight:600;color:#1E293B;margin-bottom:8px;}
+.link-card-desc{font-size:14px;color:#64748B;margin-bottom:20px;}
+.link-card-btn{background:#008C76;color:white;padding:10px 20px;border-radius:8px;font-weight:600;transition:background 0.3s;}
+.link-card-btn:hover{background:#007A69;}
 </style>
 </head>
 <body class="bg-lightBg min-h-screen flex flex-col p-2 md:p-4">
@@ -144,11 +150,11 @@ body{font-feature-settings:"palt";letter-spacing:0.02em;}
           </div>
           <div class="space-y-1">
             <label class="block text-textPrimary font-medium text-xs md:text-sm">
-              <i class="fa fa-video-camera text-primary mr-2 text-xs"></i> 影片連結 <span class="text-red-500">*</span>
+              <i class="fa fa-video-camera text-primary mr-2 text-xs"></i> 連結網址 <span class="text-red-500">*</span>
             </label>
-            <input type="url" id="content-video" class="w-full px-3 py-2 rounded-lg border border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/10 outline-none transition-all text-sm" placeholder="YouTube/Vimeo連結" required>
+            <input type="url" id="content-video" class="w-full px-3 py-2 rounded-lg border border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/10 outline-none transition-all text-sm" placeholder="支援任意網址（YouTube/騰訊會議/網頁連結等）" required>
             <p class="text-xs text-textSecondary mt-1">
-              <i class="fa fa-lightbulb-o text-accent mr-1"></i> 支援 YouTube (youtu.be/xxx)、Vimeo 格式
+              <i class="fa fa-lightbulb-o text-accent mr-1"></i> 支援 YouTube、騰訊會議、普通網頁等任意合法網址
             </p>
           </div>
           <div class="space-y-1">
@@ -173,7 +179,7 @@ body{font-feature-settings:"palt";letter-spacing:0.02em;}
     <div id="video-preview" class="hidden bg-cardBg rounded-xl p-2 md:p-4 mb-4 scale-in border border-primary/20 shadow-elevation-1">
       <div class="flex items-center justify-between mb-3">
         <h2 class="text-base md:text-xl font-bold text-textPrimary flex items-center">
-          <i class="fa fa-play-circle text-primary mr-2 text-sm"></i> 影片預覽
+          <i class="fa fa-play-circle text-primary mr-2 text-sm"></i> 內容預覽
         </h2>
         <div id="preview-action-btns" class="flex gap-1 hidden">
           <button onclick="editCurrentVideo()" class="mobile-btn-sm text-primary hover:text-[#007A69] text-sm font-medium flex items-center gap-1 bg-primary/5 px-3 py-2 rounded-lg">
@@ -189,18 +195,28 @@ body{font-feature-settings:"palt";letter-spacing:0.02em;}
       </div>
       <div id="preview-content" class="space-y-3">
         <h3 id="preview-title" class="text-sm md:text-base font-medium text-textPrimary text-center mb-2"></h3>
-        <div class="video-container mb-3 flex items-center justify-center">
-          <div id="video-loading" class="absolute text-white/70">
-            <i class="fa fa-spinner animate-spin text-xl mb-1"></i>
-            <p class="text-xs">載入影片中...</p>
+        <div id="preview-container" class="mb-3">
+          <div id="video-container" class="video-container mb-3 flex items-center justify-center hidden">
+            <div id="video-loading" class="absolute text-white/70">
+              <i class="fa fa-spinner animate-spin text-xl mb-1"></i>
+              <p class="text-xs">載入影片中...</p>
+            </div>
+            <iframe id="preview-video" src="" allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" onload="this.classList.add('loaded'); const el = document.getElementById('video-loading'); if(el) el.classList.add('hidden');"></iframe>
           </div>
-          <iframe id="preview-video" src="" allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" onload="this.classList.add('loaded'); const el = document.getElementById('video-loading'); if(el) el.classList.add('hidden');"></iframe>
+          <div id="link-container" class="link-container hidden">
+            <i id="link-icon" class="link-card-icon"></i>
+            <h3 id="link-title" class="link-card-title"></h3>
+            <p id="link-desc" class="link-card-desc"></p>
+            <a id="link-btn" href="" target="_blank" class="link-card-btn">
+              <i class="fa fa-external-link mr-2"></i> 開啟連結
+            </a>
+          </div>
         </div>
         <div class="bg-neutral rounded-lg p-3 text-xs md:text-sm text-textSecondary">
           <div class="grid grid-cols-1 gap-2 mb-2">
-            <div id="preview-link-container" class="hidden">
+            <div id="preview-link-container" class="block">
               <div class="flex items-center justify-between">
-                <span class="font-medium text-textPrimary text-xs md:text-sm"><i class="fa fa-link text-primary mr-1.5 text-xs"></i> 影片連結：</span>
+                <span class="font-medium text-textPrimary text-xs md:text-sm"><i class="fa fa-link text-primary mr-1.5 text-xs"></i> 連結網址：</span>
                 <button onclick="copyVideoLink()" class="mobile-btn-sm text-primary hover:text-[#007A69] text-sm font-medium">
                   <i class="fa fa-copy text-sm"></i> 複製
                 </button>
@@ -230,7 +246,7 @@ body{font-feature-settings:"palt";letter-spacing:0.02em;}
 const CONFIG={LIFF_ID:"2008578880-eNqDGWBK",GAS_URL:"https://script.google.com/macros/s/AKfycbw5YiRGdgIA9EhTTpw0Ks7BExaK7rs9ktm-KOqdmV1yxozHdbUeksdmaKlMoolEhA7zUA/exec",JSONP_TIMEOUT:20000,PERMANENT_EXPIRY_DATE:"9999/12/31",STORAGE_KEY_PREFIX:"yanbin_video_manager_"};
 let appState={currentUser:null,videoList:[],currentViewingVideoId:null,currentEditingVideoId:null,isSubmitting:false,draggingItem:null,userRole:''};
 const convertUTCToTaiwanTime=(utcStr)=>{
-  if(!utcStr) return new Date().toLocaleString('zh-TW',{timeZone:'Asia/Taipei',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  if(!utcStr)return new Date().toLocaleString('zh-TW',{timeZone:'Asia/Taipei',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'});
   const date=new Date(utcStr);
   return date.toLocaleString('zh-TW',{timeZone:'Asia/Taipei',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'});
 };
@@ -288,22 +304,33 @@ const setSubmitState=(isSubmitting)=>{
   }
 };
 const resetSubmitState=()=>{setSubmitState(false);};
+const getUrlType=(url)=>{
+  if(!url)return 'unknown';
+  const lowerUrl=url.toLowerCase().trim();
+  if(lowerUrl.includes('youtube.com')||lowerUrl.includes('youtu.be'))return 'youtube';
+  else if(lowerUrl.includes('vimeo.com'))return 'vimeo';
+  else if(lowerUrl.includes('meeting.tencent.com'))return 'tencent_meeting';
+  else return 'general';
+};
 const convertToEmbedUrl=(url)=>{
-  if(!url)return '';
-  const youtubeRegex=/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/|shorts\/|live\/|playlist\?list=))([\w-]+)/;
-  const youtubeMatch=url.match(youtubeRegex);
-  if(youtubeMatch&&youtubeMatch[1]){
-    const isShort=url.includes('shorts/');
-    return `https://www.youtube.com/embed/${youtubeMatch[1]}?autoplay=0&rel=0${isShort?'&enablejsapi=1':''}`;
+  const urlType=getUrlType(url);
+  if(urlType==='youtube'){
+    const youtubeRegex=/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/|shorts\/|live\/|playlist\?list=))([\w-]+)/;
+    const youtubeMatch=url.match(youtubeRegex);
+    if(youtubeMatch&&youtubeMatch[1]){
+      const isShort=url.includes('shorts/');
+      return `https://www.youtube.com/embed/${youtubeMatch[1]}?autoplay=0&rel=0${isShort?'&enablejsapi=1':''}`;
+    }
+  }else if(urlType==='vimeo'){
+    const vimeoRegex=/vimeo\.com\/(\d+)/;
+    const vimeoMatch=url.match(vimeoRegex);
+    if(vimeoMatch&&vimeoMatch[1])return `https://player.vimeo.com/video/${vimeoMatch[1]}?autoplay=0`;
   }
-  const vimeoRegex=/vimeo\.com\/(\d+)/;
-  const vimeoMatch=url.match(vimeoRegex);
-  if(vimeoMatch&&vimeoMatch[1])return `https://player.vimeo.com/video/${vimeoMatch[1]}?autoplay=0`;
-  return url;
+  return '';
 };
 const validateVideoUrl=(url)=>{
-  const validDomains=['youtube.com','youtu.be','vimeo.com'];
-  return validDomains.some(domain=>url.includes(domain));
+  try{new URL(url);return true;}
+  catch(e){return false;}
 };
 const calculateRemainingDaysByDate=(expiryDateStr)=>{
   try{
@@ -345,13 +372,21 @@ const calculateRemainingDaysByDate=(expiryDateStr)=>{
 };
 const getVideoThumbnail=(url)=>{
   if(!url)return 'https://via.placeholder.com/300x180?text=No+Preview';
-  const youtubeRegex=/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/|shorts\/))([\w-]+)/;
-  const youtubeMatch=url.match(youtubeRegex);
-  if(youtubeMatch&&youtubeMatch[1])return `https://img.youtube.com/vi/${youtubeMatch[1]}/mqdefault.jpg`;
-  const vimeoRegex=/vimeo\.com\/(\d+)/;
-  const vimeoMatch=url.match(vimeoRegex);
-  if(vimeoMatch&&vimeoMatch[1])return `https://via.placeholder.com/300x180?text=Vimeo`;
-  return 'https://via.placeholder.com/300x180?text=Invalid';
+  const urlType=getUrlType(url);
+  switch(urlType){
+    case 'youtube':
+      const youtubeRegex=/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/|shorts\/))([\w-]+)/;
+      const youtubeMatch=url.match(youtubeRegex);
+      if(youtubeMatch&&youtubeMatch[1])return `https://img.youtube.com/vi/${youtubeMatch[1]}/mqdefault.jpg`;
+      break;
+    case 'vimeo':
+      return 'https://via.placeholder.com/300x180?text=Vimeo';
+    case 'tencent_meeting':
+      return 'https://via.placeholder.com/300x180?text=騰訊會議&bgcolor=e8f9f7&color=008c76';
+    default:
+      return 'https://via.placeholder.com/300x180?text=外部連結&bgcolor=f1f5f9&color=64748b';
+  }
+  return 'https://via.placeholder.com/300x180?text=Link';
 };
 const isManageUser=()=>{return appState.userRole==='admin';};
 const isProUser=()=>{return appState.userRole==='pro';};
@@ -560,19 +595,19 @@ function renderVideoList(){
     const thumbnailUrl=getVideoThumbnail(video.video).replace('300x180','80x50');
     const actionBtns=isManage?`
       <div class="flex flex-col gap-1 ml-2">
-        <button onclick="event.stopPropagation();viewVideo('${video.id}')" class="p-2 text-primary hover:bg-primary/5 rounded-lg transition-colors" title="預覽影片">
+        <button onclick="event.stopPropagation();viewVideo('${video.id}')" class="p-2 text-primary hover:bg-primary/5 rounded-lg transition-colors" title="預覽內容">
           <i class="fa fa-eye text-base"></i>
         </button>
-        <button onclick="event.stopPropagation();editVideo('${video.id}')" class="p-2 text-blue-500 hover:bg-blue-50 rounded-lg transition-colors" title="編輯影片">
+        <button onclick="event.stopPropagation();editVideo('${video.id}')" class="p-2 text-blue-500 hover:bg-blue-50 rounded-lg transition-colors" title="編輯內容">
           <i class="fa fa-pencil text-base"></i>
         </button>
-        <button onclick="event.stopPropagation();deleteVideoConfirm('${video.id}')" class="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="刪除影片">
+        <button onclick="event.stopPropagation();deleteVideoConfirm('${video.id}')" class="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="刪除內容">
           <i class="fa fa-trash text-base"></i>
         </button>
       </div>
     `:`
       <div class="flex flex-col gap-1 ml-2">
-        <button onclick="event.stopPropagation();viewVideo('${video.id}')" class="p-2 text-primary hover:bg-primary/5 rounded-lg transition-colors" title="預覽影片">
+        <button onclick="event.stopPropagation();viewVideo('${video.id}')" class="p-2 text-primary hover:bg-primary/5 rounded-lg transition-colors" title="預覽內容">
           <i class="fa fa-eye text-base"></i>
         </button>
       </div>
@@ -611,9 +646,9 @@ function renderViewerVideoList(){
     const viewerCard=document.createElement('div');
     viewerCard.className='viewer-card bg-cardBg rounded-xl overflow-hidden shadow-elevation-2 slide-up';
     viewerCard.onclick=()=>{viewVideo(video.id);};
-    const fullTitle=video.name||'未命名影片';
+    const fullTitle=video.name||'未命名內容';
     const thumbnailUrl=getVideoThumbnail(video.video);
-    const cardContent=isProUser()?`
+    const cardContent=`
       <div class="relative">
         <img src="${thumbnailUrl}" alt="${fullTitle}" class="w-full h-48 object-cover">
         <div class="absolute top-2 right-2 bg-primary/80 text-white text-xs px-2 py-1 rounded-full">
@@ -628,26 +663,7 @@ function renderViewerVideoList(){
         <div class="flex justify-between items-center">
           <span class="text-xs text-textSecondary/70"><i class="fa fa-clock-o mr-1"></i>${video.updatedAt}</span>
           <button onclick="event.stopPropagation();viewVideo('${video.id}')" class="watch-btn bg-primary/10 text-primary hover:bg-primary/20 transition-colors">
-            <i class="fa fa-play mr-1"></i> 立即觀看
-          </button>
-        </div>
-      </div>
-    `:`
-      <div class="relative">
-        <img src="${thumbnailUrl}" alt="${fullTitle}" class="w-full h-48 object-cover">
-        <div class="absolute top-2 right-2 bg-primary/80 text-white text-xs px-2 py-1 rounded-full">
-          ${index+1}
-        </div>
-        <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-3">
-          <h3 class="text-white font-medium text-sm md:text-base truncate">${fullTitle}</h3>
-        </div>
-      </div>
-      <div class="p-3">
-        <p class="text-xs text-textSecondary mb-2"><i class="fa fa-sticky-note-o mr-1"></i>${video.note||'無備註資訊'}</p>
-        <div class="flex justify-between items-center">
-          <span class="text-xs text-textSecondary/70"><i class="fa fa-clock-o mr-1"></i>${video.updatedAt}</span>
-          <button onclick="event.stopPropagation();viewVideo('${video.id}')" class="watch-btn bg-primary/10 text-primary hover:bg-primary/20 transition-colors">
-            <i class="fa fa-play mr-1"></i> 立即觀看
+            <i class="fa fa-play mr-1"></i> 立即查看
           </button>
         </div>
       </div>
@@ -682,7 +698,6 @@ function renderResult(resp){
   const isAdmin=Boolean(resp.isAdmin);
   const isPro=Boolean(resp.isPro)&&!isAdmin;
   appState.userRole=isAdmin?'admin':isPro?'pro':'guest';
-  // 優先使用GAS返回的displayName，其次使用LIFF獲取的名稱
   const actualUserName=resp.displayName || appState.currentUser?.displayName || '未知用戶';
   appState.currentUser={
     userId:resp.userId,
@@ -708,7 +723,6 @@ function renderResult(resp){
     `;
     document.getElementById('manage-btn-container').style.display='flex';
     document.getElementById('preview-action-btns').style.display='flex';
-    document.getElementById('preview-link-container').style.display='block';
   }else if(isPro){
     const{displayDate,remainingDays}=calculateRemainingDaysByDate(expiryDateStr);
     main.innerHTML=`<span class="text-textPrimary"><i class="fa fa-user mr-2 text-sm"></i>專業用戶驗證通過</span>`;
@@ -720,7 +734,6 @@ function renderResult(resp){
     `;
     document.getElementById('manage-btn-container').style.display='none';
     document.getElementById('preview-action-btns').style.display='none';
-    document.getElementById('preview-link-container').style.display='none';
   }else{
     showError('用戶權限異常，請聯繫管理員');
     return;
@@ -731,7 +744,7 @@ function renderResult(resp){
 }
 function addNewVideo(){
   if(appState.isSubmitting||!isManageUser()){
-    if(!isManageUser())showError('僅管理用戶可新增影片');
+    if(!isManageUser())showError('僅管理用戶可新增內容');
     return;
   }
   appState.currentEditingVideoId=null;
@@ -742,7 +755,7 @@ function addNewVideo(){
   const contentNoteEl=document.getElementById('content-note');
   const videoListEl=document.getElementById('video-list-section');
   const editEl=document.getElementById('edit-section');
-  if(editTitleEl)editTitleEl.innerHTML='<i class="fa fa-edit text-primary mr-2 text-sm"></i> 新增影片';
+  if(editTitleEl)editTitleEl.innerHTML='<i class="fa fa-edit text-primary mr-2 text-sm"></i> 新增內容';
   if(videoIdEl)videoIdEl.value='';
   if(contentNameEl)contentNameEl.value='';
   if(contentVideoEl)contentVideoEl.value='';
@@ -756,7 +769,7 @@ function addNewVideo(){
 }
 function editVideo(videoId){
   if(appState.isSubmitting||!isManageUser()){
-    if(!isManageUser())showError('僅管理用戶可編輯影片');
+    if(!isManageUser())showError('僅管理用戶可編輯內容');
     return;
   }
   const video=appState.videoList.find(v=>v.id===videoId);
@@ -769,7 +782,7 @@ function editVideo(videoId){
   const contentNoteEl=document.getElementById('content-note');
   const videoListEl=document.getElementById('video-list-section');
   const editEl=document.getElementById('edit-section');
-  if(editTitleEl)editTitleEl.innerHTML='<i class="fa fa-edit text-primary mr-2 text-sm"></i> 編輯影片';
+  if(editTitleEl)editTitleEl.innerHTML='<i class="fa fa-edit text-primary mr-2 text-sm"></i> 編輯內容';
   if(videoIdEl)videoIdEl.value=video.id;
   if(contentNameEl)contentNameEl.value=video.name;
   if(contentVideoEl)contentVideoEl.value=video.video;
@@ -805,17 +818,53 @@ function viewVideo(videoId){
   const previewUpdatedEl=document.getElementById('preview-updated');
   const previewNoteEl=document.getElementById('preview-note');
   const previewVideoEl=document.getElementById('preview-video');
+  const videoContainerEl=document.getElementById('video-container');
+  const linkContainerEl=document.getElementById('link-container');
+  const linkIconEl=document.getElementById('link-icon');
+  const linkTitleEl=document.getElementById('link-title');
+  const linkDescEl=document.getElementById('link-desc');
+  const linkBtnEl=document.getElementById('link-btn');
+  
+  // 隱藏其他區域
   if(videoViewerEl)videoViewerEl.classList.add('hidden');
   if(videoListEl)videoListEl.classList.add('hidden');
   if(editEl)editEl.classList.add('hidden');
   if(videoPreviewEl)videoPreviewEl.classList.remove('hidden');
-  if(videoLoadingEl)videoLoadingEl.classList.remove('hidden');
+  
+  // 設置預覽標題和基本信息
   if(previewTitleEl)previewTitleEl.textContent=video.name;
   if(previewLinkEl)previewLinkEl.textContent=video.video;
   if(previewUpdatedEl)previewUpdatedEl.textContent=video.updatedAt||'未同步';
   if(previewNoteEl)previewNoteEl.textContent=video.note||'無備註資訊';
+  
+  // 判斷URL類型並顯示對應預覽
+  const urlType=getUrlType(video.video);
   const embedUrl=convertToEmbedUrl(video.video);
-  if(previewVideoEl)previewVideoEl.src=embedUrl;
+  
+  if(embedUrl){
+    // 視頻類型 - 顯示iframe
+    videoContainerEl.classList.remove('hidden');
+    linkContainerEl.classList.add('hidden');
+    if(videoLoadingEl)videoLoadingEl.classList.remove('hidden');
+    if(previewVideoEl)previewVideoEl.src=embedUrl;
+  }else{
+    // 普通鏈接 - 顯示鏈接卡片
+    videoContainerEl.classList.add('hidden');
+    linkContainerEl.classList.remove('hidden');
+    
+    // 設置鏈接卡片內容
+    if(urlType==='tencent_meeting'){
+      linkIconEl.className='link-card-icon fa fa-video-camera';
+      linkTitleEl.textContent='騰訊會議鏈接';
+      linkDescEl.textContent='點擊按鈕開啟騰訊會議';
+    }else{
+      linkIconEl.className='link-card-icon fa fa-link';
+      linkTitleEl.textContent='外部網頁鏈接';
+      linkDescEl.textContent='點擊按鈕在新窗口打開';
+    }
+    linkBtnEl.href=video.video;
+  }
+  
   if(videoPreviewEl)videoPreviewEl.scrollIntoView({behavior:'smooth'});
 }
 function hideVideoPreview(){
@@ -829,17 +878,17 @@ function hideVideoPreview(){
 }
 function editCurrentVideo(){
   if(!isManageUser()){
-    showError('僅管理用戶可編輯影片');
+    showError('僅管理用戶可編輯內容');
     return;
   }
   if(appState.currentViewingVideoId)editVideo(appState.currentViewingVideoId);
 }
 function deleteVideoConfirm(videoId){
   if(!isManageUser()){
-    showError('僅管理用戶可刪除影片');
+    showError('僅管理用戶可刪除內容');
     return;
   }
-  if(confirm('確定要刪除此影片嗎？此操作無法復原！'))deleteVideo(videoId);
+  if(confirm('確定要刪除此內容嗎？此操作無法復原！'))deleteVideo(videoId);
 }
 function deleteVideo(videoId){
   if(appState.isSubmitting||!isManageUser())return;
@@ -854,14 +903,14 @@ function deleteVideo(videoId){
       }
       renderVideoList();
       renderViewerVideoList();
-      showSuccess('影片已成功刪除！');
+      showSuccess('內容已成功刪除！');
     }
     setSubmitState(false);
   });
 }
 function deleteCurrentVideo(){
   if(!isManageUser()){
-    showError('僅管理用戶可刪除影片');
+    showError('僅管理用戶可刪除內容');
     return;
   }
   if(!appState.currentViewingVideoId)return;
@@ -872,7 +921,7 @@ function copyVideoLink(){
   if(!video)return;
   try{
     navigator.clipboard.writeText(video.video).then(()=>{
-      showSuccess('影片連結已成功複製到剪貼簿！');
+      showSuccess('連結已成功複製到剪貼簿！');
     }).catch(()=>{
       const textArea=document.createElement('textarea');
       textArea.value=video.video;
@@ -880,7 +929,7 @@ function copyVideoLink(){
       textArea.select();
       document.execCommand('copy');
       document.body.removeChild(textArea);
-      showSuccess('影片連結已成功複製到剪貼簿！');
+      showSuccess('連結已成功複製到剪貼簿！');
     });
   }catch(e){
     console.error('複製連結失敗：',e);
@@ -890,7 +939,7 @@ function copyVideoLink(){
 function saveVideo(event){
   event.preventDefault();
   if(appState.isSubmitting||!isManageUser()){
-    if(!isManageUser())showError('僅管理用戶可儲存影片');
+    if(!isManageUser())showError('僅管理用戶可儲存內容');
     return;
   }
   if(!appState.currentUser){
@@ -901,10 +950,12 @@ function saveVideo(event){
   const videoName=document.getElementById('content-name').value.trim();
   const videoUrl=document.getElementById('content-video').value.trim();
   const videoNote=document.getElementById('content-note').value.trim();
+  
   if(!validateVideoUrl(videoUrl)){
-    showError('請輸入有效的 YouTube 或 Vimeo 影片連結');
+    showError('請輸入有效的網址格式（如：https://xxx.com）');
     return;
   }
+  
   setSubmitState(true);
   const videoData={
     id:videoId,
@@ -921,7 +972,7 @@ function saveVideo(event){
       updateVideoCountDisplay();
       renderVideoList();
       renderViewerVideoList();
-      showSuccess(appState.currentEditingVideoId?'影片已成功更新並同步到工作表！':'新影片已成功添加並同步到工作表！');
+      showSuccess(appState.currentEditingVideoId?'內容已成功更新並同步到工作表！':'新內容已成功添加並同步到工作表！');
       appState.currentEditingVideoId=null;
       hideEditSection();
     }
@@ -931,23 +982,19 @@ function saveVideo(event){
 function getProfileAndVerify(){
   setStatus('驗證使用者資訊...');
   try{
-    // 優先使用新版LIFF API獲取用戶資訊
     liff.getProfile().then(profile => {
       console.log("從 LIFF API 獲取用戶資訊：",profile);
       const userId=profile.userId;
-      // 直接使用LIFF返回的displayName，不再默認為未知用戶
       const displayName=profile.displayName?.trim() || 'LINE用戶';
       appState.currentUser={userId:userId,displayName:displayName};
       callGasBackend(userId,displayName,true);
     }).catch(err=>{
       console.warn("LIFF getProfile 失敗，嘗試 ID Token：",err);
-      // 備用方案：從ID Token獲取
       try{
         const idToken=liff.getDecodedIDToken();
         if(idToken){
           console.log("ID Token 內容：",idToken);
           const userId=idToken.sub;
-          // 優先使用nickname，其次是name，確保顯示真實名稱
           const displayName=idToken.nickname?.trim() || idToken.name?.trim() || idToken.given_name || 'LINE用戶';
           appState.currentUser={userId:userId,displayName:displayName};
           callGasBackend(userId,displayName,true);
@@ -984,7 +1031,6 @@ function callGasBackend(userId,displayName,writeToSheet=false){
         resp.isAuthorized=Boolean(resp.isAuthorized||resp.isAdmin||resp.isPro);
         resp.isAdmin=Boolean(resp.isAdmin);
         resp.isPro=Boolean(resp.isPro);
-        // 保留GAS返回的displayName，確保一致性
         resp.displayName=resp.displayName || displayName;
         renderResult(resp);
       }
