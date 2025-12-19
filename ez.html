@@ -305,8 +305,7 @@ const fullSymptomData=[
 {seq:92,symptom:"身體異味",氣血:"",循環:"○",毒素:"○",血脂:"○",寒濕:"",免疫:"",情緒:""},
 {seq:93,symptom:"淋巴腫大",氣血:"",循環:"○",毒素:"○",血脂:"",寒濕:"○",免疫:"○",情緒:"○"},
 {seq:94,symptom:"黑痣變大變多",氣血:"",循環:"",毒素:"○",血脂:"",寒濕:"",免疫:"○",情緒:""},
-{seq:95,symptom:"形體消瘦",氣血:"○",循環:"",毒素:"",血脂:"",寒濕:"",免疫:"○",情緒:"○"}
-];
+{seq:95,symptom:"形體消瘦",氣血:"○",循環:"",毒素:"",血脂:"",寒濕:"",免疫:"○",情緒:"○"}];
 const setStatus=text=>{const e=document.getElementById('status-text');e&&(e.textContent=text);};
 const showError=msg=>{
 document.getElementById('status').classList.add('hidden');
@@ -413,12 +412,10 @@ selectedSymptoms.forEach(s=>{
 const os=fullSymptomData.find(ss=>ss.seq===s.seq);
 os&&Object.keys(fs).forEach(f=>os[f]==="○"&&fs[f].push({name:s.symptom,duration:s.durationText,severity:s.severityText}));
 });
-// 統計各要素總項數 & 計算佔比
 const factorTotalCounts={};
 Object.keys(fs).forEach(factor=>{
 factorTotalCounts[factor]=fullSymptomData.filter(sym=>sym[factor]==="○").length;
 });
-// 計算每個要素的佔比（獨立計算，不依賴topFactors）
 const factorRatio={};
 Object.keys(fs).forEach(factor=>{
 const total=factorTotalCounts[factor];
@@ -426,7 +423,6 @@ const count=fs[factor].length;
 const ratio=total>0?((count/total)*100).toFixed(1):0;
 factorRatio[factor]={count,total,ratio:`${ratio}%`,ratioVal:parseFloat(ratio)};
 });
-// 計算佔比並排序（用於頂部統計）
 const factorPercentages=Object.entries(fs).map(([key,list])=>{
 const {count,ratio,ratioVal}=factorRatio[key];
 return{
@@ -434,7 +430,6 @@ name:fStyles[key].label,count,total:factorTotalCounts[key],
 percentage:ratio,percentageValue:ratioVal,key
 };
 }).filter(item=>item.count>0).sort((a,b)=>b.percentageValue-a.percentageValue);
-// 最高的兩個佔比
 const topPercentageFactors=factorPercentages.slice(0,2);
 const ffs=Object.fromEntries(Object.entries(fs).filter(([_,f])=>f.length>0)),fui={
 姓名:userBasicInfo.name||'未填寫',年齡:userBasicInfo.age?`${userBasicInfo.age}歲`:'未填寫',
@@ -452,11 +447,12 @@ const selectedTotal=allSelectedSymptoms.size;
 let factorText='';
 Object.entries(fs).forEach(([key,list])=>{
 if(list.length>0){
-factorText+=`\n\n🎯✨【${fStyles[key].label}】✨(${list.length}項/總${factorTotalCounts[key]}項 | 佔比${factorRatio[key].ratio})`;
+// 優化分享文字排版：統一符號、縮進，提升可讀性
+factorText+=`\n\n🎯【${fStyles[key].label}】(${list.length}項/總${factorTotalCounts[key]}項 | 佔比${factorRatio[key].ratio})`;
 list.forEach((item,idx)=>{
-factorText+=`\n  ${idx+1}. ${item.name}`;
-factorText+=`\n     ├ 持續時間：${item.duration}`;
-factorText+=`\n     └ 症狀程度：${item.severity}`;
+factorText+=`\n  ${idx+1}. 📌${item.name}`;
+factorText+=`\n     ⏱️ 持續時間：${item.duration}`;
+factorText+=`\n     ⚠️ 症狀程度：${item.severity}`;
 });
 }
 });
@@ -480,7 +476,7 @@ let st=`📋 彥彬自檢表系統
 : '無'}
 
 🩺 🌟七大健康要素評估🌟
-  ${factorText ? `└── ${factorText}` : '└── 暫無相關症狀記錄'}
+${factorText ? factorText : '  └── 暫無相關症狀記錄'}
 
 💡 健康建議
   └── 根據自檢結果關注對應健康問題，必要時諮詢專業醫師
@@ -822,7 +818,6 @@ html+=`</div></div>
 </div>`;
 Object.entries(factorSymptoms).forEach(([fk,f])=>{
 const fn=fStyles[fk].label;
-// 直接使用獨立計算的佔比，不再依賴topFactors
 const {count,total,ratio}=factorRatio[fk];
 html+=`<div class="bg-gray-800 border border-gray-700 rounded-lg p-4 mb-4 shadow-sm hover:shadow-md transition-shadow mx-auto max-w-full health-factors-section">
 <div class="font-bold text-sm text-white mb-3 flex items-center justify-center">
