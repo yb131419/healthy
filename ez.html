@@ -196,7 +196,7 @@ const LIFF_ID="2008578880-NznKeG2a";
 const GAS_URL="https://script.google.com/macros/s/AKfycbykBtM2_PM7IZ-ZUU4tgTqVa1xGhVQFaZ523FXc4ivdLz_GZ09sdmL6s5zk7SdloFuG/exec";
 const JSONP_TIMEOUT=12000;
 const PERMANENT_EXPIRY_DATE="9999/12/31";
-const factorStyles={
+const fStyles={
   氣血:{className:'bg-blue-500/20 text-blue-400',label:'氣血'},
   循環:{className:'bg-green-500/20 text-green-400',label:'循環'},
   毒素:{className:'bg-yellow-500/20 text-yellow-400',label:'毒素'},
@@ -205,10 +205,10 @@ const factorStyles={
   免疫:{className:'bg-pink-500/20 text-pink-400',label:'免疫'},
   情緒:{className:'bg-indigo-500/20 text-indigo-400',label:'情緒'}
 };
-const durationOptions=[{value:'',label:'請選擇時間'},{value:'1w',label:'1周內'},{value:'1-3m',label:'1-3個月'},
+const durOpts=[{value:'',label:'請選擇時間'},{value:'1w',label:'1周內'},{value:'1-3m',label:'1-3個月'},
 {value:'3-6m',label:'3-6個月'},{value:'6m-1y',label:'6個月-1年'},{value:'1-2y',label:'1-2年'},
 {value:'2-5y',label:'2-5年'},{value:'5y+',label:'5年以上'}];
-const severityOptions=[{value:'',label:'請選擇輕重'},{value:'mild',label:'輕度（不影響生活）'},
+const sevOpts=[{value:'',label:'請選擇輕重'},{value:'mild',label:'輕度（不影響生活）'},
 {value:'moderate',label:'中度（偶爾影響）'},{value:'severe',label:'重度（明顯影響）'}];
 const fullSymptomData=[
 {seq:1,symptom:"記憶力下降",氣血:"○",循環:"○",毒素:"○",血脂:"○",寒濕:"",免疫:"",情緒:""},
@@ -338,12 +338,12 @@ const c=document.getElementById('symptoms-container');
 if(!c)return false;
 c.innerHTML='';
 fullSymptomData.forEach((s,i)=>{
-const rf=[],doh=durationOptions.map(o=>`<option value="${o.value}">${o.label}</option>`).join(''),soh=severityOptions.map(o=>`<option value="${o.value}">${o.label}</option>`).join('');
-Object.entries(factorStyles).forEach(([k,st])=>s[k]==="○"&&rf.push(`<span class="factor-tag ${st.className} px-2 py-1 text-sm rounded">${st.label}</span>`));
+const rf=[],doh=durOpts.map(o=>`<option value="${o.value}">${o.label}</option>`).join(''),soh=sevOpts.map(o=>`<option value="${o.value}">${o.label}</option>`).join('');
+Object.entries(fStyles).forEach(([k,st])=>s[k]==="○"&&rf.push(`<span class="factor-tag ${st.className} px-2 py-1 text-sm rounded">${st.label}</span>`));
 const cd=document.createElement('div');
 cd.className='symptom-card bg-gray-800 border border-gray-700 rounded-xl p-3 shadow-sm card-hover';
 cd.dataset.seq=s.seq;
-cd.dataset.factors=Object.entries(factorStyles).filter(([k])=>s[k]==="○").map(([k])=>k).join(',');
+cd.dataset.factors=Object.entries(fStyles).filter(([k])=>s[k]==="○").map(([k])=>k).join(',');
 cd.style.opacity='0';
 cd.style.transform='translateY(20px)';
 cd.style.transition='all 0.3s cubic-bezier(0.34,1.56,0.64,1)';
@@ -418,15 +418,20 @@ const factorTotalCounts={};
 Object.keys(fs).forEach(factor=>{
 factorTotalCounts[factor]=fullSymptomData.filter(sym=>sym[factor]==="○").length;
 });
-// 計算佔比並排序
+// 計算每個要素的佔比（獨立計算，不依賴topFactors）
+const factorRatio={};
+Object.keys(fs).forEach(factor=>{
+const total=factorTotalCounts[factor];
+const count=fs[factor].length;
+const ratio=total>0?((count/total)*100).toFixed(1):0;
+factorRatio[factor]={count,total,ratio:`${ratio}%`,ratioVal:parseFloat(ratio)};
+});
+// 計算佔比並排序（用於頂部統計）
 const factorPercentages=Object.entries(fs).map(([key,list])=>{
-const total=factorTotalCounts[key];
-const count=list.length;
-const percentage=total>0?((count/total)*100).toFixed(1):0;
+const {count,ratio,ratioVal}=factorRatio[key];
 return{
-name:factorStyles[key].label,count,total,
-percentage:`${percentage}%`,
-percentageValue:parseFloat(percentage),key
+name:fStyles[key].label,count,total:factorTotalCounts[key],
+percentage:ratio,percentageValue:ratioVal,key
 };
 }).filter(item=>item.count>0).sort((a,b)=>b.percentageValue-a.percentageValue);
 // 最高的兩個佔比
@@ -447,7 +452,7 @@ const selectedTotal=allSelectedSymptoms.size;
 let factorText='';
 Object.entries(fs).forEach(([key,list])=>{
 if(list.length>0){
-factorText+=`\n\n🎯✨【${factorStyles[key].label}】✨(${list.length}項/總${factorTotalCounts[key]}項 | 佔比${factorPercentages.find(i=>i.key===key)?.percentage||'0%'})`;
+factorText+=`\n\n🎯✨【${fStyles[key].label}】✨(${list.length}項/總${factorTotalCounts[key]}項 | 佔比${factorRatio[key].ratio})`;
 list.forEach((item,idx)=>{
 factorText+=`\n  ${idx+1}. ${item.name}`;
 factorText+=`\n     ├ 持續時間：${item.duration}`;
@@ -481,7 +486,7 @@ let st=`📋 彥彬自檢表系統
   └── 根據自檢結果關注對應健康問題，必要時諮詢專業醫師
 ━━━━━━━━━━━━━━━━━━━━
 🔖 來源：彥彬自檢表系統`;
-return{formattedUserInfo:fui,factorSymptoms:ffs,summaryText:st,totalSymptomCount,selectedTotal,topFactors:topPercentageFactors};
+return{formattedUserInfo:fui,factorSymptoms:ffs,summaryText:st,totalSymptomCount,selectedTotal,topFactors:topPercentageFactors,factorRatio};
 }
 function createFloatingButtons(){
 if(document.getElementById('floating-buttons'))return;
@@ -757,7 +762,7 @@ btn.disabled=false;btn.innerHTML='提交檢查表';
 });
 }
 function renderReportSummary(reportData){
-const {formattedUserInfo,factorSymptoms,summaryText,totalSymptomCount,selectedTotal,topFactors}=reportData;
+const {formattedUserInfo,factorSymptoms,summaryText,totalSymptomCount,selectedTotal,topFactors,factorRatio}=reportData;
 let sc=document.getElementById('summary-content');
 if(!sc){
 sc=document.createElement('div');sc.id='summary-content';
@@ -816,14 +821,13 @@ html+=`</div></div>
 <i class="fa fa-heartbeat text-primary mr-2 text-sm"></i>🌟七大健康要素評估🌟
 </div>`;
 Object.entries(factorSymptoms).forEach(([fk,f])=>{
-const fn=factorStyles[fk].label;
-// 獲取當前要素的佔比
-const factorPct=topFactors.find(i=>i.key===fk)?.percentage||'0%';
-const totalCount=topFactors.find(i=>i.key===fk)?.total||0;
+const fn=fStyles[fk].label;
+// 直接使用獨立計算的佔比，不再依賴topFactors
+const {count,total,ratio}=factorRatio[fk];
 html+=`<div class="bg-gray-800 border border-gray-700 rounded-lg p-4 mb-4 shadow-sm hover:shadow-md transition-shadow mx-auto max-w-full health-factors-section">
 <div class="font-bold text-sm text-white mb-3 flex items-center justify-center">
-<span class="inline-block w-3 h-3 rounded-full ${factorStyles[fk].className.split(' ')[0]} mr-2"></span>
-【${fn}】（${f.length}項/總${totalCount}項 | 佔比${factorPct}）
+<span class="inline-block w-3 h-3 rounded-full ${fStyles[fk].className.split(' ')[0]} mr-2"></span>
+【${fn}】（${count}項/總${total}項 | 佔比${ratio}）
 </div>
 <div class="grid grid-cols-3 gap-3 text-sm">`;
 f.forEach((i,idx)=>{
