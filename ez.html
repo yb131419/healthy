@@ -1,3 +1,197 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<title>🧬 彥彬 自檢表系統</title>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0">
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+<script>
+tailwind.config={theme:{extend:{colors:{primary:'#008C76',secondary:'#E8F9F7',accent:'#FFD700',dark:'#1A202C',lightBg:'#F9FAFB',neutral:'#F3F4F6',cardBg:'#FFFFFF',textPrimary:'#1E293B',textSecondary:'#64748B'},fontFamily:{sans:['Noto Sans TC','sans-serif','system-ui'],display:['Noto Sans TC','sans-serif','system-ui']},boxShadow:{'elevation-1':'0 2px 8px rgba(0,0,0,0.06)','elevation-2':'0 4px 16px rgba(0,0,0,0.08)','elevation-3':'0 8px 24px rgba(0,0,0,0.12)','elevation-hover':'0 12px 32px rgba(0,0,0,0.15)'}}}};
+</script>
+<style type="text/tailwindcss">
+@layer utilities{.fade-in{animation:fadeIn 0.6s cubic-bezier(0.4,0,0.2,1);}.slide-up{animation:slideUp 0.5s cubic-bezier(0.34,1.56,0.64,1);}.scale-in{animation:scaleIn 0.4s cubic-bezier(0.34,1.56,0.64,1);}.pulse-subtle{animation:pulseSubtle 2s infinite;}.gradient-text{background-clip:text;-webkit-background-clip:text;color:transparent;}.card-hover{transition:all 0.3s cubic-bezier(0.34,1.56,0.64,1);}.btn-hover{transition:all 0.25s cubic-bezier(0.34,1.56,0.64,1);}.factor-tag{font-size:0.75rem;padding:0.2rem 0.4rem;border-radius:6px;font-weight:500;}.input-focus{@apply focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all;}}
+@keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
+@keyframes slideUp{from{transform:translateY(30px);opacity:0;}to{transform:translateY(0);opacity:1;}}
+@keyframes scaleIn{from{transform:scale(0.96);opacity:0;}to{transform:scale(1);opacity:1;}}
+@keyframes pulseSubtle{0%,100%{opacity:1;}50%{opacity:0.8;}}
+::-webkit-scrollbar{width:8px;height:8px;}
+::-webkit-scrollbar-track{background:#F1F5F9;border-radius:4px;}
+::-webkit-scrollbar-thumb{background:#CBD5E1;border-radius:4px;}
+::-webkit-scrollbar-thumb:hover{background:#94A3B8;}
+body{font-feature-settings:"palt";letter-spacing:0.02em;}
+.symptom-card{min-height:120px;}
+@media (max-width:640px){
+.symptom-card{min-height:110px;}
+.factor-tag{font-size:0.7rem;padding:0.15rem 0.3rem;}
+#symptoms-container{gap:2px;}
+.btn-hover{transform:scale(1.02);}
+.result-summary{font-size:0.9rem;}
+.info-grid{grid-template-columns:repeat(2,1fr);gap:0.5rem;}
+}
+.info-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:0.75rem;}
+.info-item{display:flex;justify-content:space-between;}
+.severity-note{font-size:0.65rem;color:#94A3B8;margin-top:2px;}
+</style>
+</head>
+<body class="bg-lightBg min-h-screen flex flex-col p-2 md:p-4">
+<div class="max-w-5xl w-full bg-cardBg rounded-2xl shadow-elevation-2 overflow-hidden fade-in self-center">
+<div class="bg-gradient-to-r from-primary to-[#006658] p-4 md:p-6 text-white text-center relative overflow-hidden">
+<div class="absolute top-0 left-0 w-32 h-32 bg-white/5 rounded-full -translate-x-1/2 -translate-y-1/2"></div>
+<div class="absolute bottom-0 right-0 w-48 h-48 bg-white/5 rounded-full translate-x-1/3 translate-y-1/3"></div>
+<div class="relative z-10">
+<div class="inline-flex items-center justify-center w-14 h-14 bg-white/10 backdrop-blur-sm rounded-full mb-3 pulse-subtle">
+<i class="fa fa-heartbeat text-2xl text-accent"></i>
+</div>
+<h1 class="text-xl md:text-2xl font-bold mb-1 tracking-wide">🧬 彥彬 自檢表系統</h1>
+<p class="text-white/90 text-sm md:text-base font-light">專業健康評估 · 精准對應七大健康要素</p>
+</div>
+</div>
+<div class="p-3 md:p-5">
+<div id="status" class="flex items-center justify-center py-6 text-textPrimary text-center">
+<div class="text-center">
+<div class="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary mb-3"></div>
+<p id="status-text" class="text-base">正在初始化系統，請稍候...</p>
+</div>
+</div>
+<div id="error-message" class="hidden bg-red-50 border border-red-100 text-red-700 px-4 py-3 rounded-xl mb-4 shadow-sm">
+<div class="flex items-start">
+<i class="fa fa-exclamation-circle text-red-500 mt-1 mr-2 text-lg"></i>
+<div id="error-content"></div>
+</div>
+</div>
+<div id="result-card" class="hidden bg-gradient-to-r from-secondary to-[#F0FAF8] border border-primary/15 rounded-2xl p-4 mb-4 text-center slide-up relative overflow-hidden">
+<div class="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full translate-x-1/2 -translate-y-1/2"></div>
+<div class="relative z-10">
+<div id="result-main" class="text-lg md:text-xl font-bold mb-2 text-textPrimary"></div>
+<div id="result-details" class="text-sm text-textSecondary space-y-1 md:space-y-1.5"></div>
+<div class="w-20 h-0.5 bg-primary/20 mx-auto my-2"></div>
+<p class="text-xs text-textSecondary/80"><i class="fa fa-info-circle text-primary mr-1"></i>請根據自身狀況如實填寫，系統將為您提供專業參考</p>
+</div>
+</div>
+<div id="user-info-section" class="hidden scale-in bg-neutral rounded-2xl p-3 md:p-4 mb-4 shadow-elevation-1">
+<div class="text-center mb-3">
+<h2 class="text-lg md:text-xl font-bold text-textPrimary mb-1"><span class="gradient-text bg-gradient-to-r from-primary to-[#006658]">用戶基本資訊</span></h2>
+<p class="text-textSecondary max-w-2xl mx-auto text-xs">請根據實際情況填寫，幫助系統精確評估</p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-2 mb-3">
+<div class="space-y-1">
+<label class="block text-xs font-medium text-textPrimary">姓名 <span class="text-red-500">*</span></label>
+<input type="text" id="user-name" class="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm input-focus bg-white" placeholder="請輸入真實姓名" required>
+</div>
+<div class="space-y-1">
+<label class="block text-xs font-medium text-textPrimary">年齡 <span class="text-red-500">*</span></label>
+<input type="number" id="user-age" min="0" max="120" class="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm input-focus bg-white" placeholder="請輸入年齡" required>
+</div>
+<div class="space-y-1">
+<label class="block text-xs font-medium text-textPrimary">性別 <span class="text-red-500">*</span></label>
+<select id="user-gender" class="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm input-focus bg-white" required>
+<option value="">請選擇性別</option>
+<option value="male">男</option>
+<option value="female">女</option>
+</select>
+</div>
+<div class="space-y-1">
+<label class="block text-xs font-medium text-textPrimary">身高 (cm)</label>
+<input type="number" id="user-height" min="50" max="250" class="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm input-focus bg-white" placeholder="選填">
+</div>
+<div class="space-y-1">
+<label class="block text-xs font-medium text-textPrimary">體重 (kg)</label>
+<input type="number" id="user-weight" min="10" max="200" step="0.1" class="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm input-focus bg-white" placeholder="選填">
+</div>
+<div class="space-y-1">
+<label class="block text-xs font-medium text-textPrimary">血壓 (mmHg)</label>
+<input type="text" id="user-bp" class="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm input-focus bg-white" placeholder="選填，例：120收縮壓/80舒張壓">
+</div>
+<div class="space-y-1">
+<label class="block text-xs font-medium text-textPrimary">血糖(HbA1c)</label>
+<input type="number" id="user-glucose" min="3" max="15" step="0.1" class="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm input-focus bg-white" placeholder="糖化血色素">
+</div>
+<div class="space-y-1">
+<label class="block text-xs font-medium text-textPrimary">職業</label>
+<input type="text" id="user-job" class="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm input-focus bg-white" placeholder="選填">
+</div>
+</div>
+<div class="text-center">
+<button id="next-to-checklist" class="bg-gradient-to-r from-primary to-[#006658] hover:from-[#007A69] hover:to-[#00594D] text-white font-bold py-2 px-5 rounded-xl shadow-elevation-2 transition btn-hover transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-primary/50">
+<i class="fa fa-arrow-right mr-1.5"></i>繼續填寫自檢表
+</button>
+</div>
+</div>
+<div id="checklist-section" class="hidden scale-in">
+<div class="mb-3 text-center">
+<h2 class="text-lg md:text-xl font-bold text-textPrimary mb-1"><span class="gradient-text bg-gradient-to-r from-primary to-[#006658]">自檢表填寫區域</span></h2>
+<p class="text-textSecondary max-w-2xl mx-auto mb-2 text-xs">請勾選對應症狀並填寫相關資訊</p>
+<div class="mt-2 flex flex-wrap justify-center gap-1.5 text-xs">
+<span class="bg-blue-50 text-blue-700 factor-tag">氣血</span>
+<span class="bg-green-50 text-green-700 factor-tag">循環</span>
+<span class="bg-yellow-50 text-yellow-700 factor-tag">毒素</span>
+<span class="bg-orange-50 text-orange-700 factor-tag">血脂</span>
+<span class="bg-purple-50 text-purple-700 factor-tag">寒濕</span>
+<span class="bg-pink-50 text-pink-700 factor-tag">免疫</span>
+<span class="bg-indigo-50 text-indigo-700 factor-tag">情緒</span>
+</div>
+</div>
+<div class="bg-neutral rounded-2xl p-2 mb-3 shadow-elevation-1">
+<div class="flex flex-wrap gap-1.5 mb-2">
+<button id="filter-all" class="bg-primary text-white px-2.5 py-1 rounded-lg text-xs font-medium hover:bg-[#007A69] transition btn-hover shadow-elevation-1">
+<i class="fa fa-th-list mr-1"></i>顯示全部
+</button>
+<button data-factor="氣血" class="bg-blue-600 text-white px-2.5 py-1 rounded-lg text-xs font-medium hover:bg-blue-700 transition btn-hover shadow-elevation-1">
+<i class="fa fa-tag mr-1"></i>氣血
+</button>
+<button data-factor="循環" class="bg-green-600 text-white px-2.5 py-1 rounded-lg text-xs font-medium hover:bg-green-700 transition btn-hover shadow-elevation-1">
+<i class="fa fa-tag mr-1"></i>循環
+</button>
+<button data-factor="毒素" class="bg-yellow-600 text-white px-2.5 py-1 rounded-lg text-xs font-medium hover:bg-yellow-700 transition btn-hover shadow-elevation-1">
+<i class="fa fa-tag mr-1"></i>毒素
+</button>
+<button data-factor="血脂" class="bg-orange-600 text-white px-2.5 py-1 rounded-lg text-xs font-medium hover:bg-orange-700 transition btn-hover shadow-elevation-1">
+<i class="fa fa-tag mr-1"></i>血脂
+</button>
+<button data-factor="寒濕" class="bg-purple-600 text-white px-2.5 py-1 rounded-lg text-xs font-medium hover:bg-purple-700 transition btn-hover shadow-elevation-1">
+<i class="fa fa-tag mr-1"></i>寒濕
+</button>
+<button data-factor="免疫" class="bg-pink-600 text-white px-2.5 py-1 rounded-lg text-xs font-medium hover:bg-pink-700 transition btn-hover shadow-elevation-1">
+<i class="fa fa-tag mr-1"></i>免疫
+</button>
+<button data-factor="情緒" class="bg-indigo-600 text-white px-2.5 py-1 rounded-lg text-xs font-medium hover:bg-indigo-700 transition btn-hover shadow-elevation-1">
+<i class="fa fa-tag mr-1"></i>情緒
+</button>
+</div>
+<div class="flex flex-wrap items-center justify-between gap-2">
+<button id="filter-selected" class="bg-gray-700 text-white px-2.5 py-1 rounded-lg text-xs font-medium hover:bg-gray-800 transition btn-hover shadow-elevation-1">
+<i class="fa fa-filter mr-1"></i>只看已選
+</button>
+<div class="text-textPrimary text-sm font-medium">
+已勾選: <span id="selected-count" class="font-bold text-primary text-base">0</span>/95 個症狀
+</div>
+</div>
+</div>
+<div id="symptoms-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 mb-4"></div>
+<div class="text-center mt-4 mb-2">
+<button id="back-to-info" class="bg-gray-200 hover:bg-gray-300 text-textPrimary font-bold py-1.5 px-4 rounded-xl shadow-elevation-1 transition btn-hover mr-2">
+<i class="fa fa-arrow-left mr-1.5"></i>返回修改資訊
+</button>
+<button id="submit-checklist" class="bg-gradient-to-r from-primary to-[#006658] hover:from-[#007A69] hover:to-[#00594D] text-white font-bold py-2 px-5 rounded-xl shadow-elevation-2 transition btn-hover transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-primary/50">
+<i class="fa fa-paper-plane mr-1.5"></i>提交自檢表
+</button>
+<p class="text-xs text-textSecondary/70 mt-2">提交後將生成專業參考報告，請確保信息真實有效</p>
+</div>
+</div>
+</div>
+</div>
+<div id="success-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 hidden fade-in p-2">
+<div class="bg-cardBg rounded-2xl p-4 max-w-md w-full mx-2 text-center shadow-elevation-3 transform transition-all hover:shadow-elevation-hover">
+<div id="report-summary" class="border border-gray-100 rounded-xl p-3 mb-3 bg-neutral/50 text-left result-summary">
+<h4 class="text-sm font-medium text-textPrimary mb-2 flex items-center"><i class="fa fa-file-text-o text-primary mr-1.5"></i>健康報告摘要</h4>
+<div id="summary-content" class="text-xs space-y-1.5"></div>
+</div>
+</div>
+</div>
 
 <script>
 const LIFF_ID="2008578880-NznKeG2a";
@@ -718,3 +912,6 @@ window.submitCallback=function(resp){
 console.log("GAS回調數據：",resp);
 };
 </script>
+
+</body>
+</html>
