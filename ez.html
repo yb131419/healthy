@@ -314,39 +314,38 @@ document.getElementById('checklist-section').classList.add('hidden');
 const e=document.getElementById('error-message'),c=document.getElementById('error-content');
 e&&c&&(c.innerHTML=`<p class="font-medium">${msg}</p><div class="mt-3 flex justify-center"><button onclick="window.location.reload()" class="text-primary hover:text-[#007A69] font-medium flex items-center gap-1"><i class="fa fa-refresh"></i> 重新嘗試</button></div>`,e.classList.remove('hidden'));
 };
+
 const calculateRemainingDaysByDate=expiryDateStr=>{
 try{
 if(expiryDateStr===PERMANENT_EXPIRY_DATE)return{displayDate:"永久有效",remainingDays:"永久有效"};
-// 兼容横杠/斜杠分隔，支持非补零日期（如2026/1/1、2026-1-1）
-const r=/^\d{4}[-\/]\d{1,2}[-\/]\d{1,2}$/;
-if(!r.test(expiryDateStr))return{displayDate:"格式錯誤",remainingDays:"格式錯誤"};
+// 兼容横杠/斜杠、补零/非补零日期（如2026/1/1、2026-01-01）
+const dateReg=/^\d{4}[-\/]\d{1,2}[-\/]\d{1,2}$/;
+if(!dateReg.test(expiryDateStr))return{displayDate:"格式錯誤",remainingDays:"格式錯誤"};
 
-// 步骤1：统一格式为斜杠分隔，拆分日期部分
+// 步骤1：统一拆分日期部分（忽略分隔符）
 const dateParts=expiryDateStr.replace(/-/g,'/').split('/').map(Number);
-const year=dateParts[0];
-const month=dateParts[1]; // 原始月份（1-12，无需减1，后续构造本地日期时处理）
-const day=dateParts[2];
+const [year, month, day] = dateParts;
 
-// 步骤2：构造「台湾本地时间」的过期日期（关键：忽略UTC，使用本地时间）
-// 直接传入年、月（原始）、日，自动按本地时区（东八区）解析
-const expiryDate=new Date(year,month-1,day,0,0,0,0); // month-1是Date对象的月份规范（0-11）
-// 构造「当前本地时间」的当日起始时间（剥离时分秒，避免时分秒干扰）
+// 步骤2：构造「台湾本地时间」的当日0点（关键：避免UTC偏移）
+// 手动传入年、月（减1适配Date对象）、日，强制本地时间，不转换UTC
+const expiryDate=new Date(year, month-1, day, 0, 0, 0, 0);
+// 构造当前本地时间的当日0点（剥离时分秒，消除时间干扰）
 const now=new Date();
-const currentDate=new Date(now.getFullYear(),now.getMonth(),now.getDate(),0,0,0,0);
+const currentDate=new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
 
 if(isNaN(expiryDate.getTime()))return{displayDate:"日期無效",remainingDays:"日期無效"};
 
-// 步骤3：精准计算天数差值（解决少一天核心：用Math.ceil确保向上取整，避免时区小数偏差）
+// 步骤3：精准计算天数（用Math.ceil解决东八区小数偏差，避免少一天）
 const oneDayMs=1000*3600*24;
 const timeDiff=expiryDate.getTime()-currentDate.getTime();
-const dayDiff=Math.ceil(timeDiff/oneDayMs); // 替换round为ceil，适配东八区时区偏差
+const dayDiff=Math.ceil(timeDiff/oneDayMs); // 核心修复：替换round为ceil
 
-// 步骤4：格式化显示日期（补零，统一为yyyy/mm/dd格式）
-const formattedMonth=String(month).padStart(2,'0');
-const formattedDay=String(day).padStart(2,'0');
-const displayDate=`${year}/${formattedMonth}/${formattedDay}`;
+// 步骤4：格式化显示日期（统一yyyy/mm/dd）
+const fmtMonth=String(month).padStart(2,'0');
+const fmtDay=String(day).padStart(2,'0');
+const displayDate=`${year}/${fmtMonth}/${fmtDay}`;
 
-// 步骤5：判断剩余天数状态
+// 步骤5：判断天数状态
 let remainingDaysText;
 if(dayDiff<0){
 remainingDaysText="<span class='text-red-500 font-medium'>已過期</span>";
@@ -358,12 +357,13 @@ remainingDaysText=`<span class='text-orange-500 font-medium'>${dayDiff} 天</spa
 remainingDaysText=`${dayDiff} 天`;
 }
 
-return{displayDate:displayDate,remainingDays:remainingDaysText};
+return{displayDate, remainingDays:remainingDaysText};
 }catch(e){
 console.error("計算剩餘天數失敗：",e,expiryDateStr);
 return{displayDate:"計算錯誤",remainingDays:"計算錯誤"};
 }
 };
+
 const createSubmitLoadingTip=()=>{
 if(document.getElementById('submit-loading-tip'))return;
 const tip=document.createElement('div');
