@@ -317,32 +317,31 @@ e&&c&&(c.innerHTML=`<p class="font-medium">${msg}</p><div class="mt-3 flex justi
 const calculateRemainingDaysByDate=expiryDateStr=>{
 try{
 if(expiryDateStr===PERMANENT_EXPIRY_DATE)return{displayDate:"永久有效",remainingDays:"永久有效"};
-// 兼容横杠/斜杠分隔，且支持非补零日期（如2026/1/1）
+// 兼容横杠/斜杠分隔，支持非补零日期（如2026/1/1、2026-1-1）
 const r=/^\d{4}[-\/]\d{1,2}[-\/]\d{1,2}$/;
 if(!r.test(expiryDateStr))return{displayDate:"格式錯誤",remainingDays:"格式錯誤"};
 
-// 步骤1：统一解析日期，补零处理，避免解析偏差
+// 步骤1：统一格式为斜杠分隔，拆分日期部分
 const dateParts=expiryDateStr.replace(/-/g,'/').split('/').map(Number);
 const year=dateParts[0];
-const month=dateParts[1]; // 原始月份（1-12）
+const month=dateParts[1]; // 原始月份（1-12，无需减1，后续构造本地日期时处理）
 const day=dateParts[2];
 
-// 步骤2：构造「本地时间日期」（避免UTC时区偏移导致的日期偏差）
-// 过期日期（本地时间，当天0时0分0秒，剥离时分秒）
-const expiryDate=new Date(year,month-1,day,0,0,0,0);
-// 当前日期（本地时间，剥离时分秒，确保是当天起始时间）
+// 步骤2：构造「台湾本地时间」的过期日期（关键：忽略UTC，使用本地时间）
+// 直接传入年、月（原始）、日，自动按本地时区（东八区）解析
+const expiryDate=new Date(year,month-1,day,0,0,0,0); // month-1是Date对象的月份规范（0-11）
+// 构造「当前本地时间」的当日起始时间（剥离时分秒，避免时分秒干扰）
 const now=new Date();
 const currentDate=new Date(now.getFullYear(),now.getMonth(),now.getDate(),0,0,0,0);
 
 if(isNaN(expiryDate.getTime()))return{displayDate:"日期無效",remainingDays:"日期無效"};
 
-// 步骤3：精准计算天数差值（先取时间差绝对值，再取整，避免负数偏差）
+// 步骤3：精准计算天数差值（解决少一天核心：用Math.ceil确保向上取整，避免时区小数偏差）
 const oneDayMs=1000*3600*24;
 const timeDiff=expiryDate.getTime()-currentDate.getTime();
-// 用Math.round四舍五入，再转为整数，解决“少一天”的核心问题
-const dayDiff=Math.round(timeDiff/oneDayMs);
+const dayDiff=Math.ceil(timeDiff/oneDayMs); // 替换round为ceil，适配东八区时区偏差
 
-// 步骤4：格式化显示日期（补零，统一格式）
+// 步骤4：格式化显示日期（补零，统一为yyyy/mm/dd格式）
 const formattedMonth=String(month).padStart(2,'0');
 const formattedDay=String(day).padStart(2,'0');
 const displayDate=`${year}/${formattedMonth}/${formattedDay}`;
