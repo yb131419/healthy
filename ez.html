@@ -319,9 +319,23 @@ try{
 if(expiryDateStr===PERMANENT_EXPIRY_DATE)return{displayDate:"永久有效",remainingDays:"永久有效"};
 const r=/^\d{4}[-\/]\d{2}[-\/]\d{2}$/;
 if(!r.test(expiryDateStr))return{displayDate:"格式錯誤",remainingDays:"格式錯誤"};
-const d=expiryDateStr.replace(/-/g,'/').split('/').map(Number),ed=new Date(d[0],d[1]-1,d[2]),td=new Date(),tlocal=new Date(td.getFullYear(),td.getMonth(),td.getDate());
+
+// 修复1：统一转换为UTC日期（消除本地时区偏移影响）
+const d=expiryDateStr.replace(/-/g,'/').split('/').map(Number);
+// 构造UTC过期日期（年、月-1、日，时分秒均为0）
+const ed = new Date(Date.UTC(d[0], d[1]-1, d[2]));
+const td = new Date();
+// 构造UTC当前日期（去除时分秒）
+const tlocal = new Date(Date.UTC(td.getFullYear(), td.getMonth(), td.getDate()));
+
 if(isNaN(ed.getTime()))return{displayDate:"日期無效",remainingDays:"日期無效"};
-const tdiff=ed-tlocal,rd=Math.floor(tdiff/(1000*3600*24)),fd=`${d[0]}/${String(d[1]).padStart(2,'0')}/${String(d[2]).padStart(2,'0')}`;
+
+// 修复2：用Math.round替代Math.floor，避免小数偏差导致少一天
+const tdiff=ed-tlocal;
+const oneDayMs=1000*3600*24;
+const rd=Math.round(tdiff/oneDayMs); // 改为四舍五入，确保整数天计算准确
+
+const fd=`${d[0]}/${String(d[1]).padStart(2,'0')}/${String(d[2]).padStart(2,'0')}`;
 let rt;
 if(rd<0)rt="<span class='text-red-500 font-medium'>已過期</span>";
 else if(rd===0)rt="<span class='text-orange-500 font-medium'>最後1天</span>";
