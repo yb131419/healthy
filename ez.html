@@ -944,13 +944,13 @@ console.log("LINE用戶信息：",profile);
 setStatus('正在驗證授權狀態...');
 const userInfo = await verifyUserFromBackend(profile);
 if(!userInfo){
-showError('用戶授權驗證失敗，請重試');
+showError('普通用戶使用次數已用完！請升級『專業用戶』');
 return;
 }
 
 // 核心修正：添加過期判斷攔截，禁止過期用戶登錄
 if(userInfo.isExpired){
-  showError('您的賬號已過期，無法登錄系統，請聯繫管理員續期');
+  showError('您的賬號已過期，無法登錄自檢表系統，請聯繫管理員續期');
   return;
 }
 
