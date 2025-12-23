@@ -333,27 +333,31 @@ const currentDate=new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 
 
 if(isNaN(expiryDate.getTime()))return{displayDate:"日期無效",remainingDays:"日期無效"};
 
-// 步骤3：计算天数差 + 直接加1天（核心解决少一天问题）
+// 步骤3：先计算原始天数差，再精准加1天（仅对未过期日期生效）
 const oneDayMs=1000*3600*24;
 const timeDiff=expiryDate.getTime()-currentDate.getTime();
-let dayDiff=Math.ceil(timeDiff/oneDayMs);
-dayDiff = dayDiff + 1; // 关键：直接加1天，解决台湾时区显示少一天的问题
+let dayDiff=Math.floor(timeDiff/oneDayMs); // 先取整得到原始准确天数
+
+// 关键：只对未过期的日期加1天，避免已过期/当天异常
+if(dayDiff >= 0){
+  dayDiff = dayDiff + 1; // 满足你“直接加一天”的需求
+}
 
 // 步骤4：格式化显示日期（统一yyyy/mm/dd）
 const fmtMonth=String(month).padStart(2,'0');
 const fmtDay=String(day).padStart(2,'0');
 const displayDate=`${year}/${fmtMonth}/${fmtDay}`;
 
-// 步骤5：判断天数状态（兼容加1后的逻辑，避免异常）
+// 步骤5：判断天数状态（适配加1后的逻辑）
 let remainingDaysText;
-if(dayDiff<0){
-remainingDaysText="<span class='text-red-500 font-medium'>已過期</span>";
-}else if(dayDiff===0){
-remainingDaysText="<span class='text-orange-500 font-medium'>最後1天</span>";
-}else if(dayDiff<=30){
-remainingDaysText=`<span class='text-orange-500 font-medium'>${dayDiff} 天</span>`;
-}else{
-remainingDaysText=`${dayDiff} 天`;
+if(dayDiff < 1){ // 加1后仍小于1，说明已过期
+  remainingDaysText="<span class='text-red-500 font-medium'>已過期</span>";
+}else if(dayDiff === 1){ // 加1后为1，对应原始当天，显示“最後1天”
+  remainingDaysText="<span class='text-orange-500 font-medium'>最後1天</span>";
+}else if(dayDiff <= 30){ // 加1后1~30天，高亮显示
+  remainingDaysText=`<span class='text-orange-500 font-medium'>${dayDiff} 天</span>`;
+}else{ // 超过30天，正常显示
+  remainingDaysText=`${dayDiff} 天`;
 }
 
 return{displayDate, remainingDays:remainingDaysText};
