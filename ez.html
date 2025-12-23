@@ -913,7 +913,7 @@ return;
 document.getElementById('status').classList.add('hidden');
 document.getElementById('result-main').textContent=`歡迎回來，${userInfo.displayName}！`;
 let expiryText = userInfo.isAdmin 
-  ? `${userInfo.expiryDate}（${userInfo.remainingDays === "永久有效" ? "永久有效" : ` ${userInfo.remainingDays} `}）`
+  ? `${userInfo.displayExpiryDate}（${userInfo.remainingDays === "永久有效" ? "永久有效" : userInfo.remainingDays}）`
   : "普通用戶（3次使用上限）";
 document.getElementById('result-details').innerHTML=`
 <p>用戶類型：<span class="text-primary font-medium">${userInfo.isAdmin ? "專業用戶" : "普通用戶"}</span></p>
