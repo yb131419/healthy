@@ -318,48 +318,48 @@ e&&c&&(c.innerHTML=`<p class="font-medium">${msg}</p><div class="mt-3 flex justi
 const calculateRemainingDaysByDate=expiryDateStr=>{
 try{
 if(expiryDateStr===PERMANENT_EXPIRY_DATE)return{displayDate:"永久有效",remainingDays:"永久有效",isExpired:false};
-// 兼容横杠/斜杠、补零/非补零日期（如2025/12/23、2025-12-23）
+// 兼容橫槓/斜槓、補零/非補零日期（如2025/12/23、2025-12-23）
 const dateReg=/^\d{4}[-\/]\d{1,2}[-\/]\d{1,2}$/;
 if(!dateReg.test(expiryDateStr))return{displayDate:"格式錯誤",remainingDays:"格式錯誤",isExpired:true};
 
-// 步骤1：统一拆分日期部分（忽略分隔符）
+// 步驟1：統一拆分日期部分（忽略分隔符）
 const dateParts=expiryDateStr.replace(/-/g,'/').split('/').map(Number);
 const [year, month, day] = dateParts;
 
-// 步骤2：构造「台湾本地时间」的当日23:59:59（关键：到期日全天有效，避免当天早间被误判过期）
-const expiryDate=new Date(year, month-1, day, 23, 59, 59, 999); // 到期日最后一秒
-const now=new Date(); // 当前本地时间
+// 步驟2：構造「台灣本地時間」的當日23:59:59（關鍵：到期日全天有效，避免當天早間被誤判過期）
+const expiryDate=new Date(year, month-1, day, 23, 59, 59, 999); // 到期日最後一秒
+const now=new Date(); // 當前本地時間
 
 if(isNaN(expiryDate.getTime()))return{displayDate:"日期無效",remainingDays:"日期無效",isExpired:true};
 
-// 步骤3：精准计算天数差（判断是否过期）
+// 步驟3：精准計算天數差（判斷是否過期）
 const oneDayMs=1000*3600*24;
 const timeDiff=expiryDate.getTime()-now.getTime();
-let dayDiff=Math.ceil(timeDiff/oneDayMs); // 向上取整，确保当天到期显示1天（而非0天）
+let dayDiff=Math.ceil(timeDiff/oneDayMs); // 向上取整，確保當天到期顯示1天（而非0天）
 
-// 步骤4：格式化显示日期（统一yyyy/mm/dd）
+// 步驟4：格式化顯示日期（統一yyyy/mm/dd）
 const fmtMonth=String(month).padStart(2,'0');
 const fmtDay=String(day).padStart(2,'0');
 const displayDate=`${year}/${fmtMonth}/${fmtDay}`;
 
-// 步骤5：判断天数状态+是否过期（核心：到期日全天有效）
+// 步驟5：判斷天數狀態+是否過期（核心：到期日全天有效）
 let remainingDaysText;
 let isExpired=false;
-if(timeDiff < 0){ // 仅当当前时间超过到期日23:59:59，才判定为过期
+if(timeDiff < 0){ // 僅當當前時間超過到期日23:59:59，才判定為過期
   remainingDaysText="<span class='text-red-500 font-medium'>已過期</span>";
   isExpired=true;
-}else if(dayDiff === 0){ // 当天（未超过23:59:59），显示“最後1天”
+}else if(dayDiff === 0){ // 當天（未超過23:59:59），顯示“最後1天”
   remainingDaysText="<span class='text-orange-500 font-medium'>最後1天</span>";
   isExpired=false;
-}else if(dayDiff <= 30){ // 1~30天，高亮显示
+}else if(dayDiff <= 30){ // 1~30天，高亮顯示
   remainingDaysText=`<span class='text-orange-500 font-medium'>${dayDiff} 天</span>`;
   isExpired=false;
-}else{ // 超过30天，正常显示
+}else{ // 超過30天，正常顯示
   remainingDaysText=`${dayDiff} 天`;
   isExpired=false;
 }
 
-// 返回是否过期的标识，用于后续登录拦截
+// 返回是否過期的標識，用於後續登錄攔截
 return{displayDate, remainingDays:remainingDaysText, isExpired};
 }catch(e){
 console.error("計算剩餘天數失敗：",e,expiryDateStr);
@@ -785,7 +785,7 @@ userBp:document.getElementById('user-bp').value.trim()||'',
 userGlucose:document.getElementById('user-glucose').value.trim()||'',
 userJob:document.getElementById('user-job').value.trim()||'',
 selectedSymptoms:JSON.stringify(selectedSymptoms),
-// 新增：明确标识数据来源，方便GAS识别
+// 新增：明確標識數據來源，方便GAS識別
 dataType:'checklistSubmit'
 };
 }
@@ -948,9 +948,9 @@ showError('用戶授權驗證失敗，請重試');
 return;
 }
 
-// 核心修正：添加过期判断拦截，禁止过期用户登录
+// 核心修正：添加過期判斷攔截，禁止過期用戶登錄
 if(userInfo.isExpired){
-  showError('您的账号已過期，無法登錄系統，請聯繫管理員續期');
+  showError('您的賬號已過期，無法登錄系統，請聯繫管理員續期');
   return;
 }
 
@@ -985,7 +985,7 @@ action: 'verifyUser',
 userId: userId,
 displayName: displayName,
 callback: 'verifyCallback',
-// 新增：明确标识验证请求，方便GAS识别
+// 新增：明確標識驗證請求，方便GAS識別
 dataType: 'userVerify'
 };
 $.ajax({
@@ -997,14 +997,14 @@ timeout: JSONP_TIMEOUT,
 data: data,
 success: function(resp) {
 if(resp.status === "success"){
-// 補充有效期計算，確保數據完整（包含isExpired标识）
+// 補充有效期計算，確保數據完整（包含isExpired標識）
 const expiryData = calculateRemainingDaysByDate(resp.expiryDate || PERMANENT_EXPIRY_DATE);
 resolve({
 ...resp,
 displayName: displayName,
 remainingDays: expiryData.remainingDays,
 displayExpiryDate: expiryData.displayDate,
-isExpired: expiryData.isExpired // 核心修正：传递过期标识
+isExpired: expiryData.isExpired // 核心修正：傳遞過期標識
 });
 }else{
 showError(resp.message || "用戶驗證失敗");
