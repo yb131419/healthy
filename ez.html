@@ -188,7 +188,7 @@ body{font-feature-settings:"palt";letter-spacing:0.02em;}
 <div class="bg-cardBg rounded-2xl p-4 max-w-md w-full mx-2 text-center shadow-elevation-3 transform transition-all hover:shadow-elevation-hover">
 <div id="report-summary" class="border border-gray-100 rounded-xl p-3 mb-3 bg-neutral/50 text-left result-summary">
 <h4 class="text-sm font-medium text-textPrimary mb-2 flex items-center"><i class="fa fa-file-text-o text-primary mr-1.5"></i>健康報告摘要</h4>
-<div id="summary-content" class="text-xs space-y-2.5"></div>
+<div id="summary-content" class="text-xs space-y-1.5"></div>
 </div>
 </div>
 </div>
@@ -613,10 +613,11 @@ if(!screenshotTarget){
 alert('報告區域加載失敗，請稍候再試');
 return;
 }
-const targetWidth=800;
+const targetWidth=800; // 固定分享圖片寬度800px
 const floatContainer=document.getElementById('floating-buttons');
 const floatStyle=floatContainer.style.opacity;
 floatContainer.style.opacity='0';
+// 保存原始樣式
 const originalStyle={
 width:screenshotTarget.style.width,
 backgroundColor:screenshotTarget.style.backgroundColor,
@@ -631,10 +632,11 @@ overflow:screenshotTarget.style.overflow,
 maxHeight:screenshotTarget.style.maxHeight,
 fontSize:screenshotTarget.style.fontSize
 };
+// 設置截圖專用樣式，強制寬度適配800px
 screenshotTarget.style.width='100%';
 screenshotTarget.style.maxWidth=`${targetWidth}px`;
 screenshotTarget.style.maxHeight='none';
-screenshotTarget.style.padding='1.5rem 1.2rem';
+screenshotTarget.style.padding='1.2rem 1rem'; // 減少內邊距，壓縮版面
 screenshotTarget.style.boxSizing='border-box';
 screenshotTarget.style.borderRadius='0';
 screenshotTarget.style.boxShadow='none';
@@ -645,9 +647,10 @@ screenshotTarget.style.overflow='visible';
 screenshotTarget.style.backgroundColor='#121212';
 screenshotTarget.style.color='#e0e0e0';
 screenshotTarget.style.fontFamily='-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-screenshotTarget.style.fontSize='1rem';
+screenshotTarget.style.fontSize='0.9rem'; // 適當縮小字體，節省版面
 btn.disabled=true;
 btn.innerHTML='<i class="fa fa-spinner fa-spin"></i>';
+// 加載html2canvas
 if(!window.html2canvas){
 alert('正在加載分享所需組件，請稍候...');
 await new Promise((resolve,reject)=>{
@@ -658,24 +661,29 @@ script.onerror=reject;
 document.head.appendChild(script);
 });
 }
-await new Promise(resolve=>setTimeout(resolve,800));
+await new Promise(resolve=>setTimeout(resolve,600)); // 縮短延遲，優化體驗
+// 截圖配置，強制輸出寬度800px
 const canvas=await html2canvas(screenshotTarget,{
-scale:1.2,
+scale:1, // 降低縮放比例，控制圖片大小
 useCORS:true,
 allowTaint:true,
 logging:false,
 backgroundColor:'#121212',
-dpi:120,
+dpi:96, // 降低dpi，控制圖片體積
+width:targetWidth, // 強制畫布寬度
+height:screenshotTarget.offsetHeight,
 windowWidth:targetWidth,
 windowHeight:screenshotTarget.offsetHeight,
 scrollY:0,
 scrollX:0,
 imageTimeout:10000
 });
+// 還原原始樣式
 Object.keys(originalStyle).forEach(key=>{
 screenshotTarget.style[key]=originalStyle[key];
 });
 floatContainer.style.opacity=floatStyle;
+// 生成圖片並壓縮
 let dataUrl=canvas.toDataURL('image/png',0.8);
 const fileName=`🧬 彥彬自檢表系統_${new Date().toLocaleDateString()}.png`;
 const imgBlob=await(await fetch(dataUrl)).blob();
@@ -688,6 +696,7 @@ file=new File([compressedBlob],fileName,{type:'image/png'});
 }else{
 file=new File([imgBlob],fileName,{type:'image/png'});
 }
+// 分享處理
 if(navigator.share&&typeof navigator.share==='function'){
 try{
 const shareData={
@@ -795,78 +804,78 @@ try{
 const summaryContent=document.getElementById('summary-content');
 if(!summaryContent)return;
 let basicInfoHtml=`
-<div class="info-container w-full max-w-[800px] mx-auto" style="background: #2d3748; padding: 1.8rem 1.5rem; border-radius: 18px; box-shadow: 0 6px 25px rgba(0,0,0,0.4);">
-  <h3 style="color: #38a169; font-size: 1.3rem; font-weight: 700; margin-bottom: 1.5rem; border-bottom: 1px solid #4a5568; padding-bottom: 1rem; text-align: center; letter-spacing: 1px;">👤 基本資訊</h3>
-  <div class="info-grid grid-cols-3 gap-2.5" style="margin-bottom: 1.5rem;">
-    <div class="info-item flex justify-between items-center" style="padding: 0.7rem 0.5rem; border-bottom: 1px solid #4a5568;">
-      <span style="color: #a0aec0; font-size: 0.95rem;">姓名：</span>
-      <span style="color: #f7fafc; font-size: 0.95rem; font-weight: 500;">${reportData.formattedUserInfo.姓名}</span>
+<div class="info-container w-full max-w-[800px] mx-auto" style="background: #2d3748; padding: 1.5rem 1.2rem; border-radius: 18px; box-shadow: 0 6px 25px rgba(0,0,0,0.4);">
+  <h3 style="color: #38a169; font-size: 1.2rem; font-weight: 700; margin-bottom: 1.2rem; border-bottom: 1px solid #4a5568; padding-bottom: 0.8rem; text-align: center; letter-spacing: 1px;">👤 基本資訊</h3>
+  <div class="info-grid grid-cols-3 gap-2" style="margin-bottom: 1.2rem;">
+    <div class="info-item flex justify-between items-center" style="padding: 0.6rem 0.4rem; border-bottom: 1px solid #4a5568;">
+      <span style="color: #a0aec0; font-size: 0.9rem;">姓名：</span>
+      <span style="color: #f7fafc; font-size: 0.9rem; font-weight: 500;">${reportData.formattedUserInfo.姓名}</span>
     </div>
-    <div class="info-item flex justify-between items-center" style="padding: 0.7rem 0.5rem; border-bottom: 1px solid #4a5568;">
-      <span style="color: #a0aec0; font-size: 0.95rem;">年齡：</span>
-      <span style="color: #f7fafc; font-size: 0.95rem; font-weight: 500;">${reportData.formattedUserInfo.年齡}</span>
+    <div class="info-item flex justify-between items-center" style="padding: 0.6rem 0.4rem; border-bottom: 1px solid #4a5568;">
+      <span style="color: #a0aec0; font-size: 0.9rem;">年齡：</span>
+      <span style="color: #f7fafc; font-size: 0.9rem; font-weight: 500;">${reportData.formattedUserInfo.年齡}</span>
     </div>
-    <div class="info-item flex justify-between items-center" style="padding: 0.7rem 0.5rem; border-bottom: 1px solid #4a5568;">
-      <span style="color: #a0aec0; font-size: 0.95rem;">性別：</span>
-      <span style="color: #f7fafc; font-size: 0.95rem; font-weight: 500;">${reportData.formattedUserInfo.性別}</span>
+    <div class="info-item flex justify-between items-center" style="padding: 0.6rem 0.4rem; border-bottom: 1px solid #4a5568;">
+      <span style="color: #a0aec0; font-size: 0.9rem;">性別：</span>
+      <span style="color: #f7fafc; font-size: 0.9rem; font-weight: 500;">${reportData.formattedUserInfo.性別}</span>
     </div>
-    <div class="info-item flex justify-between items-center" style="padding: 0.7rem 0.5rem; border-bottom: 1px solid #4a5568;">
-      <span style="color: #a0aec0; font-size: 0.95rem;">身高：</span>
-      <span style="color: #f7fafc; font-size: 0.95rem; font-weight: 500;">${reportData.formattedUserInfo.身高}</span>
+    <div class="info-item flex justify-between items-center" style="padding: 0.6rem 0.4rem; border-bottom: 1px solid #4a5568;">
+      <span style="color: #a0aec0; font-size: 0.9rem;">身高：</span>
+      <span style="color: #f7fafc; font-size: 0.9rem; font-weight: 500;">${reportData.formattedUserInfo.身高}</span>
     </div>
-    <div class="info-item flex justify-between items-center" style="padding: 0.7rem 0.5rem; border-bottom: 1px solid #4a5568;">
-      <span style="color: #a0aec0; font-size: 0.95rem;">體重：</span>
-      <span style="color: #f7fafc; font-size: 0.95rem; font-weight: 500;">${reportData.formattedUserInfo.體重}</span>
+    <div class="info-item flex justify-between items-center" style="padding: 0.6rem 0.4rem; border-bottom: 1px solid #4a5568;">
+      <span style="color: #a0aec0; font-size: 0.9rem;">體重：</span>
+      <span style="color: #f7fafc; font-size: 0.9rem; font-weight: 500;">${reportData.formattedUserInfo.體重}</span>
     </div>
-    <div class="info-item flex justify-between items-center" style="padding: 0.7rem 0.5rem; border-bottom: 1px solid #4a5568;">
-      <span style="color: #a0aec0; font-size: 0.95rem;">血壓：</span>
-      <span style="color: #f7fafc; font-size: 0.95rem; font-weight: 500;">${reportData.formattedUserInfo.血壓}</span>
+    <div class="info-item flex justify-between items-center" style="padding: 0.6rem 0.4rem; border-bottom: 1px solid #4a5568;">
+      <span style="color: #a0aec0; font-size: 0.9rem;">血壓：</span>
+      <span style="color: #f7fafc; font-size: 0.9rem; font-weight: 500;">${reportData.formattedUserInfo.血壓}</span>
     </div>
-    <div class="info-item flex justify-between items-center" style="padding: 0.7rem 0.5rem; border-bottom: 1px solid #4a5568;">
-      <span style="color: #a0aec0; font-size: 0.95rem;">血糖：</span>
-      <span style="color: #f7fafc; font-size: 0.95rem; font-weight: 500;">${reportData.formattedUserInfo.血糖}</span>
+    <div class="info-item flex justify-between items-center" style="padding: 0.6rem 0.4rem; border-bottom: 1px solid #4a5568;">
+      <span style="color: #a0aec0; font-size: 0.9rem;">血糖：</span>
+      <span style="color: #f7fafc; font-size: 0.9rem; font-weight: 500;">${reportData.formattedUserInfo.血糖}</span>
     </div>
-    <div class="info-item flex justify-between items-center" style="padding: 0.7rem 0.5rem; border-bottom: 1px solid #4a5568;">
-      <span style="color: #a0aec0; font-size: 0.95rem;">職業：</span>
-      <span style="color: #f7fafc; font-size: 0.95rem; font-weight: 500;">${reportData.formattedUserInfo.職業}</span>
+    <div class="info-item flex justify-between items-center" style="padding: 0.6rem 0.4rem; border-bottom: 1px solid #4a5568;">
+      <span style="color: #a0aec0; font-size: 0.9rem;">職業：</span>
+      <span style="color: #f7fafc; font-size: 0.9rem; font-weight: 500;">${reportData.formattedUserInfo.職業}</span>
     </div>
   </div>
-  <div class="submit-time-full w-full" style="padding: 0.8rem 0.5rem; background: #37474f; border-radius: 12px; text-align: center;">
-    <span style="color: #a0aec0; font-size: 0.9rem; display: block; margin-bottom: 0.3rem;">提交時間</span>
-    <span style="color: #f7fafc; font-size: 1rem; font-weight: 600;">${reportData.formattedUserInfo.提交時間}</span>
+  <div class="submit-time-full w-full" style="padding: 0.6rem 0.4rem; background: #37474f; border-radius: 10px; text-align: center;">
+    <span style="color: #a0aec0; font-size: 0.85rem; display: block; margin-bottom: 0.2rem;">提交時間</span>
+    <span style="color: #f7fafc; font-size: 0.95rem; font-weight: 600;">${reportData.formattedUserInfo.提交時間}</span>
   </div>`;
 let statsHtml=`
-  <h3 style="color: #38a169; font-size: 1.3rem; font-weight: 700; margin: 1.8rem 0 1.2rem; border-bottom: 1px solid #4a5568; padding-bottom: 1rem; text-align: center; letter-spacing: 1px;">📊 整體統計</h3>
-  <div class="stats-container text-center" style="padding: 0.8rem 0.5rem; margin-bottom: 1.5rem; background: #37474f; border-radius: 12px;">
-    <p style="color: #f7fafc; font-size: 1rem; margin: 0.5rem 0; line-height: 1.6;">總症狀數：${reportData.totalSymptomCount} 種</p>
-    <p style="color: #f7fafc; font-size: 1rem; margin: 0.5rem 0; line-height: 1.6;">已選症狀數：<span style="color: #48bb78; font-weight: 700;">${reportData.selectedTotal}</span> 項</p>
+  <h3 style="color: #38a169; font-size: 1.2rem; font-weight: 700; margin: 1.5rem 0 1rem; border-bottom: 1px solid #4a5568; padding-bottom: 0.8rem; text-align: center; letter-spacing: 1px;">📊 整體統計</h3>
+  <div class="stats-container text-center" style="padding: 0.6rem 0.4rem; margin-bottom: 1.2rem; background: #37474f; border-radius: 10px;">
+    <p style="color: #f7fafc; font-size: 0.9rem; margin: 0.4rem 0; line-height: 1.5;">總症狀數：${reportData.totalSymptomCount} 種</p>
+    <p style="color: #f7fafc; font-size: 0.9rem; margin: 0.4rem 0; line-height: 1.5;">已選症狀數：<span style="color: #48bb78; font-weight: 700;">${reportData.selectedTotal}</span> 項</p>
   </div>`;
 let topFactorsHtml='';
 if(reportData.topFactors.length>0){
 topFactorsHtml=`
-  <h3 style="color: #38a169; font-size: 1.3rem; font-weight: 700; margin: 1.8rem 0 1.2rem; border-bottom: 1px solid #4a5568; padding-bottom: 1rem; text-align: center; letter-spacing: 1px;">🌟 重點關注健康要素</h3>
-  <div class="factors-container" style="padding: 0.8rem 0.5rem; margin-bottom: 1.5rem; background: #37474f; border-radius: 12px;">
+  <h3 style="color: #38a169; font-size: 1.2rem; font-weight: 700; margin: 1.5rem 0 1rem; border-bottom: 1px solid #4a5568; padding-bottom: 0.8rem; text-align: center; letter-spacing: 1px;">🌟 重點關注健康要素</h3>
+  <div class="factors-container" style="padding: 0.6rem 0.4rem; margin-bottom: 1.2rem; background: #37474f; border-radius: 10px;">
     ${reportData.topFactors.map((factor,idx)=>{
       const color=getFactorColor(factor.key);
       return `
-      <div class="factor-item mb-4 last:mb-0" style="padding: 0.5rem 0;">
-        <div class="flex justify-between items-center" style="margin-bottom: 0.8rem; padding: 0 0.5rem;">
-          <span style="color: #f7fafc; font-size: 1rem; font-weight: 500;">${idx+1}. ${factor.name}</span>
-          <span style="color: ${color}; font-weight: 700; font-size: 1rem;">${factor.percentage}</span>
+      <div class="factor-item mb-3 last:mb-0" style="padding: 0.4rem 0;">
+        <div class="flex justify-between items-center" style="margin-bottom: 0.6rem; padding: 0 0.4rem;">
+          <span style="color: #f7fafc; font-size: 0.9rem; font-weight: 500;">${idx+1}. ${factor.name}</span>
+          <span style="color: ${color}; font-weight: 700; font-size: 0.9rem;">${factor.percentage}</span>
         </div>
-        <div class="w-full bg-gray-700 rounded-full h-2.5 mx-auto" style="max-width: 700px;">
-          <div class="h-2.5 rounded-full" style="width: ${factor.percentage}; background-color: ${color}; box-shadow: 0 0 10px ${color}88;"></div>
+        <div class="w-full bg-gray-700 rounded-full h-2 mx-auto" style="max-width: 600px;">
+          <div class="h-2 rounded-full" style="width: ${factor.percentage}; background-color: ${color}; box-shadow: 0 0 8px ${color}88;"></div>
         </div>
       </div>`;
     }).join('')}
   </div>`;
 }
 let adviceHtml=`
-  <h3 style="color: #38a169; font-size: 1.3rem; font-weight: 700; margin: 1.8rem 0 1.2rem; border-bottom: 1px solid #4a5568; padding-bottom: 1rem; text-align: center; letter-spacing: 1px;">💡 健康建議</h3>
-  <div class="advice-container" style="padding: 1rem 0.8rem; background: #37474f; border-radius: 12px; text-align: left;">
-    <p style="color: #f7fafc; font-size: 0.95rem; margin: 0.6rem 0; line-height: 1.7;">1. 優先關注高佔比健康要素對應症狀，做好日常護理</p>
-    <p style="color: #f7fafc; font-size: 0.95rem; margin: 0.6rem 0; line-height: 1.7;">2. 症狀持續加重請及時諮詢專業醫師</p>
-    <p style="color: #f7fafc; font-size: 0.95rem; margin: 0.6rem 0; line-height: 1.7;">3. 保持規律作息與清淡飲食，輔助改善狀態</p>
+  <h3 style="color: #38a169; font-size: 1.2rem; font-weight: 700; margin: 1.5rem 0 1rem; border-bottom: 1px solid #4a5568; padding-bottom: 0.8rem; text-align: center; letter-spacing: 1px;">💡 健康建議</h3>
+  <div class="advice-container" style="padding: 0.8rem 0.6rem; background: #37474f; border-radius: 10px; text-align: left;">
+    <p style="color: #f7fafc; font-size: 0.9rem; margin: 0.5rem 0; line-height: 1.6;">1. 優先關注高佔比健康要素對應症狀，做好日常護理</p>
+    <p style="color: #f7fafc; font-size: 0.9rem; margin: 0.5rem 0; line-height: 1.6;">2. 症狀持續加重請及時諮詢專業醫師</p>
+    <p style="color: #f7fafc; font-size: 0.9rem; margin: 0.5rem 0; line-height: 1.6;">3. 保持規律作息與清淡飲食，輔助改善狀態</p>
   </div>
 </div>`;
 summaryContent.innerHTML=`${basicInfoHtml}${statsHtml}${topFactorsHtml}${adviceHtml}`;
