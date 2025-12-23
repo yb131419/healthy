@@ -1,211 +1,16 @@
-<!DOCTYPE html>
-<html lang="zh-TW">
-<head>
-<meta charset="UTF-8">
-<title>🧬 彥彬 自檢表系統</title>
-<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0">
-<script src="https://cdn.tailwindcss.com"></script>
-<link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-<script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
-<script>
-tailwind.config={theme:{extend:{colors:{primary:'#008C76',secondary:'#E8F9F7',accent:'#FFD700',dark:'#1A202C',lightBg:'#F9FAFB',neutral:'#F3F4F6',cardBg:'#FFFFFF',textPrimary:'#1E293B',textSecondary:'#64748B'},fontFamily:{sans:['Noto Sans TC','sans-serif','system-ui'],display:['Noto Sans TC','sans-serif','system-ui']},boxShadow:{'elevation-1':'0 2px 8px rgba(0,0,0,0.06)','elevation-2':'0 4px 16px rgba(0,0,0,0.08)','elevation-3':'0 8px 24px rgba(0,0,0,0.12)','elevation-hover':'0 12px 32px rgba(0,0,0,0.15)'}}}};
-</script>
-<style type="text/tailwindcss">
-@layer utilities{.fade-in{animation:fadeIn 0.6s cubic-bezier(0.4,0,0.2,1);}.slide-up{animation:slideUp 0.5s cubic-bezier(0.34,1.56,0.64,1);}.scale-in{animation:scaleIn 0.4s cubic-bezier(0.34,1.56,0.64,1);}.pulse-subtle{animation:pulseSubtle 2s infinite;}.gradient-text{background-clip:text;-webkit-background-clip:text;color:transparent;}.card-hover{transition:all 0.3s cubic-bezier(0.34,1.56,0.64,1);}.btn-hover{transition:all 0.25s cubic-bezier(0.34,1.56,0.64,1);}.factor-tag{font-size:0.75rem;padding:0.2rem 0.4rem;border-radius:6px;font-weight:500;}.input-focus{@apply focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all;}}
-@keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
-@keyframes slideUp{from{transform:translateY(30px);opacity:0;}to{transform:translateY(0);opacity:1;}}
-@keyframes scaleIn{from{transform:scale(0.96);opacity:0;}to{transform:scale(1);opacity:1;}}
-@keyframes pulseSubtle{0%,100%{opacity:1;}50%{opacity:0.8;}}
-::-webkit-scrollbar{width:8px;height:8px;}
-::-webkit-scrollbar-track{background:#F1F5F9;border-radius:4px;}
-::-webkit-scrollbar-thumb{background:#CBD5E1;border-radius:4px;}
-::-webkit-scrollbar-thumb:hover{background:#94A3B8;}
-body{font-feature-settings:"palt";letter-spacing:0.02em;}
-.symptom-card{min-height:120px;}
-@media (max-width:640px){
-.symptom-card{min-height:110px;}
-.factor-tag{font-size:0.7rem;padding:0.15rem 0.3rem;}
-#symptoms-container{gap:2px;}
-.btn-hover{transform:scale(1.02);}
-.result-summary{font-size:0.9rem;}
-.info-grid{grid-template-columns:repeat(2,1fr);gap:0.5rem;}
-}
-.info-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:0.75rem;}
-.info-item{display:flex;justify-content:space-between;}
-.severity-note{font-size:0.65rem;color:#94A3B8;margin-top:2px;}
-</style>
-</head>
-<body class="bg-lightBg min-h-screen flex flex-col p-2 md:p-4">
-<div class="max-w-5xl w-full bg-cardBg rounded-2xl shadow-elevation-2 overflow-hidden fade-in self-center">
-<div class="bg-gradient-to-r from-primary to-[#006658] p-4 md:p-6 text-white text-center relative overflow-hidden">
-<div class="absolute top-0 left-0 w-32 h-32 bg-white/5 rounded-full -translate-x-1/2 -translate-y-1/2"></div>
-<div class="absolute bottom-0 right-0 w-48 h-48 bg-white/5 rounded-full translate-x-1/3 translate-y-1/3"></div>
-<div class="relative z-10">
-<div class="inline-flex items-center justify-center w-14 h-14 bg-white/10 backdrop-blur-sm rounded-full mb-3 pulse-subtle">
-<i class="fa fa-heartbeat text-2xl text-accent"></i>
-</div>
-<h1 class="text-xl md:text-2xl font-bold mb-1 tracking-wide">🧬 彥彬 自檢表系統</h1>
-<p class="text-white/90 text-sm md:text-base font-light">專業健康評估 · 精准對應七大健康要素</p>
-</div>
-</div>
-<div class="p-3 md:p-5">
-<div id="status" class="flex items-center justify-center py-6 text-textPrimary text-center">
-<div class="text-center">
-<div class="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary mb-3"></div>
-<p id="status-text" class="text-base">正在初始化系統，請稍候...</p>
-</div>
-</div>
-<div id="error-message" class="hidden bg-red-50 border border-red-100 text-red-700 px-4 py-3 rounded-xl mb-4 shadow-sm">
-<div class="flex items-start">
-<i class="fa fa-exclamation-circle text-red-500 mt-1 mr-2 text-lg"></i>
-<div id="error-content"></div>
-</div>
-</div>
-<div id="result-card" class="hidden bg-gradient-to-r from-secondary to-[#F0FAF8] border border-primary/15 rounded-2xl p-4 mb-4 text-center slide-up relative overflow-hidden">
-<div class="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full translate-x-1/2 -translate-y-1/2"></div>
-<div class="relative z-10">
-<div id="result-main" class="text-lg md:text-xl font-bold mb-2 text-textPrimary"></div>
-<div id="result-details" class="text-sm text-textSecondary space-y-1 md:space-y-1.5"></div>
-<div class="w-20 h-0.5 bg-primary/20 mx-auto my-2"></div>
-<p class="text-xs text-textSecondary/80"><i class="fa fa-info-circle text-primary mr-1"></i>請根據自身狀況如實填寫，系統將為您提供專業參考</p>
-</div>
-</div>
-<div id="user-info-section" class="hidden scale-in bg-neutral rounded-2xl p-3 md:p-4 mb-4 shadow-elevation-1">
-<div class="text-center mb-3">
-<h2 class="text-lg md:text-xl font-bold text-textPrimary mb-1"><span class="gradient-text bg-gradient-to-r from-primary to-[#006658]">用戶基本資訊</span></h2>
-<p class="text-textSecondary max-w-2xl mx-auto text-xs">請根據實際情況填寫，幫助系統精確評估</p>
-</div>
-<div class="grid grid-cols-1 md:grid-cols-2 gap-2 mb-3">
-<div class="space-y-1">
-<label class="block text-xs font-medium text-textPrimary">姓名 <span class="text-red-500">*</span></label>
-<input type="text" id="user-name" class="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm input-focus bg-white" placeholder="請輸入真實姓名" required>
-</div>
-<div class="space-y-1">
-<label class="block text-xs font-medium text-textPrimary">年齡 <span class="text-red-500">*</span></label>
-<input type="number" id="user-age" min="0" max="120" class="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm input-focus bg-white" placeholder="請輸入年齡" required>
-</div>
-<div class="space-y-1">
-<label class="block text-xs font-medium text-textPrimary">性別 <span class="text-red-500">*</span></label>
-<select id="user-gender" class="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm input-focus bg-white" required>
-<option value="">請選擇性別</option>
-<option value="male">男</option>
-<option value="female">女</option>
-</select>
-</div>
-<div class="space-y-1">
-<label class="block text-xs font-medium text-textPrimary">身高 (cm)</label>
-<input type="number" id="user-height" min="50" max="250" class="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm input-focus bg-white" placeholder="選填">
-</div>
-<div class="space-y-1">
-<label class="block text-xs font-medium text-textPrimary">體重 (kg)</label>
-<input type="number" id="user-weight" min="10" max="200" step="0.1" class="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm input-focus bg-white" placeholder="選填">
-</div>
-<div class="space-y-1">
-<label class="block text-xs font-medium text-textPrimary">血壓 (mmHg)</label>
-<input type="text" id="user-bp" class="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm input-focus bg-white" placeholder="選填，例：120收縮壓/80舒張壓">
-</div>
-<div class="space-y-1">
-<label class="block text-xs font-medium text-textPrimary">血糖(HbA1c)</label>
-<input type="number" id="user-glucose" min="3" max="15" step="0.1" class="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm input-focus bg-white" placeholder="糖化血色素">
-</div>
-<div class="space-y-1">
-<label class="block text-xs font-medium text-textPrimary">職業</label>
-<input type="text" id="user-job" class="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm input-focus bg-white" placeholder="選填">
-</div>
-</div>
-<div class="text-center">
-<button id="next-to-checklist" class="bg-gradient-to-r from-primary to-[#006658] hover:from-[#007A69] hover:to-[#00594D] text-white font-bold py-2 px-5 rounded-xl shadow-elevation-2 transition btn-hover transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-primary/50">
-<i class="fa fa-arrow-right mr-1.5"></i>繼續填寫自檢表
-</button>
-</div>
-</div>
-<div id="checklist-section" class="hidden scale-in">
-<div class="mb-3 text-center">
-<h2 class="text-lg md:text-xl font-bold text-textPrimary mb-1"><span class="gradient-text bg-gradient-to-r from-primary to-[#006658]">自檢表填寫區域</span></h2>
-<p class="text-textSecondary max-w-2xl mx-auto mb-2 text-xs">請勾選對應症狀並填寫相關資訊</p>
-<div class="mt-2 flex flex-wrap justify-center gap-1.5 text-xs">
-<span class="bg-blue-50 text-blue-700 factor-tag">氣血</span>
-<span class="bg-green-50 text-green-700 factor-tag">循環</span>
-<span class="bg-yellow-50 text-yellow-700 factor-tag">毒素</span>
-<span class="bg-orange-50 text-orange-700 factor-tag">血脂</span>
-<span class="bg-purple-50 text-purple-700 factor-tag">寒濕</span>
-<span class="bg-pink-50 text-pink-700 factor-tag">免疫</span>
-<span class="bg-indigo-50 text-indigo-700 factor-tag">情緒</span>
-</div>
-</div>
-<div class="bg-neutral rounded-2xl p-2 mb-3 shadow-elevation-1">
-<div class="flex flex-wrap gap-1.5 mb-2">
-<button id="filter-all" class="bg-primary text-white px-2.5 py-1 rounded-lg text-xs font-medium hover:bg-[#007A69] transition btn-hover shadow-elevation-1">
-<i class="fa fa-th-list mr-1"></i>顯示全部
-</button>
-<button data-factor="氣血" class="bg-blue-600 text-white px-2.5 py-1 rounded-lg text-xs font-medium hover:bg-blue-700 transition btn-hover shadow-elevation-1">
-<i class="fa fa-tag mr-1"></i>氣血
-</button>
-<button data-factor="循環" class="bg-green-600 text-white px-2.5 py-1 rounded-lg text-xs font-medium hover:bg-green-700 transition btn-hover shadow-elevation-1">
-<i class="fa fa-tag mr-1"></i>循環
-</button>
-<button data-factor="毒素" class="bg-yellow-600 text-white px-2.5 py-1 rounded-lg text-xs font-medium hover:bg-yellow-700 transition btn-hover shadow-elevation-1">
-<i class="fa fa-tag mr-1"></i>毒素
-</button>
-<button data-factor="血脂" class="bg-orange-600 text-white px-2.5 py-1 rounded-lg text-xs font-medium hover:bg-orange-700 transition btn-hover shadow-elevation-1">
-<i class="fa fa-tag mr-1"></i>血脂
-</button>
-<button data-factor="寒濕" class="bg-purple-600 text-white px-2.5 py-1 rounded-lg text-xs font-medium hover:bg-purple-700 transition btn-hover shadow-elevation-1">
-<i class="fa fa-tag mr-1"></i>寒濕
-</button>
-<button data-factor="免疫" class="bg-pink-600 text-white px-2.5 py-1 rounded-lg text-xs font-medium hover:bg-pink-700 transition btn-hover shadow-elevation-1">
-<i class="fa fa-tag mr-1"></i>免疫
-</button>
-<button data-factor="情緒" class="bg-indigo-600 text-white px-2.5 py-1 rounded-lg text-xs font-medium hover:bg-indigo-700 transition btn-hover shadow-elevation-1">
-<i class="fa fa-tag mr-1"></i>情緒
-</button>
-</div>
-<div class="flex flex-wrap items-center justify-between gap-2">
-<button id="filter-selected" class="bg-gray-700 text-white px-2.5 py-1 rounded-lg text-xs font-medium hover:bg-gray-800 transition btn-hover shadow-elevation-1">
-<i class="fa fa-filter mr-1"></i>只看已選
-</button>
-<div class="text-textPrimary text-sm font-medium">
-已勾選: <span id="selected-count" class="font-bold text-primary text-base">0</span>/95 個症狀
-</div>
-</div>
-</div>
-<div id="symptoms-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 mb-4"></div>
-<div class="text-center mt-4 mb-2">
-<button id="back-to-info" class="bg-gray-200 hover:bg-gray-300 text-textPrimary font-bold py-1.5 px-4 rounded-xl shadow-elevation-1 transition btn-hover mr-2">
-<i class="fa fa-arrow-left mr-1.5"></i>返回修改資訊
-</button>
-<button id="submit-checklist" class="bg-gradient-to-r from-primary to-[#006658] hover:from-[#007A69] hover:to-[#00594D] text-white font-bold py-2 px-5 rounded-xl shadow-elevation-2 transition btn-hover transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-primary/50">
-<i class="fa fa-paper-plane mr-1.5"></i>提交自檢表
-</button>
-<p class="text-xs text-textSecondary/70 mt-2">提交後將生成專業參考報告，請確保信息真實有效</p>
-</div>
-</div>
-</div>
-</div>
-<div id="success-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 hidden fade-in p-2">
-<div class="bg-cardBg rounded-2xl p-4 max-w-md w-full mx-2 text-center shadow-elevation-3 transform transition-all hover:shadow-elevation-hover">
-<div id="report-summary" class="border border-gray-100 rounded-xl p-3 mb-3 bg-neutral/50 text-left result-summary">
-<h4 class="text-sm font-medium text-textPrimary mb-2 flex items-center"><i class="fa fa-file-text-o text-primary mr-1.5"></i>健康報告摘要</h4>
-<div id="summary-content" class="text-xs space-y-1.5"></div>
-</div>
-</div>
-</div>
-
 <script>
 const LIFF_ID="2008578880-NznKeG2a";
 const GAS_URL="https://script.google.com/macros/s/AKfycbykBtM2_PM7IZ-ZUU4tgTqVa1xGhVQFaZ523FXc4ivdLz_GZ09sdmL6s5zk7SdloFuG/exec";
 const JSONP_TIMEOUT=12000;
 const PERMANENT_EXPIRY_DATE="9999/12/31";
 const fStyles={
-  氣血:{className:'bg-emerald-500/15 text-emerald-400',label:'氣血'},
-  循環:{className:'bg-teal-500/15 text-teal-400',label:'循環'},
-  毒素:{className:'bg-amber-500/15 text-amber-400',label:'毒素'},
-  血脂:{className:'bg-orange-500/15 text-orange-400',label:'血脂'},
-  寒濕:{className:'bg-slate-500/15 text-slate-400',label:'寒濕'},
-  免疫:{className:'bg-rose-500/15 text-rose-400',label:'免疫'},
-  情緒:{className:'bg-indigo-500/15 text-indigo-400',label:'情緒'}
+  氣血:{className:'bg-blue-500/20 text-blue-400',label:'氣血'},
+  循環:{className:'bg-green-500/20 text-green-400',label:'循環'},
+  毒素:{className:'bg-yellow-500/20 text-yellow-400',label:'毒素'},
+  血脂:{className:'bg-orange-500/20 text-orange-400',label:'血脂'},
+  寒濕:{className:'bg-purple-500/20 text-purple-400',label:'寒濕'},
+  免疫:{className:'bg-pink-500/20 text-pink-400',label:'免疫'},
+  情緒:{className:'bg-indigo-500/20 text-indigo-400',label:'情緒'}
 };
 const durOpts=[{value:'',label:'請選擇時間'},{value:'1w',label:'1周內'},{value:'1-3m',label:'1-3個月'},
 {value:'3-6m',label:'3-6個月'},{value:'6m-1y',label:'6個月-1年'},{value:'1-2y',label:'1-2年'},
@@ -541,7 +346,8 @@ floatContainer.style.opacity='1';
 }
 function initControlButtons(){
 const styleButtons=()=>{
-document.querySelectorAll('button').forEach(btn=>{
+const buttons=document.querySelectorAll('button');
+buttons.forEach(btn=>{
 if(!btn.classList.contains('custom-styled')){
 btn.classList.add('custom-styled','px-6','py-2.5','rounded-lg','font-medium','transition-all','duration-300','shadow-sm','hover:shadow-md','transform','hover:-translate-y-0.5','active:translate-y-0');
 btn.classList.remove('px-8','py-3');
@@ -613,11 +419,9 @@ if(!screenshotTarget){
 alert('報告區域加載失敗，請稍候再試');
 return;
 }
-const targetWidth=800; // 固定分享圖片寬度800px
 const floatContainer=document.getElementById('floating-buttons');
 const floatStyle=floatContainer.style.opacity;
 floatContainer.style.opacity='0';
-// 保存原始樣式
 const originalStyle={
 width:screenshotTarget.style.width,
 backgroundColor:screenshotTarget.style.backgroundColor,
@@ -628,29 +432,11 @@ maxWidth:screenshotTarget.style.maxWidth,
 textAlign:screenshotTarget.style.textAlign,
 margin:screenshotTarget.style.margin,
 height:screenshotTarget.style.height,
-overflow:screenshotTarget.style.overflow,
-maxHeight:screenshotTarget.style.maxHeight,
-fontSize:screenshotTarget.style.fontSize
+overflow:screenshotTarget.style.overflow
 };
-// 設置截圖專用樣式，強制寬度適配800px
-screenshotTarget.style.width='100%';
-screenshotTarget.style.maxWidth=`${targetWidth}px`;
-screenshotTarget.style.maxHeight='none';
-screenshotTarget.style.padding='1.2rem 1rem'; // 減少內邊距，壓縮版面
-screenshotTarget.style.boxSizing='border-box';
-screenshotTarget.style.borderRadius='0';
-screenshotTarget.style.boxShadow='none';
-screenshotTarget.style.margin='0 auto';
-screenshotTarget.style.textAlign='center';
-screenshotTarget.style.height='auto';
-screenshotTarget.style.overflow='visible';
-screenshotTarget.style.backgroundColor='#121212';
-screenshotTarget.style.color='#e0e0e0';
-screenshotTarget.style.fontFamily='-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-screenshotTarget.style.fontSize='0.9rem'; // 適當縮小字體，節省版面
+screenshotTarget.style.cssText=`width: 100vw !important;max-width: none !important;background-color: #121212 !important;padding: 2rem !important;box-sizing: border-box !important;color: #FFFFFF !important;border-radius: 0 !important;box-shadow: none !important;margin: 0 auto !important;text-align: center !important;height: auto !important;overflow: visible !important;`;
 btn.disabled=true;
 btn.innerHTML='<i class="fa fa-spinner fa-spin"></i>';
-// 加載html2canvas
 if(!window.html2canvas){
 alert('正在加載分享所需組件，請稍候...');
 await new Promise((resolve,reject)=>{
@@ -661,42 +447,26 @@ script.onerror=reject;
 document.head.appendChild(script);
 });
 }
-await new Promise(resolve=>setTimeout(resolve,600)); // 縮短延遲，優化體驗
-// 截圖配置，強制輸出寬度800px
 const canvas=await html2canvas(screenshotTarget,{
-scale:1, // 降低縮放比例，控制圖片大小
-useCORS:true,
-allowTaint:true,
-logging:false,
-backgroundColor:'#121212',
-dpi:96, // 降低dpi，控制圖片體積
-width:targetWidth, // 強制畫布寬度
-height:screenshotTarget.offsetHeight,
-windowWidth:targetWidth,
-windowHeight:screenshotTarget.offsetHeight,
-scrollY:0,
-scrollX:0,
-imageTimeout:10000
+scale:3,useCORS:true,allowTaint:true,logging:false,backgroundColor:'#121212',dpi:300,
+windowWidth:window.innerWidth,windowHeight:screenshotTarget.offsetHeight+100,scrollY:0,scrollX:0
 });
-// 還原原始樣式
 Object.keys(originalStyle).forEach(key=>{
 screenshotTarget.style[key]=originalStyle[key];
 });
 floatContainer.style.opacity=floatStyle;
-// 生成圖片並壓縮
-let dataUrl=canvas.toDataURL('image/png',0.8);
+let dataUrl=canvas.toDataURL('image/png',0.9);
 const fileName=`🧬 彥彬自檢表系統_${new Date().toLocaleDateString()}.png`;
 const imgBlob=await(await fetch(dataUrl)).blob();
 let file;
-if(imgBlob.size>2*1024*1024){
-alert('圖片體積過大，正在壓縮...');
-dataUrl=canvas.toDataURL('image/png',0.5);
+if(imgBlob.size>5*1024*1024){
+alert('圖片體積過大，輕微壓縮保持清晰...');
+dataUrl=canvas.toDataURL('image/png',0.8);
 const compressedBlob=await(await fetch(dataUrl)).blob();
 file=new File([compressedBlob],fileName,{type:'image/png'});
 }else{
 file=new File([imgBlob],fileName,{type:'image/png'});
 }
-// 分享處理
 if(navigator.share&&typeof navigator.share==='function'){
 try{
 const shareData={
@@ -710,7 +480,9 @@ await navigator.share(shareData);
 alert('✅ 分享成功！\n報告已發送到LINE群組/好友');
 const closeBtn=document.getElementById('floating-close-btn');
 closeBtn.style.display='flex';
-setTimeout(()=>{closeBtn.style.opacity='1';},200);
+setTimeout(()=>{
+closeBtn.style.opacity='1';
+},200);
 }
 }catch(err){
 console.error('LINE分享失敗：',err);
@@ -761,6 +533,7 @@ userGlucose:document.getElementById('user-glucose').value.trim()||'',userJob:doc
 selectedSymptoms:JSON.stringify(selectedSymptoms)
 };
 }
+
 function submitChecklistData(data,btn){
 console.log("提交數據（含真實LINE名稱）：",data);
 setStatus('提交中...');
@@ -777,12 +550,18 @@ userBasicInfo:window.userBasicInfo,
 selectedSymptoms:JSON.parse(data.selectedSymptoms)
 });
 window.reportData=rd;
+// 渲染報告摘要
 renderReportSummary(rd);
+// 顯示成功模態框
 document.getElementById('success-modal').classList.remove('hidden');
+// 隱藏其他區域
 document.getElementById('checklist-section').classList.add('hidden');
 document.getElementById('user-info-section').classList.add('hidden');
+// 創建浮動按鈕
 createFloatingButtons();
+// 滾動到報告頂部
 document.getElementById('success-modal').scrollIntoView({behavior:'smooth'});
+// 還原按鈕狀態
 btn.disabled=false;
 btn.innerHTML='<i class="fa fa-paper-plane mr-1.5"></i>提交自檢表';
 },
@@ -799,126 +578,136 @@ showError(`提交失敗：${error||'未知網絡錯誤'}`);
 }
 });
 }
+
+// 渲染健康報告摘要
 function renderReportSummary(reportData){
 try{
 const summaryContent=document.getElementById('summary-content');
 if(!summaryContent)return;
+
+// 構建基本資訊HTML
 let basicInfoHtml=`
-<div class="info-container w-full max-w-[800px] mx-auto" style="background: #2d3748; padding: 1.5rem 1.2rem; border-radius: 18px; box-shadow: 0 6px 25px rgba(0,0,0,0.4);">
-  <h3 style="color: #38a169; font-size: 1.2rem; font-weight: 700; margin-bottom: 1.2rem; border-bottom: 1px solid #4a5568; padding-bottom: 0.8rem; text-align: center; letter-spacing: 1px;">👤 基本資訊</h3>
-  <div class="info-grid grid-cols-3 gap-2" style="margin-bottom: 1.2rem;">
-    <div class="info-item flex justify-between items-center" style="padding: 0.6rem 0.4rem; border-bottom: 1px solid #4a5568;">
-      <span style="color: #a0aec0; font-size: 0.9rem;">姓名：</span>
-      <span style="color: #f7fafc; font-size: 0.9rem; font-weight: 500;">${reportData.formattedUserInfo.姓名}</span>
-    </div>
-    <div class="info-item flex justify-between items-center" style="padding: 0.6rem 0.4rem; border-bottom: 1px solid #4a5568;">
-      <span style="color: #a0aec0; font-size: 0.9rem;">年齡：</span>
-      <span style="color: #f7fafc; font-size: 0.9rem; font-weight: 500;">${reportData.formattedUserInfo.年齡}</span>
-    </div>
-    <div class="info-item flex justify-between items-center" style="padding: 0.6rem 0.4rem; border-bottom: 1px solid #4a5568;">
-      <span style="color: #a0aec0; font-size: 0.9rem;">性別：</span>
-      <span style="color: #f7fafc; font-size: 0.9rem; font-weight: 500;">${reportData.formattedUserInfo.性別}</span>
-    </div>
-    <div class="info-item flex justify-between items-center" style="padding: 0.6rem 0.4rem; border-bottom: 1px solid #4a5568;">
-      <span style="color: #a0aec0; font-size: 0.9rem;">身高：</span>
-      <span style="color: #f7fafc; font-size: 0.9rem; font-weight: 500;">${reportData.formattedUserInfo.身高}</span>
-    </div>
-    <div class="info-item flex justify-between items-center" style="padding: 0.6rem 0.4rem; border-bottom: 1px solid #4a5568;">
-      <span style="color: #a0aec0; font-size: 0.9rem;">體重：</span>
-      <span style="color: #f7fafc; font-size: 0.9rem; font-weight: 500;">${reportData.formattedUserInfo.體重}</span>
-    </div>
-    <div class="info-item flex justify-between items-center" style="padding: 0.6rem 0.4rem; border-bottom: 1px solid #4a5568;">
-      <span style="color: #a0aec0; font-size: 0.9rem;">血壓：</span>
-      <span style="color: #f7fafc; font-size: 0.9rem; font-weight: 500;">${reportData.formattedUserInfo.血壓}</span>
-    </div>
-    <div class="info-item flex justify-between items-center" style="padding: 0.6rem 0.4rem; border-bottom: 1px solid #4a5568;">
-      <span style="color: #a0aec0; font-size: 0.9rem;">血糖：</span>
-      <span style="color: #f7fafc; font-size: 0.9rem; font-weight: 500;">${reportData.formattedUserInfo.血糖}</span>
-    </div>
-    <div class="info-item flex justify-between items-center" style="padding: 0.6rem 0.4rem; border-bottom: 1px solid #4a5568;">
-      <span style="color: #a0aec0; font-size: 0.9rem;">職業：</span>
-      <span style="color: #f7fafc; font-size: 0.9rem; font-weight: 500;">${reportData.formattedUserInfo.職業}</span>
-    </div>
-  </div>
-  <div class="submit-time-full w-full" style="padding: 0.6rem 0.4rem; background: #37474f; border-radius: 10px; text-align: center;">
-    <span style="color: #a0aec0; font-size: 0.85rem; display: block; margin-bottom: 0.2rem;">提交時間</span>
-    <span style="color: #f7fafc; font-size: 0.95rem; font-weight: 600;">${reportData.formattedUserInfo.提交時間}</span>
-  </div>`;
+<div class="info-grid">
+  <div class="info-item"><span class="text-gray-500">姓名：</span><span class="font-medium">${reportData.formattedUserInfo.姓名}</span></div>
+  <div class="info-item"><span class="text-gray-500">年齡：</span><span class="font-medium">${reportData.formattedUserInfo.年齡}</span></div>
+  <div class="info-item"><span class="text-gray-500">性別：</span><span class="font-medium">${reportData.formattedUserInfo.性別}</span></div>
+  <div class="info-item"><span class="text-gray-500">身高/體重：</span><span class="font-medium">${reportData.formattedUserInfo.身高}/${reportData.formattedUserInfo.體重}</span></div>
+  <div class="info-item"><span class="text-gray-500">血壓/血糖：</span><span class="font-medium">${reportData.formattedUserInfo.血壓}/${reportData.formattedUserInfo.血糖}</span></div>
+  <div class="info-item"><span class="text-gray-500">提交時間：</span><span class="font-medium">${reportData.formattedUserInfo.提交時間}</span></div>
+</div>
+<div class="w-full h-0.5 bg-gray-200 my-2 rounded"></div>
+`;
+
+// 構建整體統計HTML
 let statsHtml=`
-  <h3 style="color: #38a169; font-size: 1.2rem; font-weight: 700; margin: 1.5rem 0 1rem; border-bottom: 1px solid #4a5568; padding-bottom: 0.8rem; text-align: center; letter-spacing: 1px;">📊 整體統計</h3>
-  <div class="stats-container text-center" style="padding: 0.6rem 0.4rem; margin-bottom: 1.2rem; background: #37474f; border-radius: 10px;">
-    <p style="color: #f7fafc; font-size: 0.9rem; margin: 0.4rem 0; line-height: 1.5;">總症狀數：${reportData.totalSymptomCount} 種</p>
-    <p style="color: #f7fafc; font-size: 0.9rem; margin: 0.4rem 0; line-height: 1.5;">已選症狀數：<span style="color: #48bb78; font-weight: 700;">${reportData.selectedTotal}</span> 項</p>
-  </div>`;
+<div class="mb-2">
+  <p class="font-medium text-textPrimary">📊 整體統計</p>
+  <div class="pl-2 mt-1 space-y-1">
+    <p>總症狀數：${reportData.totalSymptomCount} 種</p>
+    <p>已選症狀數：<span class="text-primary font-bold">${reportData.selectedTotal}</span> 項</p>
+  </div>
+</div>
+<div class="w-full h-0.5 bg-gray-200 my-2 rounded"></div>
+`;
+
+// 構建頂級健康要素HTML
 let topFactorsHtml='';
 if(reportData.topFactors.length>0){
 topFactorsHtml=`
-  <h3 style="color: #38a169; font-size: 1.2rem; font-weight: 700; margin: 1.5rem 0 1rem; border-bottom: 1px solid #4a5568; padding-bottom: 0.8rem; text-align: center; letter-spacing: 1px;">🌟 重點關注健康要素</h3>
-  <div class="factors-container" style="padding: 0.6rem 0.4rem; margin-bottom: 1.2rem; background: #37474f; border-radius: 10px;">
-    ${reportData.topFactors.map((factor,idx)=>{
-      const color=getFactorColor(factor.key);
-      return `
-      <div class="factor-item mb-3 last:mb-0" style="padding: 0.4rem 0;">
-        <div class="flex justify-between items-center" style="margin-bottom: 0.6rem; padding: 0 0.4rem;">
-          <span style="color: #f7fafc; font-size: 0.9rem; font-weight: 500;">${idx+1}. ${factor.name}</span>
-          <span style="color: ${color}; font-weight: 700; font-size: 0.9rem;">${factor.percentage}</span>
-        </div>
-        <div class="w-full bg-gray-700 rounded-full h-2 mx-auto" style="max-width: 600px;">
-          <div class="h-2 rounded-full" style="width: ${factor.percentage}; background-color: ${color}; box-shadow: 0 0 8px ${color}88;"></div>
-        </div>
-      </div>`;
-    }).join('')}
-  </div>`;
-}
-let adviceHtml=`
-  <h3 style="color: #38a169; font-size: 1.2rem; font-weight: 700; margin: 1.5rem 0 1rem; border-bottom: 1px solid #4a5568; padding-bottom: 0.8rem; text-align: center; letter-spacing: 1px;">💡 健康建議</h3>
-  <div class="advice-container" style="padding: 0.8rem 0.6rem; background: #37474f; border-radius: 10px; text-align: left;">
-    <p style="color: #f7fafc; font-size: 0.9rem; margin: 0.5rem 0; line-height: 1.6;">1. 優先關注高佔比健康要素對應症狀，做好日常護理</p>
-    <p style="color: #f7fafc; font-size: 0.9rem; margin: 0.5rem 0; line-height: 1.6;">2. 症狀持續加重請及時諮詢專業醫師</p>
-    <p style="color: #f7fafc; font-size: 0.9rem; margin: 0.5rem 0; line-height: 1.6;">3. 保持規律作息與清淡飲食，輔助改善狀態</p>
+<div class="mb-2">
+  <p class="font-medium text-textPrimary">🌟 重點關注健康要素</p>
+  <div class="pl-2 mt-1 space-y-2">
+    ${reportData.topFactors.map((factor,idx)=>`
+      <div class="flex items-center justify-between">
+        <span>${idx+1}. ${factor.name}</span>
+        <span class="text-${getFactorColor(factor.key)} font-bold">${factor.percentage}</span>
+      </div>
+      <div class="w-full bg-gray-200 rounded-full h-1.5">
+        <div class="bg-${getFactorColor(factor.key)} h-1.5 rounded-full" style="width: ${factor.percentage}"></div>
+      </div>
+    `).join('')}
   </div>
-</div>`;
-summaryContent.innerHTML=`${basicInfoHtml}${statsHtml}${topFactorsHtml}${adviceHtml}`;
+</div>
+<div class="w-full h-0.5 bg-gray-200 my-2 rounded"></div>
+`;
+}
+
+// 構建健康建議HTML
+let adviceHtml=`
+<div>
+  <p class="font-medium text-textPrimary">💡 健康建議</p>
+  <div class="pl-2 mt-1">
+    <p class="text-sm text-textSecondary">1. 優先關注上述高佔比健康要素對應的身體症狀</p>
+    <p class="text-sm text-textSecondary">2. 若症狀持續或加重，請及時諮詢專業醫師</p>
+    <p class="text-sm text-textSecondary">3. 保持規律作息與合理飲食，輔助改善身體狀態</p>
+  </div>
+</div>
+`;
+
+// 組裝所有HTML並插入
+summaryContent.innerHTML=`
+${basicInfoHtml}
+${statsHtml}
+${topFactorsHtml}
+${adviceHtml}
+`;
+
+// 為報告添加容器（用於截圖分享）
 if(!document.getElementById('screenshot-target')){
 const modalContent=document.querySelector('#success-modal .bg-cardBg');
 const screenshotTarget=document.createElement('div');
 screenshotTarget.id='screenshot-target';
 screenshotTarget.className='w-full';
+// 移動模態框內容到截圖容器
 while(modalContent.firstChild){
 screenshotTarget.appendChild(modalContent.firstChild);
 }
 modalContent.appendChild(screenshotTarget);
 }
+
 }catch(e){
 console.error("渲染報告摘要出錯：",e);
 showError('報告生成失敗，請重新提交');
 }
 }
+
+// 獲取健康要素對應顏色（對應fStyles）
 function getFactorColor(factorKey){
 const colorMap={
-'氣血':'#48bb78',
-'循環':'#38b2ac',
-'毒素':'#ed8936',
-'血脂':'#f56565',
-'寒濕':'#718096',
-'免疫':'#e53e3e',
-'情緒':'#667eea'
+'氣血':'blue-500',
+'循環':'green-500',
+'毒素':'yellow-500',
+'血脂':'orange-500',
+'寒濕':'purple-500',
+'免疫':'pink-500',
+'情緒':'indigo-500'
 };
-return colorMap[factorKey]||'#48bb78';
+return colorMap[factorKey]||'primary';
 }
+
+// 初始化LIFF（系統入口）
 async function initLIFF(){
 try{
 setStatus('正在初始化LINE登錄...');
 await liff.init({liffId:LIFF_ID});
+
+// 判斷是否已登錄
 if(!liff.isLoggedIn()){
 setStatus('請先登錄LINE賬號...');
 liff.login({redirectUri:window.location.href});
 return;
 }
+
+// 登錄成功，加載用戶信息
 const profile=await liff.getProfile();
 console.log("LINE用戶信息：",profile);
+
+// 加載授權狀態（模擬，可根據實際GAS接口調整）
 setStatus('正在驗證授權狀態...');
+// 這裡可添加GAS接口請求，獲取用戶授權有效期
 const expiryInfo=calculateRemainingDaysByDate(PERMANENT_EXPIRY_DATE);
+
+// 渲染歡迎信息
 document.getElementById('status').classList.add('hidden');
 document.getElementById('result-main').textContent=`歡迎回來，${profile.displayName}！`;
 document.getElementById('result-details').innerHTML=`
@@ -927,7 +716,10 @@ document.getElementById('result-details').innerHTML=`
 `;
 document.getElementById('result-card').classList.remove('hidden');
 document.getElementById('user-info-section').classList.remove('hidden');
+
+// 初始化控制按鈕
 initControlButtons();
+
 }catch(error){
 console.error("LIFF初始化失敗：",error);
 if(error.message.includes('LIFF ID')){
@@ -937,16 +729,20 @@ showError('系統初始化失敗，請刷新頁面重試');
 }
 }
 }
+
+// 頁面加載完成後執行
 window.addEventListener('DOMContentLoaded',function(){
+// 初始化LIFF
 initLIFF();
+
+// 點擊模態框空白處不關閉
 document.getElementById('success-modal').addEventListener('click',function(e){
 if(e.target===this)e.stopPropagation();
 });
 });
+
+// 全局回調函數（用於JSONP）
 window.submitCallback=function(resp){
 console.log("GAS回調數據：",resp);
 };
 </script>
-
-</body>
-</html>
