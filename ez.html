@@ -326,7 +326,7 @@ let rt;
 if(rd<0)rt="<span class='text-red-500 font-medium'>已過期</span>";
 else if(rd===0)rt="<span class='text-orange-500 font-medium'>最後1天</span>";
 else if(rd<=30)rt=`<span class='text-orange-500 font-medium'>${rd} 天</span>`;
-else rt=`${rd} 天`;
+//else rt=`${rd} 天`;
 return{displayDate:fd,remainingDays:rt};
 }catch(e){console.error("計算剩餘天數失敗：",e,expiryDateStr);return{displayDate:"計算錯誤",remainingDays:"計算錯誤"}};
 };
