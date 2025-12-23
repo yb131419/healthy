@@ -199,11 +199,11 @@ const GAS_URL="https://script.google.com/macros/s/AKfycbykBtM2_PM7IZ-ZUU4tgTqVa1
 const JSONP_TIMEOUT=12000;
 const PERMANENT_EXPIRY_DATE="9999/12/31";
 const fStyles={
-  氣血:{className:'bg-sky-500/15 text-sky-400',label:'氣血'},
-  循環:{className:'bg-emerald-500/15 text-emerald-400',label:'循環'},
+  氣血:{className:'bg-emerald-500/15 text-emerald-400',label:'氣血'},
+  循環:{className:'bg-teal-500/15 text-teal-400',label:'循環'},
   毒素:{className:'bg-amber-500/15 text-amber-400',label:'毒素'},
   血脂:{className:'bg-orange-500/15 text-orange-400',label:'血脂'},
-  寒濕:{className:'bg-violet-500/15 text-violet-400',label:'寒濕'},
+  寒濕:{className:'bg-slate-500/15 text-slate-400',label:'寒濕'},
   免疫:{className:'bg-rose-500/15 text-rose-400',label:'免疫'},
   情緒:{className:'bg-indigo-500/15 text-indigo-400',label:'情緒'}
 };
@@ -616,7 +616,6 @@ return;
 const floatContainer=document.getElementById('floating-buttons');
 const floatStyle=floatContainer.style.opacity;
 floatContainer.style.opacity='0';
-// 固定截图样式，解决颜色不一致问题
 const originalStyle={
 width:screenshotTarget.style.width,
 backgroundColor:screenshotTarget.style.backgroundColor,
@@ -629,7 +628,6 @@ margin:screenshotTarget.style.margin,
 height:screenshotTarget.style.height,
 overflow:screenshotTarget.style.overflow
 };
-// 配置手机适配的截图基础样式
 screenshotTarget.style.width='100vw';
 screenshotTarget.style.maxWidth='none';
 screenshotTarget.style.padding='2rem 1.5rem';
@@ -640,10 +638,9 @@ screenshotTarget.style.margin='0 auto';
 screenshotTarget.style.textAlign='center';
 screenshotTarget.style.height='auto';
 screenshotTarget.style.overflow='visible';
-screenshotTarget.style.backgroundColor='#121212'; // 高质感深色背景
-screenshotTarget.style.color='#e0e0e0'; // 统一文字颜色
+screenshotTarget.style.backgroundColor='#121212';
+screenshotTarget.style.color='#e0e0e0';
 screenshotTarget.style.fontFamily='-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-
 btn.disabled=true;
 btn.innerHTML='<i class="fa fa-spinner fa-spin"></i>';
 if(!window.html2canvas){
@@ -656,20 +653,18 @@ script.onerror=reject;
 document.head.appendChild(script);
 });
 }
-// 优化截图配置，确保手机端清晰
 const canvas=await html2canvas(screenshotTarget,{
 scale:2,
 useCORS:true,
 allowTaint:true,
 logging:false,
-backgroundColor:'#121212', // 强制截图背景色
+backgroundColor:'#121212',
 dpi:200,
 windowWidth:window.innerWidth,
 windowHeight:screenshotTarget.offsetHeight+200,
 scrollY:0,
 scrollX:0
 });
-// 恢复原始样式
 Object.keys(originalStyle).forEach(key=>{
 screenshotTarget.style[key]=originalStyle[key];
 });
@@ -794,87 +789,81 @@ function renderReportSummary(reportData){
 try{
 const summaryContent=document.getElementById('summary-content');
 if(!summaryContent)return;
-// 高质感配色+手机适配+拆分栏位+整体置中
 let basicInfoHtml=`
-<div class="info-container w-full max-w-md mx-auto text-center" style="background: #1a1a1a; padding: 1.5rem; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
-  <h3 style="color: #00e676; font-size: 1.2rem; font-weight: 600; margin-bottom: 1.2rem; border-bottom: 1px solid #333; padding-bottom: 0.8rem;">👤 基本資訊</h3>
-  <div class="info-grid grid-cols-1 gap-2" style="text-align: center;">
-    <div class="info-item flex justify-between items-center" style="padding: 0.5rem 0; border-bottom: 1px solid #222;">
-      <span style="color: #9e9e9e; font-size: 0.9rem;">姓名：</span>
-      <span style="color: #e0e0e0; font-size: 0.9rem; font-weight: 500;">${reportData.formattedUserInfo.姓名}</span>
+<div class="info-container w-full max-w-sm mx-auto" style="background: #2d3748; padding: 1.8rem 1.5rem; border-radius: 18px; box-shadow: 0 6px 25px rgba(0,0,0,0.4);">
+  <h3 style="color: #38a169; font-size: 1.3rem; font-weight: 700; margin-bottom: 1.5rem; border-bottom: 1px solid #4a5568; padding-bottom: 1rem; text-align: center; letter-spacing: 1px;">👤 基本資訊</h3>
+  <div class="info-grid grid-cols-1 gap-2.5" style="margin-bottom: 1.5rem;">
+    <div class="info-item flex justify-between items-center" style="padding: 0.7rem 0.5rem; border-bottom: 1px solid #4a5568;">
+      <span style="color: #a0aec0; font-size: 0.95rem;">姓名：</span>
+      <span style="color: #f7fafc; font-size: 0.95rem; font-weight: 500;">${reportData.formattedUserInfo.姓名}</span>
     </div>
-    <div class="info-item flex justify-between items-center" style="padding: 0.5rem 0; border-bottom: 1px solid #222;">
-      <span style="color: #9e9e9e; font-size: 0.9rem;">年齡：</span>
-      <span style="color: #e0e0e0; font-size: 0.9rem; font-weight: 500;">${reportData.formattedUserInfo.年齡}</span>
+    <div class="info-item flex justify-between items-center" style="padding: 0.7rem 0.5rem; border-bottom: 1px solid #4a5568;">
+      <span style="color: #a0aec0; font-size: 0.95rem;">年齡：</span>
+      <span style="color: #f7fafc; font-size: 0.95rem; font-weight: 500;">${reportData.formattedUserInfo.年齡}</span>
     </div>
-    <div class="info-item flex justify-between items-center" style="padding: 0.5rem 0; border-bottom: 1px solid #222;">
-      <span style="color: #9e9e9e; font-size: 0.9rem;">性別：</span>
-      <span style="color: #e0e0e0; font-size: 0.9rem; font-weight: 500;">${reportData.formattedUserInfo.性別}</span>
+    <div class="info-item flex justify-between items-center" style="padding: 0.7rem 0.5rem; border-bottom: 1px solid #4a5568;">
+      <span style="color: #a0aec0; font-size: 0.95rem;">性別：</span>
+      <span style="color: #f7fafc; font-size: 0.95rem; font-weight: 500;">${reportData.formattedUserInfo.性別}</span>
     </div>
-    <div class="info-item flex justify-between items-center" style="padding: 0.5rem 0; border-bottom: 1px solid #222;">
-      <span style="color: #9e9e9e; font-size: 0.9rem;">身高：</span>
-      <span style="color: #e0e0e0; font-size: 0.9rem; font-weight: 500;">${reportData.formattedUserInfo.身高}</span>
+    <div class="info-item flex justify-between items-center" style="padding: 0.7rem 0.5rem; border-bottom: 1px solid #4a5568;">
+      <span style="color: #a0aec0; font-size: 0.95rem;">身高：</span>
+      <span style="color: #f7fafc; font-size: 0.95rem; font-weight: 500;">${reportData.formattedUserInfo.身高}</span>
     </div>
-    <div class="info-item flex justify-between items-center" style="padding: 0.5rem 0; border-bottom: 1px solid #222;">
-      <span style="color: #9e9e9e; font-size: 0.9rem;">體重：</span>
-      <span style="color: #e0e0e0; font-size: 0.9rem; font-weight: 500;">${reportData.formattedUserInfo.體重}</span>
+    <div class="info-item flex justify-between items-center" style="padding: 0.7rem 0.5rem; border-bottom: 1px solid #4a5568;">
+      <span style="color: #a0aec0; font-size: 0.95rem;">體重：</span>
+      <span style="color: #f7fafc; font-size: 0.95rem; font-weight: 500;">${reportData.formattedUserInfo.體重}</span>
     </div>
-    <div class="info-item flex justify-between items-center" style="padding: 0.5rem 0; border-bottom: 1px solid #222;">
-      <span style="color: #9e9e9e; font-size: 0.9rem;">血壓：</span>
-      <span style="color: #e0e0e0; font-size: 0.9rem; font-weight: 500;">${reportData.formattedUserInfo.血壓}</span>
+    <div class="info-item flex justify-between items-center" style="padding: 0.7rem 0.5rem; border-bottom: 1px solid #4a5568;">
+      <span style="color: #a0aec0; font-size: 0.95rem;">血壓：</span>
+      <span style="color: #f7fafc; font-size: 0.95rem; font-weight: 500;">${reportData.formattedUserInfo.血壓}</span>
     </div>
-    <div class="info-item flex justify-between items-center" style="padding: 0.5rem 0; border-bottom: 1px solid #222;">
-      <span style="color: #9e9e9e; font-size: 0.9rem;">血糖：</span>
-      <span style="color: #e0e0e0; font-size: 0.9rem; font-weight: 500;">${reportData.formattedUserInfo.血糖}</span>
+    <div class="info-item flex justify-between items-center" style="padding: 0.7rem 0.5rem; border-bottom: 1px solid #4a5568;">
+      <span style="color: #a0aec0; font-size: 0.95rem;">血糖：</span>
+      <span style="color: #f7fafc; font-size: 0.95rem; font-weight: 500;">${reportData.formattedUserInfo.血糖}</span>
     </div>
-    <div class="info-item flex justify-between items-center" style="padding: 0.5rem 0; border-bottom: 1px solid #222;">
-      <span style="color: #9e9e9e; font-size: 0.9rem;">職業：</span>
-      <span style="color: #e0e0e0; font-size: 0.9rem; font-weight: 500;">${reportData.formattedUserInfo.職業}</span>
-    </div>
-    <div class="info-item flex justify-between items-center" style="padding: 0.5rem 0;">
-      <span style="color: #9e9e9e; font-size: 0.9rem;">提交時間：</span>
-      <span style="color: #e0e0e0; font-size: 0.9rem; font-weight: 500;">${reportData.formattedUserInfo.提交時間}</span>
+    <div class="info-item flex justify-between items-center" style="padding: 0.7rem 0.5rem; border-bottom: 1px solid #4a5568;">
+      <span style="color: #a0aec0; font-size: 0.95rem;">職業：</span>
+      <span style="color: #f7fafc; font-size: 0.95rem; font-weight: 500;">${reportData.formattedUserInfo.職業}</span>
     </div>
   </div>
-`;
+  <div class="submit-time-full w-full" style="padding: 0.8rem 0.5rem; background: #37474f; border-radius: 12px; text-align: center;">
+    <span style="color: #a0aec0; font-size: 0.9rem; display: block; margin-bottom: 0.3rem;">提交時間</span>
+    <span style="color: #f7fafc; font-size: 1rem; font-weight: 600;">${reportData.formattedUserInfo.提交時間}</span>
+  </div>`;
 let statsHtml=`
-  <h3 style="color: #00e676; font-size: 1.2rem; font-weight: 600; margin: 1.2rem 0 0.8rem; border-bottom: 1px solid #333; padding-bottom: 0.8rem; text-align: center;">📊 整體統計</h3>
-  <div class="stats-container text-center" style="padding: 0.5rem 0; margin-bottom: 1.2rem;">
-    <p style="color: #e0e0e0; font-size: 0.9rem; margin: 0.3rem 0;">總症狀數：${reportData.totalSymptomCount} 種</p>
-    <p style="color: #e0e0e0; font-size: 0.9rem; margin: 0.3rem 0;">已選症狀數：<span style="color: #00e676; font-weight: 600;">${reportData.selectedTotal}</span> 項</p>
-  </div>
-`;
+  <h3 style="color: #38a169; font-size: 1.3rem; font-weight: 700; margin: 1.8rem 0 1.2rem; border-bottom: 1px solid #4a5568; padding-bottom: 1rem; text-align: center; letter-spacing: 1px;">📊 整體統計</h3>
+  <div class="stats-container text-center" style="padding: 0.8rem 0.5rem; margin-bottom: 1.5rem; background: #37474f; border-radius: 12px;">
+    <p style="color: #f7fafc; font-size: 1rem; margin: 0.5rem 0; line-height: 1.6;">總症狀數：${reportData.totalSymptomCount} 種</p>
+    <p style="color: #f7fafc; font-size: 1rem; margin: 0.5rem 0; line-height: 1.6;">已選症狀數：<span style="color: #48bb78; font-weight: 700;">${reportData.selectedTotal}</span> 項</p>
+  </div>`;
 let topFactorsHtml='';
 if(reportData.topFactors.length>0){
 topFactorsHtml=`
-  <h3 style="color: #00e676; font-size: 1.2rem; font-weight: 600; margin: 1.2rem 0 0.8rem; border-bottom: 1px solid #333; padding-bottom: 0.8rem; text-align: center;">🌟 重點關注健康要素</h3>
-  <div class="factors-container" style="padding: 0.5rem 0; margin-bottom: 1.2rem;">
+  <h3 style="color: #38a169; font-size: 1.3rem; font-weight: 700; margin: 1.8rem 0 1.2rem; border-bottom: 1px solid #4a5568; padding-bottom: 1rem; text-align: center; letter-spacing: 1px;">🌟 重點關注健康要素</h3>
+  <div class="factors-container" style="padding: 0.8rem 0.5rem; margin-bottom: 1.5rem; background: #37474f; border-radius: 12px;">
     ${reportData.topFactors.map((factor,idx)=>{
       const color=getFactorColor(factor.key);
       return `
-      <div class="factor-item mb-3" style="text-align: center;">
-        <div class="flex justify-between items-center" style="margin-bottom: 0.5rem; padding: 0 1rem;">
-          <span style="color: #e0e0e0; font-size: 0.9rem;">${idx+1}. ${factor.name}</span>
-          <span style="color: ${color.replace('text-','#').replace('400','aa')}; font-weight: 600; font-size: 0.9rem;">${factor.percentage}</span>
+      <div class="factor-item mb-4 last:mb-0" style="padding: 0.5rem 0;">
+        <div class="flex justify-between items-center" style="margin-bottom: 0.8rem; padding: 0 0.5rem;">
+          <span style="color: #f7fafc; font-size: 1rem; font-weight: 500;">${idx+1}. ${factor.name}</span>
+          <span style="color: ${color}; font-weight: 700; font-size: 1rem;">${factor.percentage}</span>
         </div>
-        <div class="w-full bg-gray-800 rounded-full h-2 mx-auto" style="max-width: 280px;">
-          <div class="h-2 rounded-full" style="width: ${factor.percentage}; background-color: ${color.replace('text-','#').replace('400','aa')};"></div>
+        <div class="w-full bg-gray-700 rounded-full h-2.5 mx-auto" style="max-width: 260px;">
+          <div class="h-2.5 rounded-full" style="width: ${factor.percentage}; background-color: ${color}; box-shadow: 0 0 10px ${color}88;"></div>
         </div>
-      </div>
-      `;
+      </div>`;
     }).join('')}
-  </div>
-`;
+  </div>`;
 }
 let adviceHtml=`
-  <h3 style="color: #00e676; font-size: 1.2rem; font-weight: 600; margin: 1.2rem 0 0.8rem; border-bottom: 1px solid #333; padding-bottom: 0.8rem; text-align: center;">💡 健康建議</h3>
-  <div class="advice-container" style="padding: 0.5rem 0; text-align: left; padding: 0 1rem;">
-    <p style="color: #e0e0e0; font-size: 0.85rem; margin: 0.4rem 0; line-height: 1.5;">1. 優先關注上述高佔比健康要素對應的身體症狀</p>
-    <p style="color: #e0e0e0; font-size: 0.85rem; margin: 0.4rem 0; line-height: 1.5;">2. 若症狀持續或加重，請及時諮詢專業醫師</p>
-    <p style="color: #e0e0e0; font-size: 0.85rem; margin: 0.4rem 0; line-height: 1.5;">3. 保持規律作息與合理飲食，輔助改善身體狀態</p>
+  <h3 style="color: #38a169; font-size: 1.3rem; font-weight: 700; margin: 1.8rem 0 1.2rem; border-bottom: 1px solid #4a5568; padding-bottom: 1rem; text-align: center; letter-spacing: 1px;">💡 健康建議</h3>
+  <div class="advice-container" style="padding: 1rem 0.8rem; background: #37474f; border-radius: 12px; text-align: left;">
+    <p style="color: #f7fafc; font-size: 0.95rem; margin: 0.6rem 0; line-height: 1.7;">1. 優先關注上述高佔比健康要素對應的身體症狀，做好日常護理</p>
+    <p style="color: #f7fafc; font-size: 0.95rem; margin: 0.6rem 0; line-height: 1.7;">2. 若症狀持續超過1周或明顯加重，請及時諮詢專業醫師就診</p>
+    <p style="color: #f7fafc; font-size: 0.95rem; margin: 0.6rem 0; line-height: 1.7;">3. 保持規律作息、清淡飲食與適度運動，輔助改善身體狀態</p>
   </div>
-</div>
-`;
+</div>`;
 summaryContent.innerHTML=`${basicInfoHtml}${statsHtml}${topFactorsHtml}${adviceHtml}`;
 if(!document.getElementById('screenshot-target')){
 const modalContent=document.querySelector('#success-modal .bg-cardBg');
@@ -893,15 +882,15 @@ showError('報告生成失敗，請重新提交');
 }
 function getFactorColor(factorKey){
 const colorMap={
-'氣血':'text-#29b6f6',
-'循環':'text-#2ecc71',
-'毒素':'text-#ffca28',
-'血脂':'text-#ff9800',
-'寒濕':'text-#9c27b0',
-'免疫':'text-#e91e63',
-'情緒':'text-#3f51b5'
+'氣血':'#48bb78',
+'循環':'#38b2ac',
+'毒素':'#ed8936',
+'血脂':'#f56565',
+'寒濕':'#718096',
+'免疫':'#e53e3e',
+'情緒':'#667eea'
 };
-return colorMap[factorKey]||'text-#2ecc71';
+return colorMap[factorKey]||'#48bb78';
 }
 async function initLIFF(){
 try{
@@ -944,5 +933,6 @@ window.submitCallback=function(resp){
 console.log("GAS回調數據：",resp);
 };
 </script>
+
 </body>
 </html>
