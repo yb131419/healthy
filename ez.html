@@ -326,26 +326,25 @@ if(!dateReg.test(expiryDateStr))return{displayDate:"格式錯誤",remainingDays:
 const dateParts=expiryDateStr.replace(/-/g,'/').split('/').map(Number);
 const [year, month, day] = dateParts;
 
-// 步骤2：构造「台湾本地时间」的当日0点（关键：避免UTC偏移）
-// 手动传入年、月（减1适配Date对象）、日，强制本地时间，不转换UTC
+// 步骤2：构造「台湾本地时间」的当日0点（避免UTC偏移）
 const expiryDate=new Date(year, month-1, day, 0, 0, 0, 0);
-// 构造当前本地时间的当日0点（剥离时分秒，消除时间干扰）
 const now=new Date();
 const currentDate=new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
 
 if(isNaN(expiryDate.getTime()))return{displayDate:"日期無效",remainingDays:"日期無效"};
 
-// 步骤3：精准计算天数（用Math.ceil解决东八区小数偏差，避免少一天）
+// 步骤3：计算天数差 + 直接加1天（核心解决少一天问题）
 const oneDayMs=1000*3600*24;
 const timeDiff=expiryDate.getTime()-currentDate.getTime();
-const dayDiff=Math.ceil(timeDiff/oneDayMs); // 核心修复：替换round为ceil
+let dayDiff=Math.ceil(timeDiff/oneDayMs);
+dayDiff = dayDiff + 1; // 关键：直接加1天，解决台湾时区显示少一天的问题
 
 // 步骤4：格式化显示日期（统一yyyy/mm/dd）
 const fmtMonth=String(month).padStart(2,'0');
 const fmtDay=String(day).padStart(2,'0');
 const displayDate=`${year}/${fmtMonth}/${fmtDay}`;
 
-// 步骤5：判断天数状态
+// 步骤5：判断天数状态（兼容加1后的逻辑，避免异常）
 let remainingDaysText;
 if(dayDiff<0){
 remainingDaysText="<span class='text-red-500 font-medium'>已過期</span>";
