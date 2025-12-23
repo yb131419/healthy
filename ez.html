@@ -198,15 +198,14 @@ const LIFF_ID="2008578880-NznKeG2a";
 const GAS_URL="https://script.google.com/macros/s/AKfycbykBtM2_PM7IZ-ZUU4tgTqVa1xGhVQFaZ523FXc4ivdLz_GZ09sdmL6s5zk7SdloFuG/exec";
 const JSONP_TIMEOUT=12000;
 const PERMANENT_EXPIRY_DATE="9999/12/31";
-// 健康行业清新配色（浅绿主调+低饱和辅助色，贴合医疗健康风格）
 const fStyles={
-  氣血:{className:'bg-teal-100/50 text-teal-700',label:'氣血'},
-  循環:{className:'bg-emerald-100/50 text-emerald-700',label:'循環'},
-  毒素:{className:'bg-amber-100/50 text-amber-700',label:'毒素'},
-  血脂:{className:'bg-orange-100/50 text-orange-700',label:'血脂'},
-  寒濕:{className:'bg-blue-100/50 text-blue-700',label:'寒濕'},
-  免疫:{className:'bg-purple-100/50 text-purple-700',label:'免疫'},
-  情緒:{className:'bg-pink-100/50 text-pink-700',label:'情緒'}
+  氣血:{className:'bg-slate-700/30 text-slate-400',label:'氣血'},
+  循環:{className:'bg-emerald-700/30 text-emerald-400',label:'循環'},
+  毒素:{className:'bg-amber-700/30 text-amber-400',label:'毒素'},
+  血脂:{className:'bg-orange-800/30 text-orange-400',label:'血脂'},
+  寒濕:{className:'bg-violet-700/30 text-violet-400',label:'寒濕'},
+  免疫:{className:'bg-pink-800/30 text-pink-400',label:'免疫'},
+  情緒:{className:'bg-indigo-800/30 text-indigo-400',label:'情緒'}
 };
 const durOpts=[{value:'',label:'請選擇時間'},{value:'1w',label:'1周內'},{value:'1-3m',label:'1-3個月'},{value:'3-6m',label:'3-6個月'},{value:'6m-1y',label:'6個月-1年'},{value:'1-2y',label:'1-2年'},{value:'2-5y',label:'2-5年'},{value:'5y+',label:'5年以上'}];
 const sevOpts=[{value:'',label:'請選擇輕重'},{value:'mild',label:'輕度（不影響生活）'},{value:'moderate',label:'中度（偶爾影響）'},{value:'severe',label:'重度（明顯影響）'}];
@@ -330,6 +329,25 @@ else if(rd<=30)rt=`<span class='text-orange-500 font-medium'>${rd} 天</span>`;
 else rt=`${rd} 天`;
 return{displayDate:fd,remainingDays:rt};
 }catch(e){console.error("計算剩餘天數失敗：",e,expiryDateStr);return{displayDate:"計算錯誤",remainingDays:"計算錯誤"}};
+};
+// 創建右下角提交中提示
+const createSubmitLoadingTip=()=>{
+if(document.getElementById('submit-loading-tip'))return;
+const tip=document.createElement('div');
+tip.id='submit-loading-tip';
+tip.style.cssText=`position:fixed;bottom:90px;right:20px;z-index:9998;background:rgba(0,0,0,0.7);color:white;padding:10px 16px;border-radius:8px;display:flex;align-items:center;gap:8px;opacity:0;transition:opacity 0.3s ease;`;
+tip.innerHTML='<i class="fa fa-spinner fa-spin"></i><span>提交中，請稍候...</span>';
+document.body.appendChild(tip);
+};
+// 顯示提交中提示
+const showSubmitLoading=()=>{
+const tip=document.getElementById('submit-loading-tip');
+tip&&(tip.style.opacity='1');
+};
+// 隱藏提交中提示
+const hideSubmitLoading=()=>{
+const tip=document.getElementById('submit-loading-tip');
+tip&&(tip.style.opacity='0');
 };
 function renderSymptomCards(){
 try{
@@ -540,6 +558,7 @@ floatContainer.style.opacity='1';
 },300);
 }
 function initControlButtons(){
+createSubmitLoadingTip(); // 初始化提交中提示
 const styleButtons=()=>{
 const buttons=document.querySelectorAll('button');
 buttons.forEach(btn=>{
@@ -588,14 +607,15 @@ document.getElementById('submit-checklist').addEventListener('click',async funct
 const btn=this;
 btn.disabled=true;
 btn.innerHTML='<i class="fa fa-spinner fa-spin mr-1"></i> 提交中...';
+showSubmitLoading(); // 顯示右下角提交提示
 const sc=updateSelectedCount();
-if(sc===0){alert('請至少勾選一個症狀');btn.disabled=false;btn.innerHTML='提交檢查表';return;}
+if(sc===0){alert('請至少勾選一個症狀');btn.disabled=false;btn.innerHTML='提交檢查表';hideSubmitLoading();return;}
 let iv=true,fic=null;
 document.querySelectorAll('.symptom-checkbox:checked').forEach(cb=>{
 const cd=cb.closest('.symptom-card'),d=cd.querySelector('.duration-select').value,s=cd.querySelector('.severity-select').value;
 if(!d||!s){iv=false;fic=fic||cd;cd.classList.add('border-red-700');cd.style.transform='scale(1.03)';setTimeout(()=>{cd.classList.remove('border-red-700');cd.style.transform='';},1500);}
 });
-if(!iv){alert('部分已選症狀未填寫完整資訊，請檢查後再提交');fic&&fic.scrollIntoView({behavior:'smooth',block:'center'});btn.disabled=false;btn.innerHTML='提交檢查表';return;}
+if(!iv){alert('部分已選症狀未填寫完整資訊，請檢查後再提交');fic&&fic.scrollIntoView({behavior:'smooth',block:'center'});btn.disabled=false;btn.innerHTML='提交檢查表';hideSubmitLoading();return;}
 const sd=await collectSubmitData();
 submitChecklistData(sd,btn);
 });
@@ -737,6 +757,7 @@ url:GAS_URL,dataType:'jsonp',jsonp:'callback',jsonpCallback:'submitCallback',
 timeout:JSONP_TIMEOUT,data:data,
 success:function(resp){
 document.getElementById('status').classList.add('hidden');
+hideSubmitLoading(); // 隱藏右下角提交提示
 alert('提交成功！正在生成健康報告...');
 const rd=organizeReportData({
 ...data,
@@ -755,6 +776,7 @@ btn.innerHTML='<i class="fa fa-paper-plane mr-1.5"></i>提交自檢表';
 },
 error:function(xhr,status,error){
 document.getElementById('status').classList.add('hidden');
+hideSubmitLoading(); // 隱藏右下角提交提示
 btn.disabled=false;
 btn.innerHTML='<i class="fa fa-paper-plane mr-1.5"></i>提交自檢表';
 console.error("提交失敗：",status,error);
@@ -770,79 +792,76 @@ function renderReportSummary(reportData){
 try{
 const summaryContent=document.getElementById('summary-content');
 if(!summaryContent)return;
-// 高质感健康报告样式（字体放大+清新配色+细腻卡片）
 let basicInfoHtml=`
-<div class="info-grid grid grid-cols-2 gap-3 text-center mx-auto max-w-lg">
-  <div class="info-item py-2"><span class="text-slate-500 text-base">姓名：</span><span class="font-medium text-lg">${reportData.formattedUserInfo.姓名}</span></div>
-  <div class="info-item py-2"><span class="text-slate-500 text-base">年齡：</span><span class="font-medium text-lg">${reportData.formattedUserInfo.年齡}</span></div>
-  <div class="info-item py-2"><span class="text-slate-500 text-base">性別：</span><span class="font-medium text-lg">${reportData.formattedUserInfo.性別}</span></div>
-  <div class="info-item py-2"><span class="text-slate-500 text-base">職業：</span><span class="font-medium text-lg">${reportData.formattedUserInfo.職業}</span></div>
-  <div class="info-item py-2"><span class="text-slate-500 text-base">身高：</span><span class="font-medium text-lg">${reportData.formattedUserInfo.身高}</span></div>
-  <div class="info-item py-2"><span class="text-slate-500 text-base">體重：</span><span class="font-medium text-lg">${reportData.formattedUserInfo.體重}</span></div>
-  <div class="info-item py-2"><span class="text-slate-500 text-base">血壓：</span><span class="font-medium text-lg">${reportData.formattedUserInfo.血壓}</span></div>
-  <div class="info-item py-2"><span class="text-slate-500 text-base">血糖：</span><span class="font-medium text-lg">${reportData.formattedUserInfo.血糖}</span></div>
+<div class="info-grid grid grid-cols-2 gap-2 text-center mx-auto max-w-md">
+  <div class="info-item py-1"><span class="text-slate-500 text-sm">姓名：</span><span class="font-medium">${reportData.formattedUserInfo.姓名}</span></div>
+  <div class="info-item py-1"><span class="text-slate-500 text-sm">年齡：</span><span class="font-medium">${reportData.formattedUserInfo.年齡}</span></div>
+  <div class="info-item py-1"><span class="text-slate-500 text-sm">性別：</span><span class="font-medium">${reportData.formattedUserInfo.性別}</span></div>
+  <div class="info-item py-1"><span class="text-slate-500 text-sm">職業：</span><span class="font-medium">${reportData.formattedUserInfo.職業}</span></div>
+  <div class="info-item py-1"><span class="text-slate-500 text-sm">身高：</span><span class="font-medium">${reportData.formattedUserInfo.身高}</span></div>
+  <div class="info-item py-1"><span class="text-slate-500 text-sm">體重：</span><span class="font-medium">${reportData.formattedUserInfo.體重}</span></div>
+  <div class="info-item py-1"><span class="text-slate-500 text-sm">血壓：</span><span class="font-medium">${reportData.formattedUserInfo.血壓}</span></div>
+  <div class="info-item py-1"><span class="text-slate-500 text-sm">血糖：</span><span class="font-medium">${reportData.formattedUserInfo.血糖}</span></div>
 </div>
-<div class="w-full py-2 text-center mt-2">
-  <span class="text-slate-500 text-base">提交時間：</span><span class="font-medium text-lg">${reportData.formattedUserInfo.提交時間}</span>
+<div class="w-full py-1 text-center mt-1">
+  <span class="text-slate-500 text-sm">提交時間：</span><span class="font-medium">${reportData.formattedUserInfo.提交時間}</span>
 </div>
-<div class="w-full h-0.5 bg-emerald-200 my-3 rounded mx-auto max-w-lg"></div>
+<div class="w-full h-0.5 bg-slate-200/50 my-2 rounded mx-auto max-w-md"></div>
 `;
 let statsHtml=`
-<div class="mb-3 text-center">
-  <p class="font-medium text-slate-800 text-xl mb-2">📊 整體統計</p>
-  <div class="pl-3 mt-2 space-y-2 inline-block text-left">
-    <p class="text-lg">總症狀數：${reportData.totalSymptomCount} 種</p>
-    <p class="text-lg">已選症狀數：<span class="text-emerald-600 font-bold text-xl">${reportData.selectedTotal}</span> 項</p>
+<div class="mb-2 text-center">
+  <p class="font-medium text-slate-800 mb-1">📊 整體統計</p>
+  <div class="pl-2 mt-1 space-y-1 inline-block text-left">
+    <p>總症狀數：${reportData.totalSymptomCount} 種</p>
+    <p>已選症狀數：<span class="text-primary font-bold">${reportData.selectedTotal}</span> 項</p>
   </div>
 </div>
-<div class="w-full h-0.5 bg-emerald-200 my-3 rounded mx-auto max-w-lg"></div>
+<div class="w-full h-0.5 bg-slate-200/50 my-2 rounded mx-auto max-w-md"></div>
 `;
 let topFactorsHtml='';
 if(reportData.topFactors.length>0){
 topFactorsHtml=`
-<div class="mb-3 text-center">
-  <p class="font-medium text-slate-800 text-xl mb-3">🌟 重點關注健康要素</p>
-  <div class="pl-3 mt-2 space-y-3 inline-block text-left min-w-[300px]">
+<div class="mb-2 text-center">
+  <p class="font-medium text-slate-800 mb-2">🌟 七大健康要素：佔比最高二種</p>
+  <div class="pl-2 mt-1 space-y-2 inline-block text-left min-w-[250px]">
     ${reportData.topFactors.map((factor,idx)=>`
-      <div class="flex items-center justify-between mb-2">
-        <span class="text-lg">${idx+1}. ${factor.name}</span>
-        <span class="text-${getFactorColor(factor.key)} font-bold text-xl">${factor.percentage}</span>
+      <div class="flex items-center justify-between mb-1">
+        <span>${idx+1}. ${factor.name}</span>
+        <span class="text-${getFactorColor(factor.key)} font-bold">${factor.percentage}</span>
       </div>
-      <div class="w-full bg-slate-200 rounded-full h-2 mb-3">
-        <div class="bg-${getFactorColor(factor.key)} h-2 rounded-full" style="width: ${factor.percentage}"></div>
+      <div class="w-full bg-slate-200/60 rounded-full h-1.5 mb-2">
+        <div class="bg-${getFactorColor(factor.key)} h-1.5 rounded-full" style="width: ${factor.percentage}"></div>
       </div>
     `).join('')}
   </div>
 </div>
-<div class="w-full h-0.5 bg-emerald-200 my-3 rounded mx-auto max-w-lg"></div>
+<div class="w-full h-0.5 bg-slate-200/50 my-2 rounded mx-auto max-w-md"></div>
 `;
 }
 let adviceHtml=`
 <div class="text-center">
-  <p class="font-medium text-slate-800 text-xl mb-3">💡 健康建議</p>
-  <div class="pl-3 mt-2 inline-block text-left text-base text-slate-700 space-y-2">
-    <p>1. 優先留意高佔比健康要素相關症狀，做好日常護理</p>
-    <p>2. 若症狀持續超過1個月或惡化，請及時諮詢專業醫師</p>
-    <p>3. 維持規律作息、均衡飲食與適度運動，改善身體狀態</p>
+  <p class="font-medium text-slate-800 mb-2">💡 健康建議</p>
+  <div class="pl-2 mt-1 inline-block text-left text-sm text-slate-600 space-y-1">
+    <p>1. 優先留意高佔比健康要素相關症狀</p>
+    <p>2. 症狀若持續或惡化，及早就醫</p>
+    <p>3. 維持規律作息與均衡飲食以改善狀態</p>
   </div>
 </div>
 `;
 summaryContent.innerHTML=`
-<div class="text-center mb-5">
-  <h3 class="text-2xl font-bold text-emerald-700"> 🧬 健康自檢報告 </h3>
+<div class="text-center mb-3">
+  <h3 class="text-xl font-bold text-slate-800"> 🧬 健康自檢報告 </h3>
 </div>
-<div class="bg-white rounded-2xl shadow-lg p-6 mb-4">
 ${basicInfoHtml}
 ${statsHtml}
 ${topFactorsHtml}
 ${adviceHtml}
-</div>
 `;
 if(!document.getElementById('screenshot-target')){
 const modalContent=document.querySelector('#success-modal .bg-cardBg');
 const screenshotTarget=document.createElement('div');
 screenshotTarget.id='screenshot-target';
-screenshotTarget.className='w-full bg-gray-50 p-4';
+screenshotTarget.className='w-full';
 while(modalContent.firstChild){
 screenshotTarget.appendChild(modalContent.firstChild);
 }
@@ -850,21 +869,21 @@ modalContent.appendChild(screenshotTarget);
 }
 }catch(e){
 console.error("渲染報告摘要出錯：",e);
+hideSubmitLoading(); // 異常時也隱藏提示
 showError('報告生成失敗，請重新提交');
 }
 }
 function getFactorColor(factorKey){
-// 健康行业清新配色映射
 const colorMap={
-'氣血':'teal-600',
-'循環':'emerald-600',
-'毒素':'amber-600',
-'血脂':'orange-600',
-'寒濕':'blue-600',
-'免疫':'purple-600',
-'情緒':'pink-600'
+'氣血':'slate-500',
+'循環':'emerald-500',
+'毒素':'amber-500',
+'血脂':'orange-500',
+'寒濕':'violet-500',
+'免疫':'pink-500',
+'情緒':'indigo-500'
 };
-return colorMap[factorKey]||'emerald-600';
+return colorMap[factorKey]||'primary';
 }
 async function initLIFF(){
 try{
