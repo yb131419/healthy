@@ -628,9 +628,8 @@ margin:screenshotTarget.style.margin,
 height:screenshotTarget.style.height,
 overflow:screenshotTarget.style.overflow
 };
-// 修复手机图片过大：限制最大宽度为600px，适配手机屏幕
-screenshotTarget.style.width='70%';
-screenshotTarget.style.maxWidth='600px';
+screenshotTarget.style.width='100vw';
+screenshotTarget.style.maxWidth='none';
 screenshotTarget.style.padding='2rem 1.5rem';
 screenshotTarget.style.boxSizing='border-box';
 screenshotTarget.style.borderRadius='0';
@@ -654,8 +653,6 @@ script.onerror=reject;
 document.head.appendChild(script);
 });
 }
-// 限制canvas宽度，避免手机图片过大
-const canvasWidth=Math.min(screenshotTarget.offsetWidth,600);
 const canvas=await html2canvas(screenshotTarget,{
 scale:2,
 useCORS:true,
@@ -663,7 +660,7 @@ allowTaint:true,
 logging:false,
 backgroundColor:'#121212',
 dpi:200,
-windowWidth:canvasWidth,
+windowWidth:window.innerWidth,
 windowHeight:screenshotTarget.offsetHeight+200,
 scrollY:0,
 scrollX:0
@@ -859,13 +856,12 @@ topFactorsHtml=`
     }).join('')}
   </div>`;
 }
-// 精简健康建议
 let adviceHtml=`
   <h3 style="color: #38a169; font-size: 1.3rem; font-weight: 700; margin: 1.8rem 0 1.2rem; border-bottom: 1px solid #4a5568; padding-bottom: 1rem; text-align: center; letter-spacing: 1px;">💡 健康建議</h3>
   <div class="advice-container" style="padding: 1rem 0.8rem; background: #37474f; border-radius: 12px; text-align: left;">
-    <p style="color: #f7fafc; font-size: 0.95rem; margin: 0.6rem 0; line-height: 1.7;">1. 優先關注高佔比健康要素對應症狀，做好日常護理</p>
-    <p style="color: #f7fafc; font-size: 0.95rem; margin: 0.6rem 0; line-height: 1.7;">2. 症狀持續加重請及時諮詢專業醫師</p>
-    <p style="color: #f7fafc; font-size: 0.95rem; margin: 0.6rem 0; line-height: 1.7;">3. 保持規律作息與清淡飲食，輔助改善狀態</p>
+    <p style="color: #f7fafc; font-size: 0.95rem; margin: 0.6rem 0; line-height: 1.7;">1. 優先關注上述高佔比健康要素對應的身體症狀，做好日常護理</p>
+    <p style="color: #f7fafc; font-size: 0.95rem; margin: 0.6rem 0; line-height: 1.7;">2. 若症狀持續超過1周或明顯加重，請及時諮詢專業醫師就診</p>
+    <p style="color: #f7fafc; font-size: 0.95rem; margin: 0.6rem 0; line-height: 1.7;">3. 保持規律作息、清淡飲食與適度運動，輔助改善身體狀態</p>
   </div>
 </div>`;
 summaryContent.innerHTML=`${basicInfoHtml}${statsHtml}${topFactorsHtml}${adviceHtml}`;
@@ -937,6 +933,7 @@ window.submitCallback=function(resp){
 console.log("GAS回調數據：",resp);
 };
 </script>
+
 
 </body>
 </html>
