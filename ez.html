@@ -944,7 +944,7 @@ console.log("LINE用戶信息：",profile);
 setStatus('正在驗證授權狀態...');
 const userInfo = await verifyUserFromBackend(profile);
 if(!userInfo){
-showError('普通用戶使用次數已用完！請聯繫管理員升級『專業用戶』');
+showError('普通用戶使用次數已用完！請聯繫管理員升級『💎尊爵用戶』');
 return;
 }
 
@@ -960,7 +960,7 @@ let expiryText = userInfo.isAdmin
   ? `${userInfo.displayExpiryDate}（${userInfo.remainingDays === "永久有效" ? "永久有效" : userInfo.remainingDays}）`
   : "普通用戶（3次使用上限）";
 document.getElementById('result-details').innerHTML=`
-<p>用戶類型：<span class="text-primary font-medium">${userInfo.isAdmin ? "專業用戶" : "普通用戶"}</span></p>
+<p>用戶類型：<span class="text-primary font-medium">${userInfo.isAdmin ? "💎尊爵用戶" : "普通用戶"}</span></p>
 <p>有效期：<span class="text-primary font-medium">${expiryText}</span></p>
 ${!userInfo.isAdmin ? `<p>剩餘使用次數：<span class="text-primary font-medium">${3 - userInfo.usageCount} 次</span></p>` : ""}
 `;
