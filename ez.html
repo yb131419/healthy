@@ -613,7 +613,6 @@ if(!screenshotTarget){
 alert('報告區域加載失敗，請稍候再試');
 return;
 }
-// 統一手機/平板寬度為800px
 const targetWidth=800;
 const floatContainer=document.getElementById('floating-buttons');
 const floatStyle=floatContainer.style.opacity;
@@ -632,7 +631,6 @@ overflow:screenshotTarget.style.overflow,
 maxHeight:screenshotTarget.style.maxHeight,
 fontSize:screenshotTarget.style.fontSize
 };
-// 強制設置截圖區域寬度為800px
 screenshotTarget.style.width='100%';
 screenshotTarget.style.maxWidth=`${targetWidth}px`;
 screenshotTarget.style.maxHeight='none';
@@ -799,7 +797,7 @@ if(!summaryContent)return;
 let basicInfoHtml=`
 <div class="info-container w-full max-w-[800px] mx-auto" style="background: #2d3748; padding: 1.8rem 1.5rem; border-radius: 18px; box-shadow: 0 6px 25px rgba(0,0,0,0.4);">
   <h3 style="color: #38a169; font-size: 1.3rem; font-weight: 700; margin-bottom: 1.5rem; border-bottom: 1px solid #4a5568; padding-bottom: 1rem; text-align: center; letter-spacing: 1px;">👤 基本資訊</h3>
-  <div class="info-grid grid-cols-2 gap-2.5" style="margin-bottom: 1.5rem;">
+  <div class="info-grid grid-cols-3 gap-2.5" style="margin-bottom: 1.5rem;">
     <div class="info-item flex justify-between items-center" style="padding: 0.7rem 0.5rem; border-bottom: 1px solid #4a5568;">
       <span style="color: #a0aec0; font-size: 0.95rem;">姓名：</span>
       <span style="color: #f7fafc; font-size: 0.95rem; font-weight: 500;">${reportData.formattedUserInfo.姓名}</span>
@@ -940,7 +938,6 @@ window.submitCallback=function(resp){
 console.log("GAS回調數據：",resp);
 };
 </script>
-
 
 </body>
 </html>
