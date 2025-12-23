@@ -944,7 +944,7 @@ console.log("LINE用戶信息：",profile);
 setStatus('正在驗證授權狀態...');
 const userInfo = await verifyUserFromBackend(profile);
 if(!userInfo){
-showError('普通用戶使用次數已用完！請升級『專業用戶』');
+showError('普通用戶使用次數已用完！請聯繫管理員升級『專業用戶』');
 return;
 }
 
