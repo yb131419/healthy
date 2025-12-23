@@ -600,7 +600,6 @@ submitChecklistData(sd,btn);
 });
 styleButtons();
 }
-// 修正分享图片比例，适配多设备（核心修复）
 async function handleFloatingShareClick(e){
 e.stopPropagation();
 const btn=e.target.closest('#floating-share-btn');
@@ -614,21 +613,19 @@ if(!screenshotTarget){
 alert('報告區域加載失敗，請稍候再試');
 return;
 }
-// 获取设备类型，动态设置截图宽度
 const getDeviceType=()=>{
 const width=window.innerWidth;
-if(width<768)return 'mobile'; // 手机
-if(width<1024)return 'tablet'; // 平板
-return 'desktop'; // 电脑
+if(width<768)return 'mobile';
+if(width<1024)return 'tablet';
+return 'desktop';
 };
 const deviceType=getDeviceType();
-let targetWidth=380; // 默认手机宽度
-if(deviceType==='tablet')targetWidth=600;
-if(deviceType==='desktop')targetWidth=800;
+let targetWidth=350;
+if(deviceType==='tablet')targetWidth=500;
+if(deviceType==='desktop')targetWidth=700;
 const floatContainer=document.getElementById('floating-buttons');
 const floatStyle=floatContainer.style.opacity;
 floatContainer.style.opacity='0';
-// 保存原始样式
 const originalStyle={
 width:screenshotTarget.style.width,
 backgroundColor:screenshotTarget.style.backgroundColor,
@@ -643,11 +640,10 @@ overflow:screenshotTarget.style.overflow,
 maxHeight:screenshotTarget.style.maxHeight,
 fontSize:screenshotTarget.style.fontSize
 };
-// 响应式适配样式（确保内容完整展开）
 screenshotTarget.style.width='100%';
 screenshotTarget.style.maxWidth=`${targetWidth}px`;
 screenshotTarget.style.maxHeight='none';
-screenshotTarget.style.padding=deviceType==='mobile'?'1rem 0.8rem':'2rem 1.5rem';
+screenshotTarget.style.padding=deviceType==='mobile'?'0.8rem 0.6rem':'1.5rem 1.2rem';
 screenshotTarget.style.boxSizing='border-box';
 screenshotTarget.style.borderRadius='0';
 screenshotTarget.style.boxShadow='none';
@@ -658,10 +654,9 @@ screenshotTarget.style.overflow='visible';
 screenshotTarget.style.backgroundColor='#121212';
 screenshotTarget.style.color='#e0e0e0';
 screenshotTarget.style.fontFamily='-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-screenshotTarget.style.fontSize=deviceType==='mobile'?'0.9rem':'1rem'; // 手机缩小字体
+screenshotTarget.style.fontSize=deviceType==='mobile'?'0.8rem':'1rem';
 btn.disabled=true;
 btn.innerHTML='<i class="fa fa-spinner fa-spin"></i>';
-// 加载html2canvas
 if(!window.html2canvas){
 alert('正在加載分享所需組件，請稍候...');
 await new Promise((resolve,reject)=>{
@@ -672,42 +667,36 @@ script.onerror=reject;
 document.head.appendChild(script);
 });
 }
-// 延迟截图，确保样式渲染完成（核心修复：解决内容截断）
-await new Promise(resolve=>setTimeout(resolve,500));
-// 优化canvas配置，适配多设备
+await new Promise(resolve=>setTimeout(resolve,800));
 const canvas=await html2canvas(screenshotTarget,{
-scale:deviceType==='mobile'?1.2:1.5, // 适度提高手机端清晰度
+scale:deviceType==='mobile'?1.0:1.2,
 useCORS:true,
 allowTaint:true,
 logging:false,
 backgroundColor:'#121212',
-dpi:150,
+dpi:120,
 windowWidth:Math.min(screenshotTarget.offsetWidth,targetWidth),
-windowHeight:screenshotTarget.offsetHeight, // 改用offsetHeight获取实际渲染高度
+windowHeight:screenshotTarget.offsetHeight,
 scrollY:0,
 scrollX:0,
-imageTimeout:10000 // 延长图片加载超时时间
+imageTimeout:10000
 });
-// 恢复原始样式
 Object.keys(originalStyle).forEach(key=>{
 screenshotTarget.style[key]=originalStyle[key];
 });
 floatContainer.style.opacity=floatStyle;
-// 压缩图片
-let dataUrl=canvas.toDataURL('image/png',deviceType==='mobile'?0.7:0.9);
+let dataUrl=canvas.toDataURL('image/png',deviceType==='mobile'?0.6:0.8);
 const fileName=`🧬 彥彬自檢表系統_${new Date().toLocaleDateString()}.png`;
 const imgBlob=await(await fetch(dataUrl)).blob();
 let file;
-// 手机端额外压缩，控制体积在2M内
 if(imgBlob.size>2*1024*1024){
 alert('圖片體積過大，正在壓縮...');
-dataUrl=canvas.toDataURL('image/png',0.6);
+dataUrl=canvas.toDataURL('image/png',0.5);
 const compressedBlob=await(await fetch(dataUrl)).blob();
 file=new File([compressedBlob],fileName,{type:'image/png'});
 }else{
 file=new File([imgBlob],fileName,{type:'image/png'});
 }
-// 分享逻辑
 if(navigator.share&&typeof navigator.share==='function'){
 try{
 const shareData={
