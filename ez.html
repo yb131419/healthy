@@ -886,45 +886,98 @@ const colorMap={
 return colorMap[factorKey]||'primary';
 }
 async function initLIFF(){
-try{
-setStatus('正在初始化LINE登錄...');
-await liff.init({liffId:LIFF_ID});
-if(!liff.isLoggedIn()){
-setStatus('請先登錄LINE賬號...');
-liff.login({redirectUri:window.location.href});
-return;
+  try{
+    setStatus('正在初始化LINE登錄...');
+    await liff.init({liffId:LIFF_ID});
+    if(!liff.isLoggedIn()){
+      setStatus('請先登錄LINE賬號...');
+      liff.login({redirectUri:window.location.href});
+      return;
+    }
+
+    const profile=await liff.getProfile();
+    console.log("LINE用戶信息：",profile);
+    setStatus('正在驗證授權狀態...');
+
+    // 修復：調用後端verifyUser接口，獲取真實有效期信息
+    const userInfo = await verifyUserFromBackend(profile);
+    if(!userInfo){
+      showError('用戶授權驗證失敗，請重試');
+      return;
+    }
+
+    // 隱藏加載狀態，顯示真實用戶信息
+    document.getElementById('status').classList.add('hidden');
+    document.getElementById('result-main').textContent=`歡迎回來，${userInfo.displayName}！`;
+    
+    // 拼接有效期顯示文本
+    let expiryText = userInfo.isAdmin 
+      ? `${userInfo.expiryDate}（${userInfo.remainingDays === "永久有效" ? "永久有效" : `${userInfo.remainingDays} 天`}）`
+      : "普通用戶（3次使用上限）";
+    
+    document.getElementById('result-details').innerHTML=`
+    <p>用戶類型：<span class="text-primary font-medium">${userInfo.isAdmin ? "專業用戶" : "普通用戶"}</span></p>
+    <p>有效期：<span class="text-primary font-medium">${expiryText}</span></p>
+    ${!userInfo.isAdmin ? `<p>剩餘使用次數：<span class="text-primary font-medium">${3 - userInfo.usageCount} 次</span></p>` : ""}
+    `;
+
+    document.getElementById('result-card').classList.remove('hidden');
+    document.getElementById('user-info-section').classList.remove('hidden');
+    initControlButtons();
+
+  }catch(error){
+    console.error("LIFF初始化失敗：",error);
+    if(error.message.includes('LIFF ID')){
+      showError('LIFF ID配置錯誤，請聯繫管理員');
+    }else{
+      showError('系統初始化失敗，請刷新頁面重試');
+    }
+  }
 }
-const profile=await liff.getProfile();
-console.log("LINE用戶信息：",profile);
-setStatus('正在驗證授權狀態...');
-const expiryInfo=calculateRemainingDaysByDate(PERMANENT_EXPIRY_DATE);
-document.getElementById('status').classList.add('hidden');
-document.getElementById('result-main').textContent=`歡迎回來，${profile.displayName}！`;
-document.getElementById('result-details').innerHTML=`
-<p>授權狀態：<span class="text-primary font-medium">有效</span></p>
-<p>有效期：<span class="text-primary font-medium">${expiryInfo.displayDate}（${expiryInfo.remainingDays}）</span></p>
-`;
-document.getElementById('result-card').classList.remove('hidden');
-document.getElementById('user-info-section').classList.remove('hidden');
-initControlButtons();
-}catch(error){
-console.error("LIFF初始化失敗：",error);
-if(error.message.includes('LIFF ID')){
-showError('LIFF ID配置錯誤，請聯繫管理員');
-}else{
-showError('系統初始化失敗，請刷新頁面重試');
+
+// 新增：請求後端verifyUser接口的函數
+async function verifyUserFromBackend(profile){
+  return new Promise((resolve, reject) => {
+    const userId = liff.getDecodedIDToken()?.sub || '';
+    const displayName = profile.displayName || 'LINE用戶';
+
+    // 構建請求參數
+    const data = {
+      action: 'verifyUser',
+      userId: userId,
+      displayName: displayName,
+      callback: 'verifyCallback'
+    };
+
+    // JSONP請求後端
+    $.ajax({
+      url: GAS_URL,
+      dataType: 'jsonp',
+      jsonp: 'callback',
+      jsonpCallback: 'verifyCallback',
+      timeout: JSONP_TIMEOUT,
+      data: data,
+      success: function(resp) {
+        if(resp.status === "success"){
+          resolve(resp);
+        }else{
+          showError(resp.message || "用戶驗證失敗");
+          resolve(null);
+        }
+      },
+      error: function(xhr, status, error) {
+        console.error("用戶驗證請求失敗：", status, error);
+        reject(error);
+      }
+    });
+  });
 }
-}
-}
-window.addEventListener('DOMContentLoaded',function(){
-initLIFF();
-document.getElementById('success-modal').addEventListener('click',function(e){
-if(e.target===this)e.stopPropagation();
-});
-});
-window.submitCallback=function(resp){
-console.log("GAS回調數據：",resp);
+
+// 新增：verifyUser接口的回調函數
+window.verifyCallback = function(resp) {
+  console.log("用戶授權驗證返回：", resp);
 };
+
 </script>
 
 </body>
