@@ -326,7 +326,7 @@ let rt;
 if(rd<0)rt="<span class='text-red-500 font-medium'>已過期</span>";
 else if(rd===0)rt="<span class='text-orange-500 font-medium'>最後1天</span>";
 else if(rd<=30)rt=`<span class='text-orange-500 font-medium'>${rd} 天</span>`;
-//else rt=`${rd} 天`;
+else rt=`${rd} 天`;
 return{displayDate:fd,remainingDays:rt};
 }catch(e){console.error("計算剩餘天數失敗：",e,expiryDateStr);return{displayDate:"計算錯誤",remainingDays:"計算錯誤"}};
 };
@@ -913,7 +913,7 @@ return;
 document.getElementById('status').classList.add('hidden');
 document.getElementById('result-main').textContent=`歡迎回來，${userInfo.displayName}！`;
 let expiryText = userInfo.isAdmin 
-  ? `${userInfo.expiryDate}（${userInfo.remainingDays === "永久有效" ? "永久有效" : `${userInfo.remainingDays} 天`}）`
+  ? `${userInfo.expiryDate}（${userInfo.remainingDays === "永久有效" ? "永久有效" : `${userInfo.remainingDays} `}）`
   : "普通用戶（3次使用上限）";
 document.getElementById('result-details').innerHTML=`
 <p>用戶類型：<span class="text-primary font-medium">${userInfo.isAdmin ? "專業用戶" : "普通用戶"}</span></p>
