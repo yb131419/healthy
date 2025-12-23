@@ -629,9 +629,9 @@ height:screenshotTarget.style.height,
 overflow:screenshotTarget.style.overflow,
 maxHeight:screenshotTarget.style.maxHeight
 };
-// 优化手机截图尺寸：限制最大宽度380px，最大高度80vh
+// 调整宽度为800px
 screenshotTarget.style.width='100%';
-screenshotTarget.style.maxWidth='380px';
+screenshotTarget.style.maxWidth='800px';
 screenshotTarget.style.maxHeight='80vh';
 screenshotTarget.style.padding='2rem 1.5rem';
 screenshotTarget.style.boxSizing='border-box';
@@ -656,8 +656,8 @@ script.onerror=reject;
 document.head.appendChild(script);
 });
 }
-// 降低缩放比例，精准控制截图尺寸
-const canvasWidth=Math.min(screenshotTarget.offsetWidth,380);
+// 调整截图宽度为800px
+const canvasWidth=Math.min(screenshotTarget.offsetWidth,800);
 const canvas=await html2canvas(screenshotTarget,{
 scale:1.5,
 useCORS:true,
@@ -678,7 +678,6 @@ let dataUrl=canvas.toDataURL('image/png',0.9);
 const fileName=`🧬 彥彬自檢表系統_${new Date().toLocaleDateString()}.png`;
 const imgBlob=await(await fetch(dataUrl)).blob();
 let file;
-// 提前压缩阈值，从5M改为3M
 if(imgBlob.size>3*1024*1024){
 alert('圖片體積過大，輕微壓縮保持清晰...');
 dataUrl=canvas.toDataURL('image/png',0.8);
@@ -796,9 +795,9 @@ try{
 const summaryContent=document.getElementById('summary-content');
 if(!summaryContent)return;
 let basicInfoHtml=`
-<div class="info-container w-full max-w-sm mx-auto" style="background: #2d3748; padding: 1.8rem 1.5rem; border-radius: 18px; box-shadow: 0 6px 25px rgba(0,0,0,0.4);">
+<div class="info-container w-full max-w-[800px] mx-auto" style="background: #2d3748; padding: 1.8rem 1.5rem; border-radius: 18px; box-shadow: 0 6px 25px rgba(0,0,0,0.4);">
   <h3 style="color: #38a169; font-size: 1.3rem; font-weight: 700; margin-bottom: 1.5rem; border-bottom: 1px solid #4a5568; padding-bottom: 1rem; text-align: center; letter-spacing: 1px;">👤 基本資訊</h3>
-  <div class="info-grid grid-cols-1 gap-2.5" style="margin-bottom: 1.5rem;">
+  <div class="info-grid grid-cols-2 gap-2.5" style="margin-bottom: 1.5rem;">
     <div class="info-item flex justify-between items-center" style="padding: 0.7rem 0.5rem; border-bottom: 1px solid #4a5568;">
       <span style="color: #a0aec0; font-size: 0.95rem;">姓名：</span>
       <span style="color: #f7fafc; font-size: 0.95rem; font-weight: 500;">${reportData.formattedUserInfo.姓名}</span>
@@ -855,7 +854,7 @@ topFactorsHtml=`
           <span style="color: #f7fafc; font-size: 1rem; font-weight: 500;">${idx+1}. ${factor.name}</span>
           <span style="color: ${color}; font-weight: 700; font-size: 1rem;">${factor.percentage}</span>
         </div>
-        <div class="w-full bg-gray-700 rounded-full h-2.5 mx-auto" style="max-width: 260px;">
+        <div class="w-full bg-gray-700 rounded-full h-2.5 mx-auto" style="max-width: 700px;">
           <div class="h-2.5 rounded-full" style="width: ${factor.percentage}; background-color: ${color}; box-shadow: 0 0 10px ${color}88;"></div>
         </div>
       </div>`;
