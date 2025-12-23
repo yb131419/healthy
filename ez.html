@@ -600,7 +600,7 @@ submitChecklistData(sd,btn);
 });
 styleButtons();
 }
-// 修正分享图片比例，适配多设备
+// 修正分享图片比例，适配多设备（核心修复）
 async function handleFloatingShareClick(e){
 e.stopPropagation();
 const btn=e.target.closest('#floating-share-btn');
@@ -643,7 +643,7 @@ overflow:screenshotTarget.style.overflow,
 maxHeight:screenshotTarget.style.maxHeight,
 fontSize:screenshotTarget.style.fontSize
 };
-// 响应式适配样式
+// 响应式适配样式（确保内容完整展开）
 screenshotTarget.style.width='100%';
 screenshotTarget.style.maxWidth=`${targetWidth}px`;
 screenshotTarget.style.maxHeight='none';
@@ -672,18 +672,21 @@ script.onerror=reject;
 document.head.appendChild(script);
 });
 }
+// 延迟截图，确保样式渲染完成（核心修复：解决内容截断）
+await new Promise(resolve=>setTimeout(resolve,500));
 // 优化canvas配置，适配多设备
 const canvas=await html2canvas(screenshotTarget,{
-scale:deviceType==='mobile'?1:1.5, // 手机降低缩放，避免过大
+scale:deviceType==='mobile'?1.2:1.5, // 适度提高手机端清晰度
 useCORS:true,
 allowTaint:true,
 logging:false,
 backgroundColor:'#121212',
-dpi:150, // 降低dpi，减小图片体积
+dpi:150,
 windowWidth:Math.min(screenshotTarget.offsetWidth,targetWidth),
-windowHeight:screenshotTarget.scrollHeight,
+windowHeight:screenshotTarget.offsetHeight, // 改用offsetHeight获取实际渲染高度
 scrollY:0,
-scrollX:0
+scrollX:0,
+imageTimeout:10000 // 延长图片加载超时时间
 });
 // 恢复原始样式
 Object.keys(originalStyle).forEach(key=>{
