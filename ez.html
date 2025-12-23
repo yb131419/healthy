@@ -192,19 +192,20 @@ body{font-feature-settings:"palt";letter-spacing:0.02em;}
 </div>
 </div>
 </div>
+
 <script>
 const LIFF_ID="2008578880-NznKeG2a";
 const GAS_URL="https://script.google.com/macros/s/AKfycbykBtM2_PM7IZ-ZUU4tgTqVa1xGhVQFaZ523FXc4ivdLz_GZ09sdmL6s5zk7SdloFuG/exec";
 const JSONP_TIMEOUT=12000;
 const PERMANENT_EXPIRY_DATE="9999/12/31";
 const fStyles={
-  氣血:{className:'bg-blue-500/20 text-blue-400',label:'氣血'},
-  循環:{className:'bg-green-500/20 text-green-400',label:'循環'},
-  毒素:{className:'bg-yellow-500/20 text-yellow-400',label:'毒素'},
-  血脂:{className:'bg-orange-500/20 text-orange-400',label:'血脂'},
-  寒濕:{className:'bg-purple-500/20 text-purple-400',label:'寒濕'},
-  免疫:{className:'bg-pink-500/20 text-pink-400',label:'免疫'},
-  情緒:{className:'bg-indigo-500/20 text-indigo-400',label:'情緒'}
+  氣血:{className:'bg-sky-500/15 text-sky-400',label:'氣血'},
+  循環:{className:'bg-emerald-500/15 text-emerald-400',label:'循環'},
+  毒素:{className:'bg-amber-500/15 text-amber-400',label:'毒素'},
+  血脂:{className:'bg-orange-500/15 text-orange-400',label:'血脂'},
+  寒濕:{className:'bg-violet-500/15 text-violet-400',label:'寒濕'},
+  免疫:{className:'bg-rose-500/15 text-rose-400',label:'免疫'},
+  情緒:{className:'bg-indigo-500/15 text-indigo-400',label:'情緒'}
 };
 const durOpts=[{value:'',label:'請選擇時間'},{value:'1w',label:'1周內'},{value:'1-3m',label:'1-3個月'},
 {value:'3-6m',label:'3-6個月'},{value:'6m-1y',label:'6個月-1年'},{value:'1-2y',label:'1-2年'},
@@ -540,8 +541,7 @@ floatContainer.style.opacity='1';
 }
 function initControlButtons(){
 const styleButtons=()=>{
-const buttons=document.querySelectorAll('button');
-buttons.forEach(btn=>{
+document.querySelectorAll('button').forEach(btn=>{
 if(!btn.classList.contains('custom-styled')){
 btn.classList.add('custom-styled','px-6','py-2.5','rounded-lg','font-medium','transition-all','duration-300','shadow-sm','hover:shadow-md','transform','hover:-translate-y-0.5','active:translate-y-0');
 btn.classList.remove('px-8','py-3');
@@ -616,7 +616,6 @@ return;
 const floatContainer=document.getElementById('floating-buttons');
 const floatStyle=floatContainer.style.opacity;
 floatContainer.style.opacity='0';
-// 保存原有样式（避免覆盖颜色相关样式）
 const originalStyle={
 width:screenshotTarget.style.width,
 backgroundColor:screenshotTarget.style.backgroundColor,
@@ -629,21 +628,18 @@ margin:screenshotTarget.style.margin,
 height:screenshotTarget.style.height,
 overflow:screenshotTarget.style.overflow
 };
-// 针对性调整截图样式，不覆盖颜色
 screenshotTarget.style.width = '100vw !important';
 screenshotTarget.style.maxWidth = 'none !important';
-screenshotTarget.style.padding = '2rem !important';
+screenshotTarget.style.padding = '1.5rem !important';
 screenshotTarget.style.boxSizing = 'border-box !important';
 screenshotTarget.style.borderRadius = '0 !important';
 screenshotTarget.style.boxShadow = 'none !important';
 screenshotTarget.style.margin = '0 auto !important';
-screenshotTarget.style.textAlign = 'center !important';
+screenshotTarget.style.textAlign = 'left !important';
 screenshotTarget.style.height = 'auto !important';
 screenshotTarget.style.overflow = 'visible !important';
-// 保留原有背景色和文本色
-screenshotTarget.style.backgroundColor = screenshotTarget.style.backgroundColor || '#121212 !important';
-screenshotTarget.style.color = screenshotTarget.style.color || '#FFFFFF !important';
-
+screenshotTarget.style.backgroundColor = screenshotTarget.style.backgroundColor || '#1a1a1a !important';
+screenshotTarget.style.color = screenshotTarget.style.color || '#f5f5f5 !important';
 btn.disabled=true;
 btn.innerHTML='<i class="fa fa-spinner fa-spin"></i>';
 if(!window.html2canvas){
@@ -657,10 +653,9 @@ document.head.appendChild(script);
 });
 }
 const canvas=await html2canvas(screenshotTarget,{
-scale:3,useCORS:true,allowTaint:true,logging:false,backgroundColor:'#121212',dpi:300,
+scale:3,useCORS:true,allowTaint:true,logging:false,backgroundColor:'#1a1a1a',dpi:300,
 windowWidth:window.innerWidth,windowHeight:screenshotTarget.offsetHeight+100,scrollY:0,scrollX:0
 });
-// 还原原有样式
 Object.keys(originalStyle).forEach(key=>{
 screenshotTarget.style[key]=originalStyle[key];
 });
@@ -786,53 +781,53 @@ try{
 const summaryContent=document.getElementById('summary-content');
 if(!summaryContent)return;
 let basicInfoHtml=`
-<div class="info-grid">
-  <div class="info-item"><span class="text-gray-500">姓名：</span><span class="font-medium">${reportData.formattedUserInfo.姓名}</span></div>
-  <div class="info-item"><span class="text-gray-500">年齡：</span><span class="font-medium">${reportData.formattedUserInfo.年齡}</span></div>
-  <div class="info-item"><span class="text-gray-500">性別：</span><span class="font-medium">${reportData.formattedUserInfo.性別}</span></div>
-  <div class="info-item"><span class="text-gray-500">身高/體重：</span><span class="font-medium">${reportData.formattedUserInfo.身高}/${reportData.formattedUserInfo.體重}</span></div>
-  <div class="info-item"><span class="text-gray-500">血壓/血糖：</span><span class="font-medium">${reportData.formattedUserInfo.血壓}/${reportData.formattedUserInfo.血糖}</span></div>
-  <div class="info-item"><span class="text-gray-500">提交時間：</span><span class="font-medium">${reportData.formattedUserInfo.提交時間}</span></div>
+<div class="info-grid grid-cols-1 sm:grid-cols-2 gap-2 mb-2">
+  <div class="info-item flex justify-between"><span class="text-gray-400 text-sm">姓名：</span><span class="font-medium text-white">${reportData.formattedUserInfo.姓名}</span></div>
+  <div class="info-item flex justify-between"><span class="text-gray-400 text-sm">年齡：</span><span class="font-medium text-white">${reportData.formattedUserInfo.年齡}</span></div>
+  <div class="info-item flex justify-between"><span class="text-gray-400 text-sm">性別：</span><span class="font-medium text-white">${reportData.formattedUserInfo.性別}</span></div>
+  <div class="info-item flex justify-between"><span class="text-gray-400 text-sm">身高/體重：</span><span class="font-medium text-white">${reportData.formattedUserInfo.身高}/${reportData.formattedUserInfo.體重}</span></div>
+  <div class="info-item flex justify-between"><span class="text-gray-400 text-sm">血壓/血糖：</span><span class="font-medium text-white">${reportData.formattedUserInfo.血壓}/${reportData.formattedUserInfo.血糖}</span></div>
+  <div class="info-item flex justify-between"><span class="text-gray-400 text-sm">提交時間：</span><span class="font-medium text-white">${reportData.formattedUserInfo.提交時間}</span></div>
 </div>
-<div class="w-full h-0.5 bg-gray-200 my-2 rounded"></div>
+<div class="w-full h-0.5 bg-gray-700 my-1.5 rounded"></div>
 `;
 let statsHtml=`
 <div class="mb-2">
-  <p class="font-medium text-textPrimary">📊 整體統計</p>
+  <p class="font-medium text-emerald-400 text-base">📊 整體統計</p>
   <div class="pl-2 mt-1 space-y-1">
-    <p>總症狀數：${reportData.totalSymptomCount} 種</p>
-    <p>已選症狀數：<span class="text-primary font-bold">${reportData.selectedTotal}</span> 項</p>
+    <p class="text-sm text-gray-300">總症狀數：${reportData.totalSymptomCount} 種</p>
+    <p class="text-sm text-gray-300">已選症狀數：<span class="text-emerald-400 font-bold">${reportData.selectedTotal}</span> 項</p>
   </div>
 </div>
-<div class="w-full h-0.5 bg-gray-200 my-2 rounded"></div>
+<div class="w-full h-0.5 bg-gray-700 my-1.5 rounded"></div>
 `;
 let topFactorsHtml='';
 if(reportData.topFactors.length>0){
 topFactorsHtml=`
 <div class="mb-2">
-  <p class="font-medium text-textPrimary">🌟 重點關注健康要素</p>
-  <div class="pl-2 mt-1 space-y-2">
+  <p class="font-medium text-emerald-400 text-base">🌟 重點關注健康要素</p>
+  <div class="pl-2 mt-1 space-y-2.5">
     ${reportData.topFactors.map((factor,idx)=>`
-      <div class="flex items-center justify-between">
-        <span>${idx+1}. ${factor.name}</span>
-        <span class="text-${getFactorColor(factor.key)} font-bold">${factor.percentage}</span>
+      <div class="flex items-center justify-between mb-1">
+        <span class="text-sm text-gray-300">${idx+1}. ${factor.name}</span>
+        <span class="text-${getFactorColor(factor.key)} font-bold text-sm">${factor.percentage}</span>
       </div>
-      <div class="w-full bg-gray-200 rounded-full h-1.5">
-        <div class="bg-${getFactorColor(factor.key)} h-1.5 rounded-full" style="width: ${factor.percentage}"></div>
+      <div class="w-full bg-gray-700 rounded-full h-1.2">
+        <div class="bg-${getFactorColor(factor.key)} h-1.2 rounded-full" style="width: ${factor.percentage}"></div>
       </div>
     `).join('')}
   </div>
 </div>
-<div class="w-full h-0.5 bg-gray-200 my-2 rounded"></div>
+<div class="w-full h-0.5 bg-gray-700 my-1.5 rounded"></div>
 `;
 }
 let adviceHtml=`
 <div>
-  <p class="font-medium text-textPrimary">💡 健康建議</p>
-  <div class="pl-2 mt-1">
-    <p class="text-sm text-textSecondary">1. 優先關注上述高佔比健康要素對應的身體症狀</p>
-    <p class="text-sm text-textSecondary">2. 若症狀持續或加重，請及時諮詢專業醫師</p>
-    <p class="text-sm text-textSecondary">3. 保持規律作息與合理飲食，輔助改善身體狀態</p>
+  <p class="font-medium text-emerald-400 text-base">💡 健康建議</p>
+  <div class="pl-2 mt-1 space-y-1">
+    <p class="text-xs text-gray-300">1. 優先關注上述高佔比健康要素對應的身體症狀</p>
+    <p class="text-xs text-gray-300">2. 若症狀持續或加重，請及時諮詢專業醫師</p>
+    <p class="text-xs text-gray-300">3. 保持規律作息與合理飲食，輔助改善身體狀態</p>
   </div>
 </div>
 `;
@@ -854,15 +849,15 @@ showError('報告生成失敗，請重新提交');
 }
 function getFactorColor(factorKey){
 const colorMap={
-'氣血':'blue-500',
-'循環':'green-500',
-'毒素':'yellow-500',
-'血脂':'orange-500',
-'寒濕':'purple-500',
-'免疫':'pink-500',
-'情緒':'indigo-500'
+'氣血':'sky-400',
+'循環':'emerald-400',
+'毒素':'amber-400',
+'血脂':'orange-400',
+'寒濕':'violet-400',
+'免疫':'rose-400',
+'情緒':'indigo-400'
 };
-return colorMap[factorKey]||'primary';
+return colorMap[factorKey]||'emerald-400';
 }
 async function initLIFF(){
 try{
@@ -905,5 +900,6 @@ window.submitCallback=function(resp){
 console.log("GAS回調數據：",resp);
 };
 </script>
+
 </body>
 </html>
