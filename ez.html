@@ -317,32 +317,53 @@ e&&c&&(c.innerHTML=`<p class="font-medium">${msg}</p><div class="mt-3 flex justi
 const calculateRemainingDaysByDate=expiryDateStr=>{
 try{
 if(expiryDateStr===PERMANENT_EXPIRY_DATE)return{displayDate:"永久有效",remainingDays:"永久有效"};
-const r=/^\d{4}[-\/]\d{2}[-\/]\d{2}$/;
+// 兼容横杠/斜杠分隔，且支持非补零日期（如2026/1/1）
+const r=/^\d{4}[-\/]\d{1,2}[-\/]\d{1,2}$/;
 if(!r.test(expiryDateStr))return{displayDate:"格式錯誤",remainingDays:"格式錯誤"};
 
-// 修复1：统一转换为UTC日期（消除本地时区偏移影响）
-const d=expiryDateStr.replace(/-/g,'/').split('/').map(Number);
-// 构造UTC过期日期（年、月-1、日，时分秒均为0）
-const ed = new Date(Date.UTC(d[0], d[1]-1, d[2]));
-const td = new Date();
-// 构造UTC当前日期（去除时分秒）
-const tlocal = new Date(Date.UTC(td.getFullYear(), td.getMonth(), td.getDate()));
+// 步骤1：统一解析日期，补零处理，避免解析偏差
+const dateParts=expiryDateStr.replace(/-/g,'/').split('/').map(Number);
+const year=dateParts[0];
+const month=dateParts[1]; // 原始月份（1-12）
+const day=dateParts[2];
 
-if(isNaN(ed.getTime()))return{displayDate:"日期無效",remainingDays:"日期無效"};
+// 步骤2：构造「纯UTC日期」（当天0时0分0秒，无时区偏移）
+// 过期日期（UTC）
+const expiryDateUTC=new Date(Date.UTC(year,month-1,day,0,0,0,0));
+// 当前日期（UTC，剥离时分秒，确保是当天起始时间）
+const now=new Date();
+const currentDateUTC=new Date(Date.UTC(now.getUTCFullYear(),now.getUTCMonth(),now.getUTCDate(),0,0,0,0));
 
-// 修复2：用Math.round替代Math.floor，避免小数偏差导致少一天
-const tdiff=ed-tlocal;
+if(isNaN(expiryDateUTC.getTime()))return{displayDate:"日期無效",remainingDays:"日期無效"};
+
+// 步骤3：精准计算天数差值，用Math.ceil确保不丢天
 const oneDayMs=1000*3600*24;
-const rd=Math.round(tdiff/oneDayMs); // 改为四舍五入，确保整数天计算准确
+const timeDiff=expiryDateUTC.getTime()-currentDateUTC.getTime();
+// 先取绝对值计算比例，再判断正负，避免负数取整偏差
+const dayDiff=Math.ceil(timeDiff/oneDayMs);
 
-const fd=`${d[0]}/${String(d[1]).padStart(2,'0')}/${String(d[2]).padStart(2,'0')}`;
-let rt;
-if(rd<0)rt="<span class='text-red-500 font-medium'>已過期</span>";
-else if(rd===0)rt="<span class='text-orange-500 font-medium'>最後1天</span>";
-else if(rd<=30)rt=`<span class='text-orange-500 font-medium'>${rd} 天</span>`;
-else rt=`${rd} 天`;
-return{displayDate:fd,remainingDays:rt};
-}catch(e){console.error("計算剩餘天數失敗：",e,expiryDateStr);return{displayDate:"計算錯誤",remainingDays:"計算錯誤"}};
+// 步骤4：格式化显示日期（补零，统一格式）
+const formattedMonth=String(month).padStart(2,'0');
+const formattedDay=String(day).padStart(2,'0');
+const displayDate=`${year}/${formattedMonth}/${formattedDay}`;
+
+// 步骤5：判断剩余天数状态
+let remainingDaysText;
+if(dayDiff<0){
+remainingDaysText="<span class='text-red-500 font-medium'>已過期</span>";
+}else if(dayDiff===0){
+remainingDaysText="<span class='text-orange-500 font-medium'>最後1天</span>";
+}else if(dayDiff<=30){
+remainingDaysText=`<span class='text-orange-500 font-medium'>${dayDiff} 天</span>`;
+}else{
+remainingDaysText=`${dayDiff} 天`;
+}
+
+return{displayDate:displayDate,remainingDays:remainingDaysText};
+}catch(e){
+console.error("計算剩餘天數失敗：",e,expiryDateStr);
+return{displayDate:"計算錯誤",remainingDays:"計算錯誤"};
+}
 };
 const createSubmitLoadingTip=()=>{
 if(document.getElementById('submit-loading-tip'))return;
