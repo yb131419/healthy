@@ -319,9 +319,9 @@ try{
 if(expiryDateStr===PERMANENT_EXPIRY_DATE)return{displayDate:"永久有效",remainingDays:"永久有效"};
 const r=/^\d{4}[-\/]\d{2}[-\/]\d{2}$/;
 if(!r.test(expiryDateStr))return{displayDate:"格式錯誤",remainingDays:"格式錯誤"};
-const d=expiryDateStr.replace(/-/g,'/').split('/').map(Number),ed=new Date(Date.UTC(d[0],d[1]-1,d[2])),td=new Date(),tutc=new Date(Date.UTC(td.getFullYear(),td.getMonth(),td.getDate()));
+const d=expiryDateStr.replace(/-/g,'/').split('/').map(Number),ed=new Date(d[0],d[1]-1,d[2]),td=new Date(),tlocal=new Date(td.getFullYear(),td.getMonth(),td.getDate());
 if(isNaN(ed.getTime()))return{displayDate:"日期無效",remainingDays:"日期無效"};
-const tdiff=ed-tutc,rd=Math.ceil(tdiff/(1000*3600*24)),fd=`${d[0]}/${String(d[1]).padStart(2,'0')}/${String(d[2]).padStart(2,'0')}`;
+const tdiff=ed-tlocal,rd=Math.floor(tdiff/(1000*3600*24)),fd=`${d[0]}/${String(d[1]).padStart(2,'0')}/${String(d[2]).padStart(2,'0')}`;
 let rt;
 if(rd<0)rt="<span class='text-red-500 font-medium'>已過期</span>";
 else if(rd===0)rt="<span class='text-orange-500 font-medium'>最後1天</span>";
