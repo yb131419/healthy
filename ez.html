@@ -327,20 +327,20 @@ const year=dateParts[0];
 const month=dateParts[1]; // 原始月份（1-12）
 const day=dateParts[2];
 
-// 步骤2：构造「纯UTC日期」（当天0时0分0秒，无时区偏移）
-// 过期日期（UTC）
-const expiryDateUTC=new Date(Date.UTC(year,month-1,day,0,0,0,0));
-// 当前日期（UTC，剥离时分秒，确保是当天起始时间）
+// 步骤2：构造「本地时间日期」（避免UTC时区偏移导致的日期偏差）
+// 过期日期（本地时间，当天0时0分0秒，剥离时分秒）
+const expiryDate=new Date(year,month-1,day,0,0,0,0);
+// 当前日期（本地时间，剥离时分秒，确保是当天起始时间）
 const now=new Date();
-const currentDateUTC=new Date(Date.UTC(now.getUTCFullYear(),now.getUTCMonth(),now.getUTCDate(),0,0,0,0));
+const currentDate=new Date(now.getFullYear(),now.getMonth(),now.getDate(),0,0,0,0);
 
-if(isNaN(expiryDateUTC.getTime()))return{displayDate:"日期無效",remainingDays:"日期無效"};
+if(isNaN(expiryDate.getTime()))return{displayDate:"日期無效",remainingDays:"日期無效"};
 
-// 步骤3：精准计算天数差值，用Math.ceil确保不丢天
+// 步骤3：精准计算天数差值（先取时间差绝对值，再取整，避免负数偏差）
 const oneDayMs=1000*3600*24;
-const timeDiff=expiryDateUTC.getTime()-currentDateUTC.getTime();
-// 先取绝对值计算比例，再判断正负，避免负数取整偏差
-const dayDiff=Math.ceil(timeDiff/oneDayMs);
+const timeDiff=expiryDate.getTime()-currentDate.getTime();
+// 用Math.round四舍五入，再转为整数，解决“少一天”的核心问题
+const dayDiff=Math.round(timeDiff/oneDayMs);
 
 // 步骤4：格式化显示日期（补零，统一格式）
 const formattedMonth=String(month).padStart(2,'0');
