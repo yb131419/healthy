@@ -465,7 +465,15 @@ const showError=(msg)=>{
   hideEls.forEach(el=>el&&el.classList.add('hidden'));
   const errorEl=DOM('error-message'), contentEl=DOM('error-content');
   if(errorEl&&contentEl){
-    contentEl.innerHTML=`<p class="font-medium">${msg}</p><div class="mt-2 flex justify-center"><button onclick="window.location.reload()" class="text-primary hover:text-[#007A69] font-medium flex items-center gap-1 text-xs"><i class="fa fa-refresh text-xs"></i> 重新嘗試</button></div>`;
+    contentEl.innerHTML=`<p class="font-medium text-lg">${msg}</p>
+<div class="mt-2 flex justify-center">
+  <button 
+    onclick="window.location.reload()" 
+    class="text-primary hover:text-[#007A69] font-medium text-base px-6 py-3 rounded-lg bg-white border border-primary/20 hover:bg-primary/5 transition-all duration-300 flex items-center gap-2 shadow-sm hover:shadow-md"
+  >
+    <i class="fa fa-refresh"></i> 重新嘗試
+  </button>
+</div>`;
     errorEl.classList.remove('hidden');
   }
   resetSubmitState();
