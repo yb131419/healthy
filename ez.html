@@ -197,7 +197,11 @@ body{font-feature-settings:"palt";letter-spacing:0.02em;}
 const LIFF_ID="2008578880-NznKeG2a";
 const GAS_URL="https://script.google.com/macros/s/AKfycbykBtM2_PM7IZ-ZUU4tgTqVa1xGhVQFaZ523FXc4ivdLz_GZ09sdmL6s5zk7SdloFuG/exec";
 const JSONP_TIMEOUT=12000;
-const PERMANENT_EXPIRY_DATE="9999/12/31";
+const PERMANENT_TEXT="永久有效";
+// 全域保存LINE用戶資料（統一userId來源，避免getDecodedIDToken取不到值）
+let lineProfile=null;
+// HTML轉義（防止用戶輸入的特殊字元破壞報告版面）
+const escHtml=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fStyles={
   氣血:{className:'bg-slate-700/30 text-slate-400',label:'氣血'},
   循環:{className:'bg-emerald-700/30 text-emerald-400',label:'循環'},
@@ -312,54 +316,52 @@ document.getElementById('result-card').classList.add('hidden');
 document.getElementById('user-info-section').classList.add('hidden');
 document.getElementById('checklist-section').classList.add('hidden');
 const e=document.getElementById('error-message'),c=document.getElementById('error-content');
-e&&c&&(c.innerHTML=`<p class="font-medium">${msg}</p><div class="mt-3 flex justify-center"><button onclick="window.location.reload()" class="text-primary hover:text-[#007A69] font-medium flex items-center gap-1"><i class="fa fa-refresh"></i> 重新嘗試</button></div>`,e.classList.remove('hidden'));
+e&&c&&(c.innerHTML=`<p class="font-medium">${escHtml(msg)}</p><div class="mt-3 flex justify-center"><button onclick="window.location.reload()" class="text-primary hover:text-[#007A69] font-medium flex items-center gap-1"><i class="fa fa-refresh"></i> 重新嘗試</button></div>`,e.classList.remove('hidden'));
 };
 
+/**
+ * 計算剩餘天數（僅供💎尊爵用戶的具體日期使用）
+ * 修正：「最後1天」分支改為 dayDiff<=1（原版設到期日23:59:59後Math.ceil，
+ *   到期當天dayDiff必為1，dayDiff===0分支永遠走不到）
+ */
 const calculateRemainingDaysByDate=expiryDateStr=>{
 try{
-if(expiryDateStr===PERMANENT_EXPIRY_DATE)return{displayDate:"永久有效",remainingDays:"永久有效",isExpired:false};
 // 兼容橫槓/斜槓、補零/非補零日期（如2025/12/23、2025-12-23）
 const dateReg=/^\d{4}[-\/]\d{1,2}[-\/]\d{1,2}$/;
 if(!dateReg.test(expiryDateStr))return{displayDate:"格式錯誤",remainingDays:"格式錯誤",isExpired:true};
 
-// 步驟1：統一拆分日期部分（忽略分隔符）
+// 統一拆分日期部分（忽略分隔符）
 const dateParts=expiryDateStr.replace(/-/g,'/').split('/').map(Number);
 const [year, month, day] = dateParts;
 
-// 步驟2：構造「台灣本地時間」的當日23:59:59（關鍵：到期日全天有效，避免當天早間被誤判過期）
-const expiryDate=new Date(year, month-1, day, 23, 59, 59, 999); // 到期日最後一秒
-const now=new Date(); // 當前本地時間
+// 構造「本地時間」的當日23:59:59（到期日全天有效，避免當天早間被誤判過期）
+const expiryDate=new Date(year, month-1, day, 23, 59, 59, 999);
+const now=new Date();
 
 if(isNaN(expiryDate.getTime()))return{displayDate:"日期無效",remainingDays:"日期無效",isExpired:true};
 
-// 步驟3：精准計算天數差（判斷是否過期）
 const oneDayMs=1000*3600*24;
 const timeDiff=expiryDate.getTime()-now.getTime();
-let dayDiff=Math.ceil(timeDiff/oneDayMs); // 向上取整，確保當天到期顯示1天（而非0天）
+const dayDiff=Math.ceil(timeDiff/oneDayMs);
 
-// 步驟4：格式化顯示日期（統一yyyy/mm/dd）
+// 格式化顯示日期（統一yyyy/mm/dd）
 const fmtMonth=String(month).padStart(2,'0');
 const fmtDay=String(day).padStart(2,'0');
 const displayDate=`${year}/${fmtMonth}/${fmtDay}`;
 
-// 步驟5：判斷天數狀態+是否過期（核心：到期日全天有效）
 let remainingDaysText;
 let isExpired=false;
 if(timeDiff < 0){ // 僅當當前時間超過到期日23:59:59，才判定為過期
   remainingDaysText="<span class='text-red-500 font-medium'>已過期</span>";
   isExpired=true;
-}else if(dayDiff === 0){ // 當天（未超過23:59:59），顯示“最後1天”
+}else if(dayDiff <= 1){ // 到期當天（未超過23:59:59），顯示「最後1天」
   remainingDaysText="<span class='text-orange-500 font-medium'>最後1天</span>";
-  isExpired=false;
-}else if(dayDiff <= 30){ // 1~30天，高亮顯示
+}else if(dayDiff <= 30){ // 2~30天，高亮顯示
   remainingDaysText=`<span class='text-orange-500 font-medium'>${dayDiff} 天</span>`;
-  isExpired=false;
 }else{ // 超過30天，正常顯示
   remainingDaysText=`${dayDiff} 天`;
-  isExpired=false;
 }
 
-// 返回是否過期的標識，用於後續登錄攔截
 return{displayDate, remainingDays:remainingDaysText, isExpired};
 }catch(e){
 console.error("計算剩餘天數失敗：",e,expiryDateStr);
@@ -382,6 +384,11 @@ tip&&(tip.style.opacity='1');
 const hideSubmitLoading=()=>{
 const tip=document.getElementById('submit-loading-tip');
 tip&&(tip.style.opacity='0');
+};
+// 提交按鈕狀態重置（統一按鈕文案，修正原版失敗分支顯示「提交檢查表」不一致問題）
+const resetSubmitBtn=btn=>{
+btn.disabled=false;
+btn.innerHTML='<i class="fa fa-paper-plane mr-1.5"></i>提交自檢表';
 };
 function renderSymptomCards(){
 try{
@@ -444,8 +451,8 @@ applyFilters();
 });
 document.getElementById('filter-selected').addEventListener('click',function(){
 sos=!sos;
-if(sos){this.classList.remove('bg-slate-700','hover:bg-slate-600');this.classList.add('bg-red-900/50','hover:bg-red-800/50','shadow-md');this.innerHTML='<i class="fa fa-filter mr-1"></i>顯示全部已勾選';}
-else{this.classList.remove('bg-red-900/50','hover:bg-red-800/50','shadow-md');this.classList.add('bg-slate-700','hover:bg-slate-600');this.innerHTML='<i class="fa fa-filter mr-1"></i>只看已選';}
+if(sos){this.classList.remove('bg-gray-700','hover:bg-gray-800');this.classList.add('bg-red-900/50','hover:bg-red-800/50','shadow-md');this.innerHTML='<i class="fa fa-filter mr-1"></i>顯示全部已勾選';}
+else{this.classList.remove('bg-red-900/50','hover:bg-red-800/50','shadow-md');this.classList.add('bg-gray-700','hover:bg-gray-800');this.innerHTML='<i class="fa fa-filter mr-1"></i>只看已選';}
 applyFilters();
 });
 function applyFilters(){
@@ -593,12 +600,11 @@ floatContainer.style.opacity='1';
 }
 function initControlButtons(){
 createSubmitLoadingTip();
+// 修正：只針對主要動作按鈕加大內距，避免污染篩選按鈕（原版對所有button加px-6 py-2.5，會把篩選列撐壞）
 const styleButtons=()=>{
-const buttons=document.querySelectorAll('button');
-buttons.forEach(btn=>{
+document.querySelectorAll('#next-to-checklist, #back-to-info, #submit-checklist').forEach(btn=>{
 if(!btn.classList.contains('custom-styled')){
 btn.classList.add('custom-styled','px-6','py-2.5','rounded-lg','font-medium','transition-all','duration-300','shadow-sm','hover:shadow-md','transform','hover:-translate-y-0.5','active:translate-y-0');
-btn.classList.remove('px-8','py-3');
 }
 });
 };
@@ -643,14 +649,15 @@ btn.disabled=true;
 btn.innerHTML='<i class="fa fa-spinner fa-spin mr-1"></i> 提交中...';
 showSubmitLoading();
 const sc=updateSelectedCount();
-if(sc===0){alert('請至少勾選一個症狀');btn.disabled=false;btn.innerHTML='提交檢查表';hideSubmitLoading();return;}
+if(sc===0){alert('請至少勾選一個症狀');resetSubmitBtn(btn);hideSubmitLoading();return;}
 let iv=true,fic=null;
 document.querySelectorAll('.symptom-checkbox:checked').forEach(cb=>{
 const cd=cb.closest('.symptom-card'),d=cd.querySelector('.duration-select').value,s=cd.querySelector('.severity-select').value;
 if(!d||!s){iv=false;fic=fic||cd;cd.classList.add('border-red-700');cd.style.transform='scale(1.03)';setTimeout(()=>{cd.classList.remove('border-red-700');cd.style.transform='';},1500);}
 });
-if(!iv){alert('部分已選症狀未填寫完整資訊，請檢查後再提交');fic&&fic.scrollIntoView({behavior:'smooth',block:'center'});btn.disabled=false;btn.innerHTML='提交檢查表';hideSubmitLoading();return;}
+if(!iv){alert('部分已選症狀未填寫完整資訊，請檢查後再提交');fic&&fic.scrollIntoView({behavior:'smooth',block:'center'});resetSubmitBtn(btn);hideSubmitLoading();return;}
 const sd=await collectSubmitData();
+if(!sd.userId){alert('無法取得LINE用戶身份，請重新整理頁面登入後再試');resetSubmitBtn(btn);hideSubmitLoading();return;}
 submitChecklistData(sd,btn);
 });
 styleButtons();
@@ -759,10 +766,14 @@ document.getElementById('floating-buttons').style.opacity='1';
 }
 }
 async function collectSubmitData(){
-const liffProfile=await liff.getProfile().catch(err=>{
+// 修正：userId 統一改用 profile.userId（getDecodedIDToken需開啟openid scope，
+//   未開啟時會取到null，導致後端報「缺少必要參數」）
+if(!lineProfile){
+lineProfile=await liff.getProfile().catch(err=>{
 console.error("獲取LINE用戶信息失敗：",err);
-return{displayName:'LINE用戶'};
+return null;
 });
+}
 const selectedSymptoms=Array.from(document.querySelectorAll('.symptom-checkbox:checked')).map(cb=>{
 const seq=cb.dataset.seq,cd=cb.closest('.symptom-card');
 return{
@@ -773,8 +784,8 @@ severityText:cd.querySelector('.severity-select option:checked').textContent.rep
 });
 return{
 action:'submitChecklist',
-userId:liff.getDecodedIDToken()?.sub||'',
-displayName:liffProfile.displayName||'LINE用戶',
+userId:lineProfile?.userId||'',
+displayName:lineProfile?.displayName||'LINE用戶',
 submitTime:new Date().toISOString(),
 userName:document.getElementById('user-name').value.trim(),
 userAge:document.getElementById('user-age').value.trim(),
@@ -785,7 +796,6 @@ userBp:document.getElementById('user-bp').value.trim()||'',
 userGlucose:document.getElementById('user-glucose').value.trim()||'',
 userJob:document.getElementById('user-job').value.trim()||'',
 selectedSymptoms:JSON.stringify(selectedSymptoms),
-// 新增：明確標識數據來源，方便GAS識別
 dataType:'checklistSubmit'
 };
 }
@@ -803,6 +813,13 @@ data:data,
 success:function(resp){
 document.getElementById('status').classList.add('hidden');
 hideSubmitLoading();
+resetSubmitBtn(btn);
+// 修正：處理後端返回error的情況（原版success分支不檢查status，
+//   後端拋錯（如次數已達上限）時仍會顯示「提交成功」）
+if(resp.status!=="success"){
+showError(resp.message||'提交失敗，請稍後再試');
+return;
+}
 alert('提交成功！正在生成健康報告...');
 const rd=organizeReportData({
 ...data,
@@ -816,14 +833,11 @@ document.getElementById('checklist-section').classList.add('hidden');
 document.getElementById('user-info-section').classList.add('hidden');
 createFloatingButtons();
 document.getElementById('success-modal').scrollIntoView({behavior:'smooth'});
-btn.disabled=false;
-btn.innerHTML='<i class="fa fa-paper-plane mr-1.5"></i>提交自檢表';
 },
 error:function(xhr,status,error){
 document.getElementById('status').classList.add('hidden');
 hideSubmitLoading();
-btn.disabled=false;
-btn.innerHTML='<i class="fa fa-paper-plane mr-1.5"></i>提交自檢表';
+resetSubmitBtn(btn);
 console.error("提交失敗：",status,error);
 if(status==='timeout'){
 showError('提交超時，請檢查網絡後重新嘗試');
@@ -837,19 +851,21 @@ function renderReportSummary(reportData){
 try{
 const summaryContent=document.getElementById('summary-content');
 if(!summaryContent)return;
+const ui=reportData.formattedUserInfo;
+// 修正：用戶輸入內容經HTML轉義後再插入，避免特殊字元破壞報告版面
 let basicInfoHtml=`
 <div class="info-grid grid grid-cols-2 gap-2 text-center mx-auto max-w-md">
-  <div class="info-item py-1"><span class="text-slate-500 text-sm">姓名：</span><span class="font-medium">${reportData.formattedUserInfo.姓名}</span></div>
-  <div class="info-item py-1"><span class="text-slate-500 text-sm">年齡：</span><span class="font-medium">${reportData.formattedUserInfo.年齡}</span></div>
-  <div class="info-item py-1"><span class="text-slate-500 text-sm">性別：</span><span class="font-medium">${reportData.formattedUserInfo.性別}</span></div>
-  <div class="info-item py-1"><span class="text-slate-500 text-sm">職業：</span><span class="font-medium">${reportData.formattedUserInfo.職業}</span></div>
-  <div class="info-item py-1"><span class="text-slate-500 text-sm">身高：</span><span class="font-medium">${reportData.formattedUserInfo.身高}</span></div>
-  <div class="info-item py-1"><span class="text-slate-500 text-sm">體重：</span><span class="font-medium">${reportData.formattedUserInfo.體重}</span></div>
-  <div class="info-item py-1"><span class="text-slate-500 text-sm">血壓：</span><span class="font-medium">${reportData.formattedUserInfo.血壓}</span></div>
-  <div class="info-item py-1"><span class="text-slate-500 text-sm">血糖：</span><span class="font-medium">${reportData.formattedUserInfo.血糖}</span></div>
+  <div class="info-item py-1"><span class="text-slate-500 text-sm">姓名：</span><span class="font-medium">${escHtml(ui.姓名)}</span></div>
+  <div class="info-item py-1"><span class="text-slate-500 text-sm">年齡：</span><span class="font-medium">${escHtml(ui.年齡)}</span></div>
+  <div class="info-item py-1"><span class="text-slate-500 text-sm">性別：</span><span class="font-medium">${escHtml(ui.性別)}</span></div>
+  <div class="info-item py-1"><span class="text-slate-500 text-sm">職業：</span><span class="font-medium">${escHtml(ui.職業)}</span></div>
+  <div class="info-item py-1"><span class="text-slate-500 text-sm">身高：</span><span class="font-medium">${escHtml(ui.身高)}</span></div>
+  <div class="info-item py-1"><span class="text-slate-500 text-sm">體重：</span><span class="font-medium">${escHtml(ui.體重)}</span></div>
+  <div class="info-item py-1"><span class="text-slate-500 text-sm">血壓：</span><span class="font-medium">${escHtml(ui.血壓)}</span></div>
+  <div class="info-item py-1"><span class="text-slate-500 text-sm">血糖：</span><span class="font-medium">${escHtml(ui.血糖)}</span></div>
 </div>
 <div class="w-full py-1 text-center mt-1">
-  <span class="text-slate-500 text-sm">提交時間：</span><span class="font-medium">${reportData.formattedUserInfo.提交時間}</span>
+  <span class="text-slate-500 text-sm">提交時間：</span><span class="font-medium">${escHtml(ui.提交時間)}</span>
 </div>
 <div class="w-full h-0.5 bg-slate-200/50 my-2 rounded mx-auto max-w-md"></div>
 `;
@@ -939,16 +955,17 @@ setStatus('請先登錄LINE賬號...');
 liff.login({redirectUri:window.location.href});
 return;
 }
-const profile=await liff.getProfile();
-console.log("LINE用戶信息：",profile);
+lineProfile=await liff.getProfile();
+console.log("LINE用戶信息：",lineProfile);
 setStatus('正在驗證授權狀態...');
-const userInfo = await verifyUserFromBackend(profile);
+const userInfo = await verifyUserFromBackend(lineProfile);
+// 修正：驗證失敗時錯誤訊息已在 verifyUserFromBackend 顯示（後端的實際錯因），
+//   此處不再覆蓋為固定文案，直接結束流程
 if(!userInfo){
-showError('普通用戶使用次數已用完！請聯繫管理員升級『💎尊爵用戶』');
 return;
 }
 
-// 核心修正：添加過期判斷攔截，禁止過期用戶登錄
+// 過期攔截（雙保險：後端已會將過期用戶降級為普通用戶）
 if(userInfo.isExpired){
   showError('您的賬號已過期，無法登錄自檢表系統，請聯繫管理員續期');
   return;
@@ -957,7 +974,7 @@ if(userInfo.isExpired){
 document.getElementById('status').classList.add('hidden');
 document.getElementById('result-main').textContent=`歡迎回來，${userInfo.displayName}！`;
 let expiryText = userInfo.isAdmin 
-  ? `${userInfo.displayExpiryDate}（${userInfo.remainingDays === "永久有效" ? "永久有效" : userInfo.remainingDays}）`
+  ? `${userInfo.displayExpiryDate}（${userInfo.remainingDays}）`
   : "普通用戶（3次使用上限）";
 document.getElementById('result-details').innerHTML=`
 <p>用戶類型：<span class="text-primary font-medium">${userInfo.isAdmin ? "💎尊爵用戶" : "普通用戶"}</span></p>
@@ -969,7 +986,7 @@ document.getElementById('user-info-section').classList.remove('hidden');
 initControlButtons();
 }catch(error){
 console.error("LIFF初始化失敗：",error);
-if(error.message.includes('LIFF ID')){
+if(error&&error.message&&error.message.includes('LIFF ID')){
 showError('LIFF ID配置錯誤，請聯繫管理員');
 }else{
 showError('系統初始化失敗，請刷新頁面重試');
@@ -978,14 +995,18 @@ showError('系統初始化失敗，請刷新頁面重試');
 }
 async function verifyUserFromBackend(profile){
 return new Promise((resolve, reject) => {
-const userId = liff.getDecodedIDToken()?.sub || '';
+// 修正：userId 統一改用 profile.userId
+const userId = profile.userId || '';
 const displayName = profile.displayName || 'LINE用戶';
+if(!userId){
+showError('無法取得LINE用戶身份，請重新登入後再試');
+resolve(null);
+return;
+}
 const data = {
 action: 'verifyUser',
 userId: userId,
 displayName: displayName,
-callback: 'verifyCallback',
-// 新增：明確標識驗證請求，方便GAS識別
 dataType: 'userVerify'
 };
 $.ajax({
@@ -997,23 +1018,40 @@ timeout: JSONP_TIMEOUT,
 data: data,
 success: function(resp) {
 if(resp.status === "success"){
-// 補充有效期計算，確保數據完整（包含isExpired標識）
-const expiryData = calculateRemainingDaysByDate(resp.expiryDate || PERMANENT_EXPIRY_DATE);
+// 【核心修正】分三種情況計算有效期，
+//   原版把「永久有效」丟進日期解析→regex不過→isExpired=true→永久用戶被誤攔在門外
+let expiryData;
+if(!resp.isAdmin){
+// 普通用戶：無到期日概念，永不因日期被攔截
+expiryData = { displayDate: "—", remainingDays: "—", isExpired: false };
+}else if(resp.expiryDate === PERMANENT_TEXT || !resp.expiryDate){
+// 永久有效💎尊爵用戶
+expiryData = { displayDate: PERMANENT_TEXT, remainingDays: PERMANENT_TEXT, isExpired: false };
+}else{
+// 有具體到期日的💎尊爵用戶
+expiryData = calculateRemainingDaysByDate(resp.expiryDate);
+}
 resolve({
 ...resp,
 displayName: displayName,
 remainingDays: expiryData.remainingDays,
 displayExpiryDate: expiryData.displayDate,
-isExpired: expiryData.isExpired // 核心修正：傳遞過期標識
+isExpired: expiryData.isExpired
 });
 }else{
+// 顯示後端返回的實際錯誤原因（如：次數已達上限）
 showError(resp.message || "用戶驗證失敗");
 resolve(null);
 }
 },
 error: function(xhr, status, error) {
 console.error("用戶驗證請求失敗：", status, error);
-reject(error);
+if(status==='timeout'){
+showError('驗證超時，請檢查網絡後重新嘗試');
+}else{
+showError('用戶驗證請求失敗，請刷新頁面重試');
+}
+resolve(null);
 }
 });
 });
@@ -1025,28 +1063,18 @@ window.submitCallback = function(resp) {
 console.log("自檢表提交返回：", resp);
 };
 // 初始化執行
+// 修正：head已載入LIFF SDK、jQuery、html2canvas，
+//   移除原版onload內的重複動態載入（避免jQuery 3.6/3.7雙版本混用）
 window.onload = function() {
-if(window.liff){
+if(window.liff && window.jQuery){
 initLIFF();
+}else if(!window.liff){
+showError('LIFF SDK加載失敗，請檢查網絡後刷新頁面');
 }else{
-// 加載LIFF SDK
-const script = document.createElement('script');
-script.src = 'https://static.line-scdn.net/liff/edge/2/sdk.js';
-script.onload = initLIFF;
-script.onerror = () => showError('LIFF SDK加載失敗，請檢查網絡');
-document.head.appendChild(script);
-}
-// 加載jQuery（依賴）
-if(!window.jQuery){
-const jqueryScript = document.createElement('script');
-jqueryScript.src = 'https://code.jquery.com/jquery-3.7.1.min.js';
-jqueryScript.onload = () => console.log('jQuery加載完成');
-jqueryScript.onerror = () => showError('jQuery加載失敗，請檢查網絡');
-document.head.appendChild(jqueryScript);
+showError('jQuery加載失敗，請檢查網絡後刷新頁面');
 }
 };
 </script>
 
 </body>
 </html>
-
