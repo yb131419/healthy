@@ -26,9 +26,9 @@ body{font-feature-settings:"palt";letter-spacing:0.02em;}
 /* 症狀卡：整卡可點擊，取消系統點擊高亮 */
 .symptom-card{cursor:pointer;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;}
 .symptom-card:active{transform:scale(0.985);}
-.symptom-card.is-selected{border-color:rgba(0,140,118,0.65);box-shadow:0 0 0 1px rgba(0,140,118,0.4),0 4px 16px rgba(0,140,118,0.2);}
+.symptom-card.is-selected{border-color:rgba(0,140,118,0.65);background:linear-gradient(135deg,#F4FBF9,#EAF6F2);box-shadow:0 0 0 1px rgba(0,140,118,0.35),0 4px 16px rgba(0,140,118,0.15);}
 /* 自訂勾選指示器（比原生checkbox大得多的觸控目標） */
-.check-indicator{width:26px;height:26px;border-radius:50%;border:2px solid #475569;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s ease;color:transparent;font-size:13px;}
+.check-indicator{width:26px;height:26px;border-radius:50%;border:2px solid #C4D2CC;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s ease;color:transparent;font-size:13px;}
 .symptom-card.is-selected .check-indicator{background:#008C76;border-color:#008C76;color:#fff;}
 /* 篩選列：手機單行橫向滑動，隱藏捲軸 */
 .chip-scroll{display:flex;gap:6px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding:2px;}
@@ -63,7 +63,7 @@ input,select{font-size:16px !important;}
 <i class="fa fa-heartbeat text-2xl text-accent"></i>
 </div>
 <h1 class="text-xl md:text-2xl font-bold mb-1 tracking-wide">🧬 彥彬 自檢表系統</h1>
-<p class="text-white/90 text-sm md:text-base font-light">專業健康評估 · 精准對應七大健康要素</p>
+<p class="text-white/90 text-sm md:text-base font-light">專業健康評估 · 精準對應七大健康要素</p>
 </div>
 </div>
 <div class="p-3 md:p-5">
@@ -168,7 +168,7 @@ input,select{font-size:16px !important;}
 <button data-factor="情緒" class="bg-indigo-600 text-white px-3 py-1.5 rounded-full text-xs font-medium hover:bg-indigo-700 transition btn-hover shadow-elevation-1">情緒</button>
 </div>
 <div class="flex items-center justify-between px-1">
-<span class="text-xs text-textSecondary"><i class="fa fa-hand-pointer-o mr-1"></i>點擊卡片即可勾選</span>
+<span class="text-xs text-textSecondary"><i class="fa fa-hand-pointer-o mr-1"></i>點選卡片即可勾選</span>
 <div class="text-textPrimary text-sm font-medium">
 已勾選 <span id="selected-count" class="font-bold text-primary text-base">0</span>/95
 </div>
@@ -183,15 +183,14 @@ input,select{font-size:16px !important;}
 <i class="fa fa-paper-plane mr-1.5"></i>提交自檢表<span id="submit-count" class="ml-1"></span>
 </button>
 </div>
-<p class="text-xs text-textSecondary/70 text-center mt-2 mb-2">提交後將生成專業參考報告，請確保信息真實有效</p>
+<p class="text-xs text-textSecondary/70 text-center mt-2 mb-2">提交後將生成專業參考報告，請確保資訊真實有效</p>
 </div>
 </div>
 </div>
 <div id="success-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 hidden fade-in p-2">
 <div class="bg-cardBg rounded-2xl p-4 max-w-md w-full mx-2 text-center shadow-elevation-3 max-h-[92vh] overflow-y-auto">
-<div id="report-summary" class="border border-gray-100 rounded-xl p-3 mb-3 bg-neutral/50 text-left result-summary">
-<h4 class="text-sm font-medium text-textPrimary mb-2 flex items-center"><i class="fa fa-file-text-o text-primary mr-1.5"></i>彥彬 自檢表系統</h4>
-<div id="summary-content" class="text-xs space-y-1.5"></div>
+<div id="report-summary" class="text-left result-summary">
+<div id="summary-content"></div>
 </div>
 </div>
 </div>
@@ -206,13 +205,13 @@ let lineProfile=null;
 // HTML轉義（防止用戶輸入的特殊字元破壞報告版面）
 const escHtml=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fStyles={
-  氣血:{className:'bg-slate-700/30 text-slate-400',label:'氣血'},
-  循環:{className:'bg-emerald-700/30 text-emerald-400',label:'循環'},
-  毒素:{className:'bg-amber-700/30 text-amber-400',label:'毒素'},
-  血脂:{className:'bg-orange-800/30 text-orange-400',label:'血脂'},
-  寒濕:{className:'bg-violet-700/30 text-violet-400',label:'寒濕'},
-  免疫:{className:'bg-pink-800/30 text-pink-400',label:'免疫'},
-  情緒:{className:'bg-indigo-800/30 text-indigo-400',label:'情緒'}
+  氣血:{className:'bg-slate-100 text-slate-600',label:'氣血'},
+  循環:{className:'bg-emerald-50 text-emerald-700',label:'循環'},
+  毒素:{className:'bg-amber-50 text-amber-700',label:'毒素'},
+  血脂:{className:'bg-orange-50 text-orange-700',label:'血脂'},
+  寒濕:{className:'bg-violet-50 text-violet-700',label:'寒濕'},
+  免疫:{className:'bg-pink-50 text-pink-700',label:'免疫'},
+  情緒:{className:'bg-indigo-50 text-indigo-700',label:'情緒'}
 };
 const durOpts=[{value:'',label:'請選擇時間'},{value:'1w',label:'1周內'},{value:'1-3m',label:'1-3個月'},{value:'3-6m',label:'3-6個月'},{value:'6m-1y',label:'6個月-1年'},{value:'1-2y',label:'1-2年'},{value:'2-5y',label:'2-5年'},{value:'5y+',label:'5年以上'}];
 const sevOpts=[{value:'',label:'請選擇輕重'},{value:'mild',label:'輕度（不影響生活）'},{value:'moderate',label:'中度（偶爾影響）'},{value:'severe',label:'重度（明顯影響）'}];
@@ -228,7 +227,7 @@ const fullSymptomData=[
 {seq:9,symptom:"暈車",氣血:"○",循環:"",毒素:"○",血脂:"",寒濕:"",免疫:"",情緒:"○"},
 {seq:10,symptom:"失眠",氣血:"",循環:"",毒素:"○",血脂:"",寒濕:"",免疫:"",情緒:"○"},
 {seq:11,symptom:"頭面油膩",氣血:"",循環:"",毒素:"",血脂:"○",寒濕:"○",免疫:"",情緒:""},
-{seq:12,symptom:"脫發",氣血:"○",循環:"○",毒素:"",血脂:"○",寒濕:"",免疫:"○",情緒:"○"},
+{seq:12,symptom:"脫髮",氣血:"○",循環:"○",毒素:"",血脂:"○",寒濕:"",免疫:"○",情緒:"○"},
 {seq:13,symptom:"頭髮稀少",氣血:"○",循環:"○",毒素:"",血脂:"○",寒濕:"",免疫:"○",情緒:"○"},
 {seq:14,symptom:"易打哈欠",氣血:"○",循環:"○",毒素:"○",血脂:"○",寒濕:"○",免疫:"",情緒:""},
 {seq:15,symptom:"常嘆氣",氣血:"○",循環:"○",毒素:"○",血脂:"",寒濕:"",免疫:"",情緒:"○"},
@@ -297,7 +296,7 @@ const fullSymptomData=[
 {seq:78,symptom:"經期提前",氣血:"○",循環:"",毒素:"○",血脂:"",寒濕:"",免疫:"",情緒:"○"},
 {seq:79,symptom:"月經量多",氣血:"",循環:"",毒素:"○",血脂:"",寒濕:"",免疫:"",情緒:"○"},
 {seq:80,symptom:"不愛說話",氣血:"○",循環:"",毒素:"",血脂:"",寒濕:"",免疫:"",情緒:"○"},
-{seq:81,symptom:"惡心",氣血:"○",循環:"",毒素:"○",血脂:"",寒濕:"",免疫:"",情緒:"○"},
+{seq:81,symptom:"噁心",氣血:"○",循環:"",毒素:"○",血脂:"",寒濕:"",免疫:"",情緒:"○"},
 {seq:82,symptom:"胃脹",氣血:"○",循環:"",毒素:"",血脂:"",寒濕:"○",免疫:"",情緒:"○"},
 {seq:83,symptom:"胃酸",氣血:"○",循環:"",毒素:"",血脂:"",寒濕:"○",免疫:"○",情緒:"○"},
 {seq:84,symptom:"胃痛",氣血:"○",循環:"",毒素:"",血脂:"",寒濕:"○",免疫:"○",情緒:"○"},
@@ -403,7 +402,7 @@ fullSymptomData.forEach((s,i)=>{
 const rf=[],doh=durOpts.map(o=>`<option value="${o.value}">${o.label}</option>`).join(''),soh=sevOpts.map(o=>`<option value="${o.value}">${o.label}</option>`).join('');
 Object.entries(fStyles).forEach(([k,st])=>s[k]==="○"&&rf.push(`<span class="factor-tag ${st.className} px-2 py-1 text-sm rounded">${st.label}</span>`));
 const cd=document.createElement('div');
-cd.className='symptom-card bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-700 rounded-xl p-3 shadow-sm card-hover';
+cd.className='symptom-card bg-white border border-[#E3EBE8] rounded-xl p-3 shadow-sm card-hover';
 cd.dataset.seq=s.seq;
 cd.dataset.factors=Object.entries(fStyles).filter(([k])=>s[k]==="○").map(([k])=>k).join(',');
 cd.style.opacity='0';
@@ -416,16 +415,16 @@ cd.innerHTML=`
 <div class="flex-1 min-w-0">
 <div class="flex items-center gap-1.5 mb-1.5 flex-wrap">
 <span class="text-primary text-xs font-semibold bg-primary/10 border border-primary/30 rounded px-1.5 py-0.5 flex-shrink-0">${s.seq}</span>
-<span class="symptom-name text-slate-200 font-medium text-base">${s.symptom}</span>
+<span class="symptom-name text-slate-800 font-medium text-base">${s.symptom}</span>
 </div>
-<div class="flex flex-wrap gap-1.5">${rf.length>0?rf.join(''):'<span class="factor-tag bg-slate-700 text-slate-400 px-2 py-1 text-sm rounded">無相關要素</span>'}</div>
+<div class="flex flex-wrap gap-1.5">${rf.length>0?rf.join(''):'<span class="factor-tag bg-slate-100 text-slate-500 px-2 py-1 text-sm rounded">無相關要素</span>'}</div>
 </div>
 <div class="check-indicator mt-0.5"><i class="fa fa-check"></i></div>
 </div>
-<div class="symptom-details hidden mt-3 pt-3 border-t border-slate-700">
+<div class="symptom-details hidden mt-3 pt-3 border-t border-[#E6EDEA]">
 <div class="grid grid-cols-2 gap-2 md:gap-3">
-<div><label class="block text-sm text-slate-400 mb-1.5">時間長短</label><select class="duration-select w-full border border-slate-700 rounded-lg px-2 py-2.5 input-focus bg-slate-800 text-slate-200">${doh}</select></div>
-<div><label class="block text-sm text-slate-400 mb-1.5">症狀輕重</label><select class="severity-select w-full border border-slate-700 rounded-lg px-2 py-2.5 input-focus bg-slate-800 text-slate-200">${soh}</select></div>
+<div><label class="block text-sm text-slate-500 mb-1.5">時間長短</label><select class="duration-select w-full border border-[#D5E2DD] rounded-lg px-2 py-2.5 input-focus bg-white text-slate-700">${doh}</select></div>
+<div><label class="block text-sm text-slate-500 mb-1.5">症狀輕重</label><select class="severity-select w-full border border-[#D5E2DD] rounded-lg px-2 py-2.5 input-focus bg-white text-slate-700">${soh}</select></div>
 </div></div>`;
 c.appendChild(cd);
 setTimeout(()=>{cd.style.opacity='1';cd.style.transform='translateY(0)';},50);
@@ -716,7 +715,7 @@ ${inner}
 </div>
 </div>`;
 }
-// 依報告數據生成分享卡片（固定2張：總覽＋明細）
+// 依報告資料生成分享卡片（固定2張：總覽＋明細）
 function buildShareCardPages(rd){
 const ui=rd.formattedUserInfo;
 // 有症狀的要素，依佔比由高至低排序
@@ -764,7 +763,7 @@ ${infoRow('血壓',ui.血壓)}${infoRow('血糖',ui.血糖)}
 ${barsHtml||'<div style="color:#64748B;font-size:14px;">暫無相關症狀記錄</div>'}
 ${totalPages>1?'<div style="margin-top:14px;font-size:13px;color:#94A3B8;text-align:center;">📎 詳細症狀清單請見第 2 張卡片</div>':''}
 `;
-pages.push(shareCardShell(page1Inner,1,totalPages,'專業健康評估 · 精准對應七大健康要素'));
+pages.push(shareCardShell(page1Inner,1,totalPages,'專業健康評估 · 精準對應七大健康要素'));
 
 // --- 第2張：症狀明細卡（固定單張，項目多時自動雙欄緊湊排版） ---
 if(factors.length>0){
@@ -848,7 +847,7 @@ if(!navigator.canShare||navigator.canShare(single)){
 await navigator.share(single);
 shared=true;
 await navigator.clipboard.writeText(window.reportData.summaryText).catch(()=>{});
-alert('ℹ️ 此裝置不支援多張圖片分享，已送出總覽卡；完整文字報告已複製到剪貼板');
+alert('ℹ️ 此裝置不支援多張圖片分享，已送出總覽卡；完整文字報告已複製到剪貼簿');
 }
 }catch(err2){
 if(err2.name==='AbortError')shared=true;
@@ -860,13 +859,13 @@ const closeBtn=document.getElementById('floating-close-btn');
 if(closeBtn){closeBtn.style.display='flex';setTimeout(()=>{closeBtn.style.opacity='1';},200);}
 }else{
 await navigator.clipboard.writeText(window.reportData.summaryText);
-alert('📋 此環境不支援圖片分享，文字報告已複製到剪貼板，可直接貼給好友');
+alert('📋 此環境不支援圖片分享，文字報告已複製到剪貼簿，可直接貼給好友');
 }
 }catch(err){
 console.error('分享總體錯誤：',err);
 try{
 await navigator.clipboard.writeText(window.reportData.summaryText);
-alert('⚠️ 分享功能異常，已複製文字報告到剪貼板，請手動貼上分享');
+alert('⚠️ 分享功能異常，已複製文字報告到剪貼簿，請手動貼上分享');
 }catch(cbErr){
 alert('⚠️ 分享功能異常，請手動截圖分享');
 }
@@ -881,7 +880,7 @@ async function collectSubmitData(){
 //   未開啟時會取到null，導致後端報「缺少必要參數」）
 if(!lineProfile){
 lineProfile=await liff.getProfile().catch(err=>{
-console.error("獲取LINE用戶信息失敗：",err);
+console.error("獲取LINE用戶資訊失敗：",err);
 return null;
 });
 }
@@ -911,7 +910,7 @@ dataType:'checklistSubmit'
 };
 }
 function submitChecklistData(data,btn){
-console.log("提交數據（含真實LINE名稱）：",data);
+console.log("提交資料（含真實LINE名稱）：",data);
 setStatus('提交中...');
 document.getElementById('status').classList.remove('hidden');
 $.ajax({
@@ -951,9 +950,9 @@ hideSubmitLoading();
 resetSubmitBtn(btn);
 console.error("提交失敗：",status,error);
 if(status==='timeout'){
-showError('提交超時，請檢查網絡後重新嘗試');
+showError('提交超時，請檢查網路後重新嘗試');
 }else{
-showError(`提交失敗：${error||'未知網絡錯誤'}`);
+showError(`提交失敗：${error||'未知網路錯誤'}`);
 }
 }
 });
@@ -963,111 +962,75 @@ try{
 const summaryContent=document.getElementById('summary-content');
 if(!summaryContent)return;
 const ui=reportData.formattedUserInfo;
-// 修正：用戶輸入內容經HTML轉義後再插入，避免特殊字元破壞報告版面
-let basicInfoHtml=`
-<div class="info-grid grid grid-cols-2 gap-2 text-center mx-auto max-w-md">
-  <div class="info-item py-1"><span class="text-slate-500 text-sm">姓名：</span><span class="font-medium">${escHtml(ui.姓名)}</span></div>
-  <div class="info-item py-1"><span class="text-slate-500 text-sm">年齡：</span><span class="font-medium">${escHtml(ui.年齡)}</span></div>
-  <div class="info-item py-1"><span class="text-slate-500 text-sm">性別：</span><span class="font-medium">${escHtml(ui.性別)}</span></div>
-  <div class="info-item py-1"><span class="text-slate-500 text-sm">職業：</span><span class="font-medium">${escHtml(ui.職業)}</span></div>
-  <div class="info-item py-1"><span class="text-slate-500 text-sm">身高：</span><span class="font-medium">${escHtml(ui.身高)}</span></div>
-  <div class="info-item py-1"><span class="text-slate-500 text-sm">體重：</span><span class="font-medium">${escHtml(ui.體重)}</span></div>
-  <div class="info-item py-1"><span class="text-slate-500 text-sm">血壓：</span><span class="font-medium">${escHtml(ui.血壓)}</span></div>
-  <div class="info-item py-1"><span class="text-slate-500 text-sm">血糖：</span><span class="font-medium">${escHtml(ui.血糖)}</span></div>
+// 有症狀的要素，依佔比排序（與分享卡完全一致的資料邏輯）
+const factors=Object.entries(reportData.factorSymptoms).map(([k,list])=>({key:k,list:list,ratio:reportData.factorRatio[k]})).sort((a,b)=>b.ratio.ratioVal-a.ratio.ratioVal);
+const infoRow=(l,v)=>`<div style="display:flex;justify-content:space-between;background:#F7FAF9;border:1px solid #E8EEEC;border-radius:8px;padding:7px 10px;"><span style="color:#64748B;font-size:12px;">${l}</span><span style="font-size:12px;font-weight:600;color:#1E293B;">${escHtml(v)}</span></div>`;
+const bars=factors.map(f=>{
+const c=shareFactorColors[f.key]||'#008C76';
+return `<div style="margin-bottom:9px;">
+<div style="display:flex;justify-content:space-between;margin-bottom:3px;">
+<span style="font-size:12px;font-weight:600;color:#1E293B;"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${c};margin-right:5px;"></span>${f.key}</span>
+<span style="font-size:11px;color:#64748B;">${f.ratio.count}項/${f.ratio.total}項 · <span style="color:${c};font-weight:700;">${f.ratio.ratio}</span></span>
 </div>
-<div class="w-full py-1 text-center mt-1">
-  <span class="text-slate-500 text-sm">提交時間：</span><span class="font-medium">${escHtml(ui.提交時間)}</span>
-</div>
-<div class="w-full h-0.5 bg-slate-200/50 my-2 rounded mx-auto max-w-md"></div>
-`;
-let statsHtml=`
-<div class="mb-2 text-center">
-  <p class="font-medium text-slate-800 mb-1">📊 整體統計</p>
-  <div class="pl-2 mt-1 space-y-1 inline-block text-left">
-    <p>總症狀數：${reportData.totalSymptomCount} 種</p>
-    <p>已選症狀數：<span class="text-primary font-bold">${reportData.selectedTotal}</span> 項</p>
-  </div>
-</div>
-<div class="w-full h-0.5 bg-slate-200/50 my-2 rounded mx-auto max-w-md"></div>
-`;
-let topFactorsHtml='';
-if(reportData.topFactors.length>0){
-topFactorsHtml=`
-<div class="mb-2 text-center">
-  <p class="font-medium text-slate-800 mb-2">🌟 七大健康要素：佔比最高二種</p>
-  <div class="pl-2 mt-1 space-y-2 inline-block text-left min-w-[250px]">
-    ${reportData.topFactors.map((factor,idx)=>`
-      <div class="flex items-center justify-between mb-1">
-        <span>${idx+1}. ${factor.name}</span>
-        <span class="text-${getFactorColor(factor.key)} font-bold">${factor.percentage}</span>
-      </div>
-      <div class="w-full bg-slate-200/60 rounded-full h-1.5 mb-2">
-        <div class="bg-${getFactorColor(factor.key)} h-1.5 rounded-full" style="width: ${factor.percentage}"></div>
-      </div>
-    `).join('')}
-  </div>
-</div>
-<div class="w-full h-0.5 bg-slate-200/50 my-2 rounded mx-auto max-w-md"></div>
-`;
-}
-let adviceHtml=`
-<div class="text-center">
-  <p class="font-medium text-slate-800 mb-2">💡 健康建議</p>
-  <div class="pl-2 mt-1 inline-block text-left text-sm text-slate-600 space-y-1">
-    <p>1. 優先留意高佔比健康要素相關症狀</p>
-    <p>2. 症狀若持續或惡化，及早就醫</p>
-    <p>3. 維持規律作息與均衡飲食以改善狀態</p>
-  </div>
-</div>
-`;
+<div style="height:6px;background:#EAF0EE;border-radius:99px;overflow:hidden;"><div style="height:100%;width:${f.ratio.ratio};background:${c};border-radius:99px;"></div></div>
+</div>`;
+}).join('');
+const details=factors.map(f=>{
+const c=shareFactorColors[f.key]||'#008C76';
+const rows=f.list.map(it=>`<div style="background:#FFFFFF;border:1px solid #E8EEEC;border-radius:8px;padding:6px 9px;margin-bottom:5px;">
+<div style="font-size:12px;font-weight:600;color:#1E293B;">📌 ${it.name}</div>
+<div style="font-size:10.5px;color:#64748B;margin-top:2px;">⏱️ ${it.duration}　·　⚠️ ${it.severity}</div>
+</div>`).join('');
+return `<div style="margin-bottom:12px;">
+<div style="display:flex;justify-content:space-between;align-items:center;background:${c}12;border-left:3px solid ${c};border-radius:6px;padding:5px 9px;margin-bottom:6px;">
+<span style="font-size:12.5px;font-weight:700;color:${c};">🎯 ${f.key}</span>
+<span style="font-size:10.5px;color:#64748B;">佔比 ${f.ratio.ratio}</span>
+</div>${rows}</div>`;
+}).join('');
 summaryContent.innerHTML=`
-<div class="text-center mb-3">
-  <h3 class="text-xl font-bold text-slate-800"> 🧬 健康自檢報告 </h3>
+<div style="text-align:center;margin-bottom:12px;">
+<div style="font-size:18px;font-weight:700;color:#0F2E28;">🧬 健康自檢報告</div>
+<div style="height:2px;background:linear-gradient(90deg,#008C76,#D4AF37,rgba(212,175,55,0.05));border-radius:2px;margin:8px auto 0;max-width:220px;"></div>
 </div>
-${basicInfoHtml}
-${statsHtml}
-${topFactorsHtml}
-${adviceHtml}
+<div style="font-size:13px;font-weight:700;color:#008C76;margin-bottom:6px;">👤 基本資訊</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;">
+${infoRow('姓名',ui.姓名)}${infoRow('年齡',ui.年齡)}${infoRow('性別',ui.性別)}${infoRow('職業',ui.職業)}${infoRow('身高',ui.身高)}${infoRow('體重',ui.體重)}${infoRow('血壓',ui.血壓)}${infoRow('血糖',ui.血糖)}
+</div>
+<div style="margin-top:5px;">${infoRow('提交時間',ui.提交時間)}</div>
+<div style="display:flex;gap:5px;margin-top:12px;">
+<div style="flex:1;text-align:center;background:rgba(0,140,118,0.07);border:1px solid rgba(0,140,118,0.25);border-radius:10px;padding:9px 4px;"><div style="font-size:20px;font-weight:800;color:#008C76;">${reportData.selectedTotal}</div><div style="font-size:10px;color:#64748B;">已選症狀</div></div>
+<div style="flex:1;text-align:center;background:#F7FAF9;border:1px solid #E8EEEC;border-radius:10px;padding:9px 4px;"><div style="font-size:20px;font-weight:800;color:#1E293B;">${reportData.totalSymptomCount}</div><div style="font-size:10px;color:#64748B;">系統總症狀</div></div>
+<div style="flex:1.3;text-align:center;background:rgba(201,162,39,0.07);border:1px solid rgba(201,162,39,0.3);border-radius:10px;padding:9px 4px;"><div style="font-size:12px;font-weight:800;color:#A6821C;line-height:1.4;margin-top:3px;">${reportData.topFactors.map(t=>t.name).join('、')||'—'}</div><div style="font-size:10px;color:#64748B;margin-top:2px;">最高佔比要素</div></div>
+</div>
+<div style="font-size:13px;font-weight:700;color:#008C76;margin:12px 0 7px;">🌟 七大健康要素評估</div>
+${bars||'<div style="color:#64748B;font-size:12px;">暫無相關症狀記錄</div>'}
+<div style="font-size:13px;font-weight:700;color:#008C76;margin:12px 0 7px;">🩺 症狀明細（共 ${reportData.selectedTotal} 項）</div>
+${details}
+<div style="font-size:13px;font-weight:700;color:#008C76;margin:12px 0 6px;">💡 健康建議</div>
+<div style="font-size:11.5px;color:#475569;line-height:1.8;background:#F7FAF9;border:1px solid #E8EEEC;border-radius:8px;padding:8px 11px;">
+1. 優先留意高佔比健康要素相關症狀<br>
+2. 症狀若持續或惡化，請及早就醫<br>
+3. 維持規律作息與均衡飲食以改善狀態
+</div>
+<div style="text-align:center;font-size:10.5px;color:#94A3B8;margin-top:10px;padding-top:8px;border-top:1px solid #E6EDEA;">🔖 彥彬自檢表系統 · 相信自己，找回初心</div>
 `;
-if(!document.getElementById('screenshot-target')){
-const modalContent=document.querySelector('#success-modal .bg-cardBg');
-const screenshotTarget=document.createElement('div');
-screenshotTarget.id='screenshot-target';
-screenshotTarget.className='w-full';
-while(modalContent.firstChild){
-screenshotTarget.appendChild(modalContent.firstChild);
-}
-modalContent.appendChild(screenshotTarget);
-}
 }catch(e){
 console.error("渲染報告摘要出錯：",e);
 hideSubmitLoading();
 showError('報告生成失敗，請重新提交');
 }
 }
-function getFactorColor(factorKey){
-const colorMap={
-'氣血':'slate-500',
-'循環':'emerald-500',
-'毒素':'amber-500',
-'血脂':'orange-500',
-'寒濕':'violet-500',
-'免疫':'pink-500',
-'情緒':'indigo-500'
-};
-return colorMap[factorKey]||'primary';
-}
 async function initLIFF(){
 try{
-setStatus('正在初始化LINE登錄...');
+setStatus('正在初始化LINE登入...');
 await liff.init({liffId:LIFF_ID});
 if(!liff.isLoggedIn()){
-setStatus('請先登錄LINE賬號...');
+setStatus('請先登入LINE帳號...');
 liff.login({redirectUri:window.location.href});
 return;
 }
 lineProfile=await liff.getProfile();
-console.log("LINE用戶信息：",lineProfile);
+console.log("LINE用戶資訊：",lineProfile);
 setStatus('正在驗證授權狀態...');
 const userInfo = await verifyUserFromBackend(lineProfile);
 // 修正：驗證失敗時錯誤訊息已在 verifyUserFromBackend 顯示（後端的實際錯因），
@@ -1078,7 +1041,7 @@ return;
 
 // 過期攔截（雙保險：後端已會將過期用戶降級為普通用戶）
 if(userInfo.isExpired){
-  showError('您的賬號已過期，無法登錄自檢表系統，請聯繫管理員續期');
+  showError('您的帳號已過期，無法登入自檢表系統，請聯繫管理員續期');
   return;
 }
 
@@ -1100,7 +1063,7 @@ console.error("LIFF初始化失敗：",error);
 if(error&&error.message&&error.message.includes('LIFF ID')){
 showError('LIFF ID配置錯誤，請聯繫管理員');
 }else{
-showError('系統初始化失敗，請刷新頁面重試');
+showError('系統初始化失敗，請重新整理頁面重試');
 }
 }
 }
@@ -1158,9 +1121,9 @@ resolve(null);
 error: function(xhr, status, error) {
 console.error("用戶驗證請求失敗：", status, error);
 if(status==='timeout'){
-showError('驗證超時，請檢查網絡後重新嘗試');
+showError('驗證超時，請檢查網路後重新嘗試');
 }else{
-showError('用戶驗證請求失敗，請刷新頁面重試');
+showError('用戶驗證請求失敗，請重新整理頁面重試');
 }
 resolve(null);
 }
@@ -1180,9 +1143,9 @@ window.onload = function() {
 if(window.liff && window.jQuery){
 initLIFF();
 }else if(!window.liff){
-showError('LIFF SDK加載失敗，請檢查網絡後刷新頁面');
+showError('LIFF SDK載入失敗，請檢查網路後重新整理頁面');
 }else{
-showError('jQuery加載失敗，請檢查網絡後刷新頁面');
+showError('jQuery載入失敗，請檢查網路後重新整理頁面');
 }
 };
 </script>
