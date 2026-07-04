@@ -110,8 +110,23 @@
     .yb-sc-section-t { font-size: 13.5px; font-weight: 700; color:#1f2a44; margin: 6px 0 10px; display:flex; align-items:center; gap:6px; }
     .yb-sc-tags { display:flex; flex-wrap:wrap; gap: 8px; }
     .yb-sc-tag { font-size: 12.5px; font-weight: 600; color:#0E42D2; background:#e8f0ff;
-      border:1px solid #cfe0ff; padding: 6px 12px; border-radius: 999px; }
+      border:1px solid #cfe0ff; padding: 6px 12px; border-radius: 999px; display:inline-flex; align-items:center; gap:5px; }
+    .yb-sc-tag b { font-size:13.5px; font-weight:800; }
+    .yb-sc-tag small { font-size:10px; font-weight:700; padding:1px 6px; border-radius:999px; background:rgba(255,255,255,.7); }
     .yb-sc-tag.good { color:#0f9d6b; background:#e7f9f1; border-color:#c4efdd; }
+    .yb-sc-tag.lv1 { color:#0f9d6b; background:#e7f9f1; border-color:#c4efdd; }
+    .yb-sc-tag.lv1 small { color:#0f9d6b; }
+    .yb-sc-tag.lv2 { color:#c2610a; background:#fff4e6; border-color:#ffd9a8; }
+    .yb-sc-tag.lv2 small { color:#c2610a; }
+    .yb-sc-tag.lv3 { color:#d61f2b; background:#ffeaea; border-color:#ffc9c9; }
+    .yb-sc-tag.lv3 small { color:#d61f2b; }
+    /* 分類分明的症狀卡片 */
+    .yb-symcards { display:flex; flex-direction:column; gap:8px; }
+    .yb-symcard { background:#f8fafc; border:1px solid #eef1f6; border-left:3px solid #165DFF; border-radius:11px; padding:10px 13px; }
+    .yb-symcard .gl { display:flex; align-items:center; gap:7px; font-size:12.5px; font-weight:800; color:#1f2a44; margin-bottom:4px; }
+    .yb-symcard .gl .dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+    .yb-symcard .gl .cnt { margin-left:auto; font-size:10.5px; font-weight:700; color:#fff; background:#94a3b8; padding:1px 8px; border-radius:999px; }
+    .yb-symcard .gi { font-size:12px; color:#4b5563; line-height:1.65; }
     .yb-sc-motto { margin: 18px 0 4px; padding: 14px 16px; border-radius: 14px;
       background: linear-gradient(135deg,#f5f8ff,#eefaf4); font-size: 12.5px; color:#334; line-height: 1.7; text-align:center; }
     .yb-sc-foot { padding: 14px 26px 22px; display:flex; justify-content: space-between; align-items:center;
@@ -1037,12 +1052,12 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   const adjustmentDirections = {
-    體質: ['頭部畏冷','四肢無力','平衡能力差/容易跌倒','思緒中斷','反應遲鈍','容易打哈欠','眼睛疲勞','耳鳴/耳聾','聽力減退','嗅覺遲鈍','咽喉異物感','聲音沙啞','嘆氣/呼吸短促/喘氣','打呼','手足麻木/發紺','手足發熱/冰涼/腫脹/出汗','胃痛/胃酸過多/腹脹/胃部畏寒','噁心/打嗝/噯氣','消化不良','食慾不佳/容易飽脹','偏食/厭食','食慾過盛','嘴唇蒼白/發青/麻木','嘴唇龜裂/咽喉乾燥','手足抽搐/手足顫抖','關節疼痛/腫脹','腰部酸痛/腰部畏寒','容易落枕/頸部僵硬','肩膀酸脹/麻木/疼痛','頸部疼痛/頸部畏寒','頸部脂肪堆積','游離性疼痛','脊椎僵硬/脊椎疼痛','容易扭傷','腳跟疼痛','手足脫皮/凍瘡','月經期間下腹部畏寒','月經期間下腹部墜脹','月經期間腹脹/痛經','月經期間腰痛/頭痛','月經期間嗜睡/失眠','月經期間厭食/水腫','月經期間煩躁/乳房脹痛','夜尿頻繁/尿頻/尿急','尿不盡/尿失禁','外陰瘙癢/外陰異味','大便不成形','便溏不盡/便秘','低燒37-38℃','感冒久不愈','容易感冒/不易感冒'],
-    免疫: ['過敏性鼻炎','眼睛癢/腫脹/突出/疼痛','眼睛畏光/流淚','眼睛乾澀/飛蚊症','咳嗽/氣喘','支氣管炎','痰液多/黃痰/痰液清稀','白痰/黑痰/痰中帶血','口腔潰瘍/舌潰瘍','淋巴結腫大','各類過敏/濕疹','皮膚癢/背部青春痘','銀屑病/白斑病','黑痣增大/增多','蜘蛛痣/魚鱗癬','皮膚容易瘀青/紅點'],
-    毒素: ['眼糞多/麥粒腫','耳朵內潮濕/化膿','耳垢多/耳朵疼痛/癢','鼻炎/鼻塞','流鼻水/流鼻血','打噴嚏','酒渣鼻','口苦/口乾/口臭/口中腥味','口咸/口甜/口酸','口臭明顯/口中辣味','舌苔厚/黃苔/膩苔','地圖舌/舌頭白斑','舌質紫暗/舌邊齒痕','舌頭僵硬/舌頭前端不適','腹脹/排氣多/排氣臭','血管瘤/脂肪瘤','纖維瘤/皮脂腺囊腫','膽結石/腎結石','扁平疣/尋常疣','皮贅/雞眼','頭部/面部油膩','臉頰泛紅','面色黃/蒼白/黝黑','痤瘡/青春痘/色素斑','皮膚乾燥/接觸性皮膚炎','脂肪粒','身體異味','白帶增多/白帶帶血絲','白帶顏色偏黃/黏稠','白帶呈稀水狀/有腥臭味','月經期間長青春痘','月經顏色暗/淡/深黑','排尿疼痛/血尿','尿分叉/排尿等待','尿液濃稠/尿液有異味','尿液混濁/尿液泡沫多','尿道口灼熱感/尿道口發炎'],
-    營養: ['老花眼','夜盲症','視力模糊','貧血/高血脂症','身體消瘦','肥胖/腹型肥胖','身高矮小/發育遲緩','體重突然增加/減少10%','指甲半月痕缺失/稀少','指甲易斷裂/手指倒刺','指甲凹陷/指甲竪紋','頭髮稀疏','頭髮乾燥/掉發','白髮/圓形禿'],
-    循環: ['頭痛/頭暈','頭部麻木/腦鳴','嗜睡/易醒','失眠/多夢','偏頭痛/健忘','言語懶散/口吃','暈車/暈機','眉骨疼痛','低血壓/高血壓','心絞痛','心跳過快/過慢','心悸/心律不整','胸悶/胸痛','右側肝區悶痛','頭暈/頭部麻木/容易打哈欠','面色異常（蒼白/發青）','低血糖/高血糖','高血脂症','小腿水腫','靜脈曲張','下腹部悶痛','睪丸腫塊/疝氣','肛門瘙癢','便血/痔瘡','脫肛/肛裂/肛瘻'],
-    內分泌: ['甲狀腺機能亢進/甲狀腺機能低下','甲狀腺結節','肥胖/腹型肥胖','身體消瘦','體重突然增加/減少10%','低血糖/高血糖','高血脂症','低燒37-38℃','產後掉發/產後憂鬱','產後色素沈澱','不孕','流產/死胎','月經量少/月經有血塊','月經量多/子宮肌瘤','月經提前/延後','子宮腺肌症','停經','乳頭凹陷/乳頭溢膿','乳房腫塊/乳腺增生','卵巢囊腫','子宮頸息肉','子宮頸肥大/子宮頸囊腫','性慾降低','自汗/多汗/盜汗','冒冷汗/後背畏寒']
+    體質: ['頭部畏冷','容易打哈欠','嗜睡/易醒','眼睛疲勞','咽喉異物感','聲音沙啞','嘆氣/呼吸短促/喘氣','打呼','胃痛/胃酸過多/腹脹/胃部畏寒','噁心/打嗝/噯氣','消化不良','食慾不佳/容易飽脹','偏食/厭食','大便不成形','四肢無力','關節疼痛/腫脹','容易落枕/頸部僵硬','頸部疼痛/頸部畏寒','腰部酸痛/腰部畏寒','游離性疼痛','脊椎僵硬/脊椎疼痛','腳跟疼痛','月經期間腹脹/痛經','月經期間下腹部畏寒','月經期間下腹部墜脹','白帶呈稀水狀/有腥臭味','夜尿頻繁/尿頻/尿急','尿不盡/尿失禁','冒冷汗/後背畏寒'],
+    免疫: ['眼睛癢/腫脹/突出/疼痛','眼睛畏光/流淚','鼻炎/鼻塞','流鼻水/流鼻血','打噴嚏','過敏性鼻炎','咳嗽/氣喘','支氣管炎','感冒久不愈','容易感冒/不易感冒','口腔潰瘍/舌潰瘍','扁平疣/尋常疣','淋巴結腫大','低燒37-38℃','皮膚乾燥/接觸性皮膚炎','銀屑病/白斑病','各類過敏/濕疹','尿道口灼熱感/尿道口發炎'],
+    毒素: ['眼糞多/麥粒腫','耳朵內潮濕/化膿','耳垢多/耳朵疼痛/癢','酒渣鼻','痰液多/黃痰/痰液清稀','白痰/黑痰/痰中帶血','右側肝區悶痛','腹脹/排氣多/排氣臭','口苦/口乾/口臭/口中腥味','口咸/口甜/口酸','口臭明顯/口中辣味','舌苔厚/黃苔/膩苔','地圖舌/舌頭白斑','便溏不盡/便秘','血管瘤/脂肪瘤','纖維瘤/皮脂腺囊腫','膽結石/腎結石','皮贅/雞眼','頭部/面部油膩','臉頰泛紅','痤瘡/青春痘/色素斑','皮膚癢/背部青春痘','黑痣增大/增多','脂肪粒','身體異味','月經期間長青春痘','子宮頸息肉','子宮頸肥大/子宮頸囊腫','白帶增多/白帶帶血絲','白帶顏色偏黃/黏稠','排尿疼痛/血尿','尿分叉/排尿等待','尿液濃稠/尿液有異味','尿液混濁/尿液泡沫多','外陰瘙癢/外陰異味','肛門瘙癢'],
+    營養: ['老花眼','眼睛乾澀/飛蚊症','夜盲症','視力模糊','嘴唇龜裂/咽喉乾燥','身體消瘦','身高矮小/發育遲緩','指甲半月痕缺失/稀少','指甲易斷裂/手指倒刺','指甲凹陷/指甲竪紋','手足抽搐/手足顫抖','平衡能力差/容易跌倒','容易扭傷','頭髮稀疏','頭髮乾燥/掉發','白髮/圓形禿','面色黃/蒼白/黝黑'],
+    循環: ['頭痛/頭暈','頭部麻木/腦鳴','偏頭痛/健忘','言語懶散/口吃','暈車/暈機','思緒中斷','反應遲鈍','眉骨疼痛','嗅覺遲鈍','耳鳴/耳聾','聽力減退','低血壓/高血壓','貧血/高血脂症','心絞痛','心跳過快/過慢','心悸/心律不整','胸悶/胸痛','手足麻木/發紺','手足發熱/冰涼/腫脹/出汗','頭暈/頭部麻木/容易打哈欠','面色異常（蒼白/發青）','嘴唇蒼白/發青/麻木','舌質紫暗/舌邊齒痕','舌頭僵硬/舌頭前端不適','手足脫皮/凍瘡','小腿水腫','肩膀酸脹/麻木/疼痛','靜脈曲張','皮膚容易瘀青/紅點','蜘蛛痣/魚鱗癬','月經顏色暗/淡/深黑','下腹部悶痛','睪丸腫塊/疝氣','便血/痔瘡','脫肛/肛裂/肛瘻'],
+    內分泌: ['失眠/多夢','食慾過盛','甲狀腺機能亢進/甲狀腺機能低下','甲狀腺結節','肥胖/腹型肥胖','體重突然增加/減少10%','低血糖/高血糖','高血脂症','頸部脂肪堆積','不孕','流產/死胎','月經量少/月經有血塊','月經量多/子宮肌瘤','月經提前/延後','月經期間煩躁/乳房脹痛','月經期間厭食/水腫','月經期間腰痛/頭痛','月經期間嗜睡/失眠','子宮腺肌症','月經期延長','停經','乳頭凹陷/乳頭溢膿','乳房腫塊/乳腺增生','卵巢囊腫','產後掉發/產後憂鬱','產後色素沈澱','性慾降低','自汗/多汗/盜汗']
   };
 
   function calculateAdjustmentScores() {
@@ -1225,14 +1240,15 @@ document.addEventListener('DOMContentLoaded', function() {
     if (!data) return;
     const { name, dateStr, symptomCount, habitCount, scores, mainConcern, symptomDuration, allergy, medical, symptomGroups = [], habitGroups = [] } = data;
 
-    const low = Object.entries(scores).filter(([,s]) => s < 60).sort((a,b) => a[1]-b[1]).map(([d]) => d);
-    const good = Object.entries(scores).filter(([,s]) => s >= 60).sort((a,b) => b[1]-a[1]).map(([d]) => d);
-    let tagHtml = low.length > 0
-      ? low.map(d => `<span class="yb-sc-tag">${escapeHtml(d)}</span>`).join('')
-      : (good.slice(0,3).map(d => `<span class="yb-sc-tag good">${escapeHtml(d)}</span>`).join('') || '<span class="yb-sc-tag good">整體狀態良好</span>');
-    const focusTitle = low.length > 0
-      ? `<i class="fa fa-bullseye" style="color:#FF7D00"></i> 建議重點調理方向`
-      : `<i class="fa fa-leaf" style="color:#12b981"></i> 目前狀態較佳的方向`;
+    // 優先調理方向：一律列出最需要調理的（分數最低）方向，帶分數與嚴重度顏色
+    const sortedDirs = Object.entries(scores).sort((a, b) => a[1] - b[1]);
+    const sevClass = (s) => s < 30 ? 'lv3' : s < 60 ? 'lv2' : 'lv1';
+    const sevText = (s) => s < 30 ? '急需' : s < 60 ? '加強' : '良好';
+    const priorityDirs = sortedDirs.slice(0, 4);
+    const tagHtml = priorityDirs.map(([d, s]) =>
+      `<span class="yb-sc-tag ${sevClass(s)}">${escapeHtml(d)} <b>${s}</b><small>${sevText(s)}</small></span>`
+    ).join('');
+    const focusTitle = `<i class="fa fa-bullseye" style="color:#FF7D00"></i> 優先調理方向`;
 
     // 進度條百分比
     const symPct = Math.min(100, (symptomCount / 50) * 100);
@@ -1247,10 +1263,14 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     if (!chartHtml) chartHtml = `<div class="yb-sc-chart" style="padding:26px 10px;color:#8a93a3;font-size:13px;">未勾選症狀與習慣，暫無風險分布圖</div>`;
 
-    // 主要健康問題
+    // 詳細症狀：分類分明的卡片式呈現（每類一張含彩色圓點的小卡）
+    const catColors = ['#165DFF','#12b981','#FF7D00','#8b5cf6','#e11d8f','#0ea5e9','#f59e0b','#14b8a6','#ef4444','#6366f1'];
     let symGroupHtml = '';
     if (symptomGroups.length > 0) {
-      symGroupHtml = symptomGroups.map(g => `<div class="yb-sym-group"><div class="gl">${escapeHtml(g.label)}（${g.items.length}）</div><div class="gi">${g.items.map(escapeHtml).join('、')}</div></div>`).join('');
+      symGroupHtml = '<div class="yb-symcards">' + symptomGroups.map((g, i) => {
+        const c = catColors[i % catColors.length];
+        return `<div class="yb-symcard" style="border-left-color:${c}"><div class="gl"><span class="dot" style="background:${c}"></span>${escapeHtml(g.label)}<span class="cnt">${g.items.length}</span></div><div class="gi">${g.items.map(escapeHtml).join('、')}</div></div>`;
+      }).join('') + '</div>';
     } else {
       symGroupHtml = '<div class="gi" style="color:#8a93a3">未勾選任何症狀</div>';
     }
@@ -1546,10 +1566,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // 溫度感分享文案（品牌語氣：相信自己，找回初心）
   function buildShareMessage(userName, date, shareUrl) {
-    const low = Object.entries(lastAdjustmentScores || {}).filter(([, s]) => s < 60).sort((a, b) => a[1] - b[1]).map(([d]) => d).slice(0, 3);
-    const focusLine = low.length > 0
-      ? `🎯 建議先照顧：${low.join('、')}`
-      : `🌿 目前整體狀態不錯，continue keep it up！`;
+    const priority = Object.entries(lastAdjustmentScores || {}).sort((a, b) => a[1] - b[1]).slice(0, 3).map(([d, s]) => `${d}(${s})`);
+    const focusLine = priority.length > 0 ? `🎯 優先調理方向：${priority.join('、')}` : '';
     const lines = [
       `🌱 『 ${userName} 』的專屬健康自檢報告`,
       `🗓️ 自檢日期 ${date}`,
