@@ -119,6 +119,63 @@
     .yb-sc-foot .qr { font-size: 11px; color:#9aa3b2; }
     .yb-sc-foot .tag { font-size: 11px; color:#9aa3b2; }
     .yb-sc-disclaimer { font-size: 10.5px; color:#aab; text-align:center; padding: 0 26px 18px; }
+
+    /* ===== 質感按鈕系統 ===== */
+    .yb-btn { position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      font-weight: 700; border: none; cursor: pointer; border-radius: 14px;
+      transition: transform .15s ease, box-shadow .2s ease, filter .2s ease; -webkit-tap-highlight-color: transparent; }
+    .yb-btn:active { transform: scale(.96); }
+    .yb-btn:disabled { opacity: .55; cursor: not-allowed; transform: none !important; }
+
+    .yb-btn-primary { padding: 13px 28px; color: #fff; font-size: 15.5px;
+      background: linear-gradient(135deg, #1e5bff 0%, #3a8bff 100%);
+      box-shadow: 0 8px 20px rgba(22,93,255,.32), inset 0 1px 0 rgba(255,255,255,.25); }
+    .yb-btn-primary:hover { filter: brightness(1.06); box-shadow: 0 10px 26px rgba(22,93,255,.4), inset 0 1px 0 rgba(255,255,255,.25); }
+
+    .yb-btn-success { padding: 13px 30px; color: #fff; font-size: 15.5px;
+      background: linear-gradient(135deg, #12b981 0%, #36D399 100%);
+      box-shadow: 0 8px 20px rgba(18,185,129,.32), inset 0 1px 0 rgba(255,255,255,.25); }
+    .yb-btn-success:hover { filter: brightness(1.06); box-shadow: 0 10px 26px rgba(18,185,129,.42), inset 0 1px 0 rgba(255,255,255,.25); }
+
+    .yb-btn-ghost { padding: 13px 24px; color: #445; font-size: 15px; background: #fff;
+      border: 1.5px solid #dde3ee; box-shadow: 0 3px 10px rgba(15,26,50,.06); }
+    .yb-btn-ghost:hover { border-color: #b9c6e6; color: #165DFF; box-shadow: 0 5px 14px rgba(22,93,255,.12); }
+
+    .yb-btn-outline-primary { padding: 13px 26px; color: #165DFF; font-size: 15px; background: #f2f6ff;
+      border: 1.5px solid #cfe0ff; box-shadow: 0 3px 10px rgba(22,93,255,.08); }
+    .yb-btn-outline-primary:hover { background: #e8f0ff; box-shadow: 0 5px 14px rgba(22,93,255,.16); }
+
+    /* LINE 品牌綠分享浮鈕 */
+    .yb-btn-line { padding: 14px 30px; color: #fff; font-size: 16px; border-radius: 999px;
+      background: linear-gradient(135deg, #06C755 0%, #05a94a 100%);
+      box-shadow: 0 10px 26px rgba(6,199,85,.4), inset 0 1px 0 rgba(255,255,255,.28); }
+    .yb-btn-line:hover { filter: brightness(1.05); box-shadow: 0 12px 32px rgba(6,199,85,.5), inset 0 1px 0 rgba(255,255,255,.28); }
+    @keyframes yb-float { 0%,100% { transform: translateX(-50%) translateY(0); } 50% { transform: translateX(-50%) translateY(-5px); } }
+    #singleShareBtn { animation: yb-float 2.6s ease-in-out infinite; }
+    #singleShareBtn:active { animation: none; transform: translateX(-50%) scale(.95); }
+
+    /* rich 按鈕（圖示＋雙行文字＋箭頭） */
+    .yb-btn-rich { justify-content: flex-start; gap: 12px; padding: 13px 20px; border-radius: 16px; text-align: left; }
+    .yb-btn-ic { flex-shrink:0; width:40px; height:40px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:17px; }
+    .yb-btn-primary .yb-btn-ic { background: rgba(255,255,255,.22); color:#fff; }
+    .yb-btn-ghost .yb-btn-ic { background:#eef2fb; color:#165DFF; }
+    .yb-btn-txt { display:flex; flex-direction:column; line-height:1.25; }
+    .yb-btn-main { font-size:15.5px; font-weight:700; }
+    .yb-btn-sub { font-size:11.5px; opacity:.82; margin-top:1px; font-weight:500; }
+    .yb-btn-arrow { margin-left:auto; font-size:13px; opacity:.75; transition: transform .2s; }
+    .yb-btn-primary:hover .yb-btn-arrow { transform: translateX(4px); }
+    @media (max-width:639px){ .yb-btn-rich { width:100%; } }
+
+    /* 分享浮鈕脈衝光暈 */
+    #singleShareBtn::before { content:''; position:absolute; inset:0; border-radius:999px; box-shadow:0 0 0 0 rgba(6,199,85,.5); animation: yb-share-pulse 2.2s infinite; }
+    @keyframes yb-share-pulse { 0%{box-shadow:0 0 0 0 rgba(6,199,85,.45);} 70%{box-shadow:0 0 0 18px rgba(6,199,85,0);} 100%{box-shadow:0 0 0 0 rgba(6,199,85,0);} }
+
+    /* 分類標籤膠囊升級 */
+    .symptom-tab, .habit-tab { transition: all .2s ease; font-weight: 600; }
+    .symptom-tab.active, .habit-tab.active {
+      background: linear-gradient(135deg, #1e5bff, #3a8bff) !important;
+      box-shadow: 0 5px 14px rgba(22,93,255,.35); transform: translateY(-1px); }
+    .symptom-tab:not(.active):hover, .habit-tab:not(.active):hover { transform: translateY(-1px); }
   </style>
 </head>
 
@@ -460,9 +517,16 @@
           </div>
         </div>
 
-        <div class="text-center">
-          <button id="restartBtn" class="px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors mr-3"><i class="fa fa-refresh mr-2"></i> 重新評估</button>
-          <button id="downloadReportBtn" class="px-6 py-3 bg-gray-200 text-neutral-dark rounded-lg hover:bg-gray-300 transition-colors"><i class="fa fa-download mr-2"></i> 下載分享卡片</button>
+        <div class="flex flex-col sm:flex-row gap-3 sm:justify-center items-stretch sm:items-center">
+          <button id="downloadReportBtn" class="yb-btn yb-btn-primary yb-btn-rich">
+            <span class="yb-btn-ic"><i class="fa fa-magic"></i></span>
+            <span class="yb-btn-txt"><span class="yb-btn-main">生成質感分享卡片</span><span class="yb-btn-sub">一鍵存圖，分享給親友</span></span>
+            <i class="fa fa-chevron-right yb-btn-arrow"></i>
+          </button>
+          <button id="restartBtn" class="yb-btn yb-btn-ghost yb-btn-rich">
+            <span class="yb-btn-ic"><i class="fa fa-refresh"></i></span>
+            <span class="yb-btn-txt"><span class="yb-btn-main">重新評估</span></span>
+          </button>
         </div>
       </div>
     </div>
@@ -1309,38 +1373,64 @@ document.addEventListener('DOMContentLoaded', function() {
     } catch (error) { reject(error); }
   }
 
+  // 溫度感分享文案（品牌語氣：相信自己，找回初心）
+  function buildShareMessage(userName, date, shareUrl) {
+    const low = Object.entries(lastAdjustmentScores || {}).filter(([, s]) => s < 60).sort((a, b) => a[1] - b[1]).map(([d]) => d).slice(0, 3);
+    const focusLine = low.length > 0
+      ? `🎯 建議先照顧：${low.join('、')}`
+      : `🌿 目前整體狀態不錯，continue keep it up！`;
+    const lines = [
+      `🌱 『 ${userName} 』的專屬健康自檢報告`,
+      `🗓️ 自檢日期 ${date}`,
+      ``,
+      `這份報告從「體質・免疫・毒素・循環・營養・內分泌・生活習慣」七大方向，`,
+      `幫你看懂身體正在發出的訊號 💛`,
+      focusLine,
+      ``,
+      `疾病 ＝ 壞習慣 ＋ 時間`,
+      `健康 ＝ 好習慣 ＋ 時間`,
+      `願你相信自己，找回初心 🌿`,
+    ];
+    if (shareUrl) { lines.push(``, `📎 完整報告圖片：${shareUrl}`); }
+    return lines.join('\n');
+  }
+
   function showSingleShareButton(userName, date) {
     const existing = document.getElementById('singleShareBtn'); if (existing) document.body.removeChild(existing);
     const shareBtn = document.createElement('button');
     shareBtn.id = 'singleShareBtn';
-    shareBtn.style.cssText = `position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); padding: 12px 28px; border-radius: 30px; background: #165DFF; color: white; border: none; box-shadow: 0 4px 15px rgba(22, 93, 255, 0.3); font-size: 16px; font-weight: bold; display: flex; align-items: center; gap: 8px; z-index: 9999; cursor: pointer; transition: background 0.2s ease;`;
-    shareBtn.innerHTML = '<i class="fa fa-share-alt"></i> 分享到 LINE';
+    shareBtn.className = 'yb-btn yb-btn-line';
+    shareBtn.style.cssText = 'position: fixed; bottom: 26px; left: 50%; transform: translateX(-50%); z-index: 9999;';
+    shareBtn.innerHTML = '<i class="fa fa-comment"></i> 分享到 LINE';
     document.body.appendChild(shareBtn);
-    shareBtn.addEventListener('mouseover', () => { shareBtn.style.background = '#0E42D2'; });
-    shareBtn.addEventListener('mouseout', () => { shareBtn.style.background = '#165DFF'; });
 
     shareBtn.addEventListener('click', async () => {
       try {
         if (!localImageBlob && !imgbbImageUrl) { showToast('分享資源不完整，請重新產生卡片', 'error'); return; }
         let imageFile = null;
         if (localImageBlob) imageFile = new File([localImageBlob], localImageName, { type: 'image/jpeg' });
-        const shareText = `📋 『 ${userName} 』的健康自檢報告\n🗓️ 自檢日期：${date}\n💡 含七大調理方向與 AI 評估`;
         const shareUrl = imgbbImageUrl || '';
+        const shareText = buildShareMessage(userName, date, shareUrl);
         if (navigator.share) {
-          shareBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> 喚醒分享...';
-          const shareData = { title: `${userName}的健康自檢報告`, text: shareText, url: shareUrl || window.location.href };
+          shareBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> 開啟分享中…';
+          const shareData = { title: `${userName} 的健康自檢報告`, text: shareText };
           if (imageFile && navigator.canShare && navigator.canShare({ files: [imageFile] })) shareData.files = [imageFile];
+          else if (shareUrl) shareData.url = shareUrl;
           await navigator.share(shareData);
           showToast('分享成功！');
-          shareBtn.innerHTML = '<i class="fa fa-share-alt"></i> 分享到 LINE';
+          shareBtn.innerHTML = '<i class="fa fa-comment"></i> 分享到 LINE';
         } else {
-          await navigator.clipboard.writeText(shareText + '\n' + (shareUrl || window.location.href));
-          showToast('分享內容已複製到剪貼板');
+          await navigator.clipboard.writeText(shareText);
+          showToast('分享文字已複製，貼到 LINE 即可 💬', 'info');
+          shareBtn.innerHTML = '<i class="fa fa-comment"></i> 分享到 LINE';
         }
       } catch (shareError) {
         console.error('分享失敗:', shareError);
-        shareBtn.innerHTML = '<i class="fa fa-share-alt"></i> 分享到 LINE';
-        if (shareError.name !== 'AbortError') showToast(`分享失敗，請手動複製鏈接: ${imgbbImageUrl || '無鏈接'}`, 'error');
+        shareBtn.innerHTML = '<i class="fa fa-comment"></i> 分享到 LINE';
+        if (shareError.name !== 'AbortError') {
+          try { await navigator.clipboard.writeText(buildShareMessage(userName, date, imgbbImageUrl || '')); showToast('已改用複製方式，貼到 LINE 即可 💬', 'info'); }
+          catch (_) { showToast(`分享失敗，圖片連結：${imgbbImageUrl || '無'}`, 'error'); }
+        }
       }
     });
   }
