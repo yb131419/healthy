@@ -692,6 +692,118 @@ submitChecklistData(sd,btn);
 });
 styleButtons();
 }
+// ===== 分享卡片生成（報告整合為1~N張卡片圖，內容過長自動分頁） =====
+const SHARE_CARD_WIDTH=750;
+const shareFactorColors={
+'氣血':'#94A3B8','循環':'#34D399','毒素':'#FBBF24','血脂':'#FB923C','寒濕':'#A78BFA','免疫':'#F472B6','情緒':'#818CF8'
+};
+// 卡片外框（統一頁首/金色分隔線/頁尾與頁碼徽章）
+function shareCardShell(inner,pageNo,totalPages,subtitle){
+return `<div class="share-card" style="width:${SHARE_CARD_WIDTH}px;box-sizing:border-box;padding:34px 38px 24px;background:linear-gradient(160deg,#0B1220 0%,#131F33 55%,#0D1B27 100%);font-family:'Noto Sans TC','PingFang TC','Microsoft JhengHei',sans-serif;color:#E7ECF3;">
+<div style="display:flex;justify-content:space-between;align-items:flex-start;">
+<div>
+<div style="font-size:26px;font-weight:700;letter-spacing:1px;">🧬 彥彬 自檢表系統</div>
+<div style="font-size:13px;color:#8FA3B8;margin-top:4px;">${subtitle}</div>
+</div>
+<div style="font-size:12px;color:#0B1220;background:linear-gradient(135deg,#F5D061,#D4AF37);border-radius:999px;padding:5px 12px;font-weight:700;white-space:nowrap;">${pageNo} / ${totalPages}</div>
+</div>
+<div style="height:2px;background:linear-gradient(90deg,#D4AF37,rgba(212,175,55,0.05));border-radius:2px;margin:16px 0 20px;"></div>
+${inner}
+<div style="margin-top:22px;padding-top:14px;border-top:1px solid rgba(143,163,184,0.18);display:flex;justify-content:space-between;align-items:center;">
+<span style="font-size:12px;color:#8FA3B8;">🔖 來源：彥彬自檢表系統 · 相信自己，找回初心</span>
+<span style="font-size:12px;color:#8FA3B8;">${new Date().toLocaleDateString('zh-TW')}</span>
+</div>
+</div>`;
+}
+// 依報告數據生成所有分享卡片HTML
+function buildShareCardPages(rd){
+const ui=rd.formattedUserInfo;
+// 有症狀的要素，依佔比由高至低排序
+const factors=Object.entries(rd.factorSymptoms).map(([k,list])=>({key:k,list:list,ratio:rd.factorRatio[k]})).sort((a,b)=>b.ratio.ratioVal-a.ratio.ratioVal);
+
+// --- 症狀明細分頁（權重：要素標題=2、每列症狀=1，單卡上限24，超過自動切下一張卡） ---
+const MAX_WEIGHT=24,HEADER_WEIGHT=2;
+const detailPages=[];let cur=[],w=0;
+factors.forEach(f=>{
+let remaining=f.list.slice(),isCont=false;
+while(remaining.length>0){
+let room=MAX_WEIGHT-w-HEADER_WEIGHT;
+// 剩餘空間太小塞不下有意義的內容，直接換卡
+if(room<3&&cur.length>0){detailPages.push(cur);cur=[];w=0;room=MAX_WEIGHT-HEADER_WEIGHT;}
+const take=remaining.splice(0,Math.min(remaining.length,room));
+cur.push({key:f.key,ratio:f.ratio,items:take,cont:isCont});
+w+=HEADER_WEIGHT+take.length;isCont=true;
+if(w>=MAX_WEIGHT){detailPages.push(cur);cur=[];w=0;}
+}
+});
+if(cur.length>0)detailPages.push(cur);
+const totalPages=1+detailPages.length;
+const pages=[];
+
+// --- 第1張：總覽卡（基本資訊＋整體統計＋七大要素佔比條） ---
+const infoRow=(label,val)=>`<div style="display:flex;justify-content:space-between;background:rgba(143,163,184,0.08);border:1px solid rgba(143,163,184,0.12);border-radius:10px;padding:10px 14px;"><span style="color:#8FA3B8;font-size:14px;">${label}</span><span style="font-size:14px;font-weight:600;">${escHtml(val)}</span></div>`;
+const barsHtml=factors.map(f=>{
+const color=shareFactorColors[f.key]||'#34D399';
+return `<div style="margin-bottom:12px;">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
+<span style="font-size:14px;font-weight:600;"><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${color};margin-right:7px;"></span>${f.key}</span>
+<span style="font-size:13px;color:#8FA3B8;">${f.ratio.count}項 / 總${f.ratio.total}項 · <span style="color:${color};font-weight:700;">${f.ratio.ratio}</span></span>
+</div>
+<div style="height:8px;background:rgba(143,163,184,0.15);border-radius:99px;overflow:hidden;"><div style="height:100%;width:${f.ratio.ratio};background:${color};border-radius:99px;"></div></div>
+</div>`;
+}).join('');
+const page1Inner=`
+<div style="font-size:15px;font-weight:700;color:#F5D061;margin-bottom:10px;">👤 基本資訊</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+${infoRow('姓名',ui.姓名)}${infoRow('年齡',ui.年齡)}
+${infoRow('性別',ui.性別)}${infoRow('職業',ui.職業)}
+${infoRow('身高',ui.身高)}${infoRow('體重',ui.體重)}
+${infoRow('血壓',ui.血壓)}${infoRow('血糖',ui.血糖)}
+</div>
+<div style="margin-top:8px;">${infoRow('提交時間',ui.提交時間)}</div>
+<div style="font-size:15px;font-weight:700;color:#F5D061;margin:20px 0 10px;">📊 整體統計</div>
+<div style="display:flex;gap:8px;">
+<div style="flex:1;text-align:center;background:rgba(0,140,118,0.14);border:1px solid rgba(52,211,153,0.3);border-radius:12px;padding:14px 8px;">
+<div style="font-size:28px;font-weight:800;color:#34D399;">${rd.selectedTotal}</div>
+<div style="font-size:12px;color:#8FA3B8;margin-top:2px;">已選症狀（項）</div>
+</div>
+<div style="flex:1;text-align:center;background:rgba(143,163,184,0.08);border:1px solid rgba(143,163,184,0.15);border-radius:12px;padding:14px 8px;">
+<div style="font-size:28px;font-weight:800;">${rd.totalSymptomCount}</div>
+<div style="font-size:12px;color:#8FA3B8;margin-top:2px;">系統總症狀（種）</div>
+</div>
+<div style="flex:1.4;text-align:center;background:rgba(212,175,55,0.1);border:1px solid rgba(212,175,55,0.3);border-radius:12px;padding:14px 8px;">
+<div style="font-size:17px;font-weight:800;color:#F5D061;line-height:1.5;margin-top:4px;">${rd.topFactors.map(t=>t.name).join('、')||'—'}</div>
+<div style="font-size:12px;color:#8FA3B8;margin-top:4px;">最高佔比要素</div>
+</div>
+</div>
+<div style="font-size:15px;font-weight:700;color:#F5D061;margin:20px 0 12px;">🌟 七大健康要素評估</div>
+${barsHtml||'<div style="color:#8FA3B8;font-size:14px;">暫無相關症狀記錄</div>'}
+${totalPages>1?`<div style="margin-top:14px;font-size:13px;color:#8FA3B8;text-align:center;">📎 詳細症狀清單請見第 2${totalPages>2?`～${totalPages}`:''} 張卡片</div>`:''}
+`;
+pages.push(shareCardShell(page1Inner,1,totalPages,'專業健康評估 · 精准對應七大健康要素'));
+
+// --- 第2張起：症狀明細卡（依要素分組，斑馬紋列表） ---
+detailPages.forEach((groups,pi)=>{
+const inner=groups.map(g=>{
+const color=shareFactorColors[g.key]||'#34D399';
+const rows=g.items.map((it,idx)=>`
+<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;background:${idx%2===0?'rgba(143,163,184,0.07)':'transparent'};">
+<span style="flex:1;font-size:14px;font-weight:500;min-width:0;">📌 ${it.name}</span>
+<span style="width:170px;font-size:12.5px;color:#B9C6D6;">⏱️ ${it.duration}</span>
+<span style="width:120px;font-size:12.5px;color:#B9C6D6;">⚠️ ${it.severity}</span>
+</div>`).join('');
+return `<div style="margin-bottom:16px;">
+<div style="display:flex;justify-content:space-between;align-items:center;background:${color}22;border-left:4px solid ${color};border-radius:8px;padding:8px 12px;margin-bottom:6px;">
+<span style="font-size:15px;font-weight:700;color:${color};">🎯 ${g.key}${g.cont?'（續）':''}</span>
+<span style="font-size:12.5px;color:#8FA3B8;">${g.ratio.count}項 / 總${g.ratio.total}項 · 佔比 ${g.ratio.ratio}</span>
+</div>
+${rows}
+</div>`;
+}).join('');
+pages.push(shareCardShell(`<div style="font-size:15px;font-weight:700;color:#F5D061;margin-bottom:12px;">🩺 症狀明細</div>${inner}`,pi+2,totalPages,'七大健康要素 · 症狀明細清單'));
+});
+return pages;
+}
 async function handleFloatingShareClick(e){
 e.stopPropagation();
 const btn=e.target.closest('#floating-share-btn');
@@ -699,32 +811,12 @@ if(!window.reportData){
 alert('尚未生成健康報告，無法分享');
 return;
 }
+let host=null;
 try{
-const screenshotTarget=document.getElementById('screenshot-target');
-if(!screenshotTarget){
-alert('報告區域加載失敗，請稍候再試');
-return;
-}
-const floatContainer=document.getElementById('floating-buttons');
-const floatStyle=floatContainer.style.opacity;
-floatContainer.style.opacity='0';
-const originalStyle={
-width:screenshotTarget.style.width,
-backgroundColor:screenshotTarget.style.backgroundColor,
-padding:screenshotTarget.style.padding,
-borderRadius:screenshotTarget.style.borderRadius,
-boxShadow:screenshotTarget.style.boxShadow,
-maxWidth:screenshotTarget.style.maxWidth,
-textAlign:screenshotTarget.style.textAlign,
-margin:screenshotTarget.style.margin,
-height:screenshotTarget.style.height,
-overflow:screenshotTarget.style.overflow
-};
-screenshotTarget.style.cssText=`width: 100vw !important;max-width: none !important;padding: 2rem !important;box-sizing: border-box !important;border-radius: 0 !important;box-shadow: none !important;margin: 0 auto !important;text-align: center !important;height: auto !important;overflow: visible !important;`;
 btn.disabled=true;
-btn.innerHTML='<i class="fa fa-spinner fa-spin"></i>';
+btn.innerHTML='<i class="fa fa-spinner fa-spin"></i> 生成中';
+// 確保html2canvas已就緒（head已載入，此為斷網保險）
 if(!window.html2canvas){
-alert('正在加載分享所需組件，請稍候...');
 await new Promise((resolve,reject)=>{
 const script=document.createElement('script');
 script.src='https://html2canvas.hertzen.com/dist/html2canvas.min.js';
@@ -733,66 +825,69 @@ script.onerror=reject;
 document.head.appendChild(script);
 });
 }
-const canvas=await html2canvas(screenshotTarget,{
-scale:3,useCORS:true,allowTaint:true,logging:false,dpi:300,
-windowWidth:window.innerWidth,windowHeight:screenshotTarget.offsetHeight+100,scrollY:0,scrollX:0
-});
-Object.keys(originalStyle).forEach(key=>{
-screenshotTarget.style[key]=originalStyle[key];
-});
-floatContainer.style.opacity=floatStyle;
-let dataUrl=canvas.toDataURL('image/png',0.9);
-const fileName=`🧬 彥彬自檢表系統_${new Date().toLocaleDateString()}.png`;
-const imgBlob=await(await fetch(dataUrl)).blob();
-let file;
-if(imgBlob.size>5*1024*1024){
-alert('圖片體積過大，輕微壓縮保持清晰...');
-dataUrl=canvas.toDataURL('image/png',0.8);
-const compressedBlob=await(await fetch(dataUrl)).blob();
-file=new File([compressedBlob],fileName,{type:'image/png'});
-}else{
-file=new File([imgBlob],fileName,{type:'image/png'});
+// 在畫面外渲染分享卡片（固定750px寬，不受手機螢幕寬度影響，成圖穩定清晰）
+const pages=buildShareCardPages(window.reportData);
+host=document.createElement('div');
+host.style.cssText='position:fixed;left:-10000px;top:0;pointer-events:none;';
+host.innerHTML=pages.join('');
+document.body.appendChild(host);
+await new Promise(r=>setTimeout(r,150)); // 等待字體與版面渲染穩定
+const cards=Array.from(host.querySelectorAll('.share-card'));
+const dateStr=new Date().toLocaleDateString('zh-TW').replace(/\//g,'');
+const files=[];
+for(let i=0;i<cards.length;i++){
+const canvas=await html2canvas(cards[i],{scale:2,useCORS:true,backgroundColor:'#0B1220',logging:false});
+const blob=await new Promise(res=>canvas.toBlob(res,'image/png',0.92));
+files.push(new File([blob],`彥彬健康自檢報告_${dateStr}_${i+1}-${cards.length}.png`,{type:'image/png'}));
 }
-if(navigator.share&&typeof navigator.share==='function'){
+host.remove();host=null;
+// 優先走系統分享（LINE可直接選好友/群組，多張圖一次送出）
+let shared=false;
+if(navigator.share){
+const shareData={title:'📋 彥彬自檢表系統 - 健康評估報告',files:files};
 try{
-const shareData={
-title:'📋 彥彬自檢表系統 - 健康評估報告',
-files:[file],
-text:window.reportData.summaryText
-};
-const canShare=navigator.canShare?await navigator.canShare(shareData):true;
-if(canShare){
+if(!navigator.canShare||navigator.canShare(shareData)){
 await navigator.share(shareData);
-alert('✅ 分享成功！\n報告已發送到LINE群組/好友');
-const closeBtn=document.getElementById('floating-close-btn');
-closeBtn.style.display='flex';
-setTimeout(()=>{
-closeBtn.style.opacity='1';
-},200);
+shared=true;
 }
 }catch(err){
-console.error('LINE分享失敗：',err);
-if(err.name!=='AbortError'){
-alert(`❌ 分享失敗：${err.message||'未知錯誤'}\n已自動複製文字報告到剪貼板`);
-await navigator.clipboard.writeText(window.reportData.summaryText);
+if(err.name==='AbortError'){shared=true;} // 用戶自行取消分享面板，不視為錯誤
+else console.error('多張圖片分享失敗，改試單張：',err);
+}
+// 部分環境不支援多檔案分享，退回只送第1張總覽卡＋複製文字報告
+if(!shared&&files.length>1){
+try{
+const single={title:'📋 彥彬自檢表系統 - 健康評估報告',files:[files[0]]};
+if(!navigator.canShare||navigator.canShare(single)){
+await navigator.share(single);
+shared=true;
+await navigator.clipboard.writeText(window.reportData.summaryText).catch(()=>{});
+alert('ℹ️ 此裝置不支援多張圖片分享，已送出總覽卡；完整文字報告已複製到剪貼板');
+}
+}catch(err2){
+if(err2.name==='AbortError')shared=true;
 }
 }
+}
+if(shared){
+const closeBtn=document.getElementById('floating-close-btn');
+if(closeBtn){closeBtn.style.display='flex';setTimeout(()=>{closeBtn.style.opacity='1';},200);}
 }else{
 await navigator.clipboard.writeText(window.reportData.summaryText);
-alert('📋 文字報告已複製到剪貼板，請手動截圖分享');
+alert('📋 此環境不支援圖片分享，文字報告已複製到剪貼板，可直接貼給好友');
 }
 }catch(err){
 console.error('分享總體錯誤：',err);
 try{
 await navigator.clipboard.writeText(window.reportData.summaryText);
-alert('⚠️ 分享功能異常，已複製文字報告到剪貼板，請手動截圖分享');
+alert('⚠️ 分享功能異常，已複製文字報告到剪貼板，請手動貼上分享');
 }catch(cbErr){
-alert('⚠️ 分享功能異常，請手動截圖並複製以下文字分享：\n\n'+window.reportData.summaryText);
+alert('⚠️ 分享功能異常，請手動截圖分享');
 }
 }finally{
+if(host)host.remove();
 btn.disabled=false;
 btn.innerHTML='<i class="fa fa-share-alt mr-1"></i>分享';
-document.getElementById('floating-buttons').style.opacity='1';
 }
 }
 async function collectSubmitData(){
