@@ -89,7 +89,7 @@
     /* 分享卡片（螢幕外，僅供截圖） */
     #shareCardWrap { position: fixed; left: -10000px; top: 0; z-index: -1; }
     .yb-share-card {
-      width: 480px; box-sizing: border-box; font-family: 'Inter','PingFang TC','Microsoft JhengHei',sans-serif;
+      width: 540px; box-sizing: border-box; font-family: 'Inter','PingFang TC','Microsoft JhengHei',sans-serif;
       background: #ffffff; border-radius: 26px; overflow: hidden;
       box-shadow: 0 20px 50px rgba(15,26,50,.18);
     }
@@ -98,8 +98,8 @@
     .yb-sc-head::after { content:''; position:absolute; right:-40px; top:-40px; width:150px; height:150px;
       background: rgba(255,255,255,.14); border-radius:50%; }
     .yb-sc-brand { font-size: 13px; letter-spacing: 3px; opacity:.9; margin-bottom: 8px; }
-    .yb-sc-title { font-size: 25px; font-weight: 800; line-height:1.25; }
-    .yb-sc-sub { margin-top: 8px; font-size: 13px; opacity:.92; }
+    .yb-sc-title { font-size: 23px; font-weight: 800; line-height:1.3; position:relative; }
+    .yb-sc-sub { margin-top: 8px; font-size: 13px; opacity:.92; position:relative; }
     .yb-sc-body { padding: 22px 26px 10px; }
     .yb-sc-stats { display:flex; gap: 12px; margin-bottom: 20px; }
     .yb-sc-stat { flex:1; border-radius: 16px; padding: 16px 14px; text-align:center;
@@ -119,6 +119,33 @@
     .yb-sc-foot .qr { font-size: 11px; color:#9aa3b2; }
     .yb-sc-foot .tag { font-size: 11px; color:#9aa3b2; }
     .yb-sc-disclaimer { font-size: 10.5px; color:#aab; text-align:center; padding: 0 26px 18px; }
+
+    /* 多段式區塊 */
+    .yb-sc-sec { padding: 20px 26px; border-top: 1px solid #eef1f6; }
+    .yb-sc-sec-h { display:flex; align-items:center; gap:9px; font-size:15px; font-weight:800; color:#1f2a44; margin-bottom:14px; }
+    .yb-sc-sec-h .ic { width:28px; height:28px; border-radius:9px; background:linear-gradient(135deg,#eaf1ff,#e7f9f1); color:#165DFF; display:flex; align-items:center; justify-content:center; font-size:14px; }
+    .yb-sc-bars { margin-top:2px; }
+    .yb-bar-row { margin-bottom:12px; }
+    .yb-bar-top { display:flex; justify-content:space-between; font-size:12.5px; color:#5b6472; margin-bottom:5px; }
+    .yb-bar-top b { color:#1f2a44; }
+    .yb-bar-track { height:9px; background:#eef1f6; border-radius:99px; overflow:hidden; }
+    .yb-bar-fill { height:100%; border-radius:99px; }
+    .yb-bar-fill.sym { background:linear-gradient(90deg,#1e5bff,#3a8bff); }
+    .yb-bar-fill.hab { background:linear-gradient(90deg,#FF9F45,#FF7D00); }
+    .yb-sc-chart { text-align:center; background:linear-gradient(180deg,#f8fbff,#f4f9f6); border:1px solid #eef2f8; border-radius:16px; padding:12px; }
+    .yb-sc-chart img { width:100%; max-width:480px; height:auto; }
+    .yb-sc-chart .cap { font-size:11.5px; color:#8a93a3; margin-top:4px; }
+    .yb-kv { display:flex; gap:8px; font-size:13px; margin-bottom:9px; align-items:flex-start; }
+    .yb-kv .k { flex-shrink:0; color:#6b7280; width:70px; font-weight:600; }
+    .yb-kv .v { color:#1f2a44; flex:1; }
+    .yb-sym-group { margin-bottom:9px; }
+    .yb-sym-group .gl { font-size:12px; font-weight:700; color:#165DFF; margin-bottom:3px; }
+    .yb-sym-group .gi { font-size:12.5px; color:#374151; line-height:1.65; }
+    .yb-ai-box { background:linear-gradient(180deg,#f7faff,#f3fbf7); border:1px solid #e8f0fc; border-radius:16px; padding:16px; }
+    .yb-ai-box p { font-size:12.8px; color:#2b3547; line-height:1.75; margin-bottom:7px; }
+    .yb-ai-box p:last-child { margin-bottom:0; }
+    .yb-ai-tag { display:inline-flex; align-items:center; gap:5px; font-size:11px; font-weight:700; color:#0E42D2; background:#e8f0ff; padding:4px 11px; border-radius:99px; margin-bottom:11px; }
+
 
     /* ===== 質感按鈕系統 ===== */
     .yb-btn { position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
@@ -655,6 +682,7 @@ document.addEventListener('DOMContentLoaded', function() {
   let imgbbImageUrl = '';
   let imgbbDeleteUrl = '';
   let lastAdjustmentScores = {};
+  let lastResultData = null;
   let procStatusTimer = null;
 
   const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
@@ -908,7 +936,7 @@ document.addEventListener('DOMContentLoaded', function() {
   restartBtn.addEventListener('click', () => {
     globalUniqueSymptoms = []; globalUniqueHabits = []; globalAiComment = '';
     localImageBlob = null; localImageName = ''; imgbbImageUrl = ''; imgbbDeleteUrl = '';
-    lastAdjustmentScores = {}; currentStep = 1;
+    lastAdjustmentScores = {}; lastResultData = null; currentStep = 1;
     if (windowHealthChart) { windowHealthChart.destroy(); windowHealthChart = null; }
     aiEvaluationContainer.innerHTML = '';
     const shareBtn = document.getElementById('singleShareBtn'); if (shareBtn) document.body.removeChild(shareBtn);
@@ -1071,10 +1099,57 @@ document.addEventListener('DOMContentLoaded', function() {
         canvasEl.parentNode.innerHTML = '<p class="text-center text-gray-500 py-10">未選擇任何症狀或習慣，暫無法生成調理方向圖</p><canvas id="healthBarChart" class="hidden"></canvas>';
       } else {
         requestAnimationFrame(() => {
+          const grad = ctx.createLinearGradient(0, 0, 0, 320);
+          grad.addColorStop(0, 'rgba(22, 93, 255, 0.30)');
+          grad.addColorStop(1, 'rgba(18, 185, 129, 0.18)');
           windowHealthChart = new Chart(ctx, {
             type: 'radar',
-            data: { labels: adjustmentLabels, datasets: [{ label: '調理優先級得分（越低需重點調理）', data: adjustmentData, backgroundColor: 'rgba(22, 93, 255, 0.2)', borderColor: 'rgba(22, 93, 255, 1)', borderWidth: 2, pointBackgroundColor: 'rgba(22, 93, 255, 1)', pointBorderColor: '#fff', pointHoverBackgroundColor: '#fff', pointHoverBorderColor: 'rgba(22, 93, 255, 1)', pointRadius: 4, pointHoverRadius: 6 }] },
-            options: { responsive: true, maintainAspectRatio: false, scales: { r: { min: 0, max: 100, angleLines: { display: true, color: 'rgba(0,0,0,0.1)' }, grid: { color: 'rgba(0,0,0,0.1)' }, pointLabels: { font: { size: 12, weight: 'bold' }, color: '#333', padding: 15 }, ticks: { backdropColor: 'transparent', color: '#666', stepSize: 20 } } }, plugins: { legend: { position: 'top', labels: { font: { size: 11 }, padding: 20 } }, tooltip: { callbacks: { label: function(c) { const dir = adjustmentLabels[c.dataIndex]; const s = adjustmentData[c.dataIndex]; const tip = s < 30 ? '（急需重點調理）' : s < 60 ? '（建議加強調理）' : '（狀態良好）'; return `${dir}: ${s}分 ${tip}`; } } }, title: { display: true, text: '七大調理方向優先級分布', font: { size: 16, weight: 'bold' }, padding: { bottom: 20 } } }, elements: { line: { tension: 0.2 } } }
+            data: {
+              labels: adjustmentLabels,
+              datasets: [
+                {
+                  label: '您的調理得分',
+                  data: adjustmentData,
+                  backgroundColor: grad,
+                  borderColor: '#165DFF',
+                  borderWidth: 2.5,
+                  pointBackgroundColor: adjustmentData.map(s => s < 30 ? '#FF5630' : s < 60 ? '#FF7D00' : '#12b981'),
+                  pointBorderColor: '#fff',
+                  pointBorderWidth: 2,
+                  pointRadius: 5,
+                  pointHoverRadius: 7,
+                  order: 1
+                },
+                {
+                  label: '調理警戒線 (60分)',
+                  data: adjustmentLabels.map(() => 60),
+                  backgroundColor: 'rgba(0,0,0,0)',
+                  borderColor: 'rgba(255, 125, 0, 0.55)',
+                  borderWidth: 1.5,
+                  borderDash: [5, 4],
+                  pointRadius: 0,
+                  fill: false,
+                  order: 2
+                }
+              ]
+            },
+            options: {
+              responsive: true, maintainAspectRatio: false,
+              layout: { padding: 6 },
+              scales: { r: {
+                min: 0, max: 100,
+                angleLines: { color: 'rgba(22,93,255,0.10)' },
+                grid: { color: 'rgba(22,93,255,0.10)' },
+                pointLabels: { font: { size: 13, weight: 'bold' }, color: '#334155', padding: 12 },
+                ticks: { display: true, backdropColor: 'transparent', color: '#aab', stepSize: 20, font: { size: 10 } }
+              } },
+              plugins: {
+                legend: { position: 'top', labels: { font: { size: 12 }, padding: 16, usePointStyle: true, pointStyleWidth: 12 } },
+                tooltip: { callbacks: { label: function(c) { if (c.datasetIndex === 1) return '警戒線 60 分'; const dir = adjustmentLabels[c.dataIndex]; const s = adjustmentData[c.dataIndex]; const tip = s < 30 ? '（急需重點調理）' : s < 60 ? '（建議加強調理）' : '（狀態良好）'; return `${dir}：${s}分 ${tip}`; } } },
+                title: { display: true, text: '七大調理方向｜分數越低越需要優先調理', font: { size: 14, weight: 'bold' }, color: '#1f2a44', padding: { bottom: 16 } }
+              },
+              elements: { line: { tension: 0.15 } }
+            }
           });
         });
       }
@@ -1101,10 +1176,14 @@ document.addEventListener('DOMContentLoaded', function() {
     const medicalDetails = escapeHtml(document.getElementById('medicalDetails')?.value || '未填寫');
 
     let symptomsHtml = '';
+    const shareSymptomGroups = [];
     Object.values(SYMPTOM_DATA).forEach(grp => {
       if (!isFemale && grp.label === '女性症狀') return;
       const cat = globalUniqueSymptoms.filter(s => grp.items.includes(s));
-      if (cat.length > 0) symptomsHtml += `<div class="mt-2"><p class="text-sm font-medium">${grp.label}：</p><p class="text-sm ml-4">${cat.map(escapeHtml).join('、')}</p></div>`;
+      if (cat.length > 0) {
+        symptomsHtml += `<div class="mt-2"><p class="text-sm font-medium">${grp.label}：</p><p class="text-sm ml-4">${cat.map(escapeHtml).join('、')}</p></div>`;
+        shareSymptomGroups.push({ label: grp.label, items: cat.slice() });
+      }
     });
 
     const medicalHistoryHtml = `<div class="mt-3"><p class="text-sm font-medium">過敏史：${allergyHistoryValue}</p><p class="text-sm ml-4">詳情：${allergyDetails}</p></div><div class="mt-2"><p class="text-sm font-medium">既往病史/手術史：${medicalHistoryValue}</p><p class="text-sm ml-4">詳情：${medicalDetails}</p></div>`;
@@ -1119,45 +1198,127 @@ document.addEventListener('DOMContentLoaded', function() {
 
     document.getElementById('mainHealthIssues').innerHTML = `<div class="bg-white p-4 rounded-lg border border-gray-100 shadow-sm"><h3 class="text-lg font-semibold mb-4 text-primary">主要健康問題</h3><p class="mb-3"><strong>主要關注問題：</strong> ${mainConcern}</p><p class="mb-3"><strong>症狀持續時間：</strong> ${symptomDuration}</p>${possibleCausesHtml}${medicalHistoryHtml}${totalSymptomCount > 0 ? `<div class="mt-3"><strong>詳細症狀：</strong>${symptomsHtml}</div>` : `<div class="mt-3 text-gray-500"><strong>詳細症狀：</strong>未選擇任何症狀</div>`}${habitsHtml}</div>`;
 
+    const shareHabitGroups = [];
+    Object.values(HABIT_DATA).forEach(grp => { const sel = globalUniqueHabits.filter(h => grp.items.includes(h)); if (sel.length > 0) shareHabitGroups.push({ label: grp.label, count: sel.length }); });
+
     renderAiEvaluation();
     renderRecommendations(adjustmentScores);
-    buildShareCard({ name, dateStr: formatToday(), symptomCount: totalSymptomCount, habitCount, scores: adjustmentScores });
+
+    // 儲存完整資料，截圖前再組合分享卡片（確保圖表與 AI 都已就緒）
+    lastResultData = {
+      name, dateStr: formatToday(),
+      symptomCount: totalSymptomCount, habitCount,
+      scores: adjustmentScores,
+      mainConcern, symptomDuration,
+      allergy: `${allergyHistoryValue}${allergyDetails && allergyDetails !== '未填寫' ? '（' + allergyDetails + '）' : ''}`,
+      medical: `${medicalHistoryValue}${medicalDetails && medicalDetails !== '未填寫' ? '（' + medicalDetails + '）' : ''}`,
+      symptomGroups: shareSymptomGroups,
+      habitGroups: shareHabitGroups
+    };
+    buildShareCard(lastResultData);
   }
 
   function formatToday() { const d = new Date(); return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`; }
 
-  // ★ 建立短版質感分享卡片（供截圖）
-  function buildShareCard({ name, dateStr, symptomCount, habitCount, scores }) {
+  // ★ 建立完整質感分享卡片（概覽＋雷達圖＋主要問題＋AI評估）
+  function buildShareCard(data) {
+    if (!data) return;
+    const { name, dateStr, symptomCount, habitCount, scores, mainConcern, symptomDuration, allergy, medical, symptomGroups = [], habitGroups = [] } = data;
+
     const low = Object.entries(scores).filter(([,s]) => s < 60).sort((a,b) => a[1]-b[1]).map(([d]) => d);
     const good = Object.entries(scores).filter(([,s]) => s >= 60).sort((a,b) => b[1]-a[1]).map(([d]) => d);
-    let tagHtml = '';
-    if (low.length > 0) tagHtml = low.map(d => `<span class="yb-sc-tag">${escapeHtml(d)}</span>`).join('');
-    else tagHtml = good.slice(0,3).map(d => `<span class="yb-sc-tag good">${escapeHtml(d)}</span>`).join('') || '<span class="yb-sc-tag good">整體狀態良好</span>';
-
+    let tagHtml = low.length > 0
+      ? low.map(d => `<span class="yb-sc-tag">${escapeHtml(d)}</span>`).join('')
+      : (good.slice(0,3).map(d => `<span class="yb-sc-tag good">${escapeHtml(d)}</span>`).join('') || '<span class="yb-sc-tag good">整體狀態良好</span>');
     const focusTitle = low.length > 0
       ? `<i class="fa fa-bullseye" style="color:#FF7D00"></i> 建議重點調理方向`
       : `<i class="fa fa-leaf" style="color:#12b981"></i> 目前狀態較佳的方向`;
 
+    // 進度條百分比
+    const symPct = Math.min(100, (symptomCount / 50) * 100);
+    const habPct = Math.min(100, (habitCount / 20) * 100);
+
+    // 雷達圖：取用已渲染圖表的圖片
+    let chartHtml = '';
+    if (windowHealthChart && typeof windowHealthChart.toBase64Image === 'function' && (symptomCount > 0 || habitCount > 0)) {
+      let imgData = '';
+      try { imgData = windowHealthChart.toBase64Image('image/png', 1); } catch (e) { imgData = ''; }
+      if (imgData) chartHtml = `<div class="yb-sc-chart"><img src="${imgData}" alt="健康風險分布雷達圖"><div class="cap">＊警戒線 60 分以下建議優先調理</div></div>`;
+    }
+    if (!chartHtml) chartHtml = `<div class="yb-sc-chart" style="padding:26px 10px;color:#8a93a3;font-size:13px;">未勾選症狀與習慣，暫無風險分布圖</div>`;
+
+    // 主要健康問題
+    let symGroupHtml = '';
+    if (symptomGroups.length > 0) {
+      symGroupHtml = symptomGroups.map(g => `<div class="yb-sym-group"><div class="gl">${escapeHtml(g.label)}（${g.items.length}）</div><div class="gi">${g.items.map(escapeHtml).join('、')}</div></div>`).join('');
+    } else {
+      symGroupHtml = '<div class="gi" style="color:#8a93a3">未勾選任何症狀</div>';
+    }
+    let habLine = habitGroups.length > 0
+      ? habitGroups.map(g => `${escapeHtml(g.label)}·${g.count}`).join('　')
+      : '未勾選任何不良習慣';
+
+    // AI 評估
+    let aiHtml = '';
+    if (globalAiComment && globalAiComment.trim()) {
+      const paras = globalAiComment.split('\n').filter(p => p.trim()).map(p => `<p>${escapeHtml(p)}</p>`).join('');
+      aiHtml = `<div class="yb-sc-sec"><div class="yb-sc-sec-h"><span class="ic"><i class="fa fa-magic"></i></span>AI 健康評估</div><div class="yb-ai-box"><span class="yb-ai-tag"><i class="fa fa-robot"></i> 彥彬 AI 顧問</span>${paras}</div></div>`;
+    }
+
     document.getElementById('shareCard').innerHTML = `
       <div class="yb-sc-head">
-        <div class="yb-sc-brand">YB · 健康自檢</div>
-        <div class="yb-sc-title">『 ${escapeHtml(name)} 』的<br>健康自檢報告</div>
+        <div class="yb-sc-brand">YB · 健康自檢報告</div>
+        <div class="yb-sc-title">『 ${escapeHtml(name)} 』的健康評估結果</div>
         <div class="yb-sc-sub"><i class="fa fa-calendar" style="opacity:.9"></i>&nbsp; 自檢日期 ${escapeHtml(dateStr)}</div>
       </div>
-      <div class="yb-sc-body">
-        <div class="yb-sc-stats">
+
+      <div class="yb-sc-sec" style="border-top:none;">
+        <div class="yb-sc-sec-h"><span class="ic"><i class="fa fa-heartbeat"></i></span>健康狀況概覽</div>
+        <div class="yb-sc-stats" style="margin-bottom:16px;">
           <div class="yb-sc-stat"><div class="n">${symptomCount}</div><div class="l">項身體症狀</div></div>
           <div class="yb-sc-stat"><div class="n warn">${habitCount}</div><div class="l">項不良習慣</div></div>
         </div>
-        <div class="yb-sc-section-t">${focusTitle}</div>
+        <div class="yb-sc-bars">
+          <div class="yb-bar-row">
+            <div class="yb-bar-top"><span>症狀程度</span><b>${symptomCount} 項</b></div>
+            <div class="yb-bar-track"><div class="yb-bar-fill sym" style="width:${symPct}%"></div></div>
+          </div>
+          <div class="yb-bar-row">
+            <div class="yb-bar-top"><span>不良習慣負擔</span><b>${habitCount} 項</b></div>
+            <div class="yb-bar-track"><div class="yb-bar-fill hab" style="width:${habPct}%"></div></div>
+          </div>
+        </div>
+        <div class="yb-sc-section-t" style="margin-top:16px;">${focusTitle}</div>
         <div class="yb-sc-tags">${tagHtml}</div>
-        <div class="yb-sc-motto">體質定內環境 · 免疫築防線 · 毒素要平衡<br>循環需暢通 · 營養補原料 · 內分泌守規律 · 習慣減負擔</div>
       </div>
+
+      <div class="yb-sc-sec">
+        <div class="yb-sc-sec-h"><span class="ic"><i class="fa fa-bar-chart"></i></span>健康風險分布</div>
+        ${chartHtml}
+      </div>
+
+      <div class="yb-sc-sec">
+        <div class="yb-sc-sec-h"><span class="ic"><i class="fa fa-clipboard"></i></span>主要健康問題</div>
+        <div class="yb-kv"><span class="k">主要關注</span><span class="v">${mainConcern || '未說明'}</span></div>
+        <div class="yb-kv"><span class="k">持續時間</span><span class="v">${symptomDuration || '未說明'}</span></div>
+        <div class="yb-kv"><span class="k">過敏史</span><span class="v">${allergy || '未選擇'}</span></div>
+        <div class="yb-kv"><span class="k">既往病史</span><span class="v">${medical || '未選擇'}</span></div>
+        <div class="yb-kv"><span class="k">不良習慣</span><span class="v">${habLine}</span></div>
+        <div style="margin-top:6px;font-size:12.5px;font-weight:700;color:#6b7280;">詳細症狀</div>
+        <div style="margin-top:6px;">${symGroupHtml}</div>
+      </div>
+
+      ${aiHtml}
+
+      <div class="yb-sc-sec">
+        <div class="yb-sc-motto" style="margin:0;">體質定內環境 · 免疫築防線 · 毒素要平衡<br>循環需暢通 · 營養補原料 · 內分泌守規律 · 習慣減負擔</div>
+      </div>
+
       <div class="yb-sc-foot">
         <div class="qr"><i class="fa fa-heartbeat" style="color:#165DFF"></i> 彥彬 健康自檢系統</div>
         <div class="tag">好習慣 ＋ 時間 = 健康</div>
       </div>
-      <div class="yb-sc-disclaimer">＊本卡片僅為健康參考，不能替代專業醫療診斷</div>
+      <div class="yb-sc-disclaimer">＊本報告僅為健康參考，不能替代專業醫療診斷</div>
     `;
   }
 
@@ -1223,9 +1384,13 @@ document.addEventListener('DOMContentLoaded', function() {
       document.body.appendChild(progressIndicator);
 
       if (typeof html2canvas === 'undefined') throw new Error('圖片處理庫未加載，請刷新頁面重試');
+      if (!lastResultData) throw new Error('請先完成評估再產生卡片');
+
+      updateProgress(progressIndicator, 25, '組合完整報告...');
+      buildShareCard(lastResultData); // 以最新的雷達圖與 AI 評語重建卡片
       if (!shareCard || !shareCard.innerHTML.trim()) throw new Error('分享卡片尚未生成，請先完成評估');
 
-      updateProgress(progressIndicator, 30, '產生質感卡片...');
+      updateProgress(progressIndicator, 40, '產生質感長圖...');
 
       // 讓卡片可被截圖（暫時挪到可視範圍外但可渲染）
       shareWrap.style.left = '0px';
@@ -1233,7 +1398,13 @@ document.addEventListener('DOMContentLoaded', function() {
       shareWrap.style.opacity = '0';
       shareWrap.style.pointerEvents = 'none';
 
-      await new Promise(r => setTimeout(r, 60)); // 等字型/排版穩定
+      await new Promise(r => setTimeout(r, 120)); // 等字型/圖片/排版穩定
+
+      // 確保卡片內的雷達圖圖片已解碼完成
+      const cardImg = shareCard.querySelector('img');
+      if (cardImg && !cardImg.complete) {
+        await new Promise(res => { cardImg.onload = res; cardImg.onerror = res; setTimeout(res, 1500); });
+      }
 
       const canvas = await html2canvas(shareCard, {
         useCORS: true, allowTaint: false, backgroundColor: '#ffffff',
