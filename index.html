@@ -127,6 +127,7 @@
     .yb-symcard .gl .dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
     .yb-symcard .gl .cnt { margin-left:auto; font-size:10.5px; font-weight:700; color:#fff; background:#94a3b8; padding:1px 8px; border-radius:999px; }
     .yb-symcard .gi { font-size:12px; color:#4b5563; line-height:1.65; }
+    .yb-sub-h { display:flex; align-items:center; gap:7px; font-size:12.5px; font-weight:800; color:#334155; margin:12px 0 8px; padding-bottom:5px; border-bottom:1px dashed #e5e9f0; }
     .yb-sc-motto { margin: 18px 0 4px; padding: 14px 16px; border-radius: 14px;
       background: linear-gradient(135deg,#f5f8ff,#eefaf4); font-size: 12.5px; color:#334; line-height: 1.7; text-align:center; }
     .yb-sc-foot { padding: 14px 26px 22px; display:flex; justify-content: space-between; align-items:center;
@@ -1214,7 +1215,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('mainHealthIssues').innerHTML = `<div class="bg-white p-4 rounded-lg border border-gray-100 shadow-sm"><h3 class="text-lg font-semibold mb-4 text-primary">主要健康問題</h3><p class="mb-3"><strong>主要關注問題：</strong> ${mainConcern}</p><p class="mb-3"><strong>症狀持續時間：</strong> ${symptomDuration}</p>${possibleCausesHtml}${medicalHistoryHtml}${totalSymptomCount > 0 ? `<div class="mt-3"><strong>詳細症狀：</strong>${symptomsHtml}</div>` : `<div class="mt-3 text-gray-500"><strong>詳細症狀：</strong>未選擇任何症狀</div>`}${habitsHtml}</div>`;
 
     const shareHabitGroups = [];
-    Object.values(HABIT_DATA).forEach(grp => { const sel = globalUniqueHabits.filter(h => grp.items.includes(h)); if (sel.length > 0) shareHabitGroups.push({ label: grp.label, count: sel.length }); });
+    Object.values(HABIT_DATA).forEach(grp => { const sel = globalUniqueHabits.filter(h => grp.items.includes(h)); if (sel.length > 0) shareHabitGroups.push({ label: grp.label, items: sel.slice() }); });
 
     renderAiEvaluation();
     renderRecommendations(adjustmentScores);
@@ -1274,9 +1275,17 @@ document.addEventListener('DOMContentLoaded', function() {
     } else {
       symGroupHtml = '<div class="gi" style="color:#8a93a3">未勾選任何症狀</div>';
     }
-    let habLine = habitGroups.length > 0
-      ? habitGroups.map(g => `${escapeHtml(g.label)}·${g.count}`).join('　')
-      : '未勾選任何不良習慣';
+    const habCatColors = ['#0ea5e9','#8b5cf6','#12b981','#f59e0b','#e11d8f','#ef4444'];
+    let habGroupHtml = '';
+    if (habitGroups.length > 0) {
+      habGroupHtml = '<div class="yb-symcards">' + habitGroups.map((g, i) => {
+        const c = habCatColors[i % habCatColors.length];
+        const items = g.items || [];
+        return `<div class="yb-symcard" style="border-left-color:${c}"><div class="gl"><span class="dot" style="background:${c}"></span>${escapeHtml(g.label)}<span class="cnt">${items.length}</span></div><div class="gi">${items.map(escapeHtml).join('、')}</div></div>`;
+      }).join('') + '</div>';
+    } else {
+      habGroupHtml = '<div class="gi" style="color:#8a93a3">未勾選任何不良習慣</div>';
+    }
 
     // AI 評估
     let aiHtml = '';
@@ -1323,9 +1332,10 @@ document.addEventListener('DOMContentLoaded', function() {
         <div class="yb-kv"><span class="k">持續時間</span><span class="v">${symptomDuration || '未說明'}</span></div>
         <div class="yb-kv"><span class="k">過敏史</span><span class="v">${allergy || '未選擇'}</span></div>
         <div class="yb-kv"><span class="k">既往病史</span><span class="v">${medical || '未選擇'}</span></div>
-        <div class="yb-kv"><span class="k">不良習慣</span><span class="v">${habLine}</span></div>
-        <div style="margin-top:6px;font-size:12.5px;font-weight:700;color:#6b7280;">詳細症狀</div>
-        <div style="margin-top:6px;">${symGroupHtml}</div>
+        <div class="yb-sub-h"><i class="fa fa-stethoscope" style="color:#165DFF"></i> 詳細症狀（共 ${symptomCount} 項）</div>
+        ${symGroupHtml}
+        <div class="yb-sub-h" style="margin-top:14px;"><i class="fa fa-balance-scale" style="color:#FF7D00"></i> 不良生活習慣（共 ${habitCount} 項）</div>
+        ${habGroupHtml}
       </div>
 
       ${aiHtml}
@@ -1426,11 +1436,17 @@ document.addEventListener('DOMContentLoaded', function() {
         await new Promise(res => { cardImg.onload = res; cardImg.onerror = res; setTimeout(res, 1500); });
       }
 
+      // 依卡片實際高度計算安全縮放倍率，避免超過手機瀏覽器畫布上限（底部被截斷）
+      const cardH = shareCard.offsetHeight;
+      const MAX_CANVAS_PX = 12000; // 安全上限
+      let baseScale = isTablet ? TABLET_CANVAS_SCALE : Math.min(window.devicePixelRatio || 2, 3);
+      const safeScale = Math.max(1, Math.min(baseScale, MAX_CANVAS_PX / cardH));
+
       const canvas = await html2canvas(shareCard, {
         useCORS: true, allowTaint: false, backgroundColor: '#ffffff',
-        scale: isTablet ? TABLET_CANVAS_SCALE : Math.min(window.devicePixelRatio || 2, 3),
-        logging: false, width: shareCard.offsetWidth, height: shareCard.offsetHeight,
-        windowWidth: shareCard.offsetWidth, windowHeight: shareCard.offsetHeight
+        scale: safeScale,
+        logging: false, width: shareCard.offsetWidth, height: cardH,
+        windowWidth: shareCard.offsetWidth, windowHeight: cardH
       });
 
       // 還原卡片位置
@@ -1564,24 +1580,32 @@ document.addEventListener('DOMContentLoaded', function() {
     } catch (error) { reject(error); }
   }
 
-  // 溫度感分享文案（品牌語氣：相信自己，找回初心）
+  // 溫度感分享文案（段落分明，品牌語氣：相信自己，找回初心）
   function buildShareMessage(userName, date, shareUrl) {
-    const priority = Object.entries(lastAdjustmentScores || {}).sort((a, b) => a[1] - b[1]).slice(0, 3).map(([d, s]) => `${d}(${s})`);
-    const focusLine = priority.length > 0 ? `🎯 優先調理方向：${priority.join('、')}` : '';
-    const lines = [
-      `🌱 『 ${userName} 』的專屬健康自檢報告`,
-      `🗓️ 自檢日期 ${date}`,
-      ``,
-      `這份報告從「體質・免疫・毒素・循環・營養・內分泌・生活習慣」七大方向，`,
-      `幫你看懂身體正在發出的訊號 💛`,
-      focusLine,
-      ``,
-      `疾病 ＝ 壞習慣 ＋ 時間`,
-      `健康 ＝ 好習慣 ＋ 時間`,
-      `願你相信自己，找回初心 🌿`,
-    ];
-    if (shareUrl) { lines.push(``, `📎 完整報告圖片：${shareUrl}`); }
-    return lines.join('\n');
+    const d = lastResultData || {};
+    const priority = Object.entries(lastAdjustmentScores || {}).sort((a, b) => a[1] - b[1]).slice(0, 3).map(([k, s]) => `　• ${k}（${s}分）`);
+    const divider = '━━━━━━━━━━━━━';
+    const sections = [];
+
+    sections.push(`🌱 『 ${userName} 』的健康自檢報告\n🗓️ 自檢日期：${date}`);
+
+    if (d.symptomCount != null) {
+      sections.push(`📊 健康概覽\n　身體症狀　${d.symptomCount} 項\n　不良習慣　${d.habitCount} 項`);
+    }
+
+    if (priority.length > 0) {
+      sections.push(`🎯 優先調理方向\n${priority.join('\n')}`);
+    }
+
+    sections.push(`💛 這份報告從七大方向，\n　 帶你看懂身體發出的訊號：\n　 體質 · 免疫 · 毒素 · 循環\n　 營養 · 內分泌 · 生活習慣`);
+
+    sections.push(`🌿 疾病 ＝ 壞習慣 ＋ 時間\n　 健康 ＝ 好習慣 ＋ 時間\n　 願你相信自己，找回初心`);
+
+    if (shareUrl) {
+      sections.push(`📎 完整報告圖片\n${shareUrl}`);
+    }
+
+    return sections.join(`\n\n${divider}\n\n`);
   }
 
   function showSingleShareButton(userName, date) {
@@ -1635,4 +1659,3 @@ document.addEventListener('DOMContentLoaded', function() {
 
 </body>
 </html>
-
