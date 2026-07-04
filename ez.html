@@ -9,11 +9,12 @@
 <meta http-equiv="Expires" content="0">
 <script src="https://cdn.tailwindcss.com"></script>
 <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@600;700;900&display=swap" rel="stylesheet">
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
 <script>
-tailwind.config={theme:{extend:{colors:{primary:'#008C76',secondary:'#E8F9F7',accent:'#FFD700',dark:'#1A202C',lightBg:'#F9FAFB',neutral:'#F3F4F6',cardBg:'#FFFFFF',textPrimary:'#1E293B',textSecondary:'#64748B'},fontFamily:{sans:['Noto Sans TC','sans-serif','system-ui'],display:['Noto Sans TC','sans-serif','system-ui']},boxShadow:{'elevation-1':'0 2px 8px rgba(0,0,0,0.06)','elevation-2':'0 4px 16px rgba(0,0,0,0.08)','elevation-3':'0 8px 24px rgba(0,0,0,0.12)','elevation-hover':'0 12px 32px rgba(0,0,0,0.15)'}}}};
+tailwind.config={theme:{extend:{colors:{primary:'#008C76',secondary:'#E8F9F7',accent:'#E8C766',ink:'#0E2E28',gold:'#C9A227',dark:'#1A202C',lightBg:'#F5F3EC',neutral:'#F1F0E8',cardBg:'#FFFFFF',textPrimary:'#223230',textSecondary:'#66756F'},fontFamily:{sans:['Noto Sans TC','sans-serif','system-ui'],display:['Noto Serif TC','serif']},boxShadow:{'elevation-1':'0 2px 8px rgba(0,0,0,0.06)','elevation-2':'0 4px 16px rgba(0,0,0,0.08)','elevation-3':'0 8px 24px rgba(0,0,0,0.12)','elevation-hover':'0 12px 32px rgba(0,0,0,0.15)'}}}};
 </script>
 <style type="text/tailwindcss">
 @layer utilities{.fade-in{animation:fadeIn 0.6s cubic-bezier(0.4,0,0.2,1);}.slide-up{animation:slideUp 0.5s cubic-bezier(0.34,1.56,0.64,1);}.scale-in{animation:scaleIn 0.4s cubic-bezier(0.34,1.56,0.64,1);}.pulse-subtle{animation:pulseSubtle 2s infinite;}.gradient-text{background-clip:text;-webkit-background-clip:text;color:transparent;}.card-hover{transition:all 0.3s cubic-bezier(0.34,1.56,0.64,1);}.btn-hover{transition:all 0.25s cubic-bezier(0.34,1.56,0.64,1);}.factor-tag{font-size:0.75rem;padding:0.2rem 0.4rem;border-radius:6px;font-weight:500;}.input-focus{@apply focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all;}}
@@ -54,6 +55,24 @@ input,select{font-size:16px !important;}
 .sev-btn.sev-mild.active{background:#059669;border-color:#059669;color:#fff;box-shadow:0 2px 8px rgba(5,150,105,0.35);}
 .sev-btn.sev-moderate.active{background:#D97706;border-color:#D97706;color:#fff;box-shadow:0 2px 8px rgba(217,119,6,0.35);}
 .sev-btn.sev-severe.active{background:#DC2626;border-color:#DC2626;color:#fff;box-shadow:0 2px 8px rgba(220,38,38,0.35);}
+/* ===== v7 動畫系統：頁首編排式進場 ===== */
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:none;}}
+@keyframes emblemIn{from{opacity:0;transform:scale(0.85);}to{opacity:1;transform:scale(1);}}
+@keyframes ruleIn{from{transform:scaleX(0);}to{transform:scaleX(1);}}
+@keyframes ringPulse{0%{transform:scale(1);opacity:0.5;}70%{transform:scale(1.9);opacity:0;}100%{transform:scale(1.9);opacity:0;}}
+@keyframes popIn{0%{transform:scale(0.5);}60%{transform:scale(1.18);}100%{transform:scale(1);}}
+.hero-emblem{animation:emblemIn 0.7s cubic-bezier(0.22,1,0.36,1) both;}
+.hero-eyebrow{animation:fadeUp 0.6s 0.12s cubic-bezier(0.22,1,0.36,1) both;}
+.hero-title{animation:fadeUp 0.6s 0.22s cubic-bezier(0.22,1,0.36,1) both;}
+.hero-rule{transform-origin:left;animation:ruleIn 0.5s 0.4s cubic-bezier(0.22,1,0.36,1) both;}
+.hero-sub{animation:fadeUp 0.6s 0.52s cubic-bezier(0.22,1,0.36,1) both;}
+.ring-pulse{position:absolute;inset:0;border-radius:50%;border:1.5px solid rgba(232,199,102,0.55);animation:ringPulse 3s ease-out 1.2s infinite;pointer-events:none;}
+/* 勾選指示器：印章式彈跳 */
+.symptom-card.is-selected .check-indicator{animation:popIn 0.3s cubic-bezier(0.34,1.56,0.64,1);}
+/* 鍵盤操作：金色焦點環 */
+button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid #C9A227;outline-offset:2px;}
+/* 尊重使用者的減少動態偏好 */
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:0.01ms !important;animation-iteration-count:1 !important;transition-duration:0.01ms !important;}}
 @media (max-width:640px){
 .factor-tag{font-size:0.7rem;padding:0.15rem 0.35rem;}
 #symptoms-container{gap:8px;}
@@ -67,15 +86,19 @@ input,select{font-size:16px !important;}
 </head>
 <body class="bg-lightBg min-h-screen flex flex-col p-2 md:p-4">
 <div class="max-w-5xl w-full bg-cardBg rounded-2xl shadow-elevation-2 overflow-hidden fade-in self-center">
-<div class="bg-gradient-to-r from-primary to-[#006658] p-4 md:p-6 text-white text-center relative overflow-hidden">
-<div class="absolute top-0 left-0 w-32 h-32 bg-white/5 rounded-full -translate-x-1/2 -translate-y-1/2"></div>
-<div class="absolute bottom-0 right-0 w-48 h-48 bg-white/5 rounded-full translate-x-1/3 translate-y-1/3"></div>
-<div class="relative z-10">
-<div class="inline-flex items-center justify-center w-14 h-14 bg-white/10 backdrop-blur-sm rounded-full mb-3 pulse-subtle">
-<i class="fa fa-heartbeat text-2xl text-accent"></i>
+<div class="relative overflow-hidden text-center" style="background:linear-gradient(150deg,#0B2620 0%,#0E3A30 55%,#0A4A3C 100%);background-blend-mode:normal;">
+<div class="absolute inset-0" style="background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='70' viewBox='0 0 140 70'%3E%3Cg fill='none' stroke='%23E8C766' stroke-opacity='0.06' stroke-width='1.5'%3E%3Cpath d='M0 70 Q35 35 70 70 T140 70'/%3E%3Cpath d='M-35 52 Q0 18 35 52 T105 52 T175 52'/%3E%3C/g%3E%3C/svg%3E&quot;);background-size:140px 70px;"></div>
+<div class="relative z-10 px-4 pt-7 pb-6">
+<div class="hero-emblem mx-auto mb-3 relative w-16 h-16">
+<span class="ring-pulse"></span>
+<div class="w-16 h-16 rounded-full flex items-center justify-center" style="border:1.5px solid rgba(232,199,102,0.55);background:rgba(255,255,255,0.06);">
+<i class="fa fa-heartbeat text-2xl" style="color:#E8C766;"></i>
 </div>
-<h1 class="text-xl md:text-2xl font-bold mb-1 tracking-wide">🧬 彥彬 自檢表系統</h1>
-<p class="text-white/90 text-sm md:text-base font-light">專業健康評估 · 精準對應七大健康要素 <span class="text-white/50 text-xs">v6.0</span></p>
+</div>
+<div class="hero-eyebrow text-[11px]" style="letter-spacing:0.4em;color:rgba(232,199,102,0.9);">七大健康要素 · 專業評估</div>
+<h1 class="hero-title font-display text-2xl md:text-3xl font-bold mt-1.5" style="color:#F5F2E8;letter-spacing:0.12em;">彥彬 健康自檢表</h1>
+<div class="hero-rule mx-auto mt-3" style="height:2px;width:72px;background:linear-gradient(90deg,#E8C766,#C9A227);"></div>
+<p class="hero-sub text-[12.5px] mt-2.5" style="color:rgba(226,232,228,0.72);">相信自己 · 找回初心 <span style="opacity:0.45;">v7.0</span></p>
 </div>
 </div>
 <div class="p-3 md:p-5">
@@ -103,7 +126,7 @@ input,select{font-size:16px !important;}
 <div id="user-info-section" class="hidden scale-in bg-neutral rounded-2xl p-3 md:p-4 mb-4 shadow-elevation-1">
 <div class="text-center mb-3">
 <div class="inline-block text-[11px] font-bold text-primary bg-primary/10 border border-primary/20 rounded-full px-2.5 py-0.5 mb-1.5">步驟 1 / 2</div>
-<h2 class="text-lg md:text-xl font-bold text-textPrimary mb-1"><span class="gradient-text bg-gradient-to-r from-primary to-[#006658]">用戶基本資訊</span></h2>
+<h2 class="font-display text-lg md:text-xl font-bold mb-1" style="color:#0E2E28;letter-spacing:0.08em;">用戶基本資訊</h2>
 <p class="text-textSecondary max-w-2xl mx-auto text-xs">請根據實際情況填寫，幫助系統精確評估</p>
 </div>
 <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mb-3">
@@ -153,7 +176,7 @@ input,select{font-size:16px !important;}
 <div id="checklist-section" class="hidden scale-in">
 <div class="mb-3 text-center">
 <div class="inline-block text-[11px] font-bold text-primary bg-primary/10 border border-primary/20 rounded-full px-2.5 py-0.5 mb-1.5">步驟 2 / 2</div>
-<h2 class="text-lg md:text-xl font-bold text-textPrimary mb-1"><span class="gradient-text bg-gradient-to-r from-primary to-[#006658]">自檢表填寫區域</span></h2>
+<h2 class="font-display text-lg md:text-xl font-bold mb-1" style="color:#0E2E28;letter-spacing:0.08em;">自檢表填寫區域</h2>
 <p class="text-textSecondary max-w-2xl mx-auto mb-2 text-xs">請勾選對應症狀並填寫相關資訊</p>
 <div class="mt-2 flex flex-wrap justify-center gap-1.5 text-xs">
 <span class="bg-blue-50 text-blue-700 factor-tag">氣血</span>
@@ -730,7 +753,7 @@ styleButtons();
 }
 // ===== 健康自檢報告模板 v6（全新設計：翡翠橫幅頁首版）=====
 // 畫面顯示與分享圖共用同一模板；分享輸出2張：健康自檢報告＋症狀明細
-const APP_VERSION='v6.0';
+const APP_VERSION='v7.0';
 const shareFactorColors={
 '氣血':'#64748B','循環':'#059669','毒素':'#D97706','血脂':'#EA580C','寒濕':'#7C3AED','免疫':'#DB2777','情緒':'#4F46E5'
 };
@@ -755,14 +778,17 @@ return `<div style="background:linear-gradient(135deg,#00A88C 0%,#008C76 55%,#00
 <span style="font-size:11.5px;font-weight:600;letter-spacing:1px;opacity:0.92;">🧬 彥彬 自檢表系統</span>
 <span style="font-size:10px;font-weight:700;background:rgba(255,255,255,0.22);border:1px solid rgba(255,255,255,0.35);border-radius:999px;padding:2px 9px;">${page}</span>
 </div>
-<div style="font-size:20px;font-weight:800;margin-top:7px;letter-spacing:0.5px;">${title}</div>
+<div style="font-size:20px;font-weight:800;margin-top:7px;letter-spacing:3px;font-family:'Noto Serif TC',serif;">${title}</div>
 <div style="font-size:11px;opacity:0.85;margin-top:3px;">${sub}</div>
 <div style="height:2px;width:52px;background:linear-gradient(90deg,#F5D061,#D4AF37);border-radius:2px;margin-top:9px;"></div>
 </div>`;
 }
 // 共用：卡片頁尾（含版本號，用於確認前端已更新）
 function reportFooter(){
-return `<div style="text-align:center;font-size:10px;color:#94A3B8;padding:9px 14px 11px;border-top:1px solid #E6EDEA;background:#FAFCFB;">🔖 彥彬自檢表系統 · 相信自己，找回初心 · ${new Date().toLocaleDateString('zh-TW')} · ${APP_VERSION}</div>`;
+return `<div style="display:flex;align-items:center;justify-content:center;gap:8px;font-size:10px;color:#94A3B8;padding:9px 14px 11px;border-top:1px solid #E6EDEA;background:#FAFCFB;">
+<span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border:1.5px solid #C9A227;border-radius:50%;color:#C9A227;font-family:'Noto Serif TC',serif;font-size:12px;font-weight:900;transform:rotate(-8deg);flex-shrink:0;">彥</span>
+<span>彥彬自檢表系統 · 相信自己，找回初心 · ${new Date().toLocaleDateString('zh-TW')} · ${APP_VERSION}</span>
+</div>`;
 }
 // 共用：卡片外殼（白卡圓角＋橫幅＋內文＋頁尾）
 function reportCardFrame(bannerHtml,bodyHtml){
@@ -879,7 +905,8 @@ host=document.createElement('div');
 host.style.cssText='position:fixed;left:-10000px;top:0;pointer-events:none;';
 host.innerHTML=cardWrap(buildReportOverviewHTML(window.reportData))+cardWrap(buildReportDetailHTML(window.reportData));
 document.body.appendChild(host);
-await new Promise(r=>setTimeout(r,150)); // 等待字體與版面渲染穩定
+if(document.fonts&&document.fonts.ready){try{await document.fonts.ready;}catch(_){}} // 等待明體等網頁字體載入
+await new Promise(r=>setTimeout(r,150)); // 等待版面渲染穩定
 const cards=Array.from(host.querySelectorAll('.share-card'));
 const dateStr=new Date().toLocaleDateString('zh-TW').replace(/\//g,'');
 const names=['健康自檢報告','症狀明細'];
@@ -1153,7 +1180,7 @@ console.log("自檢表提交返回：", resp);
 // 修正：head已載入LIFF SDK、jQuery、html2canvas，
 //   移除原版onload內的重複動態載入（避免jQuery 3.6/3.7雙版本混用）
 window.onload = function() {
-console.log('彥彬自檢表系統 前端版本：v6.0');
+console.log('彥彬自檢表系統 前端版本：v7.0');
 if(window.liff && window.jQuery){
 initLIFF();
 }else if(!window.liff){
