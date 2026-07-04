@@ -8,7 +8,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@600;700;900&family=Noto+Sans+TC:wght@300;400;500;700&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
 
   <script>
     tailwind.config = {
@@ -22,7 +22,7 @@
             neutral: '#F5F7FA',
             'neutral-dark': '#333F51'
           },
-          fontFamily: { inter: ['Inter', 'sans-serif'] },
+          fontFamily: { inter: ['Noto Sans TC','Inter','sans-serif'], display: ['Noto Serif TC','serif'], num: ['Inter','Noto Sans TC','sans-serif'] },
         },
       }
     }
@@ -219,6 +219,82 @@
       background: linear-gradient(135deg, #1e5bff, #3a8bff) !important;
       box-shadow: 0 5px 14px rgba(22,93,255,.35); transform: translateY(-1px); }
     .symptom-tab:not(.active):hover, .habit-tab:not(.active):hover { transform: translateY(-1px); }
+  
+    /* ============ 頂級質感層：全站動效與細節 ============ */
+    :root { --ink:#0E1B33; --pulse:#165DFF; --jade:#12B981; --dawn:#FF7D00; }
+    body { color: var(--ink); -webkit-font-smoothing: antialiased; }
+    ::selection { background: rgba(22,93,255,.18); }
+
+    h2 { font-family: 'Noto Serif TC', serif; letter-spacing: .02em; }
+
+    .yb-h-accent { display:inline-flex; align-items:center; gap:12px; }
+    .yb-h-accent::before, .yb-h-accent::after { content:''; height:2px; width:34px; border-radius:2px;
+      background: linear-gradient(90deg, transparent, rgba(22,93,255,.55)); }
+    .yb-h-accent::after { background: linear-gradient(90deg, rgba(18,185,129,.55), transparent); }
+
+    .reveal { opacity: 0; transform: translateY(26px); transition: opacity .8s cubic-bezier(.22,1,.36,1), transform .8s cubic-bezier(.22,1,.36,1); }
+    .reveal.in { opacity: 1; transform: none; }
+    .reveal-d1 { transition-delay: .08s; } .reveal-d2 { transition-delay: .16s; } .reveal-d3 { transition-delay: .24s; }
+
+    .yb-hero { position: relative; overflow: hidden; isolation: isolate;
+      background: radial-gradient(130% 130% at 15% 0%, #1E5BFF 0%, #1449D6 46%, #0E2C7A 100%); }
+    .yb-orb { position:absolute; border-radius:50%; filter: blur(60px); opacity:.5; z-index:-1; animation: yb-drift 14s ease-in-out infinite alternate; }
+    .yb-orb.o1 { width:340px; height:340px; background:#3aa0ff; top:-120px; right:-80px; }
+    .yb-orb.o2 { width:280px; height:280px; background:#12B981; bottom:-130px; left:-90px; animation-delay: -6s; }
+    @keyframes yb-drift { from { transform: translate(0,0) scale(1); } to { transform: translate(30px,22px) scale(1.12); } }
+
+    .yb-ecg { position:absolute; left:0; right:0; bottom:34px; width:100%; height:72px; z-index:-1; opacity:.9; }
+    .yb-ecg path { fill:none; stroke:url(#ecgGrad); stroke-width:2.5; stroke-linecap:round; stroke-linejoin:round;
+      stroke-dasharray: 340 1400; stroke-dashoffset: 1740; animation: yb-ecg-run 5.2s linear infinite; filter: drop-shadow(0 0 6px rgba(120,220,255,.8)); }
+    @keyframes yb-ecg-run { to { stroke-dashoffset: 0; } }
+
+    .yb-stage { opacity:0; transform: translateY(24px); animation: yb-rise .9s cubic-bezier(.22,1,.36,1) forwards; }
+    .yb-stage.s1{ animation-delay:.1s } .yb-stage.s2{ animation-delay:.28s } .yb-stage.s3{ animation-delay:.46s } .yb-stage.s4{ animation-delay:.64s }
+    @keyframes yb-rise { to { opacity:1; transform:none; } }
+    .yb-hero-eyebrow { display:inline-flex; align-items:center; gap:8px; font-size:12.5px; letter-spacing:.35em; font-weight:600;
+      color:rgba(255,255,255,.85); padding:7px 14px 7px 18px; border:1px solid rgba(255,255,255,.28); border-radius:999px;
+      backdrop-filter: blur(4px); background: rgba(255,255,255,.08); }
+    .yb-hero-title { font-family:'Noto Serif TC',serif; font-weight:900; line-height:1.22; }
+    .yb-hero-title .em { background: linear-gradient(92deg,#9ff0cf, #7dd3ff); -webkit-background-clip:text; background-clip:text; color:transparent; }
+    .yb-hero-formula { display:inline-grid; gap:6px; padding:16px 26px; border-radius:18px;
+      background: rgba(255,255,255,.10); border:1px solid rgba(255,255,255,.22); backdrop-filter: blur(8px); }
+    .yb-hero-formula .row { display:flex; align-items:baseline; gap:10px; font-size:15.5px; justify-content:center; }
+    .yb-hero-formula .k { opacity:.82; letter-spacing:.1em; }
+    .yb-hero-formula .good { color:#9ff0cf; font-weight:700; }
+    .yb-hero-formula .bad { color:#ffc9a3; font-weight:700; }
+    .yb-cta { position:relative; overflow:hidden; display:inline-flex; align-items:center; gap:10px;
+      background:#fff; color:#1449D6; font-weight:800; padding:15px 34px; border-radius:999px;
+      box-shadow: 0 14px 34px rgba(6,20,60,.35); transition: transform .2s, box-shadow .3s; }
+    .yb-cta:hover { transform: translateY(-3px); box-shadow: 0 20px 44px rgba(6,20,60,.45); }
+    .yb-cta::after { content:''; position:absolute; top:0; left:-80%; width:50%; height:100%;
+      background: linear-gradient(105deg, transparent, rgba(22,93,255,.16), transparent);
+      animation: yb-shine 3.4s ease-in-out infinite; }
+    @keyframes yb-shine { 0%,55%{ left:-80%; } 85%,100%{ left:130%; } }
+
+    .card-hover { border:1px solid transparent; }
+    .card-hover:hover { border-color: rgba(22,93,255,.12); }
+    .symptom-item label, .habit-item label { transition: border-color .2s, background .2s, transform .15s, box-shadow .25s; }
+    .symptom-item label:hover, .habit-item label:hover { border-color: rgba(22,93,255,.4); transform: translateY(-1px); box-shadow: 0 6px 16px rgba(22,93,255,.08); }
+    .symptom-item label:has(input:checked), .habit-item label:has(input:checked) {
+      border-color: var(--pulse); background: linear-gradient(135deg, rgba(22,93,255,.06), rgba(18,185,129,.06)); box-shadow: inset 0 0 0 1px rgba(22,93,255,.35); }
+    input[type="checkbox"], input[type="radio"] { accent-color: var(--pulse); transition: transform .12s; }
+    input[type="checkbox"]:active, input[type="radio"]:active { transform: scale(1.25); }
+    input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-visible, a:focus-visible { outline: 3px solid rgba(22,93,255,.35); outline-offset: 2px; }
+
+    .form-step.active { animation: yb-step-in .5s cubic-bezier(.22,1,.36,1); }
+    @keyframes yb-step-in { from { opacity:0; transform: translateX(26px); } to { opacity:1; transform:none; } }
+    .step-indicator { transition: background .35s, color .35s, transform .35s, box-shadow .35s; }
+    .step-indicator.bg-primary { box-shadow: 0 6px 16px rgba(22,93,255,.35); transform: scale(1.08); }
+    .step-progress { transition: width .6s cubic-bezier(.22,1,.36,1); }
+
+    header.yb-scrolled { box-shadow: 0 8px 30px rgba(14,27,51,.10); }
+    footer { background: linear-gradient(180deg, #14203b, #0E1B33) !important; }
+
+    @media (prefers-reduced-motion: reduce) {
+      .reveal { opacity:1 !important; transform:none !important; transition:none !important; }
+      .yb-stage { opacity:1; transform:none; animation:none; }
+      .yb-ecg path, .yb-orb, .yb-cta::after, #singleShareBtn::before { animation: none !important; }
+    }
   </style>
 </head>
 
@@ -250,14 +326,32 @@
     </div>
   </header>
 
-  <section class="bg-gradient-to-br from-primary/90 to-primary text-white py-12 md:py-20">
+  <section class="yb-hero text-white py-16 md:py-24">
+    <div class="yb-orb o1"></div>
+    <div class="yb-orb o2"></div>
+    <svg class="yb-ecg" viewBox="0 0 1200 80" preserveAspectRatio="none" aria-hidden="true">
+      <defs>
+        <linearGradient id="ecgGrad" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" stop-color="#7dd3ff"/><stop offset="1" stop-color="#7ef0c3"/>
+        </linearGradient>
+      </defs>
+      <path d="M0,46 H180 l14,-9 14,9 H320 l10,-30 12,52 10,-42 8,20 H560 l14,-9 14,9 H760 l10,-30 12,52 10,-42 8,20 H1000 l14,-9 14,9 H1200"/>
+    </svg>
     <div class="container mx-auto px-4">
       <div class="max-w-3xl mx-auto text-center">
-        <h2 class="text-[clamp(1.8rem,5vw,3rem)] font-bold mb-4 text-shadow leading-tight">瞭解您的身體信號</h2>
-        <p class="text-lg md:text-xl opacity-90 mb-8">疾病 = 壞習慣 ＋ 時間 <br>健康 = 好習慣 ＋ 時間</p>
-        <a href="#form" class="inline-block bg-white text-primary font-semibold px-6 py-3 rounded-full shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1">
-          開始我的健康評估 <i class="fa fa-arrow-right ml-2"></i>
-        </a>
+        <div class="yb-stage s1 mb-6"><span class="yb-hero-eyebrow"><i class="fa fa-heartbeat"></i>YB HEALTH SIGNAL</span></div>
+        <h2 class="yb-stage s2 yb-hero-title text-[clamp(2rem,5.5vw,3.4rem)] mb-6">
+          瞭解您的<span class="em">身體信號</span>
+        </h2>
+        <div class="yb-stage s3 mb-9">
+          <div class="yb-hero-formula">
+            <div class="row"><span class="k">疾病</span><span>＝</span><span class="bad">壞習慣</span><span>＋</span><span>時間</span></div>
+            <div class="row"><span class="k">健康</span><span>＝</span><span class="good">好習慣</span><span>＋</span><span>時間</span></div>
+          </div>
+        </div>
+        <div class="yb-stage s4">
+          <a href="#form" class="yb-cta">開始我的健康評估 <i class="fa fa-arrow-right"></i></a>
+        </div>
       </div>
     </div>
   </section>
@@ -265,7 +359,7 @@
   <section id="intro" class="py-12 md:py-16 bg-white">
     <div class="container mx-auto px-4">
       <div class="max-w-3xl mx-auto">
-        <h2 class="text-2xl md:text-3xl font-bold mb-6 text-center">為什麼需要健康自檢？</h2>
+        <h2 class="text-2xl md:text-3xl font-bold mb-6 text-center"><span class="yb-h-accent">為什麼需要健康自檢？</span></h2>
         <p class="text-lg md:text-xl opacity-90 mb-8 text-center">大病的早期是小病 <br> 小病的早期是症狀 <br> 解決 症狀 預防 5-10 年的大病</p>
         <div class="grid md:grid-cols-3 gap-6 mb-8">
           <div class="bg-neutral p-6 rounded-xl text-center card-hover">
@@ -295,7 +389,7 @@
   <section id="form" class="py-12 bg-neutral">
     <div class="container mx-auto px-4">
       <div class="max-w-4xl mx-auto">
-        <h2 class="text-2xl md:text-3xl font-bold mb-8 text-center">健康自檢表單</h2>
+        <h2 class="text-2xl md:text-3xl font-bold mb-8 text-center"><span class="yb-h-accent">健康自檢表單</span></h2>
 
         <div class="mb-10">
           <div class="flex items-center justify-between">
@@ -490,7 +584,7 @@
   <section id="guide" class="py-12 md:py-16 bg-white">
     <div class="container mx-auto px-4">
       <div class="max-w-3xl mx-auto">
-        <h2 class="text-2xl md:text-3xl font-bold mb-8 text-center">填寫指南</h2>
+        <h2 class="text-2xl md:text-3xl font-bold mb-8 text-center"><span class="yb-h-accent">填寫指南</span></h2>
         <div class="space-y-8">
           <div class="flex flex-col md:flex-row gap-6 items-center">
             <div class="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0"><i class="fa fa-check-circle text-primary text-2xl"></i></div>
@@ -517,7 +611,7 @@
   <section id="result" class="py-12 bg-neutral hidden">
     <div class="container mx-auto px-4">
       <div class="max-w-4xl mx-auto">
-        <h2 class="text-2xl md:text-3xl font-bold mb-8 text-center">🧬 健康評估結果</h2>
+        <h2 class="text-2xl md:text-3xl font-bold mb-8 text-center"><span class="yb-h-accent">🧬 健康評估結果</span></h2>
 
         <div class="bg-white rounded-2xl shadow-md p-6 md:p-8 mb-8">
           <div class="mb-8">
@@ -1171,8 +1265,13 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     }
 
-    document.getElementById('symptomCount').textContent = `${totalSymptomCount} 項症狀`;
-    document.getElementById('habitCount').textContent = `${habitCount} 項不良習慣`;
+    if (window.__ybAnimateCount) {
+      window.__ybAnimateCount(document.getElementById('symptomCount'), totalSymptomCount, ' 項症狀');
+      window.__ybAnimateCount(document.getElementById('habitCount'), habitCount, ' 項不良習慣');
+    } else {
+      document.getElementById('symptomCount').textContent = `${totalSymptomCount} 項症狀`;
+      document.getElementById('habitCount').textContent = `${habitCount} 項不良習慣`;
+    }
     document.getElementById('symptomScoreBar').style.width = `${Math.min(100, (totalSymptomCount / 50) * 100)}%`;
     document.getElementById('habitScoreBar').style.width = `${Math.min(100, (habitCount / 20) * 100)}%`;
 
@@ -1649,6 +1748,47 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   if (downloadReportBtn) downloadReportBtn.addEventListener('click', handleImageDownload);
+
+  // ============================================================
+  // 21. 頂級質感層：捲動顯現、導航陰影、數字計數
+  // ============================================================
+  const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // 自動為主要區塊掛上 reveal（不動原始 HTML 結構）
+  (function setupReveal() {
+    const targets = [];
+    document.querySelectorAll('#intro .grid > div').forEach((el, i) => { el.classList.add('reveal', `reveal-d${(i % 3) + 1}`); targets.push(el); });
+    document.querySelectorAll('#guide .space-y-8 > div').forEach((el, i) => { el.classList.add('reveal', i % 2 ? 'reveal-d2' : 'reveal-d1'); targets.push(el); });
+    document.querySelectorAll('#intro h2, #intro > .container > .max-w-3xl > p, #guide h2, #form h2, #intro .bg-primary\\/5').forEach(el => { el.classList.add('reveal'); targets.push(el); });
+    const formCard = document.querySelector('#form .bg-white.rounded-2xl');
+    if (formCard) { formCard.classList.add('reveal'); targets.push(formCard); }
+    if (prefersReduced || !('IntersectionObserver' in window)) { targets.forEach(el => el.classList.add('in')); return; }
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+    }, { threshold: 0.12, rootMargin: '0px 0px -8% 0px' });
+    targets.forEach(el => io.observe(el));
+  })();
+
+  // 導航列捲動陰影
+  const headerEl = document.querySelector('header');
+  window.addEventListener('scroll', () => {
+    headerEl.classList.toggle('yb-scrolled', window.scrollY > 8);
+  }, { passive: true });
+
+  // 數字滾動計數（結果頁統計用）
+  function animateCount(el, target, suffix) {
+    if (!el) return;
+    if (prefersReduced) { el.textContent = `${target}${suffix}`; return; }
+    const dur = 900; const start = performance.now();
+    function tick(now) {
+      const p = Math.min(1, (now - start) / dur);
+      const eased = 1 - Math.pow(1 - p, 3);
+      el.textContent = `${Math.round(target * eased)}${suffix}`;
+      if (p < 1) requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  }
+  window.__ybAnimateCount = animateCount;
 
   renderSymptomList();
   renderHabitList();
