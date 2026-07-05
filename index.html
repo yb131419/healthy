@@ -307,6 +307,11 @@
     .yb-gate-error { color:#d61f2b; }
     .yb-gate-retry { margin-top:16px; display:inline-flex; align-items:center; gap:8px; padding:10px 22px; border-radius:999px;
       background:linear-gradient(135deg,#165DFF,#12b981); color:#fff; font-weight:700; font-size:14px; border:none; cursor:pointer; }
+    .yb-gate-enter { margin-top:18px; display:inline-flex; align-items:center; gap:8px; padding:12px 30px; border-radius:999px;
+      background:linear-gradient(135deg,#12b981,#36D399); color:#fff; font-weight:800; font-size:15px; border:none; cursor:pointer;
+      box-shadow:0 10px 24px rgba(18,185,129,.4); transition: transform .15s ease, box-shadow .2s ease; }
+    .yb-gate-enter:hover { transform: translateY(-2px); box-shadow:0 14px 30px rgba(18,185,129,.5); }
+    .yb-gate-enter:active { transform: scale(.96); }
 
     /* ============ 頂級質感層：全站動效與細節 ============ */
     :root { --ink:#0E1B33; --pulse:#165DFF; --jade:#12B981; --dawn:#FF7D00; }
@@ -388,7 +393,7 @@
 
 <body class="font-inter bg-neutral text-neutral-dark min-h-screen">
 
-  <!-- ★ LINE 登入驗證閘門：進站先驗證身分，通過後才淡出顯示網站內容 -->
+  <!-- ★ LINE 登入驗證閘門：進站先驗證身分，通過後由使用者按鈕確認進入 -->
   <div id="liffGate">
     <div class="yb-gate-card">
       <div id="gateSpinner"><div class="yb-gate-ring"></div></div>
@@ -396,6 +401,7 @@
       <div class="yb-gate-title" id="gateTitle">正在驗證您的身分</div>
       <div class="yb-gate-status" id="gateStatus">連接 LINE 帳號中…</div>
       <div id="gateBadgeWrap"></div>
+      <button id="gateEnterBtn" class="yb-gate-enter" style="display:none;">進入健康自檢表 <i class="fa fa-arrow-right"></i></button>
       <button id="gateRetryBtn" class="yb-gate-retry" style="display:none;"><i class="fa fa-refresh"></i> 重新整理</button>
     </div>
   </div>
@@ -2020,7 +2026,7 @@ document.addEventListener('DOMContentLoaded', function() {
   function buildShareMessage(userName, date, shareUrl) {
     const d = lastResultData || {};
     const priority = Object.entries(lastAdjustmentScores || {}).sort((a, b) => a[1] - b[1]).slice(0, 3).map(([k, s]) => `　${k}（${s}分）`);
-    const divider = '────────';
+    const divider = '──────────';
     const sections = [];
 
     sections.push(`🌱 ${userName} 的健康自檢報告\n🗓️ ${date}`);
@@ -2128,7 +2134,7 @@ document.addEventListener('DOMContentLoaded', function() {
   window.__ybAnimateCount = animateCount;
 
   // ============================================================
-  // 22. LINE 登入驗證閘門（僅驗證邏輯：LIFF登入 → 後端驗證身分/次數）
+  // 22. LINE 登入驗證閘門（僅驗證邏輯：LIFF登入 → 後端驗證身分/次數 → 手動進入）
   // ============================================================
   const gateEl = document.getElementById('liffGate');
   const gateSpinner = document.getElementById('gateSpinner');
@@ -2137,7 +2143,13 @@ document.addEventListener('DOMContentLoaded', function() {
   const gateTitle = document.getElementById('gateTitle');
   const gateStatus = document.getElementById('gateStatus');
   const gateBadgeWrap = document.getElementById('gateBadgeWrap');
+  const gateEnterBtn = document.getElementById('gateEnterBtn');
   const gateRetryBtn = document.getElementById('gateRetryBtn');
+
+  function gateClose() {
+    gateEl.classList.add('gate-hide');
+    setTimeout(() => gateEl.remove(), 550);
+  }
 
   function gateShowError(msg) {
     gateSpinner.style.display = 'none';
@@ -2150,21 +2162,29 @@ document.addEventListener('DOMContentLoaded', function() {
     gateRetryBtn.style.display = 'inline-flex';
   }
 
+  // ★ 驗證通過後：顯示身分與剩餘天數/次數，停留讓使用者確認後手動點擊進入
   function gateShowSuccess(userInfo) {
     gateSpinner.style.display = 'none';
     gateIconWrap.style.display = '';
     gateIcon.className = 'fa fa-check-circle';
     gateIcon.style.color = '#12b981';
     gateTitle.textContent = `歡迎回來，${userInfo.displayName || 'LINE用戶'}`;
-    gateStatus.textContent = userInfo.isAdmin ? '身分驗證成功' : `身分驗證成功，尚可使用 ${Math.max(0, 3 - (userInfo.usageCount || 0))} 次`;
+
     if (userInfo.isAdmin) {
-      gateBadgeWrap.innerHTML = `<span class="yb-gate-badge vip"><i class="fa fa-gem"></i> 尊爵用戶　${userInfo.remainingDays === '永久有效' ? '永久有效' : (userInfo.remainingDays + ' 天')}</span>`;
+      const remainText = userInfo.remainingDays === '永久有效' ? '永久有效' : `剩餘 ${userInfo.remainingDays} 天`;
+      gateStatus.textContent = `身分驗證成功，尊爵權限 ${remainText}`;
+      gateBadgeWrap.innerHTML = `<span class="yb-gate-badge vip"><i class="fa fa-gem"></i> 尊爵用戶　${remainText}</span>`;
     } else {
-      gateBadgeWrap.innerHTML = `<span class="yb-gate-badge"><i class="fa fa-user"></i> 一般用戶</span>`;
+      const remain = Math.max(0, 3 - (userInfo.usageCount || 0));
+      gateStatus.textContent = `身分驗證成功，剩餘可用 ${remain} 次`;
+      gateBadgeWrap.innerHTML = `<span class="yb-gate-badge"><i class="fa fa-user"></i> 一般用戶　剩餘 ${remain} 次</span>`;
     }
-    setTimeout(() => { gateEl.classList.add('gate-hide'); setTimeout(() => gateEl.remove(), 550); }, 700);
+
+    // 不自動關閉，等使用者確認資訊後自行點擊「進入」
+    gateEnterBtn.style.display = 'inline-flex';
   }
 
+  gateEnterBtn.addEventListener('click', gateClose);
   gateRetryBtn.addEventListener('click', () => window.location.reload());
 
   async function verifyLineUser(profile) {
@@ -2208,12 +2228,13 @@ document.addEventListener('DOMContentLoaded', function() {
   } else {
     console.warn('⚠️ LIFF_ID 尚未設定，登入驗證閘門已停用，目前任何人都能直接使用本頁面（僅供開發預覽，正式上線前請務必設定）');
     gateTitle.textContent = '開發模式';
-    gateStatus.textContent = 'LIFF_ID 尚未設定，3 秒後略過登入驗證…';
+    gateStatus.textContent = 'LIFF_ID 尚未設定，僅供開發預覽';
     gateSpinner.style.display = 'none';
     gateIconWrap.style.display = '';
     gateIcon.className = 'fa fa-exclamation-triangle';
     gateIcon.style.color = '#FF7D00';
-    setTimeout(() => { gateEl.classList.add('gate-hide'); setTimeout(() => gateEl.remove(), 550); }, 3000);
+    gateEnterBtn.innerHTML = '進入開發預覽 <i class="fa fa-arrow-right"></i>';
+    gateEnterBtn.style.display = 'inline-flex';
   }
 
   renderSymptomList();
