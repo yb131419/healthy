@@ -8,6 +8,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@600;700;900&family=Noto+Sans+TC:wght@300;400;500;700&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
 
   <script>
@@ -291,6 +292,22 @@
       box-shadow: 0 5px 14px rgba(22,93,255,.35); transform: translateY(-1px); }
     .symptom-tab:not(.active):hover, .habit-tab:not(.active):hover { transform: translateY(-1px); }
   
+    /* ============ LINE 登入驗證閘門 ============ */
+    #liffGate { position: fixed; inset: 0; z-index: 200000; display: flex; align-items: center; justify-content: center;
+      background: radial-gradient(130% 130% at 15% 0%, #1E5BFF 0%, #1449D6 46%, #0E2C7A 100%); transition: opacity .5s ease; }
+    #liffGate.gate-hide { opacity: 0; pointer-events: none; }
+    .yb-gate-card { width: min(92vw, 380px); background: #fff; border-radius: 22px; padding: 34px 28px; text-align: center; box-shadow: 0 24px 60px rgba(15,26,50,.35); }
+    .yb-gate-ring { width: 64px; height: 64px; margin: 0 auto 18px; border-radius: 50%;
+      background: conic-gradient(#165DFF, #12b981, #165DFF); animation: yb-spin 1s linear infinite;
+      -webkit-mask: radial-gradient(farthest-side, transparent 62%, #000 64%); mask: radial-gradient(farthest-side, transparent 62%, #000 64%); }
+    .yb-gate-title { font-weight: 800; font-size: 17px; color: #1f2a44; margin-bottom: 6px; }
+    .yb-gate-status { font-size: 13.5px; color: #6b7280; min-height: 20px; }
+    .yb-gate-badge { display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:700; color:#0E42D2; background:#e8f0ff; border:1px solid #cfe0ff; padding:4px 12px; border-radius:999px; margin-top:14px; }
+    .yb-gate-badge.vip { color:#A6821C; background:#FDF6E3; border-color:#F0DFA5; }
+    .yb-gate-error { color:#d61f2b; }
+    .yb-gate-retry { margin-top:16px; display:inline-flex; align-items:center; gap:8px; padding:10px 22px; border-radius:999px;
+      background:linear-gradient(135deg,#165DFF,#12b981); color:#fff; font-weight:700; font-size:14px; border:none; cursor:pointer; }
+
     /* ============ 頂級質感層：全站動效與細節 ============ */
     :root { --ink:#0E1B33; --pulse:#165DFF; --jade:#12B981; --dawn:#FF7D00; }
     body { color: var(--ink); -webkit-font-smoothing: antialiased; }
@@ -370,6 +387,19 @@
 </head>
 
 <body class="font-inter bg-neutral text-neutral-dark min-h-screen">
+
+  <!-- ★ LINE 登入驗證閘門：進站先驗證身分，通過後才淡出顯示網站內容 -->
+  <div id="liffGate">
+    <div class="yb-gate-card">
+      <div id="gateSpinner"><div class="yb-gate-ring"></div></div>
+      <div id="gateIconWrap" style="display:none;"><i id="gateIcon" class="fa fa-times-circle" style="font-size:52px;color:#d61f2b;margin-bottom:14px;display:block;"></i></div>
+      <div class="yb-gate-title" id="gateTitle">正在驗證您的身分</div>
+      <div class="yb-gate-status" id="gateStatus">連接 LINE 帳號中…</div>
+      <div id="gateBadgeWrap"></div>
+      <button id="gateRetryBtn" class="yb-gate-retry" style="display:none;"><i class="fa fa-refresh"></i> 重新整理</button>
+    </div>
+  </div>
+
   <!-- 導航欄 -->
   <header class="sticky top-0 z-50 bg-white/95 shadow-sm backdrop-blur-sm transition-all duration-300">
     <div class="container mx-auto px-4 py-3 flex justify-between items-center">
@@ -811,6 +841,10 @@ document.addEventListener('DOMContentLoaded', function() {
   const IMGBB_API_KEY = '60691c91e77a7ad5a7eabaf332fbdffe';
   const IMGBB_UPLOAD_URL = 'https://api.imgbb.com/1/upload';
   let globalAiComment = '';
+
+  // ★ LINE 登入驗證設定（僅登入驗證邏輯，不含簡表的其他功能）
+  const LIFF_ID = '請填入你的LIFF_ID'; // 例：2008578880-NznKeG2a
+  const VERIFY_TIMEOUT = 12000;
 
   const REQUEST_TIMEOUT = 45000;
   const MAX_RETRIES = 3;
@@ -2092,6 +2126,87 @@ document.addEventListener('DOMContentLoaded', function() {
     requestAnimationFrame(tick);
   }
   window.__ybAnimateCount = animateCount;
+
+  // ============================================================
+  // 22. LINE 登入驗證閘門（僅驗證邏輯：LIFF登入 → 後端驗證身分/次數）
+  // ============================================================
+  const gateEl = document.getElementById('liffGate');
+  const gateSpinner = document.getElementById('gateSpinner');
+  const gateIconWrap = document.getElementById('gateIconWrap');
+  const gateIcon = document.getElementById('gateIcon');
+  const gateTitle = document.getElementById('gateTitle');
+  const gateStatus = document.getElementById('gateStatus');
+  const gateBadgeWrap = document.getElementById('gateBadgeWrap');
+  const gateRetryBtn = document.getElementById('gateRetryBtn');
+
+  function gateShowError(msg) {
+    gateSpinner.style.display = 'none';
+    gateIconWrap.style.display = '';
+    gateIcon.className = 'fa fa-times-circle';
+    gateIcon.style.color = '#d61f2b';
+    gateTitle.textContent = '無法進入系統';
+    gateTitle.classList.add('yb-gate-error');
+    gateStatus.textContent = msg || '請重新整理頁面再試一次';
+    gateRetryBtn.style.display = 'inline-flex';
+  }
+
+  function gateShowSuccess(userInfo) {
+    gateSpinner.style.display = 'none';
+    gateIconWrap.style.display = '';
+    gateIcon.className = 'fa fa-check-circle';
+    gateIcon.style.color = '#12b981';
+    gateTitle.textContent = `歡迎回來，${userInfo.displayName || 'LINE用戶'}`;
+    gateStatus.textContent = userInfo.isAdmin ? '身分驗證成功' : `身分驗證成功，尚可使用 ${Math.max(0, 3 - (userInfo.usageCount || 0))} 次`;
+    if (userInfo.isAdmin) {
+      gateBadgeWrap.innerHTML = `<span class="yb-gate-badge vip"><i class="fa fa-gem"></i> 尊爵用戶　${userInfo.remainingDays === '永久有效' ? '永久有效' : (userInfo.remainingDays + ' 天')}</span>`;
+    } else {
+      gateBadgeWrap.innerHTML = `<span class="yb-gate-badge"><i class="fa fa-user"></i> 一般用戶</span>`;
+    }
+    setTimeout(() => { gateEl.classList.add('gate-hide'); setTimeout(() => gateEl.remove(), 550); }, 700);
+  }
+
+  gateRetryBtn.addEventListener('click', () => window.location.reload());
+
+  async function verifyLineUser(profile) {
+    const userId = profile.userId || '';
+    const displayName = profile.displayName || 'LINE用戶';
+    if (!userId) throw new Error('無法取得 LINE 用戶身分，請重新登入後再試');
+
+    const callbackName = `jsonpVerify_${Date.now()}`;
+    const params = new URLSearchParams({ action: 'verifyUser', userId, displayName, callback: callbackName, timestamp: Date.now() });
+    const resp = await jsonpRequest(`${BACKEND_GOOGLE_SCRIPT_URL}?${params.toString()}`, callbackName, VERIFY_TIMEOUT);
+    if (resp?.status !== 'success') throw new Error(resp?.message || '身分驗證失敗');
+    return { ...resp, displayName };
+  }
+
+  async function initLiffGate() {
+    try {
+      if (!window.liff) { gateShowError('LIFF SDK 載入失敗，請檢查網路後重新整理'); return; }
+      gateStatus.textContent = '連接 LINE 帳號中…';
+      await liff.init({ liffId: LIFF_ID });
+
+      if (!liff.isLoggedIn()) {
+        gateStatus.textContent = '正在導向 LINE 登入…';
+        liff.login({ redirectUri: window.location.href });
+        return; // 登入後會重新導向回本頁，流程會再跑一次
+      }
+
+      gateStatus.textContent = '正在驗證授權狀態…';
+      const profile = await liff.getProfile();
+      const userInfo = await verifyLineUser(profile);
+      gateShowSuccess(userInfo);
+    } catch (err) {
+      console.error('LIFF 登入驗證失敗：', err);
+      gateShowError(err.message || '系統初始化失敗，請重新整理頁面重試');
+    }
+  }
+
+  // 若尚未設定 LIFF_ID，略過驗證閘門（開發/預覽環境可直接看到網站內容）
+  if (LIFF_ID && LIFF_ID.indexOf('請填入') === -1) {
+    initLiffGate();
+  } else {
+    gateEl.remove();
+  }
 
   renderSymptomList();
   renderHabitList();
