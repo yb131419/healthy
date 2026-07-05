@@ -127,6 +127,7 @@
     .yb-symcard .gl .dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
     .yb-symcard .gl .cnt { margin-left:auto; font-size:10.5px; font-weight:700; color:#fff; background:#94a3b8; padding:1px 8px; border-radius:999px; }
     .yb-symcard .gi { font-size:12px; color:#4b5563; line-height:1.65; }
+    .yb-symcard .gi .more { color:#94a3b8; font-weight:600; white-space:nowrap; }
     .yb-sub-h { display:flex; align-items:center; gap:7px; font-size:12.5px; font-weight:800; color:#334155; margin:12px 0 8px; padding-bottom:5px; border-bottom:1px dashed #e5e9f0; }
     .yb-sc-motto { margin: 18px 0 4px; padding: 14px 16px; border-radius: 14px;
       background: linear-gradient(135deg,#f5f8ff,#eefaf4); font-size: 12.5px; color:#334; line-height: 1.7; text-align:center; }
@@ -1335,6 +1336,81 @@ document.addEventListener('DOMContentLoaded', function() {
 
   function formatToday() { const d = new Date(); return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`; }
 
+  // ★ 離屏渲染分享用雷達圖：固定尺寸＋關閉動畫＋關閉響應式，
+  //   同步繪製完成後直接輸出 dataURL，任何裝置、任何頁面狀態都穩定
+  function makeShareChartDataUrl(scores) {
+    try {
+      const labels = Object.keys(scores);
+      const values = Object.values(scores);
+      const W = 720, H = 540;
+      const off = document.createElement('canvas');
+      off.width = W; off.height = H;
+      const octx = off.getContext('2d');
+
+      const grad = octx.createLinearGradient(0, 0, 0, H);
+      grad.addColorStop(0, 'rgba(22, 93, 255, 0.30)');
+      grad.addColorStop(1, 'rgba(18, 185, 129, 0.18)');
+
+      const tmp = new Chart(octx, {
+        type: 'radar',
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: '您的調理得分',
+              data: values,
+              backgroundColor: grad,
+              borderColor: '#165DFF',
+              borderWidth: 3,
+              pointBackgroundColor: values.map(s => s < 30 ? '#FF5630' : s < 60 ? '#FF7D00' : '#12b981'),
+              pointBorderColor: '#fff',
+              pointBorderWidth: 2,
+              pointRadius: 6,
+              order: 1
+            },
+            {
+              label: '調理警戒線 (60分)',
+              data: labels.map(() => 60),
+              backgroundColor: 'rgba(0,0,0,0)',
+              borderColor: 'rgba(255, 125, 0, 0.6)',
+              borderWidth: 2,
+              borderDash: [6, 5],
+              pointRadius: 0,
+              fill: false,
+              order: 2
+            }
+          ]
+        },
+        options: {
+          responsive: false,          // 關鍵：不依賴容器尺寸
+          animation: false,           // 關鍵：同步繪製，立即可輸出
+          devicePixelRatio: 2,        // 高解析輸出
+          layout: { padding: 14 },
+          scales: { r: {
+            min: 0, max: 100,
+            angleLines: { color: 'rgba(22,93,255,0.12)' },
+            grid: { color: 'rgba(22,93,255,0.12)' },
+            pointLabels: { font: { size: 17, weight: 'bold', family: "'Noto Sans TC', sans-serif" }, color: '#334155', padding: 14 },
+            ticks: { display: true, backdropColor: 'transparent', color: '#9aa3b2', stepSize: 20, font: { size: 12 } }
+          } },
+          plugins: {
+            legend: { position: 'top', labels: { font: { size: 14, family: "'Noto Sans TC', sans-serif" }, padding: 18, usePointStyle: true, pointStyleWidth: 14 } },
+            tooltip: { enabled: false },
+            title: { display: false }
+          },
+          elements: { line: { tension: 0.15 } }
+        }
+      });
+
+      const url = off.toDataURL('image/png');
+      tmp.destroy();
+      return url;
+    } catch (e) {
+      console.warn('分享雷達圖渲染失敗:', e);
+      return '';
+    }
+  }
+
   // ★ 建立完整質感分享卡片（概覽＋雷達圖＋主要問題＋AI評估）
   function buildShareCard(data) {
     if (!data) return;
@@ -1354,34 +1430,37 @@ document.addEventListener('DOMContentLoaded', function() {
     const symPct = Math.min(100, (symptomCount / 50) * 100);
     const habPct = Math.min(100, (habitCount / 20) * 100);
 
-    // 雷達圖：取用已渲染圖表的圖片
+    // 雷達圖：以「離屏專屬畫布」重新渲染（固定尺寸、關閉動畫），
+    // 不再依賴頁面圖表狀態——修正結果區隱藏時畫布為 0 導致分享圖上圖表空白的問題
     let chartHtml = '';
-    if (windowHealthChart && typeof windowHealthChart.toBase64Image === 'function' && (symptomCount > 0 || habitCount > 0)) {
-      let imgData = '';
-      try { imgData = windowHealthChart.toBase64Image('image/png', 1); } catch (e) { imgData = ''; }
-      if (imgData) chartHtml = `<div class="yb-sc-chart"><img src="${imgData}" alt="健康風險分布雷達圖"><div class="cap">＊警戒線 60 分以下建議優先調理</div></div>`;
+    if ((symptomCount > 0 || habitCount > 0) && typeof Chart !== 'undefined') {
+      const imgData = makeShareChartDataUrl(scores);
+      if (imgData) chartHtml = `<div class="yb-sc-chart"><img src="${imgData}" width="480" alt="健康風險分布雷達圖"><div class="cap">＊警戒線 60 分以下建議優先調理</div></div>`;
     }
     if (!chartHtml) chartHtml = `<div class="yb-sc-chart" style="padding:26px 10px;color:#8a93a3;font-size:13px;">未勾選症狀與習慣，暫無風險分布圖</div>`;
 
-    // 詳細症狀：分類分明的卡片式呈現（每類一張含彩色圓點的小卡）
+    // 詳細症狀（精簡版）：每類一張小卡，最多預覽 6 項，其餘以「等 N 項」收斂，避免圖片過長
     const catColors = ['#165DFF','#12b981','#FF7D00','#8b5cf6','#e11d8f','#0ea5e9','#f59e0b','#14b8a6','#ef4444','#6366f1'];
+    const PREVIEW_MAX = 6;
     let symGroupHtml = '';
     if (symptomGroups.length > 0) {
       symGroupHtml = '<div class="yb-symcards">' + symptomGroups.map((g, i) => {
         const c = catColors[i % catColors.length];
-        return `<div class="yb-symcard" style="border-left-color:${c}"><div class="gl"><span class="dot" style="background:${c}"></span>${escapeHtml(g.label)}<span class="cnt">${g.items.length}</span></div><div class="gi">${g.items.map(escapeHtml).join('、')}</div></div>`;
+        const items = g.items || [];
+        const shown = items.slice(0, PREVIEW_MAX).map(escapeHtml).join('、');
+        const rest = items.length > PREVIEW_MAX ? `<span class="more">…等 ${items.length} 項</span>` : '';
+        return `<div class="yb-symcard" style="border-left-color:${c}"><div class="gl"><span class="dot" style="background:${c}"></span>${escapeHtml(g.label)}<span class="cnt">${items.length}</span></div><div class="gi">${shown}${rest}</div></div>`;
       }).join('') + '</div>';
     } else {
       symGroupHtml = '<div class="gi" style="color:#8a93a3">未勾選任何症狀</div>';
     }
-    const habCatColors = ['#0ea5e9','#8b5cf6','#12b981','#f59e0b','#e11d8f','#ef4444'];
+
+    // 不良習慣（改回精簡版）：分類＋數量的膠囊列，不逐項展開
     let habGroupHtml = '';
     if (habitGroups.length > 0) {
-      habGroupHtml = '<div class="yb-symcards">' + habitGroups.map((g, i) => {
-        const c = habCatColors[i % habCatColors.length];
-        const items = g.items || [];
-        return `<div class="yb-symcard" style="border-left-color:${c}"><div class="gl"><span class="dot" style="background:${c}"></span>${escapeHtml(g.label)}<span class="cnt">${items.length}</span></div><div class="gi">${items.map(escapeHtml).join('、')}</div></div>`;
-      }).join('') + '</div>';
+      habGroupHtml = '<div class="yb-sc-tags">' + habitGroups.map(g =>
+        `<span class="yb-sc-tag lv2">${escapeHtml(g.label)} <b>${(g.items || []).length}</b><small>項</small></span>`
+      ).join('') + '</div>';
     } else {
       habGroupHtml = '<div class="gi" style="color:#8a93a3">未勾選任何不良習慣</div>';
     }
