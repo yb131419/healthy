@@ -201,6 +201,38 @@
     .yb-ai-box p:last-child { margin-bottom:0; }
     .yb-ai-tag { display:inline-flex; align-items:center; gap:5px; font-size:11px; font-weight:700; color:#0E42D2; background:#e8f0ff; padding:4px 11px; border-radius:99px; margin-bottom:11px; }
 
+    /* AI 評估：頁面頂級卡片 */
+    .yb-ai-card { background:#fff; border:1px solid #e8edf5; border-radius:18px; overflow:hidden; box-shadow:0 8px 26px rgba(14,27,51,.06); }
+    .yb-ai-head { display:flex; align-items:center; gap:10px; padding:15px 18px;
+      background:linear-gradient(135deg,#f2f7ff,#eefaf4); border-bottom:1px solid #e8edf5; }
+    .yb-ai-head .ic { width:32px; height:32px; border-radius:10px; background:linear-gradient(135deg,#165DFF,#12b981); color:#fff; display:flex; align-items:center; justify-content:center; font-size:14px; }
+    .yb-ai-head .t { font-size:15.5px; font-weight:800; color:#1f2a44; }
+    .yb-ai-head .badge { margin-left:auto; font-size:11px; font-weight:700; color:#0E42D2; background:#e8f0ff; border:1px solid #cfe0ff; padding:0 11px; height:24px; line-height:22px; border-radius:999px; display:inline-block; }
+    .yb-ai-obs { margin:16px 18px 4px; padding:13px 15px; border-left:3px solid #165DFF; background:#f7faff; border-radius:0 12px 12px 0;
+      font-size:14px; color:#2b3547; line-height:1.8; font-weight:500; }
+    .yb-ai-dirs { padding:8px 18px 4px; }
+    .yb-ai-dir { display:flex; gap:12px; padding:12px 0; border-bottom:1px dashed #edf0f6; }
+    .yb-ai-dir:last-child { border-bottom:none; }
+    .yb-ai-dir-badge { flex-shrink:0; width:26px; height:26px; border-radius:9px; color:#fff; font-size:13px; font-weight:800; text-align:center; line-height:26px; }
+    .yb-ai-dir-name { font-size:14px; font-weight:800; color:#1f2a44; margin-bottom:3px; }
+    .yb-ai-root { font-size:13px; color:#4b5563; line-height:1.7; }
+    .yb-ai-tip { font-size:12.5px; color:#0f766e; font-weight:600; margin-top:4px; }
+    .yb-ai-remind { margin:6px 18px 14px; padding:11px 15px; border-radius:12px; text-align:center;
+      background:linear-gradient(135deg,#fff7ed,#fef3f2); color:#b45309; font-size:13px; font-weight:600; }
+    .yb-ai-remind i { color:#f43f5e; margin-right:5px; }
+    .yb-ai-note { font-size:11px; color:#9aa3b2; text-align:center; padding:0 18px 14px; }
+
+    /* AI 評估：分享卡結構化 */
+    .yb-sca-obs { padding:10px 13px; border-left:3px solid #165DFF; background:#fff; border-radius:0 10px 10px 0;
+      font-size:12.8px; color:#2b3547; line-height:1.75; font-weight:500; margin-bottom:10px; }
+    .yb-sca-dir { display:flex; gap:9px; padding:7px 0; align-items:flex-start; }
+    .yb-sca-dir .bn { flex-shrink:0; width:20px; height:20px; border-radius:7px; color:#fff; font-size:11px; font-weight:800; text-align:center; line-height:20px; }
+    .yb-sca-dir .body { font-size:12.3px; color:#3f4a5c; line-height:1.65; }
+    .yb-sca-dir .body b { color:#1f2a44; }
+    .yb-sca-dir .tip { display:block; color:#0f766e; font-weight:600; margin-top:2px; }
+    .yb-sca-remind { margin-top:9px; padding:9px 12px; border-radius:10px; text-align:center;
+      background:#fff7ed; color:#b45309; font-size:12px; font-weight:600; }
+
 
     /* ===== 質感按鈕系統 ===== */
     .yb-btn { position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
@@ -1012,7 +1044,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
   async function callOpenAIByBackend(healthData) {
     try {
-      const formData = { basicInfo: healthData.basicInfo, symptoms: healthData.symptoms, symptomCount: healthData.symptomCount, habits: healthData.habits, habitCount: healthData.habitCount, healthIssues: healthData.healthIssues };
+      const formData = {
+        basicInfo: healthData.basicInfo, symptoms: healthData.symptoms, symptomCount: healthData.symptomCount,
+        habits: healthData.habits, habitCount: healthData.habitCount, healthIssues: healthData.healthIssues,
+        directionScores: calculateAdjustmentScores() // ★ 讓 AI 精準鎖定分數最低的方向
+      };
       const callbackName = `jsonpAiCallback_${Date.now()}`;
       const params = new URLSearchParams({ data: JSON.stringify(formData), callback: callbackName, action: 'generateAiComment', timestamp: Date.now() });
       const requestFn = () => jsonpRequest(`${BACKEND_GOOGLE_SCRIPT_URL}?${params.toString()}`, callbackName);
@@ -1022,6 +1058,32 @@ document.addEventListener('DOMContentLoaded', function() {
     } catch (error) { console.error('AI評語生成失敗：', error); throw error; }
   }
 
+  // ★ 解析結構化 AI 評語：【整體觀察】【方向】根源：…｜建議：…【溫馨提醒】
+  //   舊格式（純段落）會回傳 null，自動退回段落顯示，前後端可分開升級
+  function parseAiComment(text) {
+    if (!text || !text.includes('【')) return null;
+    const out = { observation: '', directions: [], reminder: '' };
+    const re = /【([^】]+)】([^【]*)/g; let m;
+    while ((m = re.exec(text)) !== null) {
+      const key = m[1].trim();
+      const val = m[2].trim().replace(/\n+/g, ' ');
+      if (!val) continue;
+      if (key.includes('整體') || key.includes('觀察')) out.observation = val;
+      else if (key.includes('提醒') || key.includes('叮嚀')) out.reminder = val;
+      else {
+        let root = '', tip = '';
+        val.split(/｜|\|/).forEach(p => {
+          p = p.trim();
+          if (/^根源[:：]/.test(p)) root = p.replace(/^根源[:：]/, '').trim();
+          else if (/^建議[:：]/.test(p)) tip = p.replace(/^建議[:：]/, '').trim();
+          else if (!root) root = p; else if (!tip) tip = p;
+        });
+        out.directions.push({ name: key, root, tip });
+      }
+    }
+    return (out.observation || out.directions.length) ? out : null;
+  }
+
   function renderAiEvaluation() {
     if (!aiEvaluationContainer) return;
     if (!globalAiComment) {
@@ -1029,6 +1091,36 @@ document.addEventListener('DOMContentLoaded', function() {
       document.getElementById('aiRetryBtn')?.addEventListener('click', retryAi);
       return;
     }
+
+    const parsed = parseAiComment(globalAiComment);
+    if (parsed) {
+      const dirColors = ['#165DFF', '#FF7D00', '#12b981'];
+      let dirsHtml = parsed.directions.slice(0, 3).map((d, i) => `
+        <div class="yb-ai-dir">
+          <div class="yb-ai-dir-badge" style="background:${dirColors[i % 3]}">${i + 1}</div>
+          <div class="yb-ai-dir-body">
+            <div class="yb-ai-dir-name">${escapeHtml(d.name)}</div>
+            ${d.root ? `<p class="yb-ai-root">${escapeHtml(d.root)}</p>` : ''}
+            ${d.tip ? `<p class="yb-ai-tip">💡 ${escapeHtml(d.tip)}</p>` : ''}
+          </div>
+        </div>`).join('');
+
+      aiEvaluationContainer.innerHTML = `
+        <div class="yb-ai-card mt-4">
+          <div class="yb-ai-head">
+            <span class="ic"><i class="fa fa-magic"></i></span>
+            <span class="t">AI 健康評估</span>
+            <span class="badge"><i class="fa fa-robot"></i> 彥彬 AI 顧問</span>
+          </div>
+          ${parsed.observation ? `<div class="yb-ai-obs">${escapeHtml(parsed.observation)}</div>` : ''}
+          ${dirsHtml ? `<div class="yb-ai-dirs">${dirsHtml}</div>` : ''}
+          ${parsed.reminder ? `<div class="yb-ai-remind"><i class="fa fa-heart"></i> ${escapeHtml(parsed.reminder)}</div>` : ''}
+          <p class="yb-ai-note">＊此評估基於自檢表數據生成，僅供參考，不能替代醫生診斷</p>
+        </div>`;
+      return;
+    }
+
+    // 舊格式後備：純段落顯示
     const formattedComment = globalAiComment.split('\n').filter(p => p.trim()).map(p => `<p class="text-sm mb-2">${escapeHtml(p)}</p>`).join('');
     aiEvaluationContainer.innerHTML = `<div class="bg-white p-4 rounded-lg border border-gray-100 shadow-sm mt-4"><h3 class="text-lg font-semibold mb-4 text-primary"><i class="fa fa-robot mr-2"></i>🟢 健康自檢表 AI評估</h3><div class="text-gray-700">${formattedComment}</div><p class="text-xs text-gray-500 mt-3">提示：此評語基於自檢表數據生成，僅供參考，不能替代醫生診斷</p></div>`;
   }
@@ -1556,11 +1648,24 @@ document.addEventListener('DOMContentLoaded', function() {
       habGroupHtml = '<div class="gi" style="color:#8a93a3">未勾選任何不良習慣</div>';
     }
 
-    // AI 評估
+    // AI 評估（結構化精緻版，舊格式自動退回段落）
     let aiHtml = '';
     if (globalAiComment && globalAiComment.trim()) {
-      const paras = globalAiComment.split('\n').filter(p => p.trim()).map(p => `<p>${escapeHtml(p)}</p>`).join('');
-      aiHtml = `<div class="yb-sc-sec"><div class="yb-sc-sec-h"><span class="ic"><i class="fa fa-magic"></i></span>AI 健康評估</div><div class="yb-ai-box"><span class="yb-ai-tag"><i class="fa fa-robot"></i> 彥彬 AI 顧問</span>${paras}</div></div>`;
+      const parsedAi = parseAiComment(globalAiComment);
+      let inner = '';
+      if (parsedAi) {
+        const dc = ['#165DFF','#FF7D00','#12b981'];
+        inner = (parsedAi.observation ? `<div class="yb-sca-obs">${escapeHtml(parsedAi.observation)}</div>` : '')
+          + parsedAi.directions.slice(0,3).map((d,i) => `
+            <div class="yb-sca-dir">
+              <span class="bn" style="background:${dc[i%3]}">${i+1}</span>
+              <span class="body"><b>${escapeHtml(d.name)}</b>${d.root ? `　${escapeHtml(d.root)}` : ''}${d.tip ? `<span class="tip">💡 ${escapeHtml(d.tip)}</span>` : ''}</span>
+            </div>`).join('')
+          + (parsedAi.reminder ? `<div class="yb-sca-remind">❤ ${escapeHtml(parsedAi.reminder)}</div>` : '');
+      } else {
+        inner = globalAiComment.split('\n').filter(p => p.trim()).map(p => `<p>${escapeHtml(p)}</p>`).join('');
+      }
+      aiHtml = `<div class="yb-sc-sec"><div class="yb-sc-sec-h"><span class="ic"><i class="fa fa-magic"></i></span>AI 健康評估</div><div class="yb-ai-box"><span class="yb-ai-tag"><i class="fa fa-robot"></i> 彥彬 AI 顧問</span>${inner}</div></div>`;
     }
 
     document.getElementById('shareCard').innerHTML = `
