@@ -1880,29 +1880,27 @@ document.addEventListener('DOMContentLoaded', function() {
   // 溫度感分享文案（段落分明，品牌語氣：相信自己，找回初心）
   function buildShareMessage(userName, date, shareUrl) {
     const d = lastResultData || {};
-    const priority = Object.entries(lastAdjustmentScores || {}).sort((a, b) => a[1] - b[1]).slice(0, 3).map(([k, s]) => `　• ${k}（${s}分）`);
-    const divider = '━━━━━━━━━━━━━';
+    const priority = Object.entries(lastAdjustmentScores || {}).sort((a, b) => a[1] - b[1]).slice(0, 3).map(([k, s]) => `　${k}（${s}分）`);
+    const divider = '─────────────';
     const sections = [];
 
-    sections.push(`🌱 『 ${userName} 』的健康自檢報告\n🗓️ 自檢日期：${date}`);
+    sections.push(`🌱 ${userName} 的健康自檢報告\n🗓️ ${date}`);
 
     if (d.symptomCount != null) {
-      sections.push(`📊 健康概覽\n　身體症狀　${d.symptomCount} 項\n　不良習慣　${d.habitCount} 項`);
+      sections.push(`📊 症狀 ${d.symptomCount} 項　習慣 ${d.habitCount} 項`);
     }
 
     if (priority.length > 0) {
       sections.push(`🎯 優先調理方向\n${priority.join('\n')}`);
     }
 
-    sections.push(`💛 這份報告從七大方向，\n　 帶你看懂身體發出的訊號：\n　 體質 · 免疫 · 毒素 · 循環\n　 營養 · 內分泌 · 生活習慣`);
-
-    sections.push(`🌿 疾病 ＝ 壞習慣 ＋ 時間\n　 健康 ＝ 好習慣 ＋ 時間\n　 願你相信自己，找回初心`);
+    sections.push(`健康 ＝ 好習慣 ＋ 時間\n願你相信自己，找回初心 🌿`);
 
     if (shareUrl) {
-      sections.push(`📎 完整報告圖片\n${shareUrl}`);
+      sections.push(`📎 完整報告\n${shareUrl}`);
     }
 
-    return sections.join(`\n\n${divider}\n\n`);
+    return sections.join(`\n${divider}\n`);
   }
 
   function showSingleShareButton(userName, date) {
