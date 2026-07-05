@@ -2020,7 +2020,7 @@ document.addEventListener('DOMContentLoaded', function() {
   function buildShareMessage(userName, date, shareUrl) {
     const d = lastResultData || {};
     const priority = Object.entries(lastAdjustmentScores || {}).sort((a, b) => a[1] - b[1]).slice(0, 3).map(([k, s]) => `　${k}（${s}分）`);
-    const divider = '─────────────';
+    const divider = '────────';
     const sections = [];
 
     sections.push(`🌱 ${userName} 的健康自檢報告\n🗓️ ${date}`);
