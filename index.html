@@ -1,4 +1,4 @@
-<!DOCTYPE html> 
+<!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8">
@@ -87,7 +87,7 @@
     .yb-sk-line { height: 12px; margin: 9px 0; }
 
     /* 分享卡片（螢幕外，僅供截圖） */
-    #shareCardWrap { position: fixed; left: -10000px; top: 0; z-index: -1; }
+    #shareCardWrap, #guideCardWrap { position: fixed; left: -10000px; top: 0; z-index: -1; }
     .yb-share-card {
       width: 540px; box-sizing: border-box; font-family: 'Inter','PingFang TC','Microsoft JhengHei',sans-serif;
       background: #ffffff; border-radius: 26px; overflow: hidden;
@@ -128,6 +128,34 @@
     .yb-symcard .gl .cnt { margin-left:auto; font-size:10.5px; font-weight:700; color:#fff; background:#94a3b8; padding:1px 8px; border-radius:999px; }
     .yb-symcard .gi { font-size:12px; color:#4b5563; line-height:1.65; }
     .yb-symcard .gi .more { color:#94a3b8; font-weight:600; white-space:nowrap; }
+
+    /* 七大方向：頁面時間軸列表 */
+    .yb-dir-list { display:flex; flex-direction:column; }
+    .yb-dir-row { display:flex; gap:14px; padding:16px 4px; border-bottom:1px dashed #e5e9f0; }
+    .yb-dir-row:last-child { border-bottom:none; }
+    .yb-dir-badge { flex-shrink:0; width:44px; height:44px; border-radius:14px; display:flex; align-items:center; justify-content:center;
+      font-size:18px; color:#165DFF; background:linear-gradient(135deg,#eaf1ff,#e7f9f1); box-shadow:inset 0 0 0 1px rgba(22,93,255,.12); }
+    .yb-dir-title { font-size:15px; font-weight:800; color:#1f2a44; display:flex; align-items:baseline; gap:8px; flex-wrap:wrap; }
+    .yb-dir-title .sub { font-size:12px; font-weight:600; color:#7c8aa0; }
+    .yb-dir-title .vid { margin-left:auto; font-size:12px; color:#3b82f6; font-weight:600; }
+    .yb-dir-story { font-size:13.5px; color:#374151; line-height:1.75; margin-top:5px; }
+    .yb-dir-rule { font-size:12.5px; color:#0f766e; font-weight:600; margin-top:5px; display:flex; align-items:center; gap:6px; }
+
+    /* 七大方向：知識卡 */
+    .yb-g-head { position:relative; padding:26px 26px 22px; color:#fff; overflow:hidden;
+      background: radial-gradient(130% 160% at 20% 0%, #1E5BFF 0%, #123FB8 55%, #0E1B33 130%); }
+    .yb-g-head::after { content:''; position:absolute; right:-50px; top:-50px; width:170px; height:170px; background:rgba(255,255,255,.10); border-radius:50%; }
+    .yb-g-brand { font-size:12px; letter-spacing:3px; opacity:.85; margin-bottom:8px; }
+    .yb-g-title { font-family:'Noto Serif TC',serif; font-size:24px; font-weight:900; line-height:1.3; position:relative; }
+    .yb-g-sub { margin-top:7px; font-size:12.5px; opacity:.9; position:relative; }
+    .yb-g-row { display:flex; gap:13px; padding:15px 24px; border-bottom:1px dashed #e9edf4; }
+    .yb-g-row:nth-child(even) { background:#fafcff; }
+    .yb-g-badge { flex-shrink:0; width:40px; height:40px; border-radius:13px; display:flex; align-items:center; justify-content:center;
+      font-size:16px; color:#fff; }
+    .yb-g-t { font-size:14.5px; font-weight:800; color:#1f2a44; }
+    .yb-g-t .sub { font-size:11px; font-weight:600; color:#8a93a3; margin-left:7px; }
+    .yb-g-story { font-size:12.3px; color:#3f4a5c; line-height:1.7; margin-top:3px; }
+    .yb-g-rule { font-size:11.8px; color:#0f766e; font-weight:700; margin-top:3px; }
     .yb-sub-h { display:flex; align-items:center; gap:7px; font-size:12.5px; font-weight:800; color:#334155; margin:12px 0 8px; padding-bottom:5px; border-bottom:1px dashed #e5e9f0; }
     .yb-sc-motto { margin: 18px 0 4px; padding: 14px 16px; border-radius: 14px;
       background: linear-gradient(135deg,#f5f8ff,#eefaf4); font-size: 12.5px; color:#334; line-height: 1.7; text-align:center; }
@@ -715,6 +743,11 @@
     <div class="yb-share-card" id="shareCard"></div>
   </div>
 
+  <!-- ★ 七大調理方向 知識卡（獨立一張，僅供截圖） -->
+  <div id="guideCardWrap">
+    <div class="yb-share-card" id="guideCard"></div>
+  </div>
+
 <script>
 function showToast(message, type = 'success') {
   const existingToast = document.querySelector('.custom-toast');
@@ -792,6 +825,8 @@ document.addEventListener('DOMContentLoaded', function() {
   let localImageName = '';
   let imgbbImageUrl = '';
   let imgbbDeleteUrl = '';
+  let guideImageBlob = null;
+  let guideImageName = '';
   let lastAdjustmentScores = {};
   let lastResultData = null;
   let procStatusTimer = null;
@@ -1047,6 +1082,7 @@ document.addEventListener('DOMContentLoaded', function() {
   restartBtn.addEventListener('click', () => {
     globalUniqueSymptoms = []; globalUniqueHabits = []; globalAiComment = '';
     localImageBlob = null; localImageName = ''; imgbbImageUrl = ''; imgbbDeleteUrl = '';
+    guideImageBlob = null; guideImageName = '';
     lastAdjustmentScores = {}; lastResultData = null; currentStep = 1;
     if (windowHealthChart) { windowHealthChart.destroy(); windowHealthChart = null; }
     aiEvaluationContainer.innerHTML = '';
@@ -1411,6 +1447,39 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
+  // ★ 建立「七大調理方向」獨立知識卡（第二張分享圖）
+  function buildGuideCard() {
+    const colors = ['#165DFF','#0ea5e9','#8b5cf6','#e11d8f','#f59e0b','#12b981','#FF7D00'];
+    let rows = '';
+    SEVEN_DIRECTIONS.forEach((d, i) => {
+      rows += `
+      <div class="yb-g-row">
+        <div class="yb-g-badge" style="background:linear-gradient(135deg,${colors[i]},${colors[i]}cc)"><i class="fa ${d.icon}"></i></div>
+        <div>
+          <div class="yb-g-t">${d.n} ${d.t}<span class="sub">${d.sub}</span></div>
+          <div class="yb-g-story">${d.story}</div>
+          <div class="yb-g-rule">💡 ${d.rule}</div>
+        </div>
+      </div>`;
+    });
+    document.getElementById('guideCard').innerHTML = `
+      <div class="yb-g-head">
+        <div class="yb-g-brand">YB · 健康觀念</div>
+        <div class="yb-g-title">七大調理方向<br>找到健康的根本邏輯</div>
+        <div class="yb-g-sub">大病的早期是小病，小病的早期是症狀</div>
+      </div>
+      ${rows}
+      <div class="yb-sc-sec" style="border-top:none;">
+        <div class="yb-sc-motto" style="margin:0;">體質定內環境 · 免疫築防線 · 毒素要平衡<br>循環需暢通 · 營養補原料 · 內分泌守規律 · 習慣減負擔</div>
+      </div>
+      <div class="yb-sc-foot">
+        <div class="qr"><i class="fa fa-heartbeat" style="color:#165DFF"></i> 彥彬 健康自檢系統</div>
+        <div class="tag">好習慣 ＋ 時間 = 健康</div>
+      </div>
+      <div class="yb-sc-disclaimer">＊本卡片僅為健康觀念分享，不能替代專業醫療診斷</div>
+    `;
+  }
+
   // ★ 建立完整質感分享卡片（概覽＋雷達圖＋主要問題＋AI評估）
   function buildShareCard(data) {
     if (!data) return;
@@ -1530,54 +1599,57 @@ document.addEventListener('DOMContentLoaded', function() {
     `;
   }
 
+  // ★ 七大調理方向：故事精簡升級（單一資料來源，頁面與知識卡共用）
+  const SEVEN_DIRECTIONS = [
+    { n:'①', icon:'fa-home',          t:'體質',     sub:'健康的基礎土壤',
+      story:'體質像房子的內環境——潮濕的屋子，木頭反覆發霉、鐵器反覆生鏽。只擦掉霉斑、不除潮氣，問題遲早再來。',
+      rule:'先改善內環境，症狀才不會一再重演。', link:'[替換為體質相關影片連結]' },
+    { n:'②', icon:'fa-shield',        t:'免疫',     sub:'身體的常駐軍隊',
+      story:'骨髓招募士兵、胸腺負責訓練、淋巴把守關卡、白血球衝鋒前線——一支軍隊日夜守護著你。',
+      rule:'平時把軍隊養強，勝過生病才救火。', link:'[替換為免疫相關影片連結]' },
+    { n:'③', icon:'fa-filter',        t:'毒素',     sub:'體內的堆積垃圾',
+      story:'毒素像蓄水池裡的髒水——進得多、排得少，或排水口被堵住，就會越積越深。',
+      rule:'管住入口、暢通出口，進出平衡才乾淨。', link:'[替換為毒素相關影片連結]' },
+    { n:'④', icon:'fa-random',        t:'循環',     sub:'全身的運輸網絡',
+      story:'微循環是身體的小馬路：送營養進來、載廢物出去。寒濕與垃圾一多，馬路堵車，養分進不去、廢物出不來。',
+      rule:'路通了，營養與代謝才跑得動。', link:'[替換為循環相關影片連結]' },
+    { n:'⑤', icon:'fa-cubes',         t:'營養',     sub:'運轉的建材原料',
+      story:'土坯屋和鋼筋水泥屋，穩固度天差地別。人體需要至少 60 種礦物質——缺了關鍵建材，維生素也無用武之地。',
+      rule:'原料齊全足量，身體才蓋得穩。', link:'[替換為營養相關影片連結]' },
+    { n:'⑥', icon:'fa-clock-o',       t:'內分泌',   sub:'全身的規律指揮',
+      story:'腦下垂體是總司令、松果體管作息時鐘、甲狀腺盯代謝快慢——八大腺體按表操課，一個亂了節奏，全局跟著亂。',
+      rule:'順著身體的節奏走，指揮系統才穩。', link:'[替換為內分泌相關影片連結]' },
+    { n:'⑦', icon:'fa-balance-scale', t:'生活習慣', sub:'板凳的承重極限',
+      story:'身體像一張能承重一百塊磚的板凳：熬夜、喝酒、久坐都是往上疊磚。疊滿了，再放一支手機都可能壓垮。',
+      rule:'少疊一塊磚，就多留一分餘裕。', link:'[替換為生活習慣相關影片連結]' }
+  ];
+
   function renderRecommendations(adjustmentScores) {
     const recommendationsContainer = document.getElementById('healthRecommendations');
     if (!recommendationsContainer) return;
     const lowScoreDirections = Object.entries(adjustmentScores).filter(([, s]) => s < 60).sort((a, b) => a[1] - b[1]).map(([d]) => d);
-    let recommendationsHtml = '';
-    if (lowScoreDirections.length > 0) recommendationsHtml += `<p class="text-sm font-medium text-primary mb-3">🔴 需重點調理方向：${lowScoreDirections.join('、')}</p>`;
+    let html = '';
+    if (lowScoreDirections.length > 0) html += `<p class="text-sm font-medium text-primary mb-3">🔴 需重點調理方向：${lowScoreDirections.join('、')}</p>`;
 
-    recommendationsHtml += `
-  <div class="health-guidance mt-4">
-    <h3 class="text-lg font-semibold mb-4 text-primary">健康七大核心調理方向</h3>
-    <div class="bg-white p-4 rounded-lg border border-gray-100 shadow-sm mb-4">
-      <h4 class="font-semibold text-blue-600 mb-2">① 體質 —— 健康的「基礎土壤」<a href="[替換為體質相關影片連結]" target="_blank" rel="noopener" class="text-blue-500 text-sm ml-2 hover:underline">📺 觀看解說影片</a></h4>
-      <p class="text-sm mb-2">👉體質就像房子的內環境：有的房子乾淨通風，有的房子潮濕陰暗。潮濕的房子里，木頭容易發霉、鐵器容易生鏽，即便擦掉霉斑、鏽跡，只要潮濕環境沒變，這些問題遲早還會出現；體內的寒濕、毒素積存，就像房子里的潮氣，會讓身體出現類似「發霉、生鏽」的反復狀況。</p>
-      <p class="text-sm text-gray-700 italic">👉原理：體質的核心是身體內環境的穩定性，內環境的「潮濕、髒亂」是問題反復的根源，調理需從改善內環境本身入手。</p>
-    </div>
-    <div class="bg-white p-4 rounded-lg border border-gray-100 shadow-sm mb-4">
-      <h4 class="font-semibold text-blue-600 mb-2">② 免疫 —— 身體的「常駐軍隊」<a href="[替換為免疫相關影片連結]" target="_blank" rel="noopener" class="text-blue-500 text-sm ml-2 hover:underline">📺 觀看解說影片</a></h4>
-      <p class="text-sm mb-2">👉免疫力像駐守身體的軍隊體系：骨髓負責「招募兵源」（生產血細胞），胸腺是「士兵訓練營」（培養免疫細胞），淋巴是「戰場過濾站」（匯集並處理異物），白細胞是「前線戰士」（對抗異物、清理衰老細胞）；扁桃體、闌尾也是這個體系的一部分，負責特定區域的防禦。</p>
-      <p class="text-sm text-gray-700 italic">👉原理：免疫系統通過「招募-訓練-作戰-清理」的流程運作，各器官分工協作，維持身體對外界異物和內部異常細胞的監控。</p>
-    </div>
-    <div class="bg-white p-4 rounded-lg border border-gray-100 shadow-sm mb-4">
-      <h4 class="font-semibold text-blue-600 mb-2">③ 毒素 —— 身體的「堆積垃圾」<a href="[替換為毒素相關影片連結]" target="_blank" rel="noopener" class="text-blue-500 text-sm ml-2 hover:underline">📺 觀看解說影片</a></h4>
-      <p class="text-sm mb-2">👉身體里的毒素分兩類：一是「外來垃圾」（從飲食、環境中進入的雜質），二是「內部廢物」（身體代謝產生的廢棄物）。這類毒素就像蓄水池里的髒水，若肺、皮膚、大腸等「排水口」被堵住，髒水無法排出，就會在池內慢慢堆積；日常吃太多、動太少，也會讓「髒水進量超過排水量」。</p>
-      <p class="text-sm text-gray-700 italic">👉原理：毒素的堆積源於「進出失衡」，要麼是外部攝入過多，要麼是內部排出通道堵塞，維持平衡需同時控制「進量」和暢通「出口」。</p>
-    </div>
-    <div class="bg-white p-4 rounded-lg border border-gray-100 shadow-sm mb-4">
-      <h4 class="font-semibold text-blue-600 mb-2">④ 循環 —— 健康的「暢通網絡」<a href="[替換為循環相關影片連結]" target="_blank" rel="noopener" class="text-blue-500 text-sm ml-2 hover:underline">📺 觀看解說影片</a></h4>
-      <p class="text-sm mb-2">👉微循環是身體里的「小馬路網絡」，由無數毛細血管組成，負責把營養「送達」各器官細胞，再把代謝廢物「運走」。若體內寒濕重、垃圾多，就像馬路上堆了雜物，容易出現「堵車」——營養送不到位，廢物也排不出去，就像交通堵塞時，物資運輸和垃圾清理都會受影響。</p>
-      <p class="text-sm text-gray-700 italic">👉原理：循環的核心是「暢通」，血管是運輸通道，通道內的「雜物」（寒濕、垃圾）是堵塞關鍵，需先清理通道才能保障物資和廢物的正常流動。</p>
-    </div>
-    <div class="bg-white p-4 rounded-lg border border-gray-100 shadow-sm mb-4">
-      <h4 class="font-semibold text-blue-600 mb-2">⑤ 營養 —— 身體的「運轉原料」<a href="[替換為營養相關影片連結]" target="_blank" rel="noopener" class="text-blue-500 text-sm ml-2 hover:underline">📺 觀看解說影片</a></h4>
-      <p class="text-sm mb-2">👉人體維持理想健康狀況，至少需要60種礦物質，維生素對人體很重要，但是在缺乏礦物質的情況下，維生素無用武之地。就像蓋房子：用土坯蓋房和用鋼筋水泥蓋房，原料不同，房子的穩定性、耐用性也不同；飲食單一、偏食，就像蓋房少了關鍵建材，身體運轉也會受影響。</p>
-      <p class="text-sm text-gray-700 italic">👉原理：身體的運轉依賴「全面且足量的原料」，原料種類不全或數量不足，就像工廠缺材料，無法正常生產，需通過多樣飲食保障原料供應。</p>
-    </div>
-    <div class="bg-white p-4 rounded-lg border border-gray-100 shadow-sm mb-4">
-      <h4 class="font-semibold text-blue-600 mb-2">⑥ 內分泌 —— 身體的「規律指揮」<a href="[替換為內分泌相關影片連結]" target="_blank" rel="noopener" class="text-blue-500 text-sm ml-2 hover:underline">📺 觀看解說影片</a></h4>
-      <p class="text-sm mb-2">👉內分泌系統是身體的「指揮體系」，由腦下垂體、松果體、甲狀腺等8大腺體組成：腦下垂體是「總司令」（協調其他腺體），松果體是「時間管理員」（負責睡眠、生理週期等規律，比如晚上11點後分泌褪黑素），甲狀腺是「代謝監督員」（控制身體代謝快慢）；任一腺體「失職」，都會打破整體平衡，就像辦事違背上下班規律，會導致流程紊亂。</p>
-      <p class="text-sm text-gray-700 italic">👉原理：內分泌的核心是「規律協作」，各腺體按固定節奏分泌物質、執行職能，順應節奏才能維持指揮體系的穩定。</p>
-    </div>
-    <div class="bg-white p-4 rounded-lg border border-gray-100 shadow-sm mb-4">
-      <h4 class="font-semibold text-blue-600 mb-2">⑦ 生活習慣 —— 身體的「承重保護」<a href="[替換為生活習慣相關影片連結]" target="_blank" rel="noopener" class="text-blue-500 text-sm ml-2 hover:underline">📺 觀看解說影片</a></h4>
-      <p class="text-sm mb-2">👉身體就像一張有最大承重（比如100塊磚）的板凳：熬夜、喝酒、不運動、偏食等習慣，就像一塊塊往板凳上堆磚，磚塊越堆越多，板凳的負荷也越來越大。當磚塊堆滿100塊，再輕輕放一個「手機」（比如一次應酬、一場劇烈活動），板凳就可能超過承重極限；壞習慣越多、時間越長，身體的「承重壓力」也越大。</p>
-      <p class="text-sm text-gray-700 italic">👉原理：生活習慣的影響是「累加式」的，每個壞習慣都是一筆「負擔積累」，超過身體承受極限就會出現問題，需通過調整習慣減少負擔。</p>
-    </div>
-    <div class="mt-4 text-sm text-neutral-dark/70 text-center p-3 bg-blue-50 rounded-lg">七大調理邏輯：<br>體質定內環境，免疫築防線，<br>毒素要平衡，循環需暢通，<br>營養補原料，內分泌守規律，<br>習慣減負擔，共護身體穩！</div>
-  </div>`;
-    recommendationsContainer.innerHTML = recommendationsHtml;
+    html += `<div class="health-guidance mt-4"><div class="yb-dir-list">`;
+    SEVEN_DIRECTIONS.forEach(d => {
+      html += `
+      <div class="yb-dir-row">
+        <div class="yb-dir-badge"><i class="fa ${d.icon}"></i></div>
+        <div class="yb-dir-body">
+          <div class="yb-dir-title">${d.n} ${d.t}<span class="sub">${d.sub}</span>
+            <a href="${d.link}" target="_blank" rel="noopener" class="vid">📺 影片</a>
+          </div>
+          <p class="yb-dir-story">${d.story}</p>
+          <p class="yb-dir-rule"><i class="fa fa-lightbulb-o"></i> ${d.rule}</p>
+        </div>
+      </div>`;
+    });
+    html += `</div>
+      <div class="mt-4 text-sm text-neutral-dark/70 text-center p-3 bg-blue-50 rounded-lg">七大調理邏輯：<br>體質定內環境，免疫築防線，<br>毒素要平衡，循環需暢通，<br>營養補原料，內分泌守規律，<br>習慣減負擔，共護身體穩！</div>
+    </div>`;
+
+    recommendationsContainer.innerHTML = html;
   }
 
   // ★ 下載/分享：改為截「短版分享卡片」而非整頁長圖
@@ -1632,19 +1704,42 @@ document.addEventListener('DOMContentLoaded', function() {
       shareWrap.style.opacity = '';
       shareWrap.style.pointerEvents = '';
 
-      updateProgress(progressIndicator, 60, '轉檔中...');
+      updateProgress(progressIndicator, 55, '產生七大方向知識卡...');
+
+      // ★ 第二張：七大調理方向知識卡
+      const guideWrap = document.getElementById('guideCardWrap');
+      const guideCard = document.getElementById('guideCard');
+      buildGuideCard();
+      guideWrap.style.left = '0px'; guideWrap.style.top = '0px';
+      guideWrap.style.opacity = '0'; guideWrap.style.pointerEvents = 'none';
+      await new Promise(r => setTimeout(r, 80));
+      const gH = guideCard.offsetHeight;
+      const gScale = Math.max(1, Math.min(baseScale, MAX_CANVAS_PX / gH));
+      const guideCanvas = await html2canvas(guideCard, {
+        useCORS: true, allowTaint: false, backgroundColor: '#ffffff',
+        scale: gScale, logging: false,
+        width: guideCard.offsetWidth, height: gH,
+        windowWidth: guideCard.offsetWidth, windowHeight: gH
+      });
+      guideWrap.style.left = '-10000px'; guideWrap.style.opacity = ''; guideWrap.style.pointerEvents = '';
+
+      updateProgress(progressIndicator, 68, '轉檔中...');
 
       const userName = document.getElementById('name').value.trim() || '未知用戶';
       const d = new Date();
       const formattedDate = `${d.getFullYear()}年${String(d.getMonth()+1).padStart(2,'0')}月${String(d.getDate()).padStart(2,'0')}日`;
       localImageName = `${userName}_健康自檢卡片_${formattedDate}.jpg`;
+      guideImageName = `七大調理方向_知識卡.jpg`;
 
       const quality = isTablet ? 0.85 : 0.92;
       localImageBlob = await new Promise((resolve, reject) => { canvas.toBlob(b => b ? resolve(b) : reject(new Error('圖片生成失敗')), 'image/jpeg', quality); });
+      guideImageBlob = await new Promise((resolve) => { guideCanvas.toBlob(b => resolve(b || null), 'image/jpeg', quality); });
 
-      updateProgress(progressIndicator, 78, '上傳與保存...');
+      updateProgress(progressIndicator, 80, '上傳與保存...');
 
-      const [saveResult, uploadResult] = await Promise.allSettled([ saveToGallery(localImageBlob, localImageName), uploadToImgBB(localImageBlob, localImageName) ]);
+      const tasks = [ saveToGallery(localImageBlob, localImageName), uploadToImgBB(localImageBlob, localImageName) ];
+      if (guideImageBlob) tasks.push(saveToGallery(guideImageBlob, guideImageName));
+      const [saveResult, uploadResult] = await Promise.allSettled(tasks);
 
       if (uploadResult.status === 'fulfilled' && uploadResult.value) {
         imgbbImageUrl = uploadResult.value.url; imgbbDeleteUrl = uploadResult.value.deleteUrl;
@@ -1659,12 +1754,14 @@ document.addEventListener('DOMContentLoaded', function() {
       document.body.removeChild(progressIndicator); progressIndicator = null;
       downloadReportBtn.disabled = false;
       downloadReportBtn.innerHTML = '<i class="fa fa-download mr-2"></i> 重新產生卡片';
-      showToast(`質感分享卡片已保存！\n${localImageName}`);
+      showToast(`已保存 2 張卡片：\n① 健康自檢報告\n② 七大調理方向知識卡`);
       showSingleShareButton(userName, formattedDate);
 
     } catch (error) {
       console.error('圖片處理失敗：', error);
       shareWrap.style.left = '-10000px'; shareWrap.style.opacity = ''; shareWrap.style.pointerEvents = '';
+      const gw = document.getElementById('guideCardWrap');
+      if (gw) { gw.style.left = '-10000px'; gw.style.opacity = ''; gw.style.pointerEvents = ''; }
       if (progressIndicator && document.body.contains(progressIndicator)) document.body.removeChild(progressIndicator);
       downloadReportBtn.disabled = false;
       downloadReportBtn.innerHTML = '<i class="fa fa-download mr-2"></i> 下載分享卡片';
@@ -1798,14 +1895,16 @@ document.addEventListener('DOMContentLoaded', function() {
     shareBtn.addEventListener('click', async () => {
       try {
         if (!localImageBlob && !imgbbImageUrl) { showToast('分享資源不完整，請重新產生卡片', 'error'); return; }
-        let imageFile = null;
-        if (localImageBlob) imageFile = new File([localImageBlob], localImageName, { type: 'image/jpeg' });
+        const files = [];
+        if (localImageBlob) files.push(new File([localImageBlob], localImageName, { type: 'image/jpeg' }));
+        if (guideImageBlob) files.push(new File([guideImageBlob], guideImageName, { type: 'image/jpeg' }));
         const shareUrl = imgbbImageUrl || '';
         const shareText = buildShareMessage(userName, date, shareUrl);
         if (navigator.share) {
           shareBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> 開啟分享中…';
           const shareData = { title: `${userName} 的健康自檢報告`, text: shareText };
-          if (imageFile && navigator.canShare && navigator.canShare({ files: [imageFile] })) shareData.files = [imageFile];
+          if (files.length && navigator.canShare && navigator.canShare({ files })) shareData.files = files;
+          else if (files.length === 2 && navigator.canShare && navigator.canShare({ files: [files[0]] })) shareData.files = [files[0]];
           else if (shareUrl) shareData.url = shareUrl;
           await navigator.share(shareData);
           showToast('分享成功！');
