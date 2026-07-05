@@ -1,4 +1,4 @@
-<!DOCTYPE html> 
+<!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8">
@@ -843,7 +843,7 @@ document.addEventListener('DOMContentLoaded', function() {
   let globalAiComment = '';
 
   // ★ LINE 登入驗證設定（僅登入驗證邏輯，不含簡表的其他功能）
-  const LIFF_ID = '請填入你的LIFF_ID'; // 例：2008578880-NznKeG2a
+  const LIFF_ID = '2008578880-8xxawyMe'; // 例：2008578880-NznKeG2a
   const VERIFY_TIMEOUT = 12000;
 
   const REQUEST_TIMEOUT = 45000;
@@ -2201,11 +2201,19 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
-  // 若尚未設定 LIFF_ID，略過驗證閘門（開發/預覽環境可直接看到網站內容）
+  // ⚠️ 若尚未設定 LIFF_ID，代表驗證閘門尚未啟用（開發模式，僅供預覽其他功能）
+  //    正式上線前，務必把上方 LIFF_ID 換成真實的 LIFF ID，否則所有人都能略過登入直接使用！
   if (LIFF_ID && LIFF_ID.indexOf('請填入') === -1) {
     initLiffGate();
   } else {
-    gateEl.remove();
+    console.warn('⚠️ LIFF_ID 尚未設定，登入驗證閘門已停用，目前任何人都能直接使用本頁面（僅供開發預覽，正式上線前請務必設定）');
+    gateTitle.textContent = '開發模式';
+    gateStatus.textContent = 'LIFF_ID 尚未設定，3 秒後略過登入驗證…';
+    gateSpinner.style.display = 'none';
+    gateIconWrap.style.display = '';
+    gateIcon.className = 'fa fa-exclamation-triangle';
+    gateIcon.style.color = '#FF7D00';
+    setTimeout(() => { gateEl.classList.add('gate-hide'); setTimeout(() => gateEl.remove(), 550); }, 3000);
   }
 
   renderSymptomList();
