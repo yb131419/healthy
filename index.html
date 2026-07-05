@@ -110,7 +110,8 @@
     .yb-sc-section-t { font-size: 13.5px; font-weight: 700; color:#1f2a44; margin: 6px 0 10px; display:flex; align-items:center; gap:6px; }
     .yb-sc-tags { display:flex; flex-wrap:wrap; gap: 8px; }
     .yb-sc-tag { font-size: 12.5px; font-weight: 600; color:#0E42D2; background:#e8f0ff;
-      border:1px solid #cfe0ff; padding: 6px 12px; border-radius: 999px; display:inline-flex; align-items:center; gap:5px; }
+      border:1px solid #cfe0ff; padding: 0 13px; border-radius: 999px; display:inline-block; height:29px; line-height:27px; white-space:nowrap; }
+    .yb-sc-tag b, .yb-sc-tag small { vertical-align:baseline; margin-left:4px; }
     .yb-sc-tag b { font-size:13.5px; font-weight:800; }
     .yb-sc-tag small { font-size:10px; font-weight:800; opacity:.85; letter-spacing:.05em; }
     .yb-sc-tag.good { color:#0f9d6b; background:#e7f9f1; border-color:#c4efdd; }
@@ -123,11 +124,11 @@
     /* 分類分明的症狀卡片 */
     .yb-symcards { display:flex; flex-direction:column; gap:8px; }
     .yb-symcard { background:#f8fafc; border:1px solid #eef1f6; border-left:3px solid #165DFF; border-radius:11px; padding:10px 13px; }
-    .yb-symcard .gl { display:flex; align-items:center; gap:7px; font-size:12.5px; font-weight:800; color:#1f2a44; margin-bottom:5px; line-height:1; }
+    .yb-symcard .gl { display:flex; align-items:center; gap:7px; font-size:12.5px; font-weight:800; color:#1f2a44; margin-bottom:5px; }
     .yb-symcard .gl .dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
     .yb-symcard .gl .nm { flex:1; min-width:0; line-height:1.3; }
-    .yb-symcard .gl .cnt { flex-shrink:0; display:inline-flex; align-items:center; justify-content:center;
-      font-size:11px; font-weight:800; color:#fff; padding:3px 10px; border-radius:999px; line-height:1; letter-spacing:.02em; }
+    .yb-symcard .gl .cnt { flex-shrink:0; display:inline-block; height:21px; line-height:21px;
+      font-size:11px; font-weight:800; color:#fff; padding:0 11px; border-radius:999px; text-align:center; letter-spacing:.02em; }
     .yb-symcard .gi { font-size:12px; color:#4b5563; line-height:1.65; }
     .yb-symcard .gi .more { color:#94a3b8; font-weight:600; white-space:nowrap; }
 
@@ -136,7 +137,7 @@
     .yb-hab-cell { display:flex; align-items:center; gap:8px; background:#fff8ef; border:1px solid #ffe3c2; border-radius:12px; padding:10px 12px; }
     .yb-hab-cell .dot { width:8px; height:8px; border-radius:50%; background:#FF7D00; flex-shrink:0; }
     .yb-hab-cell .nm { font-size:12.5px; font-weight:700; color:#8a4a00; flex:1; min-width:0; line-height:1.3; }
-    .yb-hab-cell .ct { flex-shrink:0; display:inline-flex; align-items:center; font-size:11px; font-weight:800; color:#fff; background:linear-gradient(135deg,#FF9F45,#FF7D00); padding:3px 10px; border-radius:999px; line-height:1; }
+    .yb-hab-cell .ct { flex-shrink:0; display:inline-block; height:21px; line-height:21px; font-size:11px; font-weight:800; color:#fff; background:linear-gradient(135deg,#FF9F45,#FF7D00); padding:0 11px; border-radius:999px; text-align:center; }
 
     /* 七大方向：頁面時間軸列表 */
     .yb-dir-list { display:flex; flex-direction:column; }
@@ -1447,6 +1448,18 @@ document.addEventListener('DOMContentLoaded', function() {
         }
       });
 
+      // ★ 關鍵修正：強制同步完成佈局與繪製（首次繪製可能延後一影格，直接輸出會抓到空白）
+      tmp.update('none');
+      tmp.draw();
+
+      // 像素探測：確認畫布中心區域真的有內容，仍空白就再強制重繪一次
+      let drawn = false;
+      try {
+        const probe = octx.getImageData(Math.floor(off.width/2) - 6, Math.floor(off.height/2) - 6, 12, 12).data;
+        for (let i = 3; i < probe.length; i += 4) { if (probe[i] !== 0) { drawn = true; break; } }
+      } catch (_) { drawn = true; } // 無法取樣就直接信任
+      if (!drawn) { tmp.resize(); tmp.update('none'); tmp.draw(); }
+
       const url = off.toDataURL('image/png');
       tmp.destroy();
       return url;
@@ -1904,16 +1917,16 @@ document.addEventListener('DOMContentLoaded', function() {
     shareBtn.addEventListener('click', async () => {
       try {
         if (!localImageBlob && !imgbbImageUrl) { showToast('分享資源不完整，請重新產生卡片', 'error'); return; }
+        // 分享與「分享前保存的圖」完全一致：只夾帶同一張報告卡
+        // （七大方向知識卡仍已存到相簿，可自行另外傳送）
         const files = [];
         if (localImageBlob) files.push(new File([localImageBlob], localImageName, { type: 'image/jpeg' }));
-        if (guideImageBlob) files.push(new File([guideImageBlob], guideImageName, { type: 'image/jpeg' }));
         const shareUrl = imgbbImageUrl || '';
         const shareText = buildShareMessage(userName, date, shareUrl);
         if (navigator.share) {
           shareBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> 開啟分享中…';
           const shareData = { title: `${userName} 的健康自檢報告`, text: shareText };
           if (files.length && navigator.canShare && navigator.canShare({ files })) shareData.files = files;
-          else if (files.length === 2 && navigator.canShare && navigator.canShare({ files: [files[0]] })) shareData.files = [files[0]];
           else if (shareUrl) shareData.url = shareUrl;
           await navigator.share(shareData);
           showToast('分享成功！');
