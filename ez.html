@@ -1,1194 +1,1978 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="zh-Hant">
 <head>
-<meta charset="UTF-8">
-<title>🧬 彥彬 自檢表系統</title>
-<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0">
-<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta http-equiv="Pragma" content="no-cache">
-<meta http-equiv="Expires" content="0">
-<script src="https://cdn.tailwindcss.com"></script>
-<link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@600;700;900&display=swap" rel="stylesheet">
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-<script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
-<script>
-tailwind.config={theme:{extend:{colors:{primary:'#008C76',secondary:'#E8F9F7',accent:'#E8C766',ink:'#0E2E28',gold:'#C9A227',dark:'#1A202C',lightBg:'#F5F3EC',neutral:'#F1F0E8',cardBg:'#FFFFFF',textPrimary:'#223230',textSecondary:'#66756F'},fontFamily:{sans:['Noto Sans TC','sans-serif','system-ui'],display:['Noto Serif TC','serif']},boxShadow:{'elevation-1':'0 2px 8px rgba(0,0,0,0.06)','elevation-2':'0 4px 16px rgba(0,0,0,0.08)','elevation-3':'0 8px 24px rgba(0,0,0,0.12)','elevation-hover':'0 12px 32px rgba(0,0,0,0.15)'}}}};
-</script>
-<style type="text/tailwindcss">
-@layer utilities{.fade-in{animation:fadeIn 0.6s cubic-bezier(0.4,0,0.2,1);}.slide-up{animation:slideUp 0.5s cubic-bezier(0.34,1.56,0.64,1);}.scale-in{animation:scaleIn 0.4s cubic-bezier(0.34,1.56,0.64,1);}.pulse-subtle{animation:pulseSubtle 2s infinite;}.gradient-text{background-clip:text;-webkit-background-clip:text;color:transparent;}.card-hover{transition:all 0.3s cubic-bezier(0.34,1.56,0.64,1);}.btn-hover{transition:all 0.25s cubic-bezier(0.34,1.56,0.64,1);}.factor-tag{font-size:0.75rem;padding:0.2rem 0.4rem;border-radius:6px;font-weight:500;}.input-focus{@apply focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all;}}
-@keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
-@keyframes slideUp{from{transform:translateY(30px);opacity:0;}to{transform:translateY(0);opacity:1;}}
-@keyframes scaleIn{from{transform:scale(0.96);opacity:0;}to{transform:scale(1);opacity:1;}}
-@keyframes pulseSubtle{0%,100%{opacity:1;}50%{opacity:0.8;}}
-::-webkit-scrollbar{width:8px;height:8px;}
-::-webkit-scrollbar-track{background:#F1F5F9;border-radius:4px;}
-::-webkit-scrollbar-thumb{background:#CBD5E1;border-radius:4px;}
-::-webkit-scrollbar-thumb:hover{background:#94A3B8;}
-body{font-feature-settings:"palt";letter-spacing:0.02em;}
-/* 症狀卡：整卡可點擊，取消系統點擊高亮 */
-.symptom-card{cursor:pointer;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;}
-.symptom-card:active{transform:scale(0.985);}
-.symptom-card.is-selected{border-color:rgba(0,140,118,0.65);background:linear-gradient(135deg,#F4FBF9,#EAF6F2);box-shadow:0 0 0 1px rgba(0,140,118,0.35),0 4px 16px rgba(0,140,118,0.15);}
-/* 自訂勾選指示器（比原生checkbox大得多的觸控目標） */
-.check-indicator{width:26px;height:26px;border-radius:50%;border:2px solid #C4D2CC;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s ease;color:transparent;font-size:13px;}
-.symptom-card.is-selected .check-indicator{background:#008C76;border-color:#008C76;color:#fff;}
-/* 篩選列：手機單行橫向滑動，隱藏捲軸 */
-.chip-scroll{display:flex;gap:6px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding:2px;}
-.chip-scroll::-webkit-scrollbar{display:none;}
-.chip-scroll button{flex:0 0 auto;white-space:nowrap;}
-/* 吸附式篩選列與底部操作列（滾動95張卡片時不迷路） */
-.sticky-filter{position:sticky;top:8px;z-index:40;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);}
-.sticky-actions{position:sticky;bottom:8px;z-index:40;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);}
-/* 輸入框固定16px，防止iOS聚焦時整頁自動放大 */
-input,select{font-size:16px !important;}
-#user-info-section input,#user-info-section select{padding-top:0.6rem;padding-bottom:0.6rem;}
-/* 提交驗證未填完整時的紅框提示（用!important確保蓋過選取狀態邊框） */
-.symptom-card.error-flash{border-color:#dc2626 !important;box-shadow:0 0 0 1px rgba(220,38,38,0.5),0 4px 14px rgba(220,38,38,0.25) !important;}
-/* 症狀輕重三色按鈕：輕度綠/中度橙/重度紅，一眼分級 */
-.sev-btn{flex:1;padding:10px 4px;border-radius:10px;font-size:14px;font-weight:700;border:1.5px solid;background:#fff;transition:all .15s ease;-webkit-tap-highlight-color:transparent;cursor:pointer;}
-.sev-btn:active{transform:scale(0.96);}
-.sev-btn.sev-mild{color:#059669;border-color:#A7F3D0;}
-.sev-btn.sev-moderate{color:#D97706;border-color:#FDE68A;}
-.sev-btn.sev-severe{color:#DC2626;border-color:#FECACA;}
-.sev-btn.sev-mild.active{background:#059669;border-color:#059669;color:#fff;box-shadow:0 2px 8px rgba(5,150,105,0.35);}
-.sev-btn.sev-moderate.active{background:#D97706;border-color:#D97706;color:#fff;box-shadow:0 2px 8px rgba(217,119,6,0.35);}
-.sev-btn.sev-severe.active{background:#DC2626;border-color:#DC2626;color:#fff;box-shadow:0 2px 8px rgba(220,38,38,0.35);}
-/* ===== v7 動畫系統：頁首編排式進場 ===== */
-@keyframes fadeUp{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:none;}}
-@keyframes emblemIn{from{opacity:0;transform:scale(0.85);}to{opacity:1;transform:scale(1);}}
-@keyframes ruleIn{from{transform:scaleX(0);}to{transform:scaleX(1);}}
-@keyframes ringPulse{0%{transform:scale(1);opacity:0.5;}70%{transform:scale(1.9);opacity:0;}100%{transform:scale(1.9);opacity:0;}}
-@keyframes popIn{0%{transform:scale(0.5);}60%{transform:scale(1.18);}100%{transform:scale(1);}}
-.hero-emblem{animation:emblemIn 0.7s cubic-bezier(0.22,1,0.36,1) both;}
-.hero-eyebrow{animation:fadeUp 0.6s 0.12s cubic-bezier(0.22,1,0.36,1) both;}
-.hero-title{animation:fadeUp 0.6s 0.22s cubic-bezier(0.22,1,0.36,1) both;}
-.hero-rule{transform-origin:left;animation:ruleIn 0.5s 0.4s cubic-bezier(0.22,1,0.36,1) both;}
-.hero-sub{animation:fadeUp 0.6s 0.52s cubic-bezier(0.22,1,0.36,1) both;}
-.ring-pulse{position:absolute;inset:0;border-radius:50%;border:1.5px solid rgba(232,199,102,0.55);animation:ringPulse 3s ease-out 1.2s infinite;pointer-events:none;}
-/* 勾選指示器：印章式彈跳 */
-.symptom-card.is-selected .check-indicator{animation:popIn 0.3s cubic-bezier(0.34,1.56,0.64,1);}
-/* 鍵盤操作：金色焦點環 */
-button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid #C9A227;outline-offset:2px;}
-/* 尊重使用者的減少動態偏好 */
-@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:0.01ms !important;animation-iteration-count:1 !important;transition-duration:0.01ms !important;}}
-@media (max-width:640px){
-.factor-tag{font-size:0.7rem;padding:0.15rem 0.35rem;}
-#symptoms-container{gap:8px;}
-.result-summary{font-size:0.9rem;}
-.info-grid{grid-template-columns:repeat(2,1fr);gap:0.5rem;}
-}
-.info-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:0.75rem;}
-.info-item{display:flex;justify-content:space-between;}
-.severity-note{font-size:0.65rem;color:#94A3B8;margin-top:2px;}
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🧬彥彬 健康自檢表</title>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@600;700;900&family=Noto+Sans+TC:wght@300;400;500;700&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#165DFF',
+            secondary: '#36D399',
+            accent: '#FF7D00',
+            warning: '#FF5630',
+            neutral: '#F5F7FA',
+            'neutral-dark': '#333F51'
+          },
+          fontFamily: { inter: ['Noto Sans TC','Inter','sans-serif'], display: ['Noto Serif TC','serif'], num: ['Inter','Noto Sans TC','sans-serif'] },
+        },
+      }
+    }
+  </script>
+
+  <style type="text/tailwindcss">
+    @layer utilities {
+      .content-auto { content-visibility: auto; }
+      .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+      .scrollbar-hide::-webkit-scrollbar { display: none; }
+      .text-shadow { text-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+      .card-hover { transition: all 0.3s ease; }
+      .card-hover:hover { transform: translateY(-5px); box-shadow: 0 10px 25px -5px rgba(22, 93, 255, 0.1), 0 10px 10px -5px rgba(22, 93, 255, 0.04); }
+      .error-input { border-color: #FF5630 !important; }
+      .error-message { color: #FF5630; font-size: 0.875rem; margin-top: 0.25rem; }
+    }
+  </style>
+
+  <!-- 質感遮罩 / 骨架 / 分享卡片 樣式 -->
+  <style>
+    @keyframes yb-spin { to { transform: rotate(360deg); } }
+    @keyframes yb-pulse { 0%,100% { opacity: .55; } 50% { opacity: 1; } }
+    @keyframes yb-shimmer { 0% { background-position: -400px 0; } 100% { background-position: 400px 0; } }
+    @keyframes yb-pop { 0% { transform: scale(.85); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+
+    /* 全螢幕處理中遮罩（阻擋點擊） */
+    #processingOverlay {
+      position: fixed; inset: 0; z-index: 100000; display: none;
+      align-items: center; justify-content: center;
+      background: radial-gradient(120% 120% at 50% 0%, rgba(22,93,255,.28), rgba(15,26,50,.72));
+      backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+    }
+    #processingOverlay.show { display: flex; }
+    .yb-proc-card {
+      width: min(90vw, 360px); background: #fff; border-radius: 22px; padding: 30px 26px;
+      box-shadow: 0 24px 60px rgba(15,26,50,.35); text-align: center;
+      animation: yb-pop .32s ease both;
+    }
+    .yb-ring {
+      width: 76px; height: 76px; margin: 0 auto 18px; border-radius: 50%;
+      background: conic-gradient(#165DFF, #36D399, #165DFF);
+      -webkit-mask: radial-gradient(farthest-side, transparent 62%, #000 64%);
+              mask: radial-gradient(farthest-side, transparent 62%, #000 64%);
+      animation: yb-spin 1s linear infinite;
+    }
+    .yb-ring-core { position: relative; width: 76px; height: 76px; margin: 0 auto 18px; }
+    .yb-ring-core i { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #165DFF; font-size: 26px; }
+    .yb-proc-title { font-weight: 700; font-size: 17px; color: #1f2a44; margin-bottom: 6px; }
+    .yb-proc-status { font-size: 13.5px; color: #6b7280; min-height: 20px; transition: opacity .25s; }
+    .yb-steps { display: flex; justify-content: center; gap: 6px; margin-top: 18px; }
+    .yb-steps span { width: 7px; height: 7px; border-radius: 50%; background: #d7deea; transition: all .3s; }
+    .yb-steps span.on { background: #165DFF; transform: scale(1.25); }
+    .yb-done-icon { width: 66px; height: 66px; margin: 0 auto 16px; border-radius: 50%;
+      background: linear-gradient(135deg,#36D399,#12b981); display: flex; align-items: center; justify-content: center;
+      color: #fff; font-size: 30px; box-shadow: 0 10px 24px rgba(18,185,129,.4); animation: yb-pop .35s ease both; }
+
+    /* 骨架載入 */
+    .yb-skeleton { position: relative; overflow: hidden; background: #eef1f6; border-radius: 10px; }
+    .yb-skeleton::after { content:''; position:absolute; inset:0;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,.75), transparent);
+      background-size: 400px 100%; animation: yb-shimmer 1.2s infinite; }
+    .yb-sk-line { height: 12px; margin: 9px 0; }
+
+    /* 分享卡片（螢幕外，僅供截圖） */
+    #shareCardWrap, #guideCardWrap { position: fixed; left: -10000px; top: 0; z-index: -1; }
+    .yb-share-card {
+      width: 540px; box-sizing: border-box; font-family: 'Inter','PingFang TC','Microsoft JhengHei',sans-serif;
+      background: #ffffff; border-radius: 26px; overflow: hidden;
+      box-shadow: 0 20px 50px rgba(15,26,50,.18);
+    }
+    .yb-sc-head { position: relative; padding: 26px 26px 22px; color:#fff;
+      background: linear-gradient(135deg,#1e5bff 0%, #3aa0ff 55%, #36D399 130%); }
+    .yb-sc-head::after { content:''; position:absolute; right:-40px; top:-40px; width:150px; height:150px;
+      background: rgba(255,255,255,.14); border-radius:50%; }
+    .yb-sc-brand { font-size: 13px; letter-spacing: 3px; opacity:.9; margin-bottom: 8px; }
+    .yb-sc-title { font-size: 23px; font-weight: 800; line-height:1.3; position:relative; }
+    .yb-sc-sub { margin-top: 8px; font-size: 13px; opacity:.92; position:relative; }
+    .yb-sc-body { padding: 22px 26px 10px; }
+    .yb-sc-stats { display:flex; gap: 12px; margin-bottom: 20px; }
+    .yb-sc-stat { flex:1; border-radius: 16px; padding: 16px 14px; text-align:center;
+      background: #f5f8ff; border: 1px solid #e6eefc; }
+    .yb-sc-stat .n { font-size: 30px; font-weight: 800; color:#165DFF; line-height:1; }
+    .yb-sc-stat .n.warn { color:#FF7D00; }
+    .yb-sc-stat .l { margin-top: 7px; font-size: 12.5px; color:#6b7280; }
+    .yb-sc-section-t { font-size: 13.5px; font-weight: 700; color:#1f2a44; margin: 6px 0 10px; display:flex; align-items:center; gap:6px; }
+    .yb-sc-tags { display:flex; flex-wrap:wrap; gap: 8px; }
+    .yb-sc-tag { font-size: 12.5px; font-weight: 600; color:#0E42D2; background:#e8f0ff;
+      border:1px solid #cfe0ff; padding: 6px 12px; border-radius: 999px; display:inline-flex; align-items:center; gap:5px; }
+    .yb-sc-tag b { font-size:13.5px; font-weight:800; }
+    .yb-sc-tag small { font-size:10px; font-weight:700; padding:1px 6px; border-radius:999px; background:rgba(255,255,255,.7); }
+    .yb-sc-tag.good { color:#0f9d6b; background:#e7f9f1; border-color:#c4efdd; }
+    .yb-sc-tag.lv1 { color:#0f9d6b; background:#e7f9f1; border-color:#c4efdd; }
+    .yb-sc-tag.lv1 small { color:#0f9d6b; }
+    .yb-sc-tag.lv2 { color:#c2610a; background:#fff4e6; border-color:#ffd9a8; }
+    .yb-sc-tag.lv2 small { color:#c2610a; }
+    .yb-sc-tag.lv3 { color:#d61f2b; background:#ffeaea; border-color:#ffc9c9; }
+    .yb-sc-tag.lv3 small { color:#d61f2b; }
+    /* 分類分明的症狀卡片 */
+    .yb-symcards { display:flex; flex-direction:column; gap:8px; }
+    .yb-symcard { background:#f8fafc; border:1px solid #eef1f6; border-left:3px solid #165DFF; border-radius:11px; padding:10px 13px; }
+    .yb-symcard .gl { display:flex; align-items:center; gap:7px; font-size:12.5px; font-weight:800; color:#1f2a44; margin-bottom:4px; }
+    .yb-symcard .gl .dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+    .yb-symcard .gl .cnt { margin-left:auto; font-size:10.5px; font-weight:700; color:#fff; background:#94a3b8; padding:1px 8px; border-radius:999px; }
+    .yb-symcard .gi { font-size:12px; color:#4b5563; line-height:1.65; }
+    .yb-symcard .gi .more { color:#94a3b8; font-weight:600; white-space:nowrap; }
+
+    /* 七大方向：頁面時間軸列表 */
+    .yb-dir-list { display:flex; flex-direction:column; }
+    .yb-dir-row { display:flex; gap:14px; padding:16px 4px; border-bottom:1px dashed #e5e9f0; }
+    .yb-dir-row:last-child { border-bottom:none; }
+    .yb-dir-badge { flex-shrink:0; width:44px; height:44px; border-radius:14px; display:flex; align-items:center; justify-content:center;
+      font-size:18px; color:#165DFF; background:linear-gradient(135deg,#eaf1ff,#e7f9f1); box-shadow:inset 0 0 0 1px rgba(22,93,255,.12); }
+    .yb-dir-title { font-size:15px; font-weight:800; color:#1f2a44; display:flex; align-items:baseline; gap:8px; flex-wrap:wrap; }
+    .yb-dir-title .sub { font-size:12px; font-weight:600; color:#7c8aa0; }
+    .yb-dir-title .vid { margin-left:auto; font-size:12px; color:#3b82f6; font-weight:600; }
+    .yb-dir-story { font-size:13.5px; color:#374151; line-height:1.75; margin-top:5px; }
+    .yb-dir-rule { font-size:12.5px; color:#0f766e; font-weight:600; margin-top:5px; display:flex; align-items:center; gap:6px; }
+
+    /* 七大方向：知識卡 */
+    .yb-g-head { position:relative; padding:26px 26px 22px; color:#fff; overflow:hidden;
+      background: radial-gradient(130% 160% at 20% 0%, #1E5BFF 0%, #123FB8 55%, #0E1B33 130%); }
+    .yb-g-head::after { content:''; position:absolute; right:-50px; top:-50px; width:170px; height:170px; background:rgba(255,255,255,.10); border-radius:50%; }
+    .yb-g-brand { font-size:12px; letter-spacing:3px; opacity:.85; margin-bottom:8px; }
+    .yb-g-title { font-family:'Noto Serif TC',serif; font-size:24px; font-weight:900; line-height:1.3; position:relative; }
+    .yb-g-sub { margin-top:7px; font-size:12.5px; opacity:.9; position:relative; }
+    .yb-g-row { display:flex; gap:13px; padding:15px 24px; border-bottom:1px dashed #e9edf4; }
+    .yb-g-row:nth-child(even) { background:#fafcff; }
+    .yb-g-badge { flex-shrink:0; width:40px; height:40px; border-radius:13px; display:flex; align-items:center; justify-content:center;
+      font-size:16px; color:#fff; }
+    .yb-g-t { font-size:14.5px; font-weight:800; color:#1f2a44; }
+    .yb-g-t .sub { font-size:11px; font-weight:600; color:#8a93a3; margin-left:7px; }
+    .yb-g-story { font-size:12.3px; color:#3f4a5c; line-height:1.7; margin-top:3px; }
+    .yb-g-rule { font-size:11.8px; color:#0f766e; font-weight:700; margin-top:3px; }
+    .yb-sub-h { display:flex; align-items:center; gap:7px; font-size:12.5px; font-weight:800; color:#334155; margin:12px 0 8px; padding-bottom:5px; border-bottom:1px dashed #e5e9f0; }
+    .yb-sc-motto { margin: 18px 0 4px; padding: 14px 16px; border-radius: 14px;
+      background: linear-gradient(135deg,#f5f8ff,#eefaf4); font-size: 12.5px; color:#334; line-height: 1.7; text-align:center; }
+    .yb-sc-foot { padding: 14px 26px 22px; display:flex; justify-content: space-between; align-items:center;
+      border-top: 1px dashed #e5e9f0; }
+    .yb-sc-foot .qr { font-size: 11px; color:#9aa3b2; }
+    .yb-sc-foot .tag { font-size: 11px; color:#9aa3b2; }
+    .yb-sc-disclaimer { font-size: 10.5px; color:#aab; text-align:center; padding: 0 26px 18px; }
+
+    /* 多段式區塊 */
+    .yb-sc-sec { padding: 20px 26px; border-top: 1px solid #eef1f6; }
+    .yb-sc-sec-h { display:flex; align-items:center; gap:9px; font-size:15px; font-weight:800; color:#1f2a44; margin-bottom:14px; }
+    .yb-sc-sec-h .ic { width:28px; height:28px; border-radius:9px; background:linear-gradient(135deg,#eaf1ff,#e7f9f1); color:#165DFF; display:flex; align-items:center; justify-content:center; font-size:14px; }
+    .yb-sc-bars { margin-top:2px; }
+    .yb-bar-row { margin-bottom:12px; }
+    .yb-bar-top { display:flex; justify-content:space-between; font-size:12.5px; color:#5b6472; margin-bottom:5px; }
+    .yb-bar-top b { color:#1f2a44; }
+    .yb-bar-track { height:9px; background:#eef1f6; border-radius:99px; overflow:hidden; }
+    .yb-bar-fill { height:100%; border-radius:99px; }
+    .yb-bar-fill.sym { background:linear-gradient(90deg,#1e5bff,#3a8bff); }
+    .yb-bar-fill.hab { background:linear-gradient(90deg,#FF9F45,#FF7D00); }
+    .yb-sc-chart { text-align:center; background:linear-gradient(180deg,#f8fbff,#f4f9f6); border:1px solid #eef2f8; border-radius:16px; padding:12px; }
+    .yb-sc-chart img { width:100%; max-width:480px; height:auto; }
+    .yb-sc-chart .cap { font-size:11.5px; color:#8a93a3; margin-top:4px; }
+    .yb-kv { display:flex; gap:8px; font-size:13px; margin-bottom:9px; align-items:flex-start; }
+    .yb-kv .k { flex-shrink:0; color:#6b7280; width:70px; font-weight:600; }
+    .yb-kv .v { color:#1f2a44; flex:1; }
+    .yb-sym-group { margin-bottom:9px; }
+    .yb-sym-group .gl { font-size:12px; font-weight:700; color:#165DFF; margin-bottom:3px; }
+    .yb-sym-group .gi { font-size:12.5px; color:#374151; line-height:1.65; }
+    .yb-ai-box { background:linear-gradient(180deg,#f7faff,#f3fbf7); border:1px solid #e8f0fc; border-radius:16px; padding:16px; }
+    .yb-ai-box p { font-size:12.8px; color:#2b3547; line-height:1.75; margin-bottom:7px; }
+    .yb-ai-box p:last-child { margin-bottom:0; }
+    .yb-ai-tag { display:inline-flex; align-items:center; gap:5px; font-size:11px; font-weight:700; color:#0E42D2; background:#e8f0ff; padding:4px 11px; border-radius:99px; margin-bottom:11px; }
+
+
+    /* ===== 質感按鈕系統 ===== */
+    .yb-btn { position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      font-weight: 700; border: none; cursor: pointer; border-radius: 14px;
+      transition: transform .15s ease, box-shadow .2s ease, filter .2s ease; -webkit-tap-highlight-color: transparent; }
+    .yb-btn:active { transform: scale(.96); }
+    .yb-btn:disabled { opacity: .55; cursor: not-allowed; transform: none !important; }
+
+    .yb-btn-primary { padding: 13px 28px; color: #fff; font-size: 15.5px;
+      background: linear-gradient(135deg, #1e5bff 0%, #3a8bff 100%);
+      box-shadow: 0 8px 20px rgba(22,93,255,.32), inset 0 1px 0 rgba(255,255,255,.25); }
+    .yb-btn-primary:hover { filter: brightness(1.06); box-shadow: 0 10px 26px rgba(22,93,255,.4), inset 0 1px 0 rgba(255,255,255,.25); }
+
+    .yb-btn-success { padding: 13px 30px; color: #fff; font-size: 15.5px;
+      background: linear-gradient(135deg, #12b981 0%, #36D399 100%);
+      box-shadow: 0 8px 20px rgba(18,185,129,.32), inset 0 1px 0 rgba(255,255,255,.25); }
+    .yb-btn-success:hover { filter: brightness(1.06); box-shadow: 0 10px 26px rgba(18,185,129,.42), inset 0 1px 0 rgba(255,255,255,.25); }
+
+    .yb-btn-ghost { padding: 13px 24px; color: #445; font-size: 15px; background: #fff;
+      border: 1.5px solid #dde3ee; box-shadow: 0 3px 10px rgba(15,26,50,.06); }
+    .yb-btn-ghost:hover { border-color: #b9c6e6; color: #165DFF; box-shadow: 0 5px 14px rgba(22,93,255,.12); }
+
+    .yb-btn-outline-primary { padding: 13px 26px; color: #165DFF; font-size: 15px; background: #f2f6ff;
+      border: 1.5px solid #cfe0ff; box-shadow: 0 3px 10px rgba(22,93,255,.08); }
+    .yb-btn-outline-primary:hover { background: #e8f0ff; box-shadow: 0 5px 14px rgba(22,93,255,.16); }
+
+    /* LINE 品牌綠分享浮鈕 */
+    .yb-btn-line { padding: 14px 30px; color: #fff; font-size: 16px; border-radius: 999px;
+      background: linear-gradient(135deg, #06C755 0%, #05a94a 100%);
+      box-shadow: 0 10px 26px rgba(6,199,85,.4), inset 0 1px 0 rgba(255,255,255,.28); }
+    .yb-btn-line:hover { filter: brightness(1.05); box-shadow: 0 12px 32px rgba(6,199,85,.5), inset 0 1px 0 rgba(255,255,255,.28); }
+    @keyframes yb-float { 0%,100% { transform: translateX(-50%) translateY(0); } 50% { transform: translateX(-50%) translateY(-5px); } }
+    #singleShareBtn { animation: yb-float 2.6s ease-in-out infinite; }
+    #singleShareBtn:active { animation: none; transform: translateX(-50%) scale(.95); }
+
+    /* rich 按鈕（圖示＋雙行文字＋箭頭） */
+    .yb-btn-rich { justify-content: flex-start; gap: 12px; padding: 13px 20px; border-radius: 16px; text-align: left; }
+    .yb-btn-ic { flex-shrink:0; width:40px; height:40px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:17px; }
+    .yb-btn-primary .yb-btn-ic { background: rgba(255,255,255,.22); color:#fff; }
+    .yb-btn-ghost .yb-btn-ic { background:#eef2fb; color:#165DFF; }
+    .yb-btn-txt { display:flex; flex-direction:column; line-height:1.25; }
+    .yb-btn-main { font-size:15.5px; font-weight:700; }
+    .yb-btn-sub { font-size:11.5px; opacity:.82; margin-top:1px; font-weight:500; }
+    .yb-btn-arrow { margin-left:auto; font-size:13px; opacity:.75; transition: transform .2s; }
+    .yb-btn-primary:hover .yb-btn-arrow { transform: translateX(4px); }
+    @media (max-width:639px){ .yb-btn-rich { width:100%; } }
+
+    /* 分享浮鈕脈衝光暈 */
+    #singleShareBtn::before { content:''; position:absolute; inset:0; border-radius:999px; box-shadow:0 0 0 0 rgba(6,199,85,.5); animation: yb-share-pulse 2.2s infinite; }
+    @keyframes yb-share-pulse { 0%{box-shadow:0 0 0 0 rgba(6,199,85,.45);} 70%{box-shadow:0 0 0 18px rgba(6,199,85,0);} 100%{box-shadow:0 0 0 0 rgba(6,199,85,0);} }
+
+    /* 分類標籤膠囊升級 */
+    .symptom-tab, .habit-tab { transition: all .2s ease; font-weight: 600; }
+    .symptom-tab.active, .habit-tab.active {
+      background: linear-gradient(135deg, #1e5bff, #3a8bff) !important;
+      box-shadow: 0 5px 14px rgba(22,93,255,.35); transform: translateY(-1px); }
+    .symptom-tab:not(.active):hover, .habit-tab:not(.active):hover { transform: translateY(-1px); }
+  
+    /* ============ 頂級質感層：全站動效與細節 ============ */
+    :root { --ink:#0E1B33; --pulse:#165DFF; --jade:#12B981; --dawn:#FF7D00; }
+    body { color: var(--ink); -webkit-font-smoothing: antialiased; }
+    ::selection { background: rgba(22,93,255,.18); }
+
+    h2 { font-family: 'Noto Serif TC', serif; letter-spacing: .02em; }
+
+    .yb-h-accent { display:inline-flex; align-items:center; gap:12px; }
+    .yb-h-accent::before, .yb-h-accent::after { content:''; height:2px; width:34px; border-radius:2px;
+      background: linear-gradient(90deg, transparent, rgba(22,93,255,.55)); }
+    .yb-h-accent::after { background: linear-gradient(90deg, rgba(18,185,129,.55), transparent); }
+
+    .reveal { opacity: 0; transform: translateY(26px); transition: opacity .8s cubic-bezier(.22,1,.36,1), transform .8s cubic-bezier(.22,1,.36,1); }
+    .reveal.in { opacity: 1; transform: none; }
+    .reveal-d1 { transition-delay: .08s; } .reveal-d2 { transition-delay: .16s; } .reveal-d3 { transition-delay: .24s; }
+
+    .yb-hero { position: relative; overflow: hidden; isolation: isolate;
+      background: radial-gradient(130% 130% at 15% 0%, #1E5BFF 0%, #1449D6 46%, #0E2C7A 100%); }
+    .yb-orb { position:absolute; border-radius:50%; filter: blur(60px); opacity:.5; z-index:-1; animation: yb-drift 14s ease-in-out infinite alternate; }
+    .yb-orb.o1 { width:340px; height:340px; background:#3aa0ff; top:-120px; right:-80px; }
+    .yb-orb.o2 { width:280px; height:280px; background:#12B981; bottom:-130px; left:-90px; animation-delay: -6s; }
+    @keyframes yb-drift { from { transform: translate(0,0) scale(1); } to { transform: translate(30px,22px) scale(1.12); } }
+
+    .yb-ecg { position:absolute; left:0; right:0; bottom:34px; width:100%; height:72px; z-index:-1; opacity:.9; }
+    .yb-ecg path { fill:none; stroke:url(#ecgGrad); stroke-width:2.5; stroke-linecap:round; stroke-linejoin:round;
+      stroke-dasharray: 340 1400; stroke-dashoffset: 1740; animation: yb-ecg-run 5.2s linear infinite; filter: drop-shadow(0 0 6px rgba(120,220,255,.8)); }
+    @keyframes yb-ecg-run { to { stroke-dashoffset: 0; } }
+
+    .yb-stage { opacity:0; transform: translateY(24px); animation: yb-rise .9s cubic-bezier(.22,1,.36,1) forwards; }
+    .yb-stage.s1{ animation-delay:.1s } .yb-stage.s2{ animation-delay:.28s } .yb-stage.s3{ animation-delay:.46s } .yb-stage.s4{ animation-delay:.64s }
+    @keyframes yb-rise { to { opacity:1; transform:none; } }
+    .yb-hero-eyebrow { display:inline-flex; align-items:center; gap:8px; font-size:12.5px; letter-spacing:.35em; font-weight:600;
+      color:rgba(255,255,255,.85); padding:7px 14px 7px 18px; border:1px solid rgba(255,255,255,.28); border-radius:999px;
+      backdrop-filter: blur(4px); background: rgba(255,255,255,.08); }
+    .yb-hero-title { font-family:'Noto Serif TC',serif; font-weight:900; line-height:1.22; }
+    .yb-hero-title .em { background: linear-gradient(92deg,#9ff0cf, #7dd3ff); -webkit-background-clip:text; background-clip:text; color:transparent; }
+    .yb-hero-formula { display:inline-grid; gap:6px; padding:16px 26px; border-radius:18px;
+      background: rgba(255,255,255,.10); border:1px solid rgba(255,255,255,.22); backdrop-filter: blur(8px); }
+    .yb-hero-formula .row { display:flex; align-items:baseline; gap:10px; font-size:15.5px; justify-content:center; }
+    .yb-hero-formula .k { opacity:.82; letter-spacing:.1em; }
+    .yb-hero-formula .good { color:#9ff0cf; font-weight:700; }
+    .yb-hero-formula .bad { color:#ffc9a3; font-weight:700; }
+    .yb-cta { position:relative; overflow:hidden; display:inline-flex; align-items:center; gap:10px;
+      background:#fff; color:#1449D6; font-weight:800; padding:15px 34px; border-radius:999px;
+      box-shadow: 0 14px 34px rgba(6,20,60,.35); transition: transform .2s, box-shadow .3s; }
+    .yb-cta:hover { transform: translateY(-3px); box-shadow: 0 20px 44px rgba(6,20,60,.45); }
+    .yb-cta::after { content:''; position:absolute; top:0; left:-80%; width:50%; height:100%;
+      background: linear-gradient(105deg, transparent, rgba(22,93,255,.16), transparent);
+      animation: yb-shine 3.4s ease-in-out infinite; }
+    @keyframes yb-shine { 0%,55%{ left:-80%; } 85%,100%{ left:130%; } }
+
+    .card-hover { border:1px solid transparent; }
+    .card-hover:hover { border-color: rgba(22,93,255,.12); }
+    .symptom-item label, .habit-item label { transition: border-color .2s, background .2s, transform .15s, box-shadow .25s; }
+    .symptom-item label:hover, .habit-item label:hover { border-color: rgba(22,93,255,.4); transform: translateY(-1px); box-shadow: 0 6px 16px rgba(22,93,255,.08); }
+    .symptom-item label:has(input:checked), .habit-item label:has(input:checked) {
+      border-color: var(--pulse); background: linear-gradient(135deg, rgba(22,93,255,.06), rgba(18,185,129,.06)); box-shadow: inset 0 0 0 1px rgba(22,93,255,.35); }
+    input[type="checkbox"], input[type="radio"] { accent-color: var(--pulse); transition: transform .12s; }
+    input[type="checkbox"]:active, input[type="radio"]:active { transform: scale(1.25); }
+    input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-visible, a:focus-visible { outline: 3px solid rgba(22,93,255,.35); outline-offset: 2px; }
+
+    .form-step.active { animation: yb-step-in .5s cubic-bezier(.22,1,.36,1); }
+    @keyframes yb-step-in { from { opacity:0; transform: translateX(26px); } to { opacity:1; transform:none; } }
+    .step-indicator { transition: background .35s, color .35s, transform .35s, box-shadow .35s; }
+    .step-indicator.bg-primary { box-shadow: 0 6px 16px rgba(22,93,255,.35); transform: scale(1.08); }
+    .step-progress { transition: width .6s cubic-bezier(.22,1,.36,1); }
+
+    header.yb-scrolled { box-shadow: 0 8px 30px rgba(14,27,51,.10); }
+    footer { background: linear-gradient(180deg, #14203b, #0E1B33) !important; }
+
+    @media (prefers-reduced-motion: reduce) {
+      .reveal { opacity:1 !important; transform:none !important; transition:none !important; }
+      .yb-stage { opacity:1; transform:none; animation:none; }
+      .yb-ecg path, .yb-orb, .yb-cta::after, #singleShareBtn::before { animation: none !important; }
+    }
+  </style>
 </head>
-<body class="bg-lightBg min-h-screen flex flex-col p-2 md:p-4">
-<div class="max-w-5xl w-full bg-cardBg rounded-2xl shadow-elevation-2 overflow-hidden fade-in self-center">
-<div class="relative overflow-hidden text-center" style="background:linear-gradient(150deg,#0B2620 0%,#0E3A30 55%,#0A4A3C 100%);background-blend-mode:normal;">
-<div class="absolute inset-0" style="background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='70' viewBox='0 0 140 70'%3E%3Cg fill='none' stroke='%23E8C766' stroke-opacity='0.06' stroke-width='1.5'%3E%3Cpath d='M0 70 Q35 35 70 70 T140 70'/%3E%3Cpath d='M-35 52 Q0 18 35 52 T105 52 T175 52'/%3E%3C/g%3E%3C/svg%3E&quot;);background-size:140px 70px;"></div>
-<div class="relative z-10 px-4 pt-7 pb-6">
-<div class="hero-emblem mx-auto mb-3 relative w-16 h-16">
-<span class="ring-pulse"></span>
-<div class="w-16 h-16 rounded-full flex items-center justify-center" style="border:1.5px solid rgba(232,199,102,0.55);background:rgba(255,255,255,0.06);">
-<i class="fa fa-heartbeat text-2xl" style="color:#E8C766;"></i>
-</div>
-</div>
-<div class="hero-eyebrow text-[11px]" style="letter-spacing:0.4em;color:rgba(232,199,102,0.9);">七大健康要素 · 專業評估</div>
-<h1 class="hero-title font-display text-2xl md:text-3xl font-bold mt-1.5" style="color:#F5F2E8;letter-spacing:0.12em;">彥彬 健康自檢表</h1>
-<div class="hero-rule mx-auto mt-3" style="height:2px;width:72px;background:linear-gradient(90deg,#E8C766,#C9A227);"></div>
-<p class="hero-sub text-[12.5px] mt-2.5" style="color:rgba(226,232,228,0.72);">相信自己 · 找回初心 <span style="opacity:0.45;">v7.0</span></p>
-</div>
-</div>
-<div class="p-3 md:p-5">
-<div id="status" class="flex items-center justify-center py-6 text-textPrimary text-center">
-<div class="text-center">
-<div class="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary mb-3"></div>
-<p id="status-text" class="text-base">正在初始化系統，請稍候...</p>
-</div>
-</div>
-<div id="error-message" class="hidden bg-red-50 border border-red-100 text-red-700 px-4 py-3 rounded-xl mb-4 shadow-sm">
-<div class="flex items-start">
-<i class="fa fa-exclamation-circle text-red-500 mt-1 mr-2 text-lg"></i>
-<div id="error-content"></div>
-</div>
-</div>
-<div id="result-card" class="hidden bg-gradient-to-r from-secondary to-[#F0FAF8] border border-primary/15 rounded-2xl p-4 mb-4 text-center slide-up relative overflow-hidden">
-<div class="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full translate-x-1/2 -translate-y-1/2"></div>
-<div class="relative z-10">
-<div id="result-main" class="text-lg md:text-xl font-bold mb-2 text-textPrimary"></div>
-<div id="result-details" class="text-sm text-textSecondary space-y-1 md:space-y-1.5"></div>
-<div class="w-20 h-0.5 bg-primary/20 mx-auto my-2"></div>
-<p class="text-xs text-textSecondary/80"><i class="fa fa-info-circle text-primary mr-1"></i>請根據自身狀況如實填寫，系統將為您提供專業參考</p>
-</div>
-</div>
-<div id="user-info-section" class="hidden scale-in bg-neutral rounded-2xl p-3 md:p-4 mb-4 shadow-elevation-1">
-<div class="text-center mb-3">
-<div class="inline-block text-[11px] font-bold text-primary bg-primary/10 border border-primary/20 rounded-full px-2.5 py-0.5 mb-1.5">步驟 1 / 2</div>
-<h2 class="font-display text-lg md:text-xl font-bold mb-1" style="color:#0E2E28;letter-spacing:0.08em;">用戶基本資訊</h2>
-<p class="text-textSecondary max-w-2xl mx-auto text-xs">請根據實際情況填寫，幫助系統精確評估</p>
-</div>
-<div class="grid grid-cols-1 md:grid-cols-2 gap-2 mb-3">
-<div class="space-y-1">
-<label class="block text-xs font-medium text-textPrimary">姓名 <span class="text-red-500">*</span></label>
-<input type="text" id="user-name" class="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm input-focus bg-white" placeholder="請輸入真實姓名" required>
-</div>
-<div class="space-y-1">
-<label class="block text-xs font-medium text-textPrimary">年齡 <span class="text-red-500">*</span></label>
-<input type="number" id="user-age" min="0" max="120" class="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm input-focus bg-white" placeholder="請輸入年齡" required>
-</div>
-<div class="space-y-1">
-<label class="block text-xs font-medium text-textPrimary">性別 <span class="text-red-500">*</span></label>
-<select id="user-gender" class="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm input-focus bg-white" required>
-<option value="">請選擇性別</option>
-<option value="male">男</option>
-<option value="female">女</option>
-</select>
-</div>
-<div class="space-y-1">
-<label class="block text-xs font-medium text-textPrimary">身高 (cm)</label>
-<input type="number" id="user-height" min="50" max="250" class="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm input-focus bg-white" placeholder="選填">
-</div>
-<div class="space-y-1">
-<label class="block text-xs font-medium text-textPrimary">體重 (kg)</label>
-<input type="number" id="user-weight" min="10" max="200" step="0.1" class="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm input-focus bg-white" placeholder="選填">
-</div>
-<div class="space-y-1">
-<label class="block text-xs font-medium text-textPrimary">血壓 (mmHg)</label>
-<input type="text" id="user-bp" class="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm input-focus bg-white" placeholder="選填，例：120收縮壓/80舒張壓">
-</div>
-<div class="space-y-1">
-<label class="block text-xs font-medium text-textPrimary">血糖(HbA1c)</label>
-<input type="number" id="user-glucose" min="3" max="15" step="0.1" class="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm input-focus bg-white" placeholder="糖化血色素">
-</div>
-<div class="space-y-1">
-<label class="block text-xs font-medium text-textPrimary">職業</label>
-<input type="text" id="user-job" class="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm input-focus bg-white" placeholder="選填">
-</div>
-</div>
-<div class="text-center">
-<button id="next-to-checklist" class="bg-gradient-to-r from-primary to-[#006658] hover:from-[#007A69] hover:to-[#00594D] text-white font-bold py-2 px-5 rounded-xl shadow-elevation-2 transition btn-hover transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-primary/50">
-<i class="fa fa-arrow-right mr-1.5"></i>繼續填寫自檢表
-</button>
-</div>
-</div>
-<div id="checklist-section" class="hidden scale-in">
-<div class="mb-3 text-center">
-<div class="inline-block text-[11px] font-bold text-primary bg-primary/10 border border-primary/20 rounded-full px-2.5 py-0.5 mb-1.5">步驟 2 / 2</div>
-<h2 class="font-display text-lg md:text-xl font-bold mb-1" style="color:#0E2E28;letter-spacing:0.08em;">自檢表填寫區域</h2>
-<p class="text-textSecondary max-w-2xl mx-auto mb-2 text-xs">請勾選對應症狀並填寫相關資訊</p>
-<div class="mt-2 flex flex-wrap justify-center gap-1.5 text-xs">
-<span class="bg-blue-50 text-blue-700 factor-tag">氣血</span>
-<span class="bg-green-50 text-green-700 factor-tag">循環</span>
-<span class="bg-yellow-50 text-yellow-700 factor-tag">毒素</span>
-<span class="bg-orange-50 text-orange-700 factor-tag">血脂</span>
-<span class="bg-purple-50 text-purple-700 factor-tag">寒濕</span>
-<span class="bg-pink-50 text-pink-700 factor-tag">免疫</span>
-<span class="bg-indigo-50 text-indigo-700 factor-tag">情緒</span>
-</div>
-</div>
-<div class="sticky-filter bg-lightBg/95 border border-gray-100 rounded-2xl p-2 mb-3 shadow-elevation-2">
-<div class="chip-scroll mb-1.5">
-<button id="filter-all" class="bg-primary text-white px-3 py-1.5 rounded-full text-xs font-medium hover:bg-[#007A69] transition btn-hover shadow-elevation-1">
-<i class="fa fa-th-list mr-1"></i>全部
-</button>
-<button id="filter-selected" class="bg-gray-700 text-white px-3 py-1.5 rounded-full text-xs font-medium hover:bg-gray-800 transition btn-hover shadow-elevation-1">
-<i class="fa fa-filter mr-1"></i>只看已選
-</button>
-<button data-factor="氣血" class="bg-blue-600 text-white px-3 py-1.5 rounded-full text-xs font-medium hover:bg-blue-700 transition btn-hover shadow-elevation-1">氣血</button>
-<button data-factor="循環" class="bg-green-600 text-white px-3 py-1.5 rounded-full text-xs font-medium hover:bg-green-700 transition btn-hover shadow-elevation-1">循環</button>
-<button data-factor="毒素" class="bg-yellow-600 text-white px-3 py-1.5 rounded-full text-xs font-medium hover:bg-yellow-700 transition btn-hover shadow-elevation-1">毒素</button>
-<button data-factor="血脂" class="bg-orange-600 text-white px-3 py-1.5 rounded-full text-xs font-medium hover:bg-orange-700 transition btn-hover shadow-elevation-1">血脂</button>
-<button data-factor="寒濕" class="bg-purple-600 text-white px-3 py-1.5 rounded-full text-xs font-medium hover:bg-purple-700 transition btn-hover shadow-elevation-1">寒濕</button>
-<button data-factor="免疫" class="bg-pink-600 text-white px-3 py-1.5 rounded-full text-xs font-medium hover:bg-pink-700 transition btn-hover shadow-elevation-1">免疫</button>
-<button data-factor="情緒" class="bg-indigo-600 text-white px-3 py-1.5 rounded-full text-xs font-medium hover:bg-indigo-700 transition btn-hover shadow-elevation-1">情緒</button>
-</div>
-<div class="flex items-center justify-between px-1">
-<span class="text-xs text-textSecondary"><i class="fa fa-hand-pointer-o mr-1"></i>點選卡片即可勾選</span>
-<div class="text-textPrimary text-sm font-medium">
-已勾選 <span id="selected-count" class="font-bold text-primary text-base">0</span>/95
-</div>
-</div>
-</div>
-<div id="symptoms-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 mb-4"></div>
-<div class="sticky-actions bg-lightBg/95 border border-gray-100 rounded-2xl shadow-elevation-2 mt-4 mb-1 p-2.5 flex items-center gap-2">
-<button id="back-to-info" class="bg-gray-200 hover:bg-gray-300 text-textPrimary font-bold py-3 px-4 rounded-xl shadow-elevation-1 transition btn-hover flex-shrink-0" title="返回修改資訊">
-<i class="fa fa-arrow-left"></i><span class="hidden md:inline ml-1.5">返回修改資訊</span>
-</button>
-<button id="submit-checklist" class="flex-1 bg-gradient-to-r from-primary to-[#006658] hover:from-[#007A69] hover:to-[#00594D] text-white font-bold py-3 px-4 rounded-xl shadow-elevation-2 transition btn-hover focus:outline-none focus:ring-2 focus:ring-primary/50 active:scale-[0.98]">
-<i class="fa fa-paper-plane mr-1.5"></i>提交自檢表<span id="submit-count" class="ml-1"></span>
-</button>
-</div>
-<p class="text-xs text-textSecondary/70 text-center mt-2 mb-2">提交後將生成專業參考報告，請確保資訊真實有效</p>
-</div>
-</div>
-</div>
-<div id="success-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 hidden fade-in p-2">
-<div class="bg-cardBg rounded-2xl p-4 max-w-md w-full mx-2 text-center shadow-elevation-3 max-h-[92vh] overflow-y-auto">
-<div id="report-summary" class="text-left result-summary">
-<div id="summary-content"></div>
-</div>
-</div>
-</div>
+
+<body class="font-inter bg-neutral text-neutral-dark min-h-screen">
+  <!-- 導航欄 -->
+  <header class="sticky top-0 z-50 bg-white/95 shadow-sm backdrop-blur-sm transition-all duration-300">
+    <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+      <div class="flex items-center space-x-2">
+        <i class="fa fa-heartbeat text-primary text-2xl"></i>
+        <h1 class="text-xl md:text-2xl font-bold text-primary">彥彬 健康自檢表</h1>
+      </div>
+      <nav class="hidden md:flex items-center space-x-6">
+        <a href="#intro" class="text-neutral-dark/80 hover:text-primary transition-colors">簡介</a>
+        <a href="#form" class="text-neutral-dark/80 hover:text-primary transition-colors">開始評估</a>
+        <a href="#guide" class="text-neutral-dark/80 hover:text-primary transition-colors">填寫指南</a>
+        <a href="#result" class="text-neutral-dark/80 hover:text-primary transition-colors">結果解讀</a>
+      </nav>
+      <button class="md:hidden text-neutral-dark text-xl" id="menuToggle" aria-label="開啟選單">
+        <i class="fa fa-bars"></i>
+      </button>
+    </div>
+    <div id="mobileMenu" class="hidden md:hidden bg-white border-t">
+      <div class="container mx-auto px-4 py-2 flex flex-col space-y-3">
+        <a href="#intro" class="py-2 text-neutral-dark/80 hover:text-primary transition-colors">簡介</a>
+        <a href="#form" class="py-2 text-neutral-dark/80 hover:text-primary transition-colors">開始評估</a>
+        <a href="#guide" class="py-2 text-neutral-dark/80 hover:text-primary transition-colors">填寫指南</a>
+        <a href="#result" class="py-2 text-neutral-dark/80 hover:text-primary transition-colors">結果解讀</a>
+      </div>
+    </div>
+  </header>
+
+  <section class="yb-hero text-white py-16 md:py-24">
+    <div class="yb-orb o1"></div>
+    <div class="yb-orb o2"></div>
+    <svg class="yb-ecg" viewBox="0 0 1200 80" preserveAspectRatio="none" aria-hidden="true">
+      <defs>
+        <linearGradient id="ecgGrad" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" stop-color="#7dd3ff"/><stop offset="1" stop-color="#7ef0c3"/>
+        </linearGradient>
+      </defs>
+      <path d="M0,46 H180 l14,-9 14,9 H320 l10,-30 12,52 10,-42 8,20 H560 l14,-9 14,9 H760 l10,-30 12,52 10,-42 8,20 H1000 l14,-9 14,9 H1200"/>
+    </svg>
+    <div class="container mx-auto px-4">
+      <div class="max-w-3xl mx-auto text-center">
+        <div class="yb-stage s1 mb-6"><span class="yb-hero-eyebrow"><i class="fa fa-heartbeat"></i>YB HEALTH SIGNAL</span></div>
+        <h2 class="yb-stage s2 yb-hero-title text-[clamp(2rem,5.5vw,3.4rem)] mb-6">
+          瞭解您的<span class="em">身體信號</span>
+        </h2>
+        <div class="yb-stage s3 mb-9">
+          <div class="yb-hero-formula">
+            <div class="row"><span class="k">疾病</span><span>＝</span><span class="bad">壞習慣</span><span>＋</span><span>時間</span></div>
+            <div class="row"><span class="k">健康</span><span>＝</span><span class="good">好習慣</span><span>＋</span><span>時間</span></div>
+          </div>
+        </div>
+        <div class="yb-stage s4">
+          <a href="#form" class="yb-cta">開始我的健康評估 <i class="fa fa-arrow-right"></i></a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="intro" class="py-12 md:py-16 bg-white">
+    <div class="container mx-auto px-4">
+      <div class="max-w-3xl mx-auto">
+        <h2 class="text-2xl md:text-3xl font-bold mb-6 text-center"><span class="yb-h-accent">為什麼需要健康自檢？</span></h2>
+        <p class="text-lg md:text-xl opacity-90 mb-8 text-center">大病的早期是小病 <br> 小病的早期是症狀 <br> 解決 症狀 預防 5-10 年的大病</p>
+        <div class="grid md:grid-cols-3 gap-6 mb-8">
+          <div class="bg-neutral p-6 rounded-xl text-center card-hover">
+            <div class="w-14 h-14 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4"><i class="fa fa-stethoscope text-primary text-2xl"></i></div>
+            <h3 class="font-semibold text-lg mb-2">早期發現</h3>
+            <p class="text-neutral-dark/70">及時捕捉身體異常信號，<br>早發現潛在健康風險</p>
+          </div>
+          <div class="bg-neutral p-6 rounded-xl text-center card-hover">
+            <div class="w-14 h-14 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4"><i class="fa fa-line-chart text-primary text-2xl"></i></div>
+            <h3 class="font-semibold text-lg mb-2">跟蹤變化</h3>
+            <p class="text-neutral-dark/70">記錄健康數據變化，掌握身體狀況發展趨勢</p>
+          </div>
+          <div class="bg-neutral p-6 rounded-xl text-center card-hover">
+            <div class="w-14 h-14 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4"><i class="fa fa-medkit text-primary text-2xl"></i></div>
+            <h3 class="font-semibold text-lg mb-2">科學調理</h3>
+            <p class="text-neutral-dark/70">為健康調理提供依據，實現個性化健康管理</p>
+          </div>
+        </div>
+        <div class="bg-primary/5 border-l-4 border-primary p-5 rounded-r-lg">
+          <p class="font-bold text-neutral-dark/80"><i class="fa fa-info-circle text-primary mr-2"></i>本表僅作為健康參考，不能替代專業醫療診斷。如有嚴重不適，請及時咨詢醫生。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 表單區域 -->
+  <section id="form" class="py-12 bg-neutral">
+    <div class="container mx-auto px-4">
+      <div class="max-w-4xl mx-auto">
+        <h2 class="text-2xl md:text-3xl font-bold mb-8 text-center"><span class="yb-h-accent">健康自檢表單</span></h2>
+
+        <div class="mb-10">
+          <div class="flex items-center justify-between">
+            <div class="flex flex-col items-center w-full">
+              <div class="step-indicator w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center font-bold mb-2">1</div>
+              <span class="text-sm md:text-base text-center">基本信息</span>
+            </div>
+            <div class="flex-1 max-w-[80px] h-1 bg-gray-200 mx-2"><div class="step-progress h-full bg-primary" style="width: 0%"></div></div>
+            <div class="flex flex-col items-center w-full">
+              <div class="step-indicator w-10 h-10 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center font-bold mb-2">2</div>
+              <span class="text-sm md:text-base text-center">身體症狀</span>
+            </div>
+            <div class="flex-1 max-w-[80px] h-1 bg-gray-200 mx-2"><div class="step-progress h-full bg-primary" style="width: 0%"></div></div>
+            <div class="flex flex-col items-center w-full">
+              <div class="step-indicator w-10 h-10 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center font-bold mb-2">3</div>
+              <span class="text-sm md:text-base text-center">生活習慣</span>
+            </div>
+            <div class="flex-1 max-w-[80px] h-1 bg-gray-200 mx-2"><div class="step-progress h-full bg-primary" style="width: 0%"></div></div>
+            <div class="flex flex-col items-center w-full">
+              <div class="step-indicator w-10 h-10 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center font-bold mb-2">4</div>
+              <span class="text-sm md:text-base text-center">健康評估</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-md p-6 md:p-8 mb-8">
+
+          <div class="form-step active" id="step1">
+            <h3 class="text-xl font-semibold mb-6 pb-2 border-b">基本信息</h3>
+            <div class="grid md:grid-cols-2 gap-6 mb-6">
+              <div>
+                <label for="name" class="block text-sm font-medium text-neutral-dark/80 mb-1">姓名 <span class="text-warning">*</span></label>
+                <input type="text" id="name" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors" placeholder="請輸入您的姓名">
+                <div class="error-message hidden" id="nameError">請輸入您的姓名</div>
+              </div>
+              <div>
+                <label for="age" class="block text-sm font-medium text-neutral-dark/80 mb-1">年齡 <span class="text-warning">*</span></label>
+                <input type="number" id="age" min="1" max="120" inputmode="numeric" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors" placeholder="請輸入您的年齡">
+                <div class="error-message hidden" id="ageError">請輸入有效的年齡（1-120歲）</div>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-neutral-dark/80 mb-1">性別 <span class="text-warning">*</span></label>
+                <div class="flex space-x-4">
+                  <label class="inline-flex items-center"><input type="radio" name="gender" value="male" class="w-4 h-4 text-primary focus:ring-primary"><span class="ml-2">男</span></label>
+                  <label class="inline-flex items-center"><input type="radio" name="gender" value="female" class="w-4 h-4 text-primary focus:ring-primary"><span class="ml-2">女</span></label>
+                </div>
+                <div class="error-message hidden" id="genderError">請選擇您的性別</div>
+              </div>
+              <div>
+                <label for="phone" class="block text-sm font-medium text-neutral-dark/80 mb-1">電話 or Line</label>
+                <input type="tel" id="phone" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors" placeholder="請輸入您的聯繫資料">
+              </div>
+              <div>
+                <label for="height" class="block text-sm font-medium text-neutral-dark/80 mb-1">身高 (CM)</label>
+                <input type="number" id="height" min="0" inputmode="decimal" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors" placeholder="身高">
+              </div>
+              <div>
+                <label for="weight" class="block text-sm font-medium text-neutral-dark/80 mb-1">體重 (KG)</label>
+                <input type="number" id="weight" min="0" inputmode="decimal" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors" placeholder="體重">
+              </div>
+              <div>
+                <label for="waist" class="block text-sm font-medium text-neutral-dark/80 mb-1">腰圍 (CM)</label>
+                <input type="number" id="waist" min="0" inputmode="decimal" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors" placeholder="腰圍">
+              </div>
+              <div>
+                <label for="bloodPressure" class="block text-sm font-medium text-neutral-dark/80 mb-1">血壓 (mmHg)</label>
+                <input type="text" id="bloodPressure" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors" placeholder="如: 120/80">
+              </div>
+              <div>
+                <label for="bloodSugar" class="block text-sm font-medium text-neutral-dark/80 mb-1">血糖 (mmol/l)</label>
+                <input type="number" step="0.01" min="0" inputmode="decimal" id="bloodSugar" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors" placeholder="血糖值">
+              </div>
+              <div>
+                <label for="occupation" class="block text-sm font-medium text-neutral-dark/80 mb-1">職業</label>
+                <input type="text" id="occupation" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors" placeholder="請輸入您的職業">
+              </div>
+            </div>
+          </div>
+
+          <div class="form-step hidden" id="step2">
+            <h3 class="text-xl font-semibold mb-6 pb-2 border-b">身體症狀自檢</h3>
+            <p class="text-neutral-dark/70 mb-6 text-sm">請勾選您目前存在的症狀（可多選）</p>
+            <div class="flex flex-wrap gap-2 mb-6 overflow-x-auto scrollbar-hide pb-2" id="symptomTabs">
+              <button class="symptom-tab active px-4 py-2 bg-primary text-white rounded-full text-sm whitespace-nowrap" data-category="all">全部症狀</button>
+              <button class="symptom-tab px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-full text-sm whitespace-nowrap" data-category="head">頭部症狀</button>
+              <button class="symptom-tab px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-full text-sm whitespace-nowrap" data-category="eye-ear-nose-throat">眼耳鼻喉</button>
+              <button class="symptom-tab px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-full text-sm whitespace-nowrap" data-category="respiratory">呼吸系統</button>
+              <button class="symptom-tab px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-full text-sm whitespace-nowrap" data-category="circulatory">循環系統</button>
+              <button class="symptom-tab px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-full text-sm whitespace-nowrap" data-category="digestive">消化系統</button>
+              <button class="symptom-tab px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-full text-sm whitespace-nowrap" data-category="endocrine">內分泌與代謝</button>
+              <button class="symptom-tab px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-full text-sm whitespace-nowrap" data-category="muscle-joint">肌肉骨骼與關節</button>
+              <button class="symptom-tab px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-full text-sm whitespace-nowrap" data-category="skin">皮膚與毛髮</button>
+              <button class="symptom-tab px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-full text-sm whitespace-nowrap" data-category="female">女性症狀</button>
+              <button class="symptom-tab px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-full text-sm whitespace-nowrap" data-category="urinary">泌尿生殖系統</button>
+            </div>
+            <div class="grid md:grid-cols-2 gap-4 mb-6" id="symptomList"></div>
+          </div>
+
+          <div class="form-step hidden" id="step3">
+            <h3 class="text-xl font-semibold mb-6 pb-2 border-b">生活習慣評估</h3>
+            <p class="text-neutral-dark/70 mb-6 text-sm">請勾選您存在的不良生活習慣（可多選）</p>
+            <div class="flex flex-wrap gap-2 mb-6 overflow-x-auto scrollbar-hide pb-2" id="habitTabs">
+              <button class="habit-tab active px-4 py-2 bg-primary text-white rounded-full text-sm whitespace-nowrap" data-category="all">全部習慣</button>
+              <button class="habit-tab px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-full text-sm whitespace-nowrap" data-category="diet">飲食習慣</button>
+              <button class="habit-tab px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-full text-sm whitespace-nowrap" data-category="sleep">睡眠習慣</button>
+              <button class="habit-tab px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-full text-sm whitespace-nowrap" data-category="exercise">運動習慣</button>
+              <button class="habit-tab px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-full text-sm whitespace-nowrap" data-category="cold">寒濕因素</button>
+              <button class="habit-tab px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-full text-sm whitespace-nowrap" data-category="emotion">情緒因素</button>
+              <button class="habit-tab px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-full text-sm whitespace-nowrap" data-category="toxin">毒素接觸</button>
+            </div>
+            <div id="habitList"></div>
+          </div>
+
+          <div class="form-step hidden" id="step4">
+            <h3 class="text-xl font-semibold mb-6 pb-2 border-b">健康問題評估</h3>
+            <div class="space-y-6 mb-8">
+              <div>
+                <label class="block text-sm font-medium text-neutral-dark/80 mb-2">您目前最想解決的健康問題是？ <span class="text-warning">*</span></label>
+                <input type="text" id="mainConcern" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors" placeholder="請描述您最關注的健康問題">
+                <div class="error-message hidden" id="mainConcernError">請描述您最關注的健康問題</div>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-neutral-dark/80 mb-2">這個症狀已經持續多久了？ <span class="text-warning">*</span></label>
+                <select id="symptomDuration" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors">
+                  <option value="">請選擇</option>
+                  <option value="少於1周">少於1周</option>
+                  <option value="1-4周">1-4周</option>
+                  <option value="1-3個月">1-3個月</option>
+                  <option value="3-6個月">3-6個月</option>
+                  <option value="6個月-1年">6個月-1年</option>
+                  <option value="1-3年">1-3年</option>
+                  <option value="3年以上">3年以上</option>
+                </select>
+                <div class="error-message hidden" id="symptomDurationError">請選擇症狀持續時間</div>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-neutral-dark/80 mb-2">您認為是什麼原因引起的？</label>
+                <textarea id="possibleCauses" rows="2" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors" placeholder="請描述您認為的可能原因"></textarea>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-neutral-dark/80 mb-2">在什麼情況下症狀會加重？</label>
+                <textarea id="aggravatingFactors" rows="2" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors" placeholder="請描述加重症狀的因素"></textarea>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-neutral-dark/80 mb-2">您之前嘗試過哪些治療或調理方法？</label>
+                <textarea id="previousTreatments" rows="2" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors" placeholder="請描述您之前的治療或調理經歷"></textarea>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-neutral-dark/80 mb-2">您是否有藥物或食物過敏史？ <span class="text-warning">*</span></label>
+                <div class="flex flex-wrap gap-x-4 gap-y-2 mb-2">
+                  <label class="inline-flex items-center"><input type="radio" name="allergyHistory" value="無" class="w-4 h-4 text-primary focus:ring-primary"><span class="ml-2">無</span></label>
+                  <label class="inline-flex items-center"><input type="radio" name="allergyHistory" value="藥物過敏" class="w-4 h-4 text-primary focus:ring-primary"><span class="ml-2">藥物過敏</span></label>
+                  <label class="inline-flex items-center"><input type="radio" name="allergyHistory" value="食物過敏" class="w-4 h-4 text-primary focus:ring-primary"><span class="ml-2">食物過敏</span></label>
+                  <label class="inline-flex items-center"><input type="radio" name="allergyHistory" value="兩者都有" class="w-4 h-4 text-primary focus:ring-primary"><span class="ml-2">兩者都有</span></label>
+                </div>
+                <div class="error-message hidden" id="allergyHistoryError">請選擇是否有過敏史</div>
+                <textarea id="allergyDetails" rows="2" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors" placeholder="如有，請詳細描述"></textarea>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-neutral-dark/80 mb-2">您是否做過手術或有既往病史？ <span class="text-warning">*</span></label>
+                <div class="flex flex-wrap gap-x-4 gap-y-2 mb-2">
+                  <label class="inline-flex items-center"><input type="radio" name="medicalHistory" value="無" class="w-4 h-4 text-primary focus:ring-primary"><span class="ml-2">無</span></label>
+                  <label class="inline-flex items-center"><input type="radio" name="medicalHistory" value="做過手術" class="w-4 h-4 text-primary focus:ring-primary"><span class="ml-2">做過手術</span></label>
+                  <label class="inline-flex items-center"><input type="radio" name="medicalHistory" value="有既往病史" class="w-4 h-4 text-primary focus:ring-primary"><span class="ml-2">有既往病史</span></label>
+                  <label class="inline-flex items-center"><input type="radio" name="medicalHistory" value="兩者都有" class="w-4 h-4 text-primary focus:ring-primary"><span class="ml-2">兩者都有</span></label>
+                </div>
+                <div class="error-message hidden" id="medicalHistoryError">請選擇是否有手術史或既往病史</div>
+                <textarea id="medicalDetails" rows="2" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors" placeholder="如有，請詳細描述"></textarea>
+              </div>
+            </div>
+            <div class="bg-primary/5 p-5 rounded-lg">
+              <h4 class="font-medium text-primary mb-2">健康宣言</h4>
+              <p class="text-sm text-neutral-dark/80 mb-3">我已如實填寫以上信息，瞭解本表僅作為健康參考，不能替代專業醫療診斷。如有嚴重不適，我會及時咨詢醫生。</p>
+              <label class="inline-flex items-start mt-2"><input type="checkbox" id="healthDeclaration" class="mt-1 w-4 h-4 text-primary focus:ring-primary"><span class="ml-2 text-sm">我已閱讀並同意以上內容 <span class="text-warning">*</span></span></label>
+              <div class="error-message hidden" id="declarationError">請閱讀並同意健康宣言</div>
+            </div>
+          </div>
+
+          <div class="flex justify-between mt-8" id="navButtonsContainer">
+            <button id="prevBtn" class="px-6 py-3 bg-gray-200 text-neutral-dark rounded-lg hover:bg-gray-300 transition-colors hidden"><i class="fa fa-arrow-left mr-2"></i> 上一步</button>
+            <div class="ml-auto">
+              <button id="nextBtn" class="px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors">下一步 <i class="fa fa-arrow-right ml-2"></i></button>
+              <button id="submitBtn" class="px-6 py-3 bg-secondary text-white rounded-lg hover:bg-secondary/90 transition-colors hidden">提交評估 <i class="fa fa-check ml-2"></i></button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="guide" class="py-12 md:py-16 bg-white">
+    <div class="container mx-auto px-4">
+      <div class="max-w-3xl mx-auto">
+        <h2 class="text-2xl md:text-3xl font-bold mb-8 text-center"><span class="yb-h-accent">填寫指南</span></h2>
+        <div class="space-y-8">
+          <div class="flex flex-col md:flex-row gap-6 items-center">
+            <div class="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0"><i class="fa fa-check-circle text-primary text-2xl"></i></div>
+            <div><h3 class="text-xl font-semibold mb-2">如實填寫</h3><p class="text-neutral-dark/70">請根據您的實際情況如實勾選症狀和習慣，信息越準確，評估結果越有參考價值。</p></div>
+          </div>
+          <div class="flex flex-col md:flex-row gap-6 items-center">
+            <div class="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0"><i class="fa fa-clock-o text-primary text-2xl"></i></div>
+            <div><h3 class="text-xl font-semibold mb-2">耐心完成</h3><p class="text-neutral-dark/70">整個評估過程大約需要15-20分鐘，請預留足夠時間，盡量一次性完成所有問題。</p></div>
+          </div>
+          <div class="flex flex-col md:flex-row gap-6 items-center">
+            <div class="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0"><i class="fa fa-question-circle text-primary text-2xl"></i></div>
+            <div><h3 class="text-xl font-semibold mb-2">明確症狀</h3><p class="text-neutral-dark/70">如果對某些症狀描述不確定，請根據字面意思理解，或咨詢專業人士後再填寫。</p></div>
+          </div>
+          <div class="flex flex-col md:flex-row gap-6 items-center">
+            <div class="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0"><i class="fa fa-refresh text-primary text-2xl"></i></div>
+            <div><h3 class="text-xl font-semibold mb-2">定期復查</h3><p class="text-neutral-dark/70">建議每3個月重新評估一次，跟蹤健康變化趨勢，及時調整健康管理方案。</p></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 結果展示區域 -->
+  <section id="result" class="py-12 bg-neutral hidden">
+    <div class="container mx-auto px-4">
+      <div class="max-w-4xl mx-auto">
+        <h2 class="text-2xl md:text-3xl font-bold mb-8 text-center"><span class="yb-h-accent">🧬 健康評估結果</span></h2>
+
+        <div class="bg-white rounded-2xl shadow-md p-6 md:p-8 mb-8">
+          <div class="mb-8">
+            <h3 class="text-xl font-semibold mb-4 pb-2 border-b">📌 基本資料</h3>
+            <div id="basicInfo"></div>
+          </div>
+
+          <div class="mb-8">
+            <h3 class="text-xl font-semibold mb-4 pb-2 border-b">🩺 健康狀況概覽</h3>
+            <div class="grid md:grid-cols-2 gap-6 mb-6">
+              <div class="bg-neutral p-5 rounded-xl">
+                <h4 class="font-medium text-lg mb-3 flex items-center"><i class="fa fa-stethoscope text-primary mr-2"></i> 症狀評估</h4>
+                <div class="flex items-center">
+                  <div class="w-full bg-gray-200 rounded-full h-4 mr-3"><div id="symptomScoreBar" class="bg-primary h-4 rounded-full transition-all duration-700" style="width: 0%"></div></div>
+                  <span id="symptomCount" class="font-medium whitespace-nowrap">0 項症狀</span>
+                </div>
+              </div>
+              <div class="bg-neutral p-5 rounded-xl">
+                <h4 class="font-medium text-lg mb-3 flex items-center"><i class="fa fa-balance-scale text-primary mr-2"></i> 習慣評估</h4>
+                <div class="flex items-center">
+                  <div class="w-full bg-gray-200 rounded-full h-4 mr-3"><div id="habitScoreBar" class="bg-warning h-4 rounded-full transition-all duration-700" style="width: 0%"></div></div>
+                  <span id="habitCount" class="font-medium whitespace-nowrap">0 項不良習慣</span>
+                </div>
+              </div>
+            </div>
+            <div class="mb-6">
+              <h4 class="font-medium text-lg mb-3 flex items-center"><i class="fa fa-bar-chart text-primary mr-2"></i> 健康風險分布</h4>
+              <div class="h-80"><canvas id="healthBarChart"></canvas></div>
+            </div>
+          </div>
+
+          <div class="mb-8">
+            <h3 class="text-xl font-semibold mb-4 pb-2 border-b">🟢 主要健康問題</h3>
+            <div id="mainHealthIssues" class="bg-primary/5 p-5 rounded-xl"></div>
+          </div>
+
+          <div>
+            <h3 class="text-xl font-semibold mb-4 pb-2 border-b">🟢 七大調理方向：<br>找到健康的根本邏輯</h3>
+            <div id="healthRecommendations" class="space-y-4"></div>
+          </div>
+        </div>
+
+        <div class="flex flex-col sm:flex-row gap-3 sm:justify-center items-stretch sm:items-center">
+          <button id="downloadReportBtn" class="yb-btn yb-btn-primary yb-btn-rich">
+            <span class="yb-btn-ic"><i class="fa fa-magic"></i></span>
+            <span class="yb-btn-txt"><span class="yb-btn-main">生成質感分享卡片</span><span class="yb-btn-sub">一鍵存圖，分享給親友</span></span>
+            <i class="fa fa-chevron-right yb-btn-arrow"></i>
+          </button>
+          <button id="restartBtn" class="yb-btn yb-btn-ghost yb-btn-rich">
+            <span class="yb-btn-ic"><i class="fa fa-refresh"></i></span>
+            <span class="yb-btn-txt"><span class="yb-btn-main">重新評估</span></span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="bg-neutral-dark text-white py-10">
+    <div class="container mx-auto px-4">
+      <div class="max-w-4xl mx-auto">
+        <div class="grid md:grid-cols-3 gap-8 mb-8">
+          <div>
+            <h3 class="text-lg font-semibold mb-4 flex items-center"><i class="fa fa-heartbeat text-primary mr-2"></i> 健康自檢表</h3>
+            <p class="text-gray-400 text-sm">提供專業的健康自我評估工具，<br>幫助您瞭解身體狀況，預防健康風險。</p>
+          </div>
+          <div>
+            <h3 class="text-lg font-semibold mb-4">快速鏈接</h3>
+            <ul class="space-y-2 text-sm text-gray-400">
+              <li><a href="#intro" class="hover:text-primary transition-colors">關於自檢表</a></li>
+              <li><a href="#guide" class="hover:text-primary transition-colors">填寫指南</a></li>
+              <li><a href="#result" class="hover:text-primary transition-colors">結果解讀</a></li>
+            </ul>
+          </div>
+          <div>
+            <h3 class="text-lg font-semibold mb-4">免責聲明</h3>
+            <p class="text-gray-400 text-sm">本健康自檢表僅作為健康參考，不能替代專業醫療診斷。如有嚴重不適，請及時咨詢醫生。</p>
+          </div>
+        </div>
+        <div class="pt-6 border-t border-gray-700 text-center text-gray-500 text-sm"><p>© 2025 健康自檢表 - 您的個人健康評估工具</p></div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ★ 質感處理中遮罩（阻擋點擊，兩種狀態） -->
+  <div id="processingOverlay">
+    <div class="yb-proc-card">
+      <div id="procSpinnerWrap">
+        <div class="yb-ring-core"><div class="yb-ring"></div><i class="fa fa-heartbeat"></i></div>
+      </div>
+      <div id="procDoneWrap" style="display:none;"><div class="yb-done-icon"><i class="fa fa-check"></i></div></div>
+      <div class="yb-proc-title" id="procTitle">正在生成您的健康報告</div>
+      <div class="yb-proc-status" id="procStatus">分析資料中，請稍候…</div>
+      <div class="yb-steps" id="procSteps"><span class="on"></span><span></span><span></span><span></span></div>
+      <button id="viewResultBtn" class="w-full mt-5 py-3 bg-primary text-white rounded-xl font-semibold hover:bg-primary/90 transition-colors" style="display:none;">查看評估結果 <i class="fa fa-arrow-right ml-1"></i></button>
+    </div>
+  </div>
+
+  <!-- ★ 分享卡片（螢幕外，僅供截圖，短版質感） -->
+  <div id="shareCardWrap">
+    <div class="yb-share-card" id="shareCard"></div>
+  </div>
+
+  <!-- ★ 七大調理方向 知識卡（獨立一張，僅供截圖） -->
+  <div id="guideCardWrap">
+    <div class="yb-share-card" id="guideCard"></div>
+  </div>
 
 <script>
-const LIFF_ID="2008578880-NznKeG2a";
-const GAS_URL="https://script.google.com/macros/s/AKfycbykBtM2_PM7IZ-ZUU4tgTqVa1xGhVQFaZ523FXc4ivdLz_GZ09sdmL6s5zk7SdloFuG/exec";
-const JSONP_TIMEOUT=12000;
-const PERMANENT_TEXT="永久有效";
-// 全域保存LINE用戶資料（統一userId來源，避免getDecodedIDToken取不到值）
-let lineProfile=null;
-// HTML轉義（防止用戶輸入的特殊字元破壞報告版面）
-const escHtml=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const fStyles={
-  氣血:{className:'bg-slate-100 text-slate-600',label:'氣血'},
-  循環:{className:'bg-emerald-50 text-emerald-700',label:'循環'},
-  毒素:{className:'bg-amber-50 text-amber-700',label:'毒素'},
-  血脂:{className:'bg-orange-50 text-orange-700',label:'血脂'},
-  寒濕:{className:'bg-violet-50 text-violet-700',label:'寒濕'},
-  免疫:{className:'bg-pink-50 text-pink-700',label:'免疫'},
-  情緒:{className:'bg-indigo-50 text-indigo-700',label:'情緒'}
-};
-const durOpts=[{value:'',label:'請選擇時間'},{value:'1w',label:'1周內'},{value:'1-3m',label:'1-3個月'},{value:'3-6m',label:'3-6個月'},{value:'6m-1y',label:'6個月-1年'},{value:'1-2y',label:'1-2年'},{value:'2-5y',label:'2-5年'},{value:'5y+',label:'5年以上'}];
-const fullSymptomData=[
-{seq:1,symptom:"記憶力下降",氣血:"○",循環:"○",毒素:"○",血脂:"○",寒濕:"",免疫:"",情緒:""},
-{seq:2,symptom:"思維斷電",氣血:"○",循環:"○",毒素:"○",血脂:"○",寒濕:"",免疫:"",情緒:""},
-{seq:3,symptom:"反應遲鈍",氣血:"○",循環:"○",毒素:"○",血脂:"○",寒濕:"○",免疫:"",情緒:""},
-{seq:4,symptom:"嗜睡",氣血:"○",循環:"○",毒素:"○",血脂:"○",寒濕:"○",免疫:"",情緒:""},
-{seq:5,symptom:"多夢",氣血:"○",循環:"○",毒素:"○",血脂:"○",寒濕:"",免疫:"",情緒:"○"},
-{seq:6,symptom:"頭暈",氣血:"○",循環:"○",毒素:"○",血脂:"○",寒濕:"",免疫:"○",情緒:"○"},
-{seq:7,symptom:"頭疼",氣血:"○",循環:"○",毒素:"○",血脂:"○",寒濕:"○",免疫:"○",情緒:"○"},
-{seq:8,symptom:"頭麻",氣血:"○",循環:"○",毒素:"○",血脂:"○",寒濕:"○",免疫:"",情緒:"○"},
-{seq:9,symptom:"暈車",氣血:"○",循環:"",毒素:"○",血脂:"",寒濕:"",免疫:"",情緒:"○"},
-{seq:10,symptom:"失眠",氣血:"",循環:"",毒素:"○",血脂:"",寒濕:"",免疫:"",情緒:"○"},
-{seq:11,symptom:"頭面油膩",氣血:"",循環:"",毒素:"",血脂:"○",寒濕:"○",免疫:"",情緒:""},
-{seq:12,symptom:"脫髮",氣血:"○",循環:"○",毒素:"",血脂:"○",寒濕:"",免疫:"○",情緒:"○"},
-{seq:13,symptom:"頭髮稀少",氣血:"○",循環:"○",毒素:"",血脂:"○",寒濕:"",免疫:"○",情緒:"○"},
-{seq:14,symptom:"易打哈欠",氣血:"○",循環:"○",毒素:"○",血脂:"○",寒濕:"○",免疫:"",情緒:""},
-{seq:15,symptom:"常嘆氣",氣血:"○",循環:"○",毒素:"○",血脂:"",寒濕:"",免疫:"",情緒:"○"},
-{seq:16,symptom:"眼乾澀",氣血:"○",循環:"○",毒素:"",血脂:"",寒濕:"",免疫:"",情緒:""},
-{seq:17,symptom:"眼癢",氣血:"○",循環:"○",毒素:"○",血脂:"○",寒濕:"",免疫:"○",情緒:""},
-{seq:18,symptom:"眼痛",氣血:"○",循環:"○",毒素:"○",血脂:"○",寒濕:"",免疫:"○",情緒:""},
-{seq:19,symptom:"視力模糊",氣血:"○",循環:"○",毒素:"○",血脂:"○",寒濕:"",免疫:"",情緒:""},
-{seq:20,symptom:"眼屎多",氣血:"",循環:"",毒素:"○",血脂:"○",寒濕:"",免疫:"",情緒:""},
-{seq:21,symptom:"眼怕光流淚",氣血:"",循環:"",毒素:"○",血脂:"○",寒濕:"",免疫:"○",情緒:""},
-{seq:22,symptom:"麥粒腫",氣血:"",循環:"",毒素:"",血脂:"○",寒濕:"",免疫:"",情緒:""},
-{seq:23,symptom:"聽力下降",氣血:"○",循環:"○",毒素:"",血脂:"○",寒濕:"",免疫:"",情緒:"○"},
-{seq:24,symptom:"耳癢",氣血:"○",循環:"○",毒素:"○",血脂:"○",寒濕:"",免疫:"○",情緒:""},
-{seq:25,symptom:"耳鳴",氣血:"○",循環:"○",毒素:"○",血脂:"○",寒濕:"",免疫:"",情緒:"○"},
-{seq:26,symptom:"耳痛",氣血:"○",循環:"○",毒素:"○",血脂:"○",寒濕:"",免疫:"○",情緒:""},
-{seq:27,symptom:"耳屎多",氣血:"",循環:"",毒素:"○",血脂:"○",寒濕:"",免疫:"",情緒:""},
-{seq:28,symptom:"耳內潮濕",氣血:"",循環:"",毒素:"○",血脂:"",寒濕:"○",免疫:"○",情緒:""},
-{seq:29,symptom:"打鼾",氣血:"○",循環:"○",毒素:"○",血脂:"○",寒濕:"",免疫:"",情緒:""},
-{seq:30,symptom:"鼻塞",氣血:"",循環:"○",毒素:"",血脂:"○",寒濕:"○",免疫:"○",情緒:""},
-{seq:31,symptom:"愛打噴嚏",氣血:"",循環:"",毒素:"○",血脂:"",寒濕:"○",免疫:"○",情緒:""},
-{seq:32,symptom:"常流鼻涕",氣血:"",循環:"",毒素:"",血脂:"",寒濕:"○",免疫:"○",情緒:""},
-{seq:33,symptom:"鼻炎",氣血:"",循環:"○",毒素:"",血脂:"",寒濕:"○",免疫:"○",情緒:""},
-{seq:34,symptom:"感冒時間長",氣血:"○",循環:"○",毒素:"",血脂:"",寒濕:"○",免疫:"○",情緒:"○"},
-{seq:35,symptom:"嗓子乾",氣血:"○",循環:"○",毒素:"○",血脂:"",寒濕:"",免疫:"",情緒:""},
-{seq:36,symptom:"喉嚨癢",氣血:"○",循環:"○",毒素:"○",血脂:"",寒濕:"○",免疫:"○",情緒:""},
-{seq:37,symptom:"喉嚨痛",氣血:"○",循環:"○",毒素:"",血脂:"",寒濕:"○",免疫:"○",情緒:"○"},
-{seq:38,symptom:"咳嗽",氣血:"",循環:"",毒素:"",血脂:"",寒濕:"○",免疫:"○",情緒:""},
-{seq:39,symptom:"痰多",氣血:"",循環:"",毒素:"",血脂:"",寒濕:"○",免疫:"○",情緒:""},
-{seq:40,symptom:"呼吸困難",氣血:"○",循環:"○",毒素:"",血脂:"",寒濕:"○",免疫:"○",情緒:""},
-{seq:41,symptom:"口苦",氣血:"",循環:"",毒素:"○",血脂:"○",寒濕:"",免疫:"",情緒:""},
-{seq:42,symptom:"口乾",氣血:"",循環:"○",毒素:"○",血脂:"○",寒濕:"",免疫:"",情緒:""},
-{seq:43,symptom:"口臭",氣血:"",循環:"○",毒素:"○",血脂:"○",寒濕:"",免疫:"",情緒:""},
-{seq:44,symptom:"口腔潰瘍",氣血:"○",循環:"○",毒素:"○",血脂:"○",寒濕:"○",免疫:"○",情緒:"○"},
-{seq:45,symptom:"舌潰瘍",氣血:"○",循環:"○",毒素:"○",血脂:"○",寒濕:"",免疫:"○",情緒:"○"},
-{seq:46,symptom:"嘴唇麻",氣血:"○",循環:"○",毒素:"○",血脂:"○",寒濕:"",免疫:"",情緒:""},
-{seq:47,symptom:"舌硬",氣血:"",循環:"○",毒素:"○",血脂:"○",寒濕:"",免疫:"",情緒:""},
-{seq:48,symptom:"胸悶氣短",氣血:"○",循環:"○",毒素:"○",血脂:"○",寒濕:"○",免疫:"",情緒:"○"},
-{seq:49,symptom:"心慌心悸",氣血:"○",循環:"○",毒素:"○",血脂:"○",寒濕:"○",免疫:"",情緒:"○"},
-{seq:50,symptom:"心絞痛",氣血:"○",循環:"○",毒素:"○",血脂:"○",寒濕:"○",免疫:"",情緒:"○"},
-{seq:51,symptom:"指甲凹陷",氣血:"○",循環:"○",毒素:"",血脂:"",寒濕:"",免疫:"",情緒:""},
-{seq:52,symptom:"半月痕少",氣血:"○",循環:"○",毒素:"",血脂:"",寒濕:"",免疫:"",情緒:""},
-{seq:53,symptom:"手腳脫皮",氣血:"○",循環:"○",毒素:"",血脂:"",寒濕:"",免疫:"○",情緒:""},
-{seq:54,symptom:"手腳出汗",氣血:"",循環:"",毒素:"",血脂:"",寒濕:"○",免疫:"",情緒:""},
-{seq:55,symptom:"手腳涼",氣血:"○",循環:"○",毒素:"",血脂:"",寒濕:"○",免疫:"",情緒:""},
-{seq:56,symptom:"手腳熱",氣血:"",循環:"",毒素:"○",血脂:"○",寒濕:"○",免疫:"",情緒:""},
-{seq:57,symptom:"手足麻木",氣血:"○",循環:"○",毒素:"",血脂:"○",寒濕:"○",免疫:"",情緒:""},
-{seq:58,symptom:"四肢乏力",氣血:"○",循環:"○",毒素:"",血脂:"○",寒濕:"",免疫:"",情緒:""},
-{seq:59,symptom:"靜脈曲張",氣血:"○",循環:"○",毒素:"○",血脂:"○",寒濕:"○",免疫:"○",情緒:""},
-{seq:60,symptom:"關節痛",氣血:"○",循環:"○",毒素:"",血脂:"",寒濕:"○",免疫:"○",情緒:""},
-{seq:61,symptom:"肩酸痛",氣血:"○",循環:"○",毒素:"",血脂:"",寒濕:"○",免疫:"○",情緒:""},
-{seq:62,symptom:"頸椎痛",氣血:"○",循環:"○",毒素:"",血脂:"",寒濕:"○",免疫:"○",情緒:""},
-{seq:63,symptom:"腰酸痛",氣血:"○",循環:"○",毒素:"",血脂:"",寒濕:"○",免疫:"○",情緒:""},
-{seq:64,symptom:"尿渾濁",氣血:"",循環:"",毒素:"○",血脂:"○",寒濕:"",免疫:"",情緒:""},
-{seq:65,symptom:"尿多沫",氣血:"",循環:"",毒素:"○",血脂:"○",寒濕:"",免疫:"",情緒:""},
-{seq:66,symptom:"尿有怪味",氣血:"",循環:"",毒素:"○",血脂:"○",寒濕:"",免疫:"",情緒:""},
-{seq:67,symptom:"夜尿多",氣血:"○",循環:"○",毒素:"",血脂:"○",寒濕:"○",免疫:"",情緒:""},
-{seq:68,symptom:"便秘",氣血:"○",循環:"○",毒素:"○",血脂:"○",寒濕:"○",免疫:"",情緒:"○"},
-{seq:69,symptom:"大便不成形",氣血:"",循環:"",毒素:"",血脂:"○",寒濕:"○",免疫:"",情緒:"○"},
-{seq:70,symptom:"便溏不淨",氣血:"",循環:"",毒素:"",血脂:"○",寒濕:"○",免疫:"",情緒:"○"},
-{seq:71,symptom:"經期頭痛",氣血:"○",循環:"",毒素:"○",血脂:"",寒濕:"○",免疫:"○",情緒:"○"},
-{seq:72,symptom:"月經量少",氣血:"○",循環:"○",毒素:"",血脂:"",寒濕:"○",免疫:"",情緒:"○"},
-{seq:73,symptom:"經期時長",氣血:"○",循環:"○",毒素:"○",血脂:"○",寒濕:"○",免疫:"",情緒:"○"},
-{seq:74,symptom:"經期推後",氣血:"○",循環:"○",毒素:"",血脂:"",寒濕:"○",免疫:"",情緒:"○"},
-{seq:75,symptom:"月經有血塊",氣血:"○",循環:"",毒素:"○",血脂:"○",寒濕:"○",免疫:"○",情緒:"○"},
-{seq:76,symptom:"乳腺增生",氣血:"",循環:"○",毒素:"○",血脂:"○",寒濕:"○",免疫:"",情緒:"○"},
-{seq:77,symptom:"經期腰痛",氣血:"○",循環:"○",毒素:"",血脂:"",寒濕:"○",免疫:"○",情緒:""},
-{seq:78,symptom:"經期提前",氣血:"○",循環:"",毒素:"○",血脂:"",寒濕:"",免疫:"",情緒:"○"},
-{seq:79,symptom:"月經量多",氣血:"",循環:"",毒素:"○",血脂:"",寒濕:"",免疫:"",情緒:"○"},
-{seq:80,symptom:"不愛說話",氣血:"○",循環:"",毒素:"",血脂:"",寒濕:"",免疫:"",情緒:"○"},
-{seq:81,symptom:"噁心",氣血:"○",循環:"",毒素:"○",血脂:"",寒濕:"",免疫:"",情緒:"○"},
-{seq:82,symptom:"胃脹",氣血:"○",循環:"",毒素:"",血脂:"",寒濕:"○",免疫:"",情緒:"○"},
-{seq:83,symptom:"胃酸",氣血:"○",循環:"",毒素:"",血脂:"",寒濕:"○",免疫:"○",情緒:"○"},
-{seq:84,symptom:"胃痛",氣血:"○",循環:"",毒素:"",血脂:"",寒濕:"○",免疫:"○",情緒:"○"},
-{seq:85,symptom:"消化不良",氣血:"○",循環:"",毒素:"",血脂:"○",寒濕:"○",免疫:"",情緒:"○"},
-{seq:86,symptom:"肥胖",氣血:"",循環:"",毒素:"",血脂:"○",寒濕:"○",免疫:"",情緒:"○"},
-{seq:87,symptom:"皮膚癢",氣血:"○",循環:"○",毒素:"○",血脂:"",寒濕:"○",免疫:"○",情緒:""},
-{seq:88,symptom:"濕疹",氣血:"○",循環:"○",毒素:"",血脂:"",寒濕:"○",免疫:"○",情緒:""},
-{seq:89,symptom:"各種過敏",氣血:"○",循環:"",毒素:"○",血脂:"",寒濕:"○",免疫:"○",情緒:""},
-{seq:90,symptom:"痤瘡",氣血:"",循環:"○",毒素:"○",血脂:"○",寒濕:"",免疫:"○",情緒:"○"},
-{seq:91,symptom:"脂肪瘤",氣血:"",循環:"",毒素:"",血脂:"○",寒濕:"○",免疫:"○",情緒:""},
-{seq:92,symptom:"身體異味",氣血:"",循環:"○",毒素:"○",血脂:"○",寒濕:"",免疫:"",情緒:""},
-{seq:93,symptom:"淋巴腫大",氣血:"",循環:"○",毒素:"○",血脂:"",寒濕:"○",免疫:"○",情緒:"○"},
-{seq:94,symptom:"黑痣變大變多",氣血:"",循環:"",毒素:"○",血脂:"",寒濕:"",免疫:"○",情緒:""},
-{seq:95,symptom:"形體消瘦",氣血:"○",循環:"",毒素:"",血脂:"",寒濕:"",免疫:"○",情緒:"○"}];
-const setStatus=text=>{const e=document.getElementById('status-text');e&&(e.textContent=text);};
-const showError=msg=>{
-document.getElementById('status').classList.add('hidden');
-document.getElementById('result-card').classList.add('hidden');
-document.getElementById('user-info-section').classList.add('hidden');
-document.getElementById('checklist-section').classList.add('hidden');
-const e=document.getElementById('error-message'),c=document.getElementById('error-content');
-e&&c&&(c.innerHTML=`<p class="font-medium">${escHtml(msg)}</p><div class="mt-3 flex justify-center"><button onclick="window.location.reload()" class="text-primary hover:text-[#007A69] font-medium flex items-center gap-1"><i class="fa fa-refresh"></i> 重新嘗試</button></div>`,e.classList.remove('hidden'));
-};
-
-/**
- * 計算剩餘天數（僅供💎尊爵用戶的具體日期使用）
- * 修正：「最後1天」分支改為 dayDiff<=1（原版設到期日23:59:59後Math.ceil，
- *   到期當天dayDiff必為1，dayDiff===0分支永遠走不到）
- */
-const calculateRemainingDaysByDate=expiryDateStr=>{
-try{
-// 兼容橫槓/斜槓、補零/非補零日期（如2025/12/23、2025-12-23）
-const dateReg=/^\d{4}[-\/]\d{1,2}[-\/]\d{1,2}$/;
-if(!dateReg.test(expiryDateStr))return{displayDate:"格式錯誤",remainingDays:"格式錯誤",isExpired:true};
-
-// 統一拆分日期部分（忽略分隔符）
-const dateParts=expiryDateStr.replace(/-/g,'/').split('/').map(Number);
-const [year, month, day] = dateParts;
-
-// 構造「本地時間」的當日23:59:59（到期日全天有效，避免當天早間被誤判過期）
-const expiryDate=new Date(year, month-1, day, 23, 59, 59, 999);
-const now=new Date();
-
-if(isNaN(expiryDate.getTime()))return{displayDate:"日期無效",remainingDays:"日期無效",isExpired:true};
-
-const oneDayMs=1000*3600*24;
-const timeDiff=expiryDate.getTime()-now.getTime();
-const dayDiff=Math.ceil(timeDiff/oneDayMs);
-
-// 格式化顯示日期（統一yyyy/mm/dd）
-const fmtMonth=String(month).padStart(2,'0');
-const fmtDay=String(day).padStart(2,'0');
-const displayDate=`${year}/${fmtMonth}/${fmtDay}`;
-
-let remainingDaysText;
-let isExpired=false;
-if(timeDiff < 0){ // 僅當當前時間超過到期日23:59:59，才判定為過期
-  remainingDaysText="<span class='text-red-500 font-medium'>已過期</span>";
-  isExpired=true;
-}else if(dayDiff <= 1){ // 到期當天（未超過23:59:59），顯示「最後1天」
-  remainingDaysText="<span class='text-orange-500 font-medium'>最後1天</span>";
-}else if(dayDiff <= 30){ // 2~30天，高亮顯示
-  remainingDaysText=`<span class='text-orange-500 font-medium'>${dayDiff} 天</span>`;
-}else{ // 超過30天，正常顯示
-  remainingDaysText=`${dayDiff} 天`;
+function showToast(message, type = 'success') {
+  const existingToast = document.querySelector('.custom-toast');
+  if (existingToast) document.body.removeChild(existingToast);
+  const toast = document.createElement('div');
+  toast.className = 'custom-toast';
+  toast.style.cssText = `position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); padding: 12px 20px; border-radius: 6px; color: white; z-index: 100001; max-width: 90vw; white-space: pre-line; text-align: center; box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2); transition: opacity 0.3s ease;`;
+  const colors = { error: '#ff4d4f', info: '#1890ff', warning: '#faad14', success: '#52c41a' };
+  toast.style.background = colors[type] || colors.success;
+  toast.textContent = message;
+  document.body.appendChild(toast);
+  setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => { if (document.body.contains(toast)) document.body.removeChild(toast); }, 300); }, 3000);
 }
 
-return{displayDate, remainingDays:remainingDaysText, isExpired};
-}catch(e){
-console.error("計算剩餘天數失敗：",e,expiryDateStr);
-return{displayDate:"計算錯誤",remainingDays:"計算錯誤",isExpired:true};
-}
-};
+document.addEventListener('DOMContentLoaded', function() {
+  let currentStep = 1;
+  const totalSteps = 4;
+  const BACKEND_GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxGGwPXWAotqM25K_34SgCU7GsPX5c4S8_OkAS8mttCEYGQCVirLWxE694rI8vDc-d4KA/exec';
+  const IMGBB_API_KEY = '60691c91e77a7ad5a7eabaf332fbdffe';
+  const IMGBB_UPLOAD_URL = 'https://api.imgbb.com/1/upload';
+  let globalAiComment = '';
 
-const createSubmitLoadingTip=()=>{
-if(document.getElementById('submit-loading-tip'))return;
-const tip=document.createElement('div');
-tip.id='submit-loading-tip';
-tip.style.cssText=`position:fixed;bottom:90px;right:20px;z-index:9998;background:rgba(0,0,0,0.7);color:white;padding:10px 16px;border-radius:8px;display:flex;align-items:center;gap:8px;opacity:0;transition:opacity 0.3s ease;`;
-tip.innerHTML='<i class="fa fa-spinner fa-spin"></i><span>提交中，請稍候...</span>';
-document.body.appendChild(tip);
-};
-const showSubmitLoading=()=>{
-const tip=document.getElementById('submit-loading-tip');
-tip&&(tip.style.opacity='1');
-};
-const hideSubmitLoading=()=>{
-const tip=document.getElementById('submit-loading-tip');
-tip&&(tip.style.opacity='0');
-};
-// 提交按鈕狀態重置（統一按鈕文案，修正原版失敗分支顯示「提交檢查表」不一致問題）
-const resetSubmitBtn=btn=>{
-btn.disabled=false;
-btn.innerHTML='<i class="fa fa-paper-plane mr-1.5"></i>提交自檢表<span id="submit-count" class="ml-1"></span>';
-updateSelectedCount(); // 恢復按鈕上的已選數量顯示
-};
-function renderSymptomCards(){
-try{
-const c=document.getElementById('symptoms-container');
-if(!c)return false;
-c.innerHTML='';
-fullSymptomData.forEach((s,i)=>{
-const rf=[],doh=durOpts.map(o=>`<option value="${o.value}">${o.label}</option>`).join('');
-Object.entries(fStyles).forEach(([k,st])=>s[k]==="○"&&rf.push(`<span class="factor-tag ${st.className} px-2 py-1 text-sm rounded">${st.label}</span>`));
-const cd=document.createElement('div');
-cd.className='symptom-card bg-white border border-[#E3EBE8] rounded-xl p-3 shadow-sm card-hover';
-cd.dataset.seq=s.seq;
-cd.dataset.factors=Object.entries(fStyles).filter(([k])=>s[k]==="○").map(([k])=>k).join(',');
-cd.style.opacity='0';
-cd.style.transform='translateY(20px)';
-cd.style.transition='all 0.3s cubic-bezier(0.34,1.56,0.64,1)';
-cd.style.transitionDelay=`${Math.min(i*15,300)}ms`;
-cd.innerHTML=`
-<input type="checkbox" id="symptom-${s.seq}" class="symptom-checkbox hidden" data-seq="${s.seq}">
-<div class="flex items-start justify-between gap-2">
-<div class="flex-1 min-w-0">
-<div class="flex items-center gap-1.5 mb-1.5 flex-wrap">
-<span class="text-primary text-xs font-semibold bg-primary/10 border border-primary/30 rounded px-1.5 py-0.5 flex-shrink-0">${s.seq}</span>
-<span class="symptom-name text-slate-800 font-medium text-base">${s.symptom}</span>
-</div>
-<div class="flex flex-wrap gap-1.5">${rf.length>0?rf.join(''):'<span class="factor-tag bg-slate-100 text-slate-500 px-2 py-1 text-sm rounded">無相關要素</span>'}</div>
-</div>
-<div class="check-indicator mt-0.5"><i class="fa fa-check"></i></div>
-</div>
-<div class="symptom-details hidden mt-3">
-<div style="background:#F4FAF8;border:1px solid #DFEBE6;border-radius:12px;padding:11px;">
-<div class="mb-2.5">
-<label class="block text-sm text-slate-600 font-medium mb-1.5">⏱️ 持續時間 <span class="text-red-500">*</span></label>
-<select class="duration-select w-full border border-[#D5E2DD] rounded-lg px-2 py-2.5 input-focus bg-white text-slate-700">${doh}</select>
-</div>
-<div>
-<label class="block text-sm text-slate-600 font-medium mb-1.5">⚠️ 症狀輕重 <span class="text-red-500">*</span></label>
-<div class="flex gap-2">
-<button type="button" class="sev-btn sev-mild" data-value="mild" data-label="輕度">輕度</button>
-<button type="button" class="sev-btn sev-moderate" data-value="moderate" data-label="中度">中度</button>
-<button type="button" class="sev-btn sev-severe" data-value="severe" data-label="重度">重度</button>
-</div>
-<input type="hidden" class="severity-value" value="">
-</div>
-</div></div>`;
-c.appendChild(cd);
-setTimeout(()=>{cd.style.opacity='1';cd.style.transform='translateY(0)';},50);
-});
-bindCheckboxEvents();
-return true;
-}catch(e){console.error("渲染症狀卡片出錯：",e);return false;}
-}
-// 整卡可點擊勾選（手機大觸控目標），點擊下拉選單區域不會誤觸取消
-function bindCheckboxEvents(){
-document.querySelectorAll('.symptom-card').forEach(cd=>{
-const cb=cd.querySelector('.symptom-checkbox');
-cd.addEventListener('click',function(e){
-if(e.target.closest('select')||e.target.closest('.symptom-details'))return;
-cb.checked=!cb.checked;
-syncCardState(cd,cb);
-});
-// 輕/中/重三色按鈕：單選切換並寫入隱藏欄位
-cd.querySelectorAll('.sev-btn').forEach(sb=>{
-sb.addEventListener('click',function(ev){
-ev.stopPropagation();
-cd.querySelectorAll('.sev-btn').forEach(b=>b.classList.remove('active'));
-this.classList.add('active');
-const sv=cd.querySelector('.severity-value');
-sv.value=this.dataset.value;
-sv.dataset.label=this.dataset.label;
-});
-});
-});
-}
-function syncCardState(cd,cb){
-const dt=cd.querySelector('.symptom-details');
-if(cb.checked){
-dt.classList.remove('hidden');
-cd.classList.add('is-selected');
-}else{
-dt.classList.add('hidden');
-cd.classList.remove('is-selected');
-cd.querySelector('.duration-select').value='';
-const sv=cd.querySelector('.severity-value');
-sv.value='';sv.dataset.label='';
-cd.querySelectorAll('.sev-btn').forEach(b=>b.classList.remove('active'));
-}
-updateSelectedCount();
-}
-function updateSelectedCount(){
-const cnt=document.querySelectorAll('.symptom-checkbox:checked').length;
-const el=document.getElementById('selected-count');
-el&&(el.textContent=cnt);
-// 同步顯示在提交按鈕上，滾到底部就知道選了幾項
-const sc=document.getElementById('submit-count');
-sc&&(sc.textContent=cnt>0?`(${cnt})`:'');
-return cnt;
-}
-function initFilterButtons(){
-const fb=document.querySelectorAll('[data-factor], #filter-all');
-let cf='all',sos=false;
-fb.forEach(b=>{
-b.addEventListener('click',function(){
-fb.forEach(bt=>bt.classList.remove('shadow-md','scale-105'));
-this.classList.add('shadow-md','scale-105');
-cf=this.id==='filter-all'?'all':this.dataset.factor;
-applyFilters();
-});
-});
-document.getElementById('filter-selected').addEventListener('click',function(){
-sos=!sos;
-if(sos){this.classList.remove('bg-gray-700','hover:bg-gray-800');this.classList.add('bg-red-900/50','hover:bg-red-800/50','shadow-md');this.innerHTML='<i class="fa fa-filter mr-1"></i>顯示全部已勾選';}
-else{this.classList.remove('bg-red-900/50','hover:bg-red-800/50','shadow-md');this.classList.add('bg-gray-700','hover:bg-gray-800');this.innerHTML='<i class="fa fa-filter mr-1"></i>只看已選';}
-applyFilters();
-});
-function applyFilters(){
-document.querySelectorAll('.symptom-card').forEach(cd=>{
-let ss=true;
-if(cf!=='all'){const cfs=cd.dataset.factors.split(',');ss=cfs.includes(cf);}
-if(sos&&ss)ss=cd.querySelector('.symptom-checkbox').checked;
-if(ss){cd.style.display='block';setTimeout(()=>{cd.style.opacity='1';cd.style.transform='translateY(0)';},10);}
-else{cd.style.opacity='0';cd.style.transform='translateY(10px)';setTimeout(()=>{cd.style.display='none';},300);}
-});
-}
-}
-function organizeReportData(submitData){
-const {userBasicInfo,selectedSymptoms,displayName,submitTime}=submitData,fs={氣血:[],循環:[],毒素:[],血脂:[],寒濕:[],免疫:[],情緒:[]};
-selectedSymptoms.forEach(s=>{
-const os=fullSymptomData.find(ss=>ss.seq===s.seq);
-os&&Object.keys(fs).forEach(f=>os[f]==="○"&&fs[f].push({name:s.symptom,duration:s.durationText,severity:s.severityText}));
-});
-const factorTotalCounts={};
-Object.keys(fs).forEach(factor=>{
-factorTotalCounts[factor]=fullSymptomData.filter(sym=>sym[factor]==="○").length;
-});
-const factorRatio={};
-Object.keys(fs).forEach(factor=>{
-const total=factorTotalCounts[factor];
-const count=fs[factor].length;
-const ratio=total>0?((count/total)*100).toFixed(1):0;
-factorRatio[factor]={count,total,ratio:`${ratio}%`,ratioVal:parseFloat(ratio)};
-});
-const factorPercentages=Object.entries(fs).map(([key,list])=>{
-const {count,ratio,ratioVal}=factorRatio[key];
-return{
-name:fStyles[key].label,count,total:factorTotalCounts[key],
-percentage:ratio,percentageValue:ratioVal,key
-};
-}).filter(item=>item.count>0).sort((a,b)=>b.percentageValue-a.percentageValue);
-const topPercentageFactors=factorPercentages.slice(0,2);
-const ffs=Object.fromEntries(Object.entries(fs).filter(([_,f])=>f.length>0)),fui={
-姓名:userBasicInfo.name||'未填寫',年齡:userBasicInfo.age?`${userBasicInfo.age}歲`:'未填寫',
-性別:userBasicInfo.gender==='male'?'男':userBasicInfo.gender==='female'?'女':'未填寫',
-身高:userBasicInfo.height?`${userBasicInfo.height}cm`:'未填寫',體重:userBasicInfo.weight?`${userBasicInfo.weight}kg`:'未填寫',
-血壓:userBasicInfo.bp||'未填寫',血糖:userBasicInfo.glucose?`${userBasicInfo.glucose}%`:'未填寫',
-職業:userBasicInfo.job||'未填寫',提交時間:new Date(submitTime).toLocaleString('zh-TW',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'})
-};
-const totalSymptomCount=fullSymptomData.length;
-const allSelectedSymptoms=new Set();
-Object.values(ffs).forEach(factorSymptoms=>{
-factorSymptoms.forEach(symptom=>allSelectedSymptoms.add(symptom.name));
-});
-const selectedTotal=allSelectedSymptoms.size;
-let factorText='';
-Object.entries(fs).forEach(([key,list])=>{
-if(list.length>0){
-factorText+=`\n\n🎯【${fStyles[key].label}】(${list.length}項/總${factorTotalCounts[key]}項 | 佔比${factorRatio[key].ratio})`;
-list.forEach((item,idx)=>{
-factorText+=`\n  ${idx+1}. 📌${item.name}`;
-factorText+=`\n     ⏱️ 持續時間：${item.duration}`;
-factorText+=`\n     ⚠️ 症狀程度：${item.severity}`;
-});
-}
-});
-let st=`📋 彥彬自檢表系統 
-━━━━━━━━━━━━━━━━━━━━
-👤 基本資訊
-  ├── 姓名：${fui.姓名}
-  ├── 年齡：${fui.年齡}
-  ├── 性別：${fui.性別}
-  ├── 身高：${fui.身高}
-  ├── 體重：${fui.體重}
-  ├── 血壓：${fui.血壓}
-  ├── 血糖：${fui.血糖}
-  ├── 職業：${fui.職業}
-  └── 提交時間：${fui.提交時間}
+  const REQUEST_TIMEOUT = 45000;
+  const MAX_RETRIES = 3;
+  const TABLET_CANVAS_SCALE = 1.5;
 
-📊 整體統計
-  ├── 總選取症狀：${selectedTotal} 項 (系統共${totalSymptomCount}種症狀)
-  └── 最高佔比要素：${topPercentageFactors.length>0 
-? (topPercentageFactors.length===1 
-    ? `${topPercentageFactors[0].name} (${topPercentageFactors[0].percentage})` 
-    : `${topPercentageFactors[0].name} (${topPercentageFactors[0].percentage})、${topPercentageFactors[1].name} (${topPercentageFactors[1].percentage})`) 
-: '無'}
+  const SYMPTOM_DATA = {
+    'head': { label: '頭部症狀', items: ['頭痛/頭暈','頭部麻木/腦鳴','嗜睡/易醒','失眠/多夢','偏頭痛/健忘','言語懶散/口吃','暈車/暈機','頭部畏冷','思緒中斷','反應遲鈍','容易打哈欠','眉骨疼痛'] },
+    'eye-ear-nose-throat': { label: '眼耳鼻喉', items: ['老花眼','眼睛癢/腫脹/突出/疼痛','眼睛畏光/流淚','眼睛乾澀/飛蚊症','眼糞多/麥粒腫','眼睛疲勞','夜盲症','視力模糊','耳朵內潮濕/化膿','耳垢多/耳朵疼痛/癢','耳鳴/耳聾','聽力減退','鼻炎/鼻塞','流鼻水/流鼻血','打噴嚏','過敏性鼻炎','酒渣鼻','嗅覺遲鈍','咽喉異物感','聲音沙啞'] },
+    'respiratory': { label: '呼吸系統', items: ['咳嗽/氣喘','支氣管炎','感冒久不愈','容易感冒/不易感冒','痰液多/黃痰/痰液清稀','白痰/黑痰/痰中帶血','嘆氣/呼吸短促/喘氣','打呼'] },
+    'circulatory': { label: '循環系統', items: ['低血壓/高血壓','貧血/高血脂症','心絞痛','心跳過快/過慢','心悸/心律不整','胸悶/胸痛','右側肝區悶痛','手足麻木/發紺','手足發熱/冰涼/腫脹/出汗','頭暈/頭部麻木/容易打哈欠','面色異常（蒼白/發青）'] },
+    'digestive': { label: '消化系統', items: ['胃痛/胃酸過多/腹脹/胃部畏寒','噁心/打嗝/噯氣','消化不良','食慾不佳/容易飽脹','偏食/厭食','食慾過盛','腹脹/排氣多/排氣臭','嘴唇蒼白/發青/麻木','口苦/口乾/口臭/口中腥味','口咸/口甜/口酸','口臭明顯/口中辣味','口腔潰瘍/舌潰瘍','舌苔厚/黃苔/膩苔','地圖舌/舌頭白斑','舌質紫暗/舌邊齒痕','舌頭僵硬/舌頭前端不適','嘴唇龜裂/咽喉乾燥','大便不成形','便溏不盡/便秘'] },
+    'endocrine': { label: '內分泌與代謝', items: ['甲狀腺機能亢進/甲狀腺機能低下','甲狀腺結節','肥胖/腹型肥胖','身體消瘦','身高矮小/發育遲緩','體重突然增加/減少10%','指甲半月痕缺失/稀少','指甲易斷裂/手指倒刺','指甲凹陷/指甲竪紋','血管瘤/脂肪瘤','纖維瘤/皮脂腺囊腫','膽結石/腎結石','扁平疣/尋常疣','皮贅/雞眼','淋巴結腫大','低燒37-38℃','手足抽搐/手足顫抖','低血糖/高血糖','高血脂症'] },
+    'muscle-joint': { label: '肌肉骨骼與關節', items: ['四肢無力','平衡能力差/容易跌倒','手足脫皮/凍瘡','小腿水腫','關節疼痛/腫脹','容易落枕/頸部僵硬','肩膀酸脹/麻木/疼痛','頸部疼痛/頸部畏寒','頸部脂肪堆積','腰部酸痛/腰部畏寒','游離性疼痛','脊椎僵硬/脊椎疼痛','靜脈曲張','容易扭傷','腳跟疼痛'] },
+    'skin': { label: '皮膚與毛髮', items: ['頭髮稀疏','頭髮乾燥/掉發','白髮/圓形禿','頭部/面部油膩','臉頰泛紅','面色黃/蒼白/黝黑','痤瘡/青春痘/色素斑','皮膚容易瘀青/紅點','皮膚癢/背部青春痘','皮膚乾燥/接觸性皮膚炎','銀屑病/白斑病','黑痣增大/增多','蜘蛛痣/魚鱗癬','各類過敏/濕疹','脂肪粒','身體異味'] },
+    'female': { label: '女性症狀', items: ['不孕','流產/死胎','月經量少/月經有血塊','月經量多/子宮肌瘤','月經提前/延後','月經期間煩躁/乳房脹痛','月經期間厭食/水腫','月經期間腰痛/頭痛','月經期間嗜睡/失眠','月經期間腹脹/痛經','子宮腺肌症','月經期間下腹部畏寒','月經期間下腹部墜脹','月經顏色暗/淡/深黑','月經期間長青春痘','月經期延長','停經','乳頭凹陷/乳頭溢膿','乳房腫塊/乳腺增生','卵巢囊腫','子宮頸息肉','子宮頸肥大/子宮頸囊腫','白帶增多/白帶帶血絲','白帶顏色偏黃/黏稠','白帶呈稀水狀/有腥臭味','產後掉發/產後憂鬱','產後色素沈澱'] },
+    'urinary': { label: '泌尿生殖系統', items: ['夜尿頻繁/尿頻/尿急','尿不盡/尿失禁','排尿疼痛/血尿','尿分叉/排尿等待','尿液濃稠/尿液有異味','尿液混濁/尿液泡沫多','尿道口灼熱感/尿道口發炎','外陰瘙癢/外陰異味','下腹部悶痛','睪丸腫塊/疝氣','肛門瘙癢','便血/痔瘡','脫肛/肛裂/肛瘻','性慾降低','自汗/多汗/盜汗','冒冷汗/後背畏寒'] }
+  };
 
-🩺 🌟七大健康要素評估🌟
-${factorText ? factorText : '  └── 暫無相關症狀記錄'}
+  const HABIT_DATA = {
+    'diet': { label: '飲食習慣', items: ['經常不吃早餐','晚上8點後吃晚餐/吃消夜','吃飯過飽/過急/過快/過少','經常外食/點外送','常吃剩飯剩菜/愛吃動物內臟','常吃葷食/吃菜偏好油多的','口味偏辣/偏咸(重口味)','很少吃蔬菜/素食者','喜歡吃燙食/喝燙水','偏好白米/白麵等精制主食','很少吃五穀雜糧','偏食/挑食/特別嗜吃某種食物','常喝酒/酗酒/喝冰啤酒','習慣飯後吃水果/特別偏愛水果','愛吃反季節蔬菜/水果','喜歡吃螃蟹/柿子','不吃堅果/吃花生/瓜子過多','喜歡吃泡面/甜食','吃油炸食品/醃制食品','喜歡吃果脯蜜餞/罐頭','吃冰西瓜/特別偏愛水果','愛吃燒烤/零食','吃燒烤/火鍋時搭配冰啤酒/冰飲料','吃冰棒/冰涼甜點/冰飲','吃飯不共用餐筷/吃飯快/吃燙飯','愛喝濃茶/咖啡/吃醃制食物','飲食時間不規律/接觸二手煙','常吃中藥/西藥/吃類固醇藥','吃過減肥藥/做過減肥相關療程','常吃海鮮/炒菜時油燒到冒煙'] },
+    'sleep': { label: '睡眠習慣', items: ['超過晚上11點睡覺','早上9點後才起床','經常上大夜班(到天亮)','睡眠時間不足7-8小時','睡軟床/用高枕頭','開冷氣/開窗睡覺','飯後馬上睡覺','睡覺時把腳露在被子外面','早上5點前就起床(過早起床)','蒙頭睡覺'] },
+    'exercise': { label: '運動習慣', items: ['早上5點前/晚上7點後運動','不運動/運動量太少/運動量過度','長時間站立/久坐/長時間低頭伏案工作','每天走路超過一萬步(過量)','長時間游泳/從事冬泳','體力勞動過多/特別愛游泳','練瑜伽(指可能不合適的練習方式)','曾經是體育運動員(指過往高強度運動習慣的延續影響)'] },
+    'cold': { label: '寒濕因素', items: ['很少曬太陽','長時間在冷氣房工作','在地下室/冷凍庫工作','早上洗頭/洗澡','晚上11點後洗頭/洗澡','用冷水洗頭/洗澡','洗頭後沒有及時吹乾','運動後馬上洗澡','用冷水洗腳且不擦乾','喜歡光腳在地上走','冬天用冷水洗菜/洗碗/洗衣物','有下河水等嚴重受寒的經歷','喜歡露肩膀/露腰/露腳踝','四季都穿涼鞋/冬天穿得少/穿得薄','騎機車時沒有做好防護(防風保暖)','出汗時/生氣時直接喝冰水'] },
+    'emotion': { label: '情緒因素', items: ['經歷過重大情感變故','經常生氣/愛發脾氣','壓力大/精神緊張','容易憎恨他人/有內疚感/心事重','過度思念/多慮/常擔驚受怕','遇到事情愛抱怨/習慣找外部原因/容易嫉妒別人','因父母離異而感到悲憤/有被遺棄感','經歷過喪偶/喪子(女)/喪父(母)等喪親之痛','沒有人生信念/感到空虛無助','不情願讓步/習慣自己悶著生氣','慾望無法實現/對他人感到失望','莫名暴躁/發脾氣/有憂鬱傾向','自卑/性格軟弱/缺乏安全感/感到無助','發怒/惱怒甚至暴怒','感到傷心/難受/痛苦/悲痛或哀痛','容易憂慮/愁悶/憂鬱/有憂鬱傾向','容易害怕/慌張/恐懼甚至驚慌','從小被打罵/冷落/嫌棄/受過刺激','懶惰不上進/缺乏活力','膽小怕事/長時間有慾望卻無法實現','內心浮躁/沒有興趣愛好/缺乏主見','抱怨命運不好/總是遇到麻煩事','坐月子期間生氣','性子急/愛罵人','喜歡追劇/看恐怖片','愛攀比/別人有就嫉妒/別人沒有就看不起','容易過度興奮/激動或亢奮'] },
+    'toxin': { label: '毒素接觸', items: ['手機在床邊充電/放在頭附近睡覺','住家附近20公里內有化工廠等污染企業','經常過度疲勞/住家裝修過度(可能接觸裝修污染)','不喝水/很少喝水/喝冰水','經常憋尿/不按時排便','常燙髮/染髮/使用化妝品/塗指甲油','手淫/意淫/看色情影片/資料','性生活頻繁/性慾低落','戴深色口罩/住在變電站附近','頻繁吃抗生素/消炎藥','愛咬手指甲/咬筆桿/咬筷子','愛躺著看電視/玩手機','不使用抽油煙機/抽油煙機效果不好','長期接觸汽車廢氣/灰塵/粉塵','小孩用鉛筆剔牙/塗抹祛斑霜','常用消毒液/脫色劑/強力除油劑/水果清洗劑','不戴正規防毒面具/防護服就噴灑農藥','叼著包裝袋喝牛奶/飲料','抽煙每天超過10根/長期吸二手煙','低頭玩手機/用電腦時間過多'] }
+  };
 
-💡 健康建議
-  └── 根據自檢結果關注對應健康問題，必要時諮詢專業醫師
-━━━━━━━━━━━━━━━━━━━━
-🔖 來源：彥彬自檢表系統`;
-return{formattedUserInfo:fui,factorSymptoms:ffs,summaryText:st,totalSymptomCount,selectedTotal,topFactors:topPercentageFactors,factorRatio};
-}
-function createFloatingButtons(){
-if(document.getElementById('floating-buttons'))return;
-const floatContainer=document.createElement('div');
-floatContainer.id='floating-buttons';
-floatContainer.style.cssText=`position: fixed;bottom: 20px;right: 20px;z-index: 9999;display: flex;flex-direction: column;gap: 10px;opacity: 0;transition: opacity 0.3s ease;`;
-const shareBtn=document.createElement('button');
-shareBtn.id='floating-share-btn';
-shareBtn.className='custom-styled';
-shareBtn.style.cssText=`padding: 12px 20px;border-radius: 9999px;background-color: #00A86B;color: white;border: none;font-size: 14px;font-weight: 600;box-shadow: 0 4px 12px rgba(0, 168, 107, 0.3);display: flex;align-items: center;justify-content: center;gap: 6px;cursor: pointer;transition: all 0.2s ease;`;
-shareBtn.innerHTML='<i class="fa fa-share-alt mr-1"></i>分享';
-shareBtn.title='分享報告';
-const closeBtn=document.createElement('button');
-closeBtn.id='floating-close-btn';
-closeBtn.className='custom-styled';
-closeBtn.style.cssText=`padding: 12px 20px;border-radius: 9999px;background-color: #718096;color: white;border: none;font-size: 14px;font-weight: 600;box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);display: none;align-items: center;justify-content: center;gap: 6px;cursor: pointer;transition: all 0.2s ease;opacity: 0;`;
-closeBtn.innerHTML='<i class="fa fa-times mr-1"></i>關閉';
-closeBtn.title='關閉頁面';
-shareBtn.addEventListener('mouseenter',()=>{
-shareBtn.style.transform='scale(1.08)';
-shareBtn.style.boxShadow='0 6px 16px rgba(0, 168, 107, 0.4)';
-});
-shareBtn.addEventListener('mouseleave',()=>{
-shareBtn.style.transform='scale(1)';
-shareBtn.style.boxShadow='0 4px 12px rgba(0, 168, 107, 0.3)';
-});
-closeBtn.addEventListener('mouseenter',()=>{
-closeBtn.style.transform='scale(1.08)';
-closeBtn.style.boxShadow='0 6px 16px rgba(0, 0, 0, 0.3)';
-});
-closeBtn.addEventListener('mouseleave',()=>{
-closeBtn.style.transform='scale(1)';
-closeBtn.style.boxShadow='0 4px 12px rgba(0, 0, 0, 0.2)';
-});
-shareBtn.addEventListener('click',handleFloatingShareClick);
-closeBtn.addEventListener('click',async()=>{
-try{
-if(window.liff){
-if(!liff.isLoggedIn())await liff.login();
-liff.closeWindow();
-}else{
-window.close();
-}
-}catch(error){
-console.error('關閉窗口失敗:',error);
-window.close();
-}
-});
-floatContainer.appendChild(shareBtn);
-floatContainer.appendChild(closeBtn);
-document.body.appendChild(floatContainer);
-setTimeout(()=>{
-floatContainer.style.opacity='1';
-},300);
-}
-function initControlButtons(){
-createSubmitLoadingTip();
-// 修正：只針對主要動作按鈕加大內距，避免污染篩選按鈕（原版對所有button加px-6 py-2.5，會把篩選列撐壞）
-const styleButtons=()=>{
-// 只美化「繼續填寫」按鈕；吸附操作列的返回/提交按鈕已有完整版型，不再疊加避免破壞排版
-document.querySelectorAll('#next-to-checklist').forEach(btn=>{
-if(!btn.classList.contains('custom-styled')){
-btn.classList.add('custom-styled','px-6','py-2.5','rounded-lg','font-medium','transition-all','duration-300','shadow-sm','hover:shadow-md');
-}
-});
-};
-document.getElementById('next-to-checklist').addEventListener('click',function(){
-const n=document.getElementById('user-name').value.trim(),a=document.getElementById('user-age').value.trim(),g=document.getElementById('user-gender').value;
-if(!n){alert('請輸入姓名');document.getElementById('user-name').focus();return;}
-if(!a||isNaN(a)||a<0||a>120){alert('請輸入有效年齡');document.getElementById('user-age').focus();return;}
-if(!g){alert('請選擇性別');document.getElementById('user-gender').focus();return;}
-window.userBasicInfo={
-name:n,age:parseInt(a),gender:g,
-height:document.getElementById('user-height').value?parseInt(document.getElementById('user-height').value):null,
-weight:document.getElementById('user-weight').value?parseFloat(document.getElementById('user-weight').value):null,
-bp:document.getElementById('user-bp').value.trim()||null,
-glucose:document.getElementById('user-glucose').value?parseFloat(document.getElementById('user-glucose').value):null,
-job:document.getElementById('user-job').value.trim()||null
-};
-document.getElementById('user-info-section').classList.add('hidden');
-document.getElementById('checklist-section').classList.remove('hidden');
-renderSymptomCards();
-initFilterButtons();
-document.getElementById('checklist-section').scrollIntoView({behavior:'smooth'});
-styleButtons();
-});
-document.getElementById('back-to-info').addEventListener('click',function(){
-document.getElementById('checklist-section').classList.add('hidden');
-document.getElementById('user-info-section').classList.remove('hidden');
-if(window.userBasicInfo){
-document.getElementById('user-name').value=window.userBasicInfo.name||'';
-document.getElementById('user-age').value=window.userBasicInfo.age||'';
-document.getElementById('user-gender').value=window.userBasicInfo.gender||'';
-document.getElementById('user-height').value=window.userBasicInfo.height||'';
-document.getElementById('user-weight').value=window.userBasicInfo.weight||'';
-document.getElementById('user-bp').value=window.userBasicInfo.bp||'';
-document.getElementById('user-glucose').value=window.userBasicInfo.glucose||'';
-document.getElementById('user-job').value=window.userBasicInfo.job||'';
-}
-document.getElementById('user-info-section').scrollIntoView({behavior:'smooth'});
-});
-document.getElementById('submit-checklist').addEventListener('click',async function(){
-const btn=this;
-btn.disabled=true;
-btn.innerHTML='<i class="fa fa-spinner fa-spin mr-1"></i> 提交中...';
-showSubmitLoading();
-const sc=updateSelectedCount();
-if(sc===0){alert('請至少勾選一個症狀');resetSubmitBtn(btn);hideSubmitLoading();return;}
-let iv=true,fic=null;
-document.querySelectorAll('.symptom-checkbox:checked').forEach(cb=>{
-const cd=cb.closest('.symptom-card'),d=cd.querySelector('.duration-select').value,s=cd.querySelector('.severity-value').value;
-if(!d||!s){iv=false;fic=fic||cd;cd.classList.add('error-flash');cd.style.transform='scale(1.03)';setTimeout(()=>{cd.classList.remove('error-flash');cd.style.transform='';},1500);}
-});
-if(!iv){alert('部分已選症狀未填寫完整資訊，請檢查後再提交');fic&&fic.scrollIntoView({behavior:'smooth',block:'center'});resetSubmitBtn(btn);hideSubmitLoading();return;}
-const sd=await collectSubmitData();
-if(!sd.userId){alert('無法取得LINE用戶身份，請重新整理頁面登入後再試');resetSubmitBtn(btn);hideSubmitLoading();return;}
-submitChecklistData(sd,btn);
-});
-styleButtons();
-}
-// ===== 健康自檢報告模板 v6（全新設計：翡翠橫幅頁首版）=====
-// 畫面顯示與分享圖共用同一模板；分享輸出2張：健康自檢報告＋症狀明細
-const APP_VERSION='v7.0';
-const shareFactorColors={
-'氣血':'#64748B','循環':'#059669','毒素':'#D97706','血脂':'#EA580C','寒濕':'#7C3AED','免疫':'#DB2777','情緒':'#4F46E5'
-};
-// 症狀程度三色（與填寫按鈕同色系：輕度綠/中度橙/重度紅）
-const sevStyles=[
-{match:'重',c:'#DC2626',bg:'#FEF2F2',bd:'#FECACA'},
-{match:'中',c:'#D97706',bg:'#FFFBEB',bd:'#FDE68A'},
-{match:'輕',c:'#059669',bg:'#ECFDF5',bd:'#A7F3D0'}
-];
-function sevStyleOf(text){
-for(const s of sevStyles){if((text||'').indexOf(s.match)!==-1)return s;}
-return {c:'#475569',bg:'#F1F5F4',bd:'#E2EAE7'};
-}
-// 排序好的有症狀要素（兩張卡共用的資料邏輯）
-function sortedFactors(rd){
-return Object.entries(rd.factorSymptoms).map(([k,list])=>({key:k,list:list,ratio:rd.factorRatio[k]})).sort((a,b)=>b.ratio.ratioVal-a.ratio.ratioVal);
-}
-// 共用：翡翠漸層橫幅頁首（新版視覺核心，一眼可辨）
-function reportBanner(title,sub,page){
-return `<div style="background:linear-gradient(135deg,#00A88C 0%,#008C76 55%,#006B5A 100%);padding:15px 17px 13px;color:#FFFFFF;">
-<div style="display:flex;justify-content:space-between;align-items:center;">
-<span style="font-size:11.5px;font-weight:600;letter-spacing:1px;opacity:0.92;">🧬 彥彬 自檢表系統</span>
-<span style="font-size:10px;font-weight:700;background:rgba(255,255,255,0.22);border:1px solid rgba(255,255,255,0.35);border-radius:999px;padding:2px 9px;">${page}</span>
-</div>
-<div style="font-size:20px;font-weight:800;margin-top:7px;letter-spacing:3px;font-family:'Noto Serif TC',serif;">${title}</div>
-<div style="font-size:11px;opacity:0.85;margin-top:3px;">${sub}</div>
-<div style="height:2px;width:52px;background:linear-gradient(90deg,#F5D061,#D4AF37);border-radius:2px;margin-top:9px;"></div>
-</div>`;
-}
-// 共用：卡片頁尾（含版本號，用於確認前端已更新）
-function reportFooter(){
-return `<div style="display:flex;align-items:center;justify-content:center;gap:8px;font-size:10px;color:#94A3B8;padding:9px 14px 11px;border-top:1px solid #E6EDEA;background:#FAFCFB;">
-<span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border:1.5px solid #C9A227;border-radius:50%;color:#C9A227;font-family:'Noto Serif TC',serif;font-size:12px;font-weight:900;transform:rotate(-8deg);flex-shrink:0;">彥</span>
-<span>彥彬自檢表系統 · 相信自己，找回初心 · ${new Date().toLocaleDateString('zh-TW')} · ${APP_VERSION}</span>
-</div>`;
-}
-// 共用：卡片外殼（白卡圓角＋橫幅＋內文＋頁尾）
-function reportCardFrame(bannerHtml,bodyHtml){
-return `<div style="background:#FFFFFF;border:1px solid #E3EBE8;border-radius:16px;overflow:hidden;box-shadow:0 4px 18px rgba(15,46,40,0.08);">
-${bannerHtml}
-<div style="padding:14px 15px 12px;">${bodyHtml}</div>
-${reportFooter()}
-</div>`;
-}
-// ===== 第1張：健康自檢報告（總覽卡） =====
-function buildReportOverviewHTML(rd){
-const ui=rd.formattedUserInfo;
-const factors=sortedFactors(rd);
-const infoRow=(l,v)=>`<div style="display:flex;justify-content:space-between;background:#F7FAF9;border:1px solid #E8EEEC;border-radius:8px;padding:7px 10px;"><span style="color:#64748B;font-size:12px;">${l}</span><span style="font-size:12px;font-weight:600;color:#1E293B;">${escHtml(v)}</span></div>`;
-const bars=factors.map(f=>{
-const c=shareFactorColors[f.key]||'#008C76';
-return `<div style="margin-bottom:10px;">
-<div style="display:flex;justify-content:space-between;margin-bottom:4px;">
-<span style="font-size:12px;font-weight:700;color:#1E293B;"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${c};margin-right:5px;"></span>${f.key}</span>
-<span style="font-size:11px;color:#64748B;">${f.ratio.count}項/${f.ratio.total}項</span>
-</div>
-<div style="display:flex;align-items:center;gap:7px;">
-<div style="flex:1;height:10px;background:#EAF0EE;border-radius:99px;overflow:hidden;"><div style="height:100%;width:${f.ratio.ratio};background:linear-gradient(90deg,${c}CC,${c});border-radius:99px;"></div></div>
-<span style="font-size:11.5px;font-weight:800;color:${c};min-width:42px;text-align:right;">${f.ratio.ratio}</span>
-</div>
-</div>`;
-}).join('');
-const body=`
-<div style="text-align:center;margin-bottom:11px;">
-<span style="font-size:14px;font-weight:800;color:#0F2E28;">${escHtml(ui.姓名)} 的健康評估結果</span>
-<div style="font-size:10.5px;color:#94A3B8;margin-top:2px;">${escHtml(ui.提交時間)}</div>
-</div>
-<div style="font-size:12.5px;font-weight:800;color:#008C76;margin-bottom:6px;">👤 基本資訊</div>
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;">
-${infoRow('年齡',ui.年齡)}${infoRow('性別',ui.性別)}${infoRow('職業',ui.職業)}${infoRow('身高',ui.身高)}${infoRow('體重',ui.體重)}${infoRow('血壓',ui.血壓)}
-</div>
-<div style="margin-top:5px;">${infoRow('血糖(HbA1c)',ui.血糖)}</div>
-<div style="display:flex;gap:6px;margin-top:12px;">
-<div style="flex:1;text-align:center;background:rgba(0,140,118,0.07);border:1px solid rgba(0,140,118,0.25);border-radius:11px;padding:10px 4px;"><div style="font-size:22px;font-weight:800;color:#008C76;">${rd.selectedTotal}</div><div style="font-size:10px;color:#64748B;">已選症狀</div></div>
-<div style="flex:1;text-align:center;background:#F7FAF9;border:1px solid #E8EEEC;border-radius:11px;padding:10px 4px;"><div style="font-size:22px;font-weight:800;color:#1E293B;">${rd.totalSymptomCount}</div><div style="font-size:10px;color:#64748B;">系統總症狀</div></div>
-<div style="flex:1.3;text-align:center;background:rgba(201,162,39,0.08);border:1px solid rgba(201,162,39,0.3);border-radius:11px;padding:10px 4px;"><div style="font-size:12.5px;font-weight:800;color:#A6821C;line-height:1.4;margin-top:3px;">${rd.topFactors.map(t=>t.name).join('、')||'—'}</div><div style="font-size:10px;color:#64748B;margin-top:3px;">最高佔比要素</div></div>
-</div>
-<div style="font-size:12.5px;font-weight:800;color:#008C76;margin:13px 0 8px;">🌟 七大健康要素評估</div>
-${bars||'<div style="color:#64748B;font-size:12px;">暫無相關症狀記錄</div>'}
-<div style="font-size:12.5px;font-weight:800;color:#008C76;margin:13px 0 6px;">💡 健康建議</div>
-<div style="font-size:11.5px;color:#475569;line-height:1.85;background:#FDFBF4;border:1px solid #EDE4C8;border-left:3px solid #D4AF37;border-radius:8px;padding:8px 11px;">
-1. 優先留意高佔比健康要素相關症狀<br>
-2. 症狀若持續或惡化，請及早就醫<br>
-3. 維持規律作息與均衡飲食以改善狀態
-</div>`;
-return reportCardFrame(reportBanner('健康自檢報告','專業健康評估 · 精準對應七大健康要素','1 / 2'),body);
-}
-// ===== 第2張：症狀明細卡（一行三列：症狀名稱｜持續時間｜程度） =====
-function buildReportDetailHTML(rd){
-const factors=sortedFactors(rd);
-// 三列欄位標題：實心翡翠底白字，欄位區分一目了然
-const colHeader=`<div style="display:grid;grid-template-columns:1fr 96px 60px;background:#008C76;border-radius:8px;padding:7px 9px;margin-bottom:8px;">
-<span style="font-size:11px;font-weight:800;color:#FFFFFF;">症狀名稱</span>
-<span style="font-size:11px;font-weight:800;color:#FFFFFF;border-left:1px solid rgba(255,255,255,0.35);padding-left:8px;">持續時間</span>
-<span style="font-size:11px;font-weight:800;color:#FFFFFF;border-left:1px solid rgba(255,255,255,0.35);padding-left:8px;">程度</span>
-</div>`;
-const groups=factors.map(f=>{
-const c=shareFactorColors[f.key]||'#008C76';
-const rows=f.list.map((it,idx)=>{
-const sv=sevStyleOf(it.severity);
-return `<div style="display:grid;grid-template-columns:1fr 96px 60px;align-items:center;padding:7px 9px;background:${idx%2===0?'#FFFFFF':'#F7FBF9'};border-top:1px solid #EEF3F1;">
-<span style="font-size:12px;font-weight:600;color:#1E293B;">${it.name}</span>
-<span style="font-size:10.5px;color:#475569;border-left:1px solid #E4ECE9;padding-left:8px;">${it.duration}</span>
-<span style="border-left:1px solid #E4ECE9;padding-left:8px;"><span style="display:inline-block;font-size:10px;font-weight:700;color:${sv.c};background:${sv.bg};border:1px solid ${sv.bd};border-radius:99px;padding:1px 7px;">${it.severity}</span></span>
-</div>`;
-}).join('');
-return `<div style="margin-bottom:11px;border:1px solid #E3EBE8;border-radius:10px;overflow:hidden;">
-<div style="display:flex;justify-content:space-between;align-items:center;background:linear-gradient(90deg,${c}1E,${c}08);border-left:4px solid ${c};padding:7px 9px;">
-<span style="font-size:12.5px;font-weight:800;color:${c};">🎯 ${f.key}</span>
-<span style="font-size:10.5px;color:#64748B;">${f.ratio.count}項/${f.ratio.total}項 · 佔比 <b style="color:${c};">${f.ratio.ratio}</b></span>
-</div>
-${rows}
-</div>`;
-}).join('');
-const body=`${colHeader}${groups||'<div style="color:#64748B;font-size:12px;">暫無相關症狀記錄</div>'}`;
-return reportCardFrame(reportBanner('症狀明細','共 '+rd.selectedTotal+' 項 · 依健康要素分組','2 / 2'),body);
-}
-// 畫面上的報告彈窗：兩張卡上下堆疊顯示（所見即分享所得）
-function buildReportHTML(rd){
-return buildReportOverviewHTML(rd)
-+`<div style="height:14px;"></div>`
-+buildReportDetailHTML(rd);
-}
-async function handleFloatingShareClick(e){
-e.stopPropagation();
-const btn=e.target.closest('#floating-share-btn');
-if(!window.reportData){
-alert('尚未生成健康報告，無法分享');
-return;
-}
-let host=null;
-try{
-btn.disabled=true;
-btn.innerHTML='<i class="fa fa-spinner fa-spin"></i> 生成中';
-// 確保html2canvas已就緒（head已載入，此為斷網保險）
-if(!window.html2canvas){
-await new Promise((resolve,reject)=>{
-const script=document.createElement('script');
-script.src='https://html2canvas.hertzen.com/dist/html2canvas.min.js';
-script.onload=resolve;
-script.onerror=reject;
-document.head.appendChild(script);
-});
-}
-// 兩張卡使用與畫面報告完全相同的模板與比例；
-// 固定430px寬離屏渲染＋3倍解析度，任何手機成圖一致清晰
-const cardWrap=inner=>`<div class="share-card" style="width:430px;box-sizing:border-box;padding:16px;background:#EEF4F1;font-family:'Noto Sans TC','PingFang TC','Microsoft JhengHei',sans-serif;color:#1E293B;">${inner}</div>`;
-host=document.createElement('div');
-host.style.cssText='position:fixed;left:-10000px;top:0;pointer-events:none;';
-host.innerHTML=cardWrap(buildReportOverviewHTML(window.reportData))+cardWrap(buildReportDetailHTML(window.reportData));
-document.body.appendChild(host);
-if(document.fonts&&document.fonts.ready){try{await document.fonts.ready;}catch(_){}} // 等待明體等網頁字體載入
-await new Promise(r=>setTimeout(r,150)); // 等待版面渲染穩定
-const cards=Array.from(host.querySelectorAll('.share-card'));
-const dateStr=new Date().toLocaleDateString('zh-TW').replace(/\//g,'');
-const names=['健康自檢報告','症狀明細'];
-const files=[];
-for(let i=0;i<cards.length;i++){
-const canvas=await html2canvas(cards[i],{scale:3,useCORS:true,backgroundColor:'#EEF4F1',logging:false});
-const blob=await new Promise(res=>canvas.toBlob(res,'image/png',0.92));
-files.push(new File([blob],`彥彬${names[i]}_${dateStr}.png`,{type:'image/png'}));
-}
-host.remove();host=null;
-// 優先走系統分享（LINE可直接選好友/群組，兩張圖一次送出）
-let shared=false;
-if(navigator.share){
-const shareData={title:'📋 彥彬自檢表系統 - 健康評估報告',files:files};
-try{
-if(!navigator.canShare||navigator.canShare(shareData)){
-await navigator.share(shareData);
-shared=true;
-}
-}catch(err){
-if(err.name==='AbortError'){shared=true;} // 用戶自行取消分享面板，不視為錯誤
-else console.error('多張圖片分享失敗，改試單張：',err);
-}
-// 部分環境不支援多檔案分享，退回只送第1張總覽卡＋複製文字報告
-if(!shared&&files.length>1){
-try{
-const single={title:'📋 彥彬自檢表系統 - 健康評估報告',files:[files[0]]};
-if(!navigator.canShare||navigator.canShare(single)){
-await navigator.share(single);
-shared=true;
-await navigator.clipboard.writeText(window.reportData.summaryText).catch(()=>{});
-alert('ℹ️ 此裝置不支援多張圖片分享，已送出總覽卡；完整文字報告已複製到剪貼簿');
-}
-}catch(err2){
-if(err2.name==='AbortError')shared=true;
-}
-}
-}
-if(shared){
-const closeBtn=document.getElementById('floating-close-btn');
-if(closeBtn){closeBtn.style.display='flex';setTimeout(()=>{closeBtn.style.opacity='1';},200);}
-}else{
-await navigator.clipboard.writeText(window.reportData.summaryText);
-alert('📋 此環境不支援圖片分享，文字報告已複製到剪貼簿，可直接貼給好友');
-}
-}catch(err){
-console.error('分享總體錯誤：',err);
-try{
-await navigator.clipboard.writeText(window.reportData.summaryText);
-alert('⚠️ 分享功能異常，已複製文字報告到剪貼簿，請手動貼上分享');
-}catch(cbErr){
-alert('⚠️ 分享功能異常，請手動截圖分享');
-}
-}finally{
-if(host)host.remove();
-btn.disabled=false;
-btn.innerHTML='<i class="fa fa-share-alt mr-1"></i>分享';
-}
-}
-async function collectSubmitData(){
-// 修正：userId 統一改用 profile.userId（getDecodedIDToken需開啟openid scope，
-//   未開啟時會取到null，導致後端報「缺少必要參數」）
-if(!lineProfile){
-lineProfile=await liff.getProfile().catch(err=>{
-console.error("獲取LINE用戶資訊失敗：",err);
-return null;
-});
-}
-const selectedSymptoms=Array.from(document.querySelectorAll('.symptom-checkbox:checked')).map(cb=>{
-const seq=cb.dataset.seq,cd=cb.closest('.symptom-card');
-return{
-seq:parseInt(seq),symptom:cd.querySelector('.symptom-name').textContent.trim(),
-durationText:cd.querySelector('.duration-select option:checked').textContent,
-severityText:cd.querySelector('.severity-value').dataset.label||'未選擇'
-};
-});
-return{
-action:'submitChecklist',
-userId:lineProfile?.userId||'',
-displayName:lineProfile?.displayName||'LINE用戶',
-submitTime:new Date().toISOString(),
-userName:document.getElementById('user-name').value.trim(),
-userAge:document.getElementById('user-age').value.trim(),
-userGender:document.getElementById('user-gender').value,
-userHeight:document.getElementById('user-height').value.trim()||'',
-userWeight:document.getElementById('user-weight').value.trim()||'',
-userBp:document.getElementById('user-bp').value.trim()||'',
-userGlucose:document.getElementById('user-glucose').value.trim()||'',
-userJob:document.getElementById('user-job').value.trim()||'',
-selectedSymptoms:JSON.stringify(selectedSymptoms),
-dataType:'checklistSubmit'
-};
-}
-function submitChecklistData(data,btn){
-console.log("提交資料（含真實LINE名稱）：",data);
-setStatus('提交中...');
-document.getElementById('status').classList.remove('hidden');
-$.ajax({
-url:GAS_URL,
-dataType:'jsonp',
-jsonp:'callback',
-jsonpCallback:'submitCallback',
-timeout:JSONP_TIMEOUT,
-data:data,
-success:function(resp){
-document.getElementById('status').classList.add('hidden');
-hideSubmitLoading();
-resetSubmitBtn(btn);
-// 修正：處理後端返回error的情況（原版success分支不檢查status，
-//   後端拋錯（如次數已達上限）時仍會顯示「提交成功」）
-if(resp.status!=="success"){
-showError(resp.message||'提交失敗，請稍後再試');
-return;
-}
-alert('提交成功！正在生成健康報告...');
-const rd=organizeReportData({
-...data,
-userBasicInfo:window.userBasicInfo,
-selectedSymptoms:JSON.parse(data.selectedSymptoms)
-});
-window.reportData=rd;
-renderReportSummary(rd);
-document.getElementById('success-modal').classList.remove('hidden');
-document.getElementById('checklist-section').classList.add('hidden');
-document.getElementById('user-info-section').classList.add('hidden');
-createFloatingButtons();
-document.getElementById('success-modal').scrollIntoView({behavior:'smooth'});
-},
-error:function(xhr,status,error){
-document.getElementById('status').classList.add('hidden');
-hideSubmitLoading();
-resetSubmitBtn(btn);
-console.error("提交失敗：",status,error);
-if(status==='timeout'){
-showError('提交超時，請檢查網路後重新嘗試');
-}else{
-showError(`提交失敗：${error||'未知網路錯誤'}`);
-}
-}
-});
-}
-function renderReportSummary(reportData){
-try{
-const summaryContent=document.getElementById('summary-content');
-if(!summaryContent)return;
-// 與分享圖共用buildReportHTML同一模板，畫面所見＝分享所得，比例完全一致
-summaryContent.innerHTML=buildReportHTML(reportData);
-}catch(e){
-console.error("渲染報告摘要出錯：",e);
-hideSubmitLoading();
-showError('報告生成失敗，請重新提交');
-}
-}
-async function initLIFF(){
-try{
-setStatus('正在初始化LINE登入...');
-await liff.init({liffId:LIFF_ID});
-if(!liff.isLoggedIn()){
-setStatus('請先登入LINE帳號...');
-liff.login({redirectUri:window.location.href});
-return;
-}
-lineProfile=await liff.getProfile();
-console.log("LINE用戶資訊：",lineProfile);
-setStatus('正在驗證授權狀態...');
-const userInfo = await verifyUserFromBackend(lineProfile);
-// 修正：驗證失敗時錯誤訊息已在 verifyUserFromBackend 顯示（後端的實際錯因），
-//   此處不再覆蓋為固定文案，直接結束流程
-if(!userInfo){
-return;
-}
+  const menuToggle = document.getElementById('menuToggle');
+  const mobileMenu = document.getElementById('mobileMenu');
+  const prevBtn = document.getElementById('prevBtn');
+  const nextBtn = document.getElementById('nextBtn');
+  const submitBtn = document.getElementById('submitBtn');
+  const viewResultBtn = document.getElementById('viewResultBtn');
+  const restartBtn = document.getElementById('restartBtn');
+  const downloadReportBtn = document.getElementById('downloadReportBtn');
+  const resultSection = document.getElementById('result');
+  const formContainer = document.getElementById('form');
+  const symptomListEl = document.getElementById('symptomList');
+  const habitListEl = document.getElementById('habitList');
+  const aiEvaluationContainer = document.getElementById('aiEvaluationContainer') || createAiContainer();
 
-// 過期攔截（雙保險：後端已會將過期用戶降級為普通用戶）
-if(userInfo.isExpired){
-  showError('您的帳號已過期，無法登入自檢表系統，請聯繫管理員續期');
-  return;
-}
+  // 遮罩元素
+  const processingOverlay = document.getElementById('processingOverlay');
+  const procSpinnerWrap = document.getElementById('procSpinnerWrap');
+  const procDoneWrap = document.getElementById('procDoneWrap');
+  const procTitle = document.getElementById('procTitle');
+  const procStatus = document.getElementById('procStatus');
+  const procSteps = document.getElementById('procSteps');
 
-document.getElementById('status').classList.add('hidden');
-document.getElementById('result-main').textContent=`歡迎回來，${userInfo.displayName}！`;
-let expiryText = userInfo.isAdmin 
-  ? `${userInfo.displayExpiryDate}（${userInfo.remainingDays}）`
-  : "普通用戶（3次使用上限）";
-document.getElementById('result-details').innerHTML=`
-<p>用戶類型：<span class="text-primary font-medium">${userInfo.isAdmin ? "💎尊爵用戶" : "普通用戶"}</span></p>
-<p>有效期：<span class="text-primary font-medium">${expiryText}</span></p>
-${!userInfo.isAdmin ? `<p>剩餘使用次數：<span class="text-primary font-medium">${3 - userInfo.usageCount} 次</span></p>` : ""}
-`;
-document.getElementById('result-card').classList.remove('hidden');
-document.getElementById('user-info-section').classList.remove('hidden');
-initControlButtons();
-}catch(error){
-console.error("LIFF初始化失敗：",error);
-if(error&&error.message&&error.message.includes('LIFF ID')){
-showError('LIFF ID配置錯誤，請聯繫管理員');
-}else{
-showError('系統初始化失敗，請重新整理頁面重試');
-}
-}
-}
-async function verifyUserFromBackend(profile){
-return new Promise((resolve, reject) => {
-// 修正：userId 統一改用 profile.userId
-const userId = profile.userId || '';
-const displayName = profile.displayName || 'LINE用戶';
-if(!userId){
-showError('無法取得LINE用戶身份，請重新登入後再試');
-resolve(null);
-return;
-}
-const data = {
-action: 'verifyUser',
-userId: userId,
-displayName: displayName,
-dataType: 'userVerify'
-};
-$.ajax({
-url: GAS_URL,
-dataType: 'jsonp',
-jsonp: 'callback',
-jsonpCallback: 'verifyCallback',
-timeout: JSONP_TIMEOUT,
-data: data,
-success: function(resp) {
-if(resp.status === "success"){
-// 【核心修正】分三種情況計算有效期，
-//   原版把「永久有效」丟進日期解析→regex不過→isExpired=true→永久用戶被誤攔在門外
-let expiryData;
-if(!resp.isAdmin){
-// 普通用戶：無到期日概念，永不因日期被攔截
-expiryData = { displayDate: "—", remainingDays: "—", isExpired: false };
-}else if(resp.expiryDate === PERMANENT_TEXT || !resp.expiryDate){
-// 永久有效💎尊爵用戶
-expiryData = { displayDate: PERMANENT_TEXT, remainingDays: PERMANENT_TEXT, isExpired: false };
-}else{
-// 有具體到期日的💎尊爵用戶
-expiryData = calculateRemainingDaysByDate(resp.expiryDate);
-}
-resolve({
-...resp,
-displayName: displayName,
-remainingDays: expiryData.remainingDays,
-displayExpiryDate: expiryData.displayDate,
-isExpired: expiryData.isExpired
+  let globalUniqueSymptoms = [];
+  let globalUniqueHabits = [];
+  let windowHealthChart = null;
+  let localImageBlob = null;
+  let localImageName = '';
+  let imgbbImageUrl = '';
+  let imgbbDeleteUrl = '';
+  let guideImageBlob = null;
+  let guideImageName = '';
+  let lastAdjustmentScores = {};
+  let lastResultData = null;
+  let procStatusTimer = null;
+
+  const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+  const isTablet = /iPad|Tablet|PlayBook|Silk|(Android(?!.*Mobile))/i.test(navigator.userAgent);
+  const isMobile = /iPhone|Android.*Mobile/i.test(navigator.userAgent) && !isTablet;
+
+  function escapeHtml(str) {
+    return String(str ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  function createAiContainer() {
+    const container = document.createElement('div');
+    container.id = 'aiEvaluationContainer';
+    const mainIssuesContainer = document.getElementById('mainHealthIssues');
+    if (mainIssuesContainer && mainIssuesContainer.parentNode) mainIssuesContainer.parentNode.insertBefore(container, mainIssuesContainer.nextSibling);
+    else (document.getElementById('result') || document.body).appendChild(container);
+    return container;
+  }
+
+  // ★ 質感遮罩控制 ------------------------------------------------
+  const PROC_MESSAGES = ['正在整理您的基本資料…', '正在分析勾選的症狀…', '正在比對七大調理方向…', 'AI 正在撰寫專屬評估…', '正在繪製健康風險圖表…'];
+  function openProcessing() {
+    procSpinnerWrap.style.display = '';
+    procDoneWrap.style.display = 'none';
+    viewResultBtn.style.display = 'none';
+    procTitle.textContent = '正在生成您的健康報告';
+    procSteps.style.display = '';
+    processingOverlay.classList.add('show');
+    document.body.style.overflow = 'hidden'; // 鎖住背景，避免亂滑亂點
+
+    let i = 0;
+    const dots = procSteps.querySelectorAll('span');
+    procStatus.textContent = PROC_MESSAGES[0];
+    dots.forEach((d, idx) => d.classList.toggle('on', idx === 0));
+    clearInterval(procStatusTimer);
+    procStatusTimer = setInterval(() => {
+      i = (i + 1) % PROC_MESSAGES.length;
+      procStatus.style.opacity = '0';
+      setTimeout(() => { procStatus.textContent = PROC_MESSAGES[i]; procStatus.style.opacity = '1'; }, 200);
+      dots.forEach((d, idx) => d.classList.toggle('on', idx === (i % dots.length)));
+    }, 1600);
+  }
+  function finishProcessingToDone() {
+    clearInterval(procStatusTimer);
+    procSpinnerWrap.style.display = 'none';
+    procDoneWrap.style.display = '';
+    procSteps.style.display = 'none';
+    procTitle.textContent = '報告已完成！';
+    procStatus.textContent = '已為您整理好健康概覽與 AI 評估';
+    procStatus.style.opacity = '1';
+    viewResultBtn.style.display = '';
+  }
+  function closeProcessing() {
+    clearInterval(procStatusTimer);
+    processingOverlay.classList.remove('show');
+    document.body.style.overflow = '';
+  }
+  function failProcessing(msg) {
+    clearInterval(procStatusTimer);
+    closeProcessing();
+    showToast(msg, 'error');
+  }
+
+  function renderSymptomList() {
+    let html = '';
+    Object.entries(SYMPTOM_DATA).forEach(([category, group]) => {
+      group.items.forEach(item => {
+        html += `<div class="symptom-item" data-category="${category}"><label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer"><input type="checkbox" name="symptoms" value="${escapeHtml(item)}" class="mt-1 w-4 h-4 text-primary focus:ring-primary shrink-0"><span class="ml-2">${escapeHtml(item)}</span></label></div>`;
+      });
+    });
+    symptomListEl.innerHTML = html;
+  }
+
+  function renderHabitList() {
+    let html = '';
+    Object.entries(HABIT_DATA).forEach(([category, group]) => {
+      html += `<div class="mb-8 habit-category-block" data-category="${category}"><h4 class="font-medium text-lg mb-4 text-neutral-dark/90 habit-category-title" data-category="${category}">${group.label}</h4><div class="grid md:grid-cols-2 gap-4">`;
+      group.items.forEach(item => {
+        html += `<div class="habit-item" data-category="${category}"><label class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer"><input type="checkbox" name="habits" value="${escapeHtml(item)}" class="mt-1 w-4 h-4 text-primary focus:ring-primary shrink-0"><span class="ml-2">${escapeHtml(item)}</span></label></div>`;
+      });
+      html += `</div></div>`;
+    });
+    habitListEl.innerHTML = html;
+  }
+
+  menuToggle.addEventListener('click', () => mobileMenu.classList.toggle('hidden'));
+  mobileMenu.querySelectorAll('a').forEach(a => a.addEventListener('click', () => mobileMenu.classList.add('hidden')));
+
+  document.querySelectorAll('input[name="gender"]').forEach(radio => radio.addEventListener('change', updateGenderBasedUI));
+
+  function updateGenderBasedUI() {
+    const selectedGender = document.querySelector('input[name="gender"]:checked')?.value;
+    if (!selectedGender) return;
+    const isMale = selectedGender === 'male';
+    const femaleSymptomTab = document.querySelector('.symptom-tab[data-category="female"]');
+    if (femaleSymptomTab) femaleSymptomTab.style.display = isMale ? 'none' : 'inline-flex';
+    document.querySelectorAll('.symptom-item[data-category="female"]').forEach(item => {
+      item.style.display = isMale ? 'none' : 'block';
+      if (isMale) { const cb = item.querySelector('input[type="checkbox"]'); if (cb) cb.checked = false; }
+    });
+    const activeTab = document.querySelector('.symptom-tab.active');
+    if (isMale && activeTab?.getAttribute('data-category') === 'female') document.querySelector('.symptom-tab[data-category="all"]')?.click();
+    updateGlobalData();
+  }
+
+  function updateGlobalData() {
+    globalUniqueSymptoms = [...new Set(Array.from(document.querySelectorAll('input[name="symptoms"]:checked')).map(cb => cb.value))];
+    globalUniqueHabits = [...new Set(Array.from(document.querySelectorAll('input[name="habits"]:checked')).map(cb => cb.value))];
+  }
+  symptomListEl.addEventListener('change', updateGlobalData);
+  habitListEl.addEventListener('change', updateGlobalData);
+
+  prevBtn.addEventListener('click', () => { if (currentStep > 1) { currentStep--; updateFormSteps(); if (currentStep === 2) updateGenderBasedUI(); } });
+  nextBtn.addEventListener('click', () => { updateGlobalData(); if (validateStep(currentStep) && currentStep < totalSteps) { currentStep++; updateFormSteps(); if (currentStep === 2) updateGenderBasedUI(); } });
+
+  function validateStep(step) {
+    let isValid = true;
+    clearAllErrors();
+    if (step === 1) {
+      const name = document.getElementById('name').value.trim();
+      const age = document.getElementById('age').value.trim();
+      const genderSelected = document.querySelector('input[name="gender"]:checked');
+      if (!name) { showError('name', '請輸入您的姓名'); isValid = false; }
+      if (!age || isNaN(age) || age < 1 || age > 120) { showError('age', '請輸入有效的年齡（1-120歲）'); isValid = false; }
+      if (!genderSelected) { showError('gender', '請選擇您的性別'); isValid = false; }
+    } else if (step === 4) {
+      const mainConcern = document.getElementById('mainConcern').value.trim();
+      const symptomDuration = document.getElementById('symptomDuration').value;
+      const allergySelected = document.querySelector('input[name="allergyHistory"]:checked');
+      const medicalSelected = document.querySelector('input[name="medicalHistory"]:checked');
+      const declarationChecked = document.getElementById('healthDeclaration').checked;
+      if (!mainConcern && globalUniqueSymptoms.length > 0) { showError('mainConcern', `請描述您最關注的健康問題（可從選中症狀：${globalUniqueSymptoms.slice(0,2).join('、')}... 中選擇）`); isValid = false; }
+      else if (!mainConcern) { showError('mainConcern', '請描述您最關注的健康問題'); isValid = false; }
+      if (!symptomDuration) { showError('symptomDuration', '請選擇症狀持續時間'); isValid = false; }
+      if (!allergySelected) { showError('allergyHistory', '請選擇是否有過敏史'); isValid = false; }
+      if (!medicalSelected) { showError('medicalHistory', '請選擇是否有手術史或既往病史'); isValid = false; }
+      if (!declarationChecked) { showError('declaration', '請閱讀並同意健康宣言'); isValid = false; }
+    }
+    return isValid;
+  }
+
+  function clearAllErrors() {
+    document.querySelectorAll('.error-message').forEach(el => el.classList.add('hidden'));
+    document.querySelectorAll('input, select, textarea').forEach(el => el.classList.remove('error-input'));
+  }
+
+  function showError(fieldId, message) {
+    const errorElement = document.getElementById(`${fieldId}Error`);
+    if (errorElement) { errorElement.textContent = message; errorElement.classList.remove('hidden'); }
+    const inputElement = document.getElementById(fieldId);
+    if (inputElement) { inputElement.classList.add('error-input'); inputElement.focus({ preventScroll: true }); inputElement.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+    else { const fieldGroup = document.querySelector(`input[name="${fieldId}"]`)?.closest('div') || errorElement?.parentElement; if (fieldGroup) fieldGroup.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+  }
+
+  function jsonpRequest(url, callbackName, timeout = REQUEST_TIMEOUT) {
+    return new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = url; script.type = 'text/javascript'; script.async = true;
+      const timeoutId = setTimeout(() => { cleanup(); reject(new Error('請求超時')); }, timeout);
+      window[callbackName] = function(response) { cleanup(); resolve(response); };
+      script.onerror = function() { cleanup(); reject(new Error('網路錯誤')); };
+      function cleanup() { clearTimeout(timeoutId); delete window[callbackName]; if (document.body.contains(script)) document.body.removeChild(script); }
+      document.body.appendChild(script);
+    });
+  }
+
+  async function requestWithRetry(requestFn, retries = MAX_RETRIES, delay = 1000) {
+    try { return await requestFn(); }
+    catch (error) { if (retries > 0) { await new Promise(r => setTimeout(r, delay)); return requestWithRetry(requestFn, retries - 1, delay * 2); } throw error; }
+  }
+
+  async function callOpenAIByBackend(healthData) {
+    try {
+      const formData = { basicInfo: healthData.basicInfo, symptoms: healthData.symptoms, symptomCount: healthData.symptomCount, habits: healthData.habits, habitCount: healthData.habitCount, healthIssues: healthData.healthIssues };
+      const callbackName = `jsonpAiCallback_${Date.now()}`;
+      const params = new URLSearchParams({ data: JSON.stringify(formData), callback: callbackName, action: 'generateAiComment', timestamp: Date.now() });
+      const requestFn = () => jsonpRequest(`${BACKEND_GOOGLE_SCRIPT_URL}?${params.toString()}`, callbackName);
+      const response = await requestWithRetry(requestFn);
+      if (response?.status === 'success' && response.aiComment) { globalAiComment = response.aiComment; return true; }
+      throw new Error(response?.message || 'AI評語生成失敗，後端未返回有效數據');
+    } catch (error) { console.error('AI評語生成失敗：', error); throw error; }
+  }
+
+  function renderAiEvaluation() {
+    if (!aiEvaluationContainer) return;
+    if (!globalAiComment) {
+      aiEvaluationContainer.innerHTML = `<div class="bg-yellow-50 p-4 rounded-lg border border-yellow-100 mt-4"><h4 class="font-semibold text-yellow-600 mb-2 flex items-center"><i class="fa fa-info-circle mr-2"></i> AI評估提示</h4><p class="text-sm text-gray-600">${globalUniqueSymptoms.length === 0 ? '未選擇症狀，無法生成AI評語' : 'AI評語未生成，請點擊下方按鈕重新生成'}</p>${globalUniqueSymptoms.length > 0 ? `<button id="aiRetryBtn" class="mt-2 px-3 py-1 bg-primary text-white rounded text-sm hover:bg-primary/90"><i class="fa fa-refresh mr-1"></i> 重新生成AI評語</button>` : ''}</div>`;
+      document.getElementById('aiRetryBtn')?.addEventListener('click', retryAi);
+      return;
+    }
+    const formattedComment = globalAiComment.split('\n').filter(p => p.trim()).map(p => `<p class="text-sm mb-2">${escapeHtml(p)}</p>`).join('');
+    aiEvaluationContainer.innerHTML = `<div class="bg-white p-4 rounded-lg border border-gray-100 shadow-sm mt-4"><h3 class="text-lg font-semibold mb-4 text-primary"><i class="fa fa-robot mr-2"></i>🟢 健康自檢表 AI評估</h3><div class="text-gray-700">${formattedComment}</div><p class="text-xs text-gray-500 mt-3">提示：此評語基於自檢表數據生成，僅供參考，不能替代醫生診斷</p></div>`;
+  }
+
+  // AI 骨架（結果尚未產生前的質感佔位）
+  function renderAiSkeleton() {
+    aiEvaluationContainer.innerHTML = `<div class="bg-white p-4 rounded-lg border border-gray-100 shadow-sm mt-4"><h3 class="text-lg font-semibold mb-4 text-primary"><i class="fa fa-robot mr-2"></i>🟢 健康自檢表 AI評估</h3><div class="yb-skeleton yb-sk-line" style="width:92%"></div><div class="yb-skeleton yb-sk-line" style="width:88%"></div><div class="yb-skeleton yb-sk-line" style="width:95%"></div><div class="yb-skeleton yb-sk-line" style="width:70%"></div><p class="text-xs text-gray-400 mt-3"><i class="fa fa-spinner fa-spin mr-1"></i> AI 正在撰寫評估…</p></div>`;
+  }
+
+  async function retryAi() {
+    renderAiSkeleton();
+    try { await callOpenAIByBackend(collectHealthData()); renderAiEvaluation(); }
+    catch (e) {
+      aiEvaluationContainer.innerHTML = `<div class="bg-red-50 p-4 rounded-lg border border-red-100 mt-4"><h4 class="font-semibold text-red-600 mb-2">AI評估生成失敗</h4><p class="text-sm text-gray-600 mb-3">原因：${escapeHtml(e.message || '網路異常')}</p><button id="aiRetryBtn" class="px-3 py-1 bg-primary text-white rounded text-sm hover:bg-primary/90"><i class="fa fa-refresh mr-1"></i> 重新生成</button></div>`;
+      document.getElementById('aiRetryBtn')?.addEventListener('click', retryAi);
+    }
+  }
+
+  // ★ 提交流程：全程用質感遮罩阻擋點擊，完成後才出現「查看結果」
+  submitBtn.addEventListener('click', async () => {
+    updateGlobalData();
+    if (!validateStep(4)) return;
+
+    submitBtn.disabled = true;
+    openProcessing();
+
+    try {
+      const healthData = collectHealthData();
+      const [aiResult, submitResult] = await Promise.allSettled([
+        callOpenAIByBackend(healthData),
+        submitToGoogleSheets()
+      ]);
+
+      const aiOk = aiResult.status === 'fulfilled' && aiResult.value;
+      const submitOk = submitResult.status === 'fulfilled' && submitResult.value;
+
+      if (aiOk || submitOk) {
+        generateResult();          // 先把結果畫好（背景仍被遮罩蓋住）
+        finishProcessingToDone();  // 再把遮罩切成「完成」狀態，露出按鈕
+      } else {
+        const msgs = [];
+        if (aiResult.status === 'rejected') msgs.push(`AI評估：${aiResult.reason.message}`);
+        if (submitResult.status === 'rejected') msgs.push(`數據提交：${submitResult.reason.message}`);
+        failProcessing(`操作失敗：\n${msgs.join('\n')}\n請稍後重試`);
+      }
+    } catch (error) {
+      console.error('提交異常：', error);
+      failProcessing(`提交失敗：${error.message}`);
+    } finally {
+      submitBtn.disabled = false;
+    }
+  });
+
+  viewResultBtn.addEventListener('click', () => {
+    closeProcessing();
+    resultSection.classList.remove('hidden');
+    resultSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    renderAiEvaluation();
+  });
+
+  restartBtn.addEventListener('click', () => {
+    globalUniqueSymptoms = []; globalUniqueHabits = []; globalAiComment = '';
+    localImageBlob = null; localImageName = ''; imgbbImageUrl = ''; imgbbDeleteUrl = '';
+    guideImageBlob = null; guideImageName = '';
+    lastAdjustmentScores = {}; lastResultData = null; currentStep = 1;
+    if (windowHealthChart) { windowHealthChart.destroy(); windowHealthChart = null; }
+    aiEvaluationContainer.innerHTML = '';
+    const shareBtn = document.getElementById('singleShareBtn'); if (shareBtn) document.body.removeChild(shareBtn);
+    document.querySelectorAll('input, textarea, select').forEach(el => { if (el.type === 'checkbox' || el.type === 'radio') el.checked = false; else el.value = ''; el.classList.remove('error-input'); });
+    clearAllErrors(); updateFormSteps(); updateGenderBasedUI();
+    resultSection.classList.add('hidden');
+    formContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+
+  document.querySelectorAll('.symptom-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.symptom-tab').forEach(t => { t.classList.remove('active', 'bg-primary', 'text-white'); t.classList.add('bg-gray-200', 'hover:bg-gray-300'); });
+      tab.classList.add('active', 'bg-primary', 'text-white'); tab.classList.remove('bg-gray-200', 'hover:bg-gray-300');
+      const selectedCategory = tab.getAttribute('data-category');
+      const isMale = document.querySelector('input[name="gender"]:checked')?.value === 'male';
+      document.querySelectorAll('.symptom-item').forEach(item => {
+        const itemCategory = item.getAttribute('data-category');
+        if (isMale && itemCategory === 'female') { item.style.display = 'none'; return; }
+        item.style.display = (selectedCategory === 'all' || itemCategory === selectedCategory) ? 'block' : 'none';
+      });
+    });
+  });
+
+  document.querySelectorAll('.habit-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.habit-tab').forEach(t => { t.classList.remove('active', 'bg-primary', 'text-white'); t.classList.add('bg-gray-200', 'hover:bg-gray-300'); });
+      tab.classList.add('active', 'bg-primary', 'text-white'); tab.classList.remove('bg-gray-200', 'hover:bg-gray-300');
+      const selectedCategory = tab.getAttribute('data-category');
+      document.querySelectorAll('.habit-category-block').forEach(block => { block.style.display = (selectedCategory === 'all' || block.getAttribute('data-category') === selectedCategory) ? 'block' : 'none'; });
+    });
+  });
+
+  function updateFormSteps() {
+    document.querySelectorAll('.form-step').forEach(step => { step.classList.add('hidden'); step.classList.remove('active'); });
+    const currentStepEl = document.getElementById(`step${currentStep}`);
+    if (currentStepEl) { currentStepEl.classList.remove('hidden'); currentStepEl.classList.add('active'); }
+    document.querySelectorAll('.step-indicator').forEach((indicator, index) => {
+      if (index + 1 <= currentStep) { indicator.classList.remove('bg-gray-200', 'text-gray-500'); indicator.classList.add('bg-primary', 'text-white'); }
+      else { indicator.classList.remove('bg-primary', 'text-white'); indicator.classList.add('bg-gray-200', 'text-gray-500'); }
+    });
+    document.querySelectorAll('.step-progress').forEach((progress, index) => { progress.style.width = index + 1 < currentStep ? '100%' : '0%'; });
+    prevBtn.classList.toggle('hidden', currentStep === 1);
+    nextBtn.classList.toggle('hidden', currentStep === totalSteps);
+    submitBtn.classList.toggle('hidden', currentStep !== totalSteps);
+    formContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function getGenderText() { const g = document.querySelector('input[name="gender"]:checked'); return g ? (g.value === 'male' ? '男' : '女') : '未填寫'; }
+
+  function collectHealthData() {
+    return {
+      basicInfo: { name: document.getElementById('name').value || '未填寫', age: document.getElementById('age').value || '未填寫', gender: getGenderText(), bmi: calculateBMI(), bloodPressure: document.getElementById('bloodPressure').value || '未填寫' },
+      symptoms: globalUniqueSymptoms.join('; '), symptomCount: globalUniqueSymptoms.length,
+      habits: globalUniqueHabits.join('; '), habitCount: globalUniqueHabits.length,
+      healthIssues: {
+        mainConcern: document.getElementById('mainConcern').value || '未明確說明',
+        symptomDuration: document.getElementById('symptomDuration').value || '未說明',
+        allergyHistory: document.querySelector('input[name="allergyHistory"]:checked')?.value || '未選擇',
+        allergyDetails: document.getElementById('allergyDetails')?.value || '未填寫',
+        medicalHistory: document.querySelector('input[name="medicalHistory"]:checked')?.value || '未選擇',
+        medicalDetails: document.getElementById('medicalDetails')?.value || '未填寫',
+        possibleCauses: document.getElementById('possibleCauses')?.value || '未填寫',
+        aggravatingFactors: document.getElementById('aggravatingFactors')?.value || '未填寫',
+        previousTreatments: document.getElementById('previousTreatments')?.value || '未填寫'
+      }
+    };
+  }
+
+  function collectFullFormData() {
+    const base = collectHealthData();
+    return {
+      submitTime: new Date().toLocaleString('zh-Hant', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+      basicInfo: { ...base.basicInfo, phone: document.getElementById('phone').value || '未填寫', height: document.getElementById('height').value ? `${document.getElementById('height').value} cm` : '未填寫', weight: document.getElementById('weight').value ? `${document.getElementById('weight').value} kg` : '未填寫', waist: document.getElementById('waist').value ? `${document.getElementById('waist').value} cm` : '未填寫', bloodSugar: document.getElementById('bloodSugar').value ? `${document.getElementById('bloodSugar').value} mmol/l` : '未填寫', occupation: document.getElementById('occupation').value || '未填寫' },
+      symptoms: base.symptoms, symptomCount: base.symptomCount, habits: base.habits, habitCount: base.habitCount,
+      healthIssues: base.healthIssues, aiComment: globalAiComment || 'AI評語生成失敗',
+      imgbb: { imageUrl: imgbbImageUrl || '未上傳', deleteUrl: imgbbDeleteUrl || '無' }
+    };
+  }
+
+  function calculateBMI() {
+    const height = document.getElementById('height').value;
+    const weight = document.getElementById('weight').value;
+    if (!height || !weight) return '未計算';
+    const h = parseFloat(height) / 100; const w = parseFloat(weight);
+    if (h <= 0 || w <= 0) return '未計算';
+    const bmiValue = (w / (h * h)).toFixed(1);
+    let s = ''; if (bmiValue < 18.5) s = '（偏瘦）'; else if (bmiValue < 24) s = '（正常）'; else if (bmiValue < 28) s = '（超重）'; else s = '（肥胖）';
+    return `${bmiValue} ${s}`;
+  }
+
+  function submitToGoogleSheets() {
+    return requestWithRetry(() => {
+      const formData = collectFullFormData();
+      const callbackName = `jsonpSubmitCallback_${Date.now()}`;
+      const params = new URLSearchParams({ data: JSON.stringify(formData), callback: callbackName, action: 'saveToSheets', timestamp: Date.now() });
+      return jsonpRequest(`${BACKEND_GOOGLE_SCRIPT_URL}?${params.toString()}`, callbackName).then(response => { if (response?.status === 'success') return true; throw new Error(response?.message || '數據提交失敗，後端未確認保存'); });
+    });
+  }
+
+  const adjustmentDirections = {
+    體質: ['頭部畏冷','容易打哈欠','嗜睡/易醒','眼睛疲勞','咽喉異物感','聲音沙啞','嘆氣/呼吸短促/喘氣','打呼','胃痛/胃酸過多/腹脹/胃部畏寒','噁心/打嗝/噯氣','消化不良','食慾不佳/容易飽脹','偏食/厭食','大便不成形','四肢無力','關節疼痛/腫脹','容易落枕/頸部僵硬','頸部疼痛/頸部畏寒','腰部酸痛/腰部畏寒','游離性疼痛','脊椎僵硬/脊椎疼痛','腳跟疼痛','月經期間腹脹/痛經','月經期間下腹部畏寒','月經期間下腹部墜脹','白帶呈稀水狀/有腥臭味','夜尿頻繁/尿頻/尿急','尿不盡/尿失禁','冒冷汗/後背畏寒'],
+    免疫: ['眼睛癢/腫脹/突出/疼痛','眼睛畏光/流淚','鼻炎/鼻塞','流鼻水/流鼻血','打噴嚏','過敏性鼻炎','咳嗽/氣喘','支氣管炎','感冒久不愈','容易感冒/不易感冒','口腔潰瘍/舌潰瘍','扁平疣/尋常疣','淋巴結腫大','低燒37-38℃','皮膚乾燥/接觸性皮膚炎','銀屑病/白斑病','各類過敏/濕疹','尿道口灼熱感/尿道口發炎'],
+    毒素: ['眼糞多/麥粒腫','耳朵內潮濕/化膿','耳垢多/耳朵疼痛/癢','酒渣鼻','痰液多/黃痰/痰液清稀','白痰/黑痰/痰中帶血','右側肝區悶痛','腹脹/排氣多/排氣臭','口苦/口乾/口臭/口中腥味','口咸/口甜/口酸','口臭明顯/口中辣味','舌苔厚/黃苔/膩苔','地圖舌/舌頭白斑','便溏不盡/便秘','血管瘤/脂肪瘤','纖維瘤/皮脂腺囊腫','膽結石/腎結石','皮贅/雞眼','頭部/面部油膩','臉頰泛紅','痤瘡/青春痘/色素斑','皮膚癢/背部青春痘','黑痣增大/增多','脂肪粒','身體異味','月經期間長青春痘','子宮頸息肉','子宮頸肥大/子宮頸囊腫','白帶增多/白帶帶血絲','白帶顏色偏黃/黏稠','排尿疼痛/血尿','尿分叉/排尿等待','尿液濃稠/尿液有異味','尿液混濁/尿液泡沫多','外陰瘙癢/外陰異味','肛門瘙癢'],
+    營養: ['老花眼','眼睛乾澀/飛蚊症','夜盲症','視力模糊','嘴唇龜裂/咽喉乾燥','身體消瘦','身高矮小/發育遲緩','指甲半月痕缺失/稀少','指甲易斷裂/手指倒刺','指甲凹陷/指甲竪紋','手足抽搐/手足顫抖','平衡能力差/容易跌倒','容易扭傷','頭髮稀疏','頭髮乾燥/掉發','白髮/圓形禿','面色黃/蒼白/黝黑'],
+    循環: ['頭痛/頭暈','頭部麻木/腦鳴','偏頭痛/健忘','言語懶散/口吃','暈車/暈機','思緒中斷','反應遲鈍','眉骨疼痛','嗅覺遲鈍','耳鳴/耳聾','聽力減退','低血壓/高血壓','貧血/高血脂症','心絞痛','心跳過快/過慢','心悸/心律不整','胸悶/胸痛','手足麻木/發紺','手足發熱/冰涼/腫脹/出汗','頭暈/頭部麻木/容易打哈欠','面色異常（蒼白/發青）','嘴唇蒼白/發青/麻木','舌質紫暗/舌邊齒痕','舌頭僵硬/舌頭前端不適','手足脫皮/凍瘡','小腿水腫','肩膀酸脹/麻木/疼痛','靜脈曲張','皮膚容易瘀青/紅點','蜘蛛痣/魚鱗癬','月經顏色暗/淡/深黑','下腹部悶痛','睪丸腫塊/疝氣','便血/痔瘡','脫肛/肛裂/肛瘻'],
+    內分泌: ['失眠/多夢','食慾過盛','甲狀腺機能亢進/甲狀腺機能低下','甲狀腺結節','肥胖/腹型肥胖','體重突然增加/減少10%','低血糖/高血糖','高血脂症','頸部脂肪堆積','不孕','流產/死胎','月經量少/月經有血塊','月經量多/子宮肌瘤','月經提前/延後','月經期間煩躁/乳房脹痛','月經期間厭食/水腫','月經期間腰痛/頭痛','月經期間嗜睡/失眠','子宮腺肌症','月經期延長','停經','乳頭凹陷/乳頭溢膿','乳房腫塊/乳腺增生','卵巢囊腫','產後掉發/產後憂鬱','產後色素沈澱','性慾降低','自汗/多汗/盜汗']
+  };
+
+  function calculateAdjustmentScores() {
+    const scores = {};
+    const allIssues = [...globalUniqueSymptoms, ...globalUniqueHabits];
+    Object.entries(adjustmentDirections).forEach(([dir, relatedItems]) => {
+      const matchedCount = allIssues.filter(item => relatedItems.includes(item)).length;
+      scores[dir] = Math.max(0, Math.round((1 - matchedCount / (relatedItems.length || 1)) * 100));
+    });
+    scores['生活習慣'] = Math.max(0, Math.round((1 - globalUniqueHabits.length / 30) * 100));
+    return scores;
+  }
+
+  function generateResult() {
+    const g = (id) => document.getElementById(id).value;
+    const name = escapeHtml(g('name') || '未填寫');
+    const age = escapeHtml(g('age') || '未填寫');
+    const gender = getGenderText();
+    const phone = escapeHtml(g('phone') || '未填寫');
+    const height = g('height') ? `${escapeHtml(g('height'))} cm` : '未填寫';
+    const weight = g('weight') ? `${escapeHtml(g('weight'))} kg` : '未填寫';
+    const waist = g('waist') ? `${escapeHtml(g('waist'))} cm` : '未填寫';
+    const bloodPressure = escapeHtml(g('bloodPressure') || '未填寫');
+    const bloodSugar = g('bloodSugar') ? `${escapeHtml(g('bloodSugar'))} mmol/l` : '未填寫';
+    const occupation = escapeHtml(g('occupation') || '未填寫');
+    const bmi = calculateBMI();
+
+    document.getElementById('basicInfo').innerHTML = `<div class="grid grid-cols-2 gap-2">
+      <div class="p-3 border border-gray-100 rounded-lg"><p class="text-sm"><strong>姓名：</strong> ${name}</p></div>
+      <div class="p-3 border border-gray-100 rounded-lg"><p class="text-sm"><strong>年齡：</strong> ${age} 歲</p></div>
+      <div class="p-3 border border-gray-100 rounded-lg"><p class="text-sm"><strong>性別：</strong> ${gender}</p></div>
+      <div class="p-3 border border-gray-100 rounded-lg"><p class="text-sm"><strong>電話：</strong> ${phone}</p></div>
+      <div class="p-3 border border-gray-100 rounded-lg"><p class="text-sm"><strong>身高：</strong> ${height}</p></div>
+      <div class="p-3 border border-gray-100 rounded-lg"><p class="text-sm"><strong>體重：</strong> ${weight}</p></div>
+      <div class="p-3 border border-gray-100 rounded-lg"><p class="text-sm"><strong>BMI：</strong> ${bmi}</p></div>
+      <div class="p-3 border border-gray-100 rounded-lg"><p class="text-sm"><strong>腰圍：</strong> ${waist}</p></div>
+      <div class="p-3 border border-gray-100 rounded-lg"><p class="text-sm"><strong>血壓：</strong> ${bloodPressure}</p></div>
+      <div class="p-3 border border-gray-100 rounded-lg"><p class="text-sm"><strong>血糖：</strong> ${bloodSugar}</p></div>
+      <div class="p-3 border border-gray-100 rounded-lg col-span-2"><p class="text-sm"><strong>職業：</strong> ${occupation}</p></div>
+    </div>`;
+
+    const totalSymptomCount = globalUniqueSymptoms.length;
+    const habitCount = globalUniqueHabits.length;
+    const adjustmentScores = calculateAdjustmentScores();
+    lastAdjustmentScores = adjustmentScores;
+    const adjustmentLabels = Object.keys(adjustmentScores);
+    const adjustmentData = Object.values(adjustmentScores);
+
+    const canvasEl = document.getElementById('healthBarChart');
+    const ctx = canvasEl?.getContext('2d');
+    if (ctx) {
+      if (windowHealthChart) { windowHealthChart.destroy(); windowHealthChart = null; }
+      if (totalSymptomCount === 0 && habitCount === 0) {
+        canvasEl.parentNode.innerHTML = '<p class="text-center text-gray-500 py-10">未選擇任何症狀或習慣，暫無法生成調理方向圖</p><canvas id="healthBarChart" class="hidden"></canvas>';
+      } else {
+        requestAnimationFrame(() => {
+          const grad = ctx.createLinearGradient(0, 0, 0, 320);
+          grad.addColorStop(0, 'rgba(22, 93, 255, 0.30)');
+          grad.addColorStop(1, 'rgba(18, 185, 129, 0.18)');
+          windowHealthChart = new Chart(ctx, {
+            type: 'radar',
+            data: {
+              labels: adjustmentLabels,
+              datasets: [
+                {
+                  label: '您的調理得分',
+                  data: adjustmentData,
+                  backgroundColor: grad,
+                  borderColor: '#165DFF',
+                  borderWidth: 2.5,
+                  pointBackgroundColor: adjustmentData.map(s => s < 30 ? '#FF5630' : s < 60 ? '#FF7D00' : '#12b981'),
+                  pointBorderColor: '#fff',
+                  pointBorderWidth: 2,
+                  pointRadius: 5,
+                  pointHoverRadius: 7,
+                  order: 1
+                },
+                {
+                  label: '調理警戒線 (60分)',
+                  data: adjustmentLabels.map(() => 60),
+                  backgroundColor: 'rgba(0,0,0,0)',
+                  borderColor: 'rgba(255, 125, 0, 0.55)',
+                  borderWidth: 1.5,
+                  borderDash: [5, 4],
+                  pointRadius: 0,
+                  fill: false,
+                  order: 2
+                }
+              ]
+            },
+            options: {
+              responsive: true, maintainAspectRatio: false,
+              layout: { padding: 6 },
+              scales: { r: {
+                min: 0, max: 100,
+                angleLines: { color: 'rgba(22,93,255,0.10)' },
+                grid: { color: 'rgba(22,93,255,0.10)' },
+                pointLabels: { font: { size: 13, weight: 'bold' }, color: '#334155', padding: 12 },
+                ticks: { display: true, backdropColor: 'transparent', color: '#aab', stepSize: 20, font: { size: 10 } }
+              } },
+              plugins: {
+                legend: { position: 'top', labels: { font: { size: 12 }, padding: 16, usePointStyle: true, pointStyleWidth: 12 } },
+                tooltip: { callbacks: { label: function(c) { if (c.datasetIndex === 1) return '警戒線 60 分'; const dir = adjustmentLabels[c.dataIndex]; const s = adjustmentData[c.dataIndex]; const tip = s < 30 ? '（急需重點調理）' : s < 60 ? '（建議加強調理）' : '（狀態良好）'; return `${dir}：${s}分 ${tip}`; } } },
+                title: { display: true, text: '七大調理方向｜分數越低越需要優先調理', font: { size: 14, weight: 'bold' }, color: '#1f2a44', padding: { bottom: 16 } }
+              },
+              elements: { line: { tension: 0.15 } }
+            }
+          });
+        });
+      }
+    }
+
+    if (window.__ybAnimateCount) {
+      window.__ybAnimateCount(document.getElementById('symptomCount'), totalSymptomCount, ' 項症狀');
+      window.__ybAnimateCount(document.getElementById('habitCount'), habitCount, ' 項不良習慣');
+    } else {
+      document.getElementById('symptomCount').textContent = `${totalSymptomCount} 項症狀`;
+      document.getElementById('habitCount').textContent = `${habitCount} 項不良習慣`;
+    }
+    document.getElementById('symptomScoreBar').style.width = `${Math.min(100, (totalSymptomCount / 50) * 100)}%`;
+    document.getElementById('habitScoreBar').style.width = `${Math.min(100, (habitCount / 20) * 100)}%`;
+
+    const isFemale = gender === '女';
+    function countSymptomCategories() { const count = {}; Object.values(SYMPTOM_DATA).forEach(grp => { count[grp.label] = globalUniqueSymptoms.filter(s => grp.items.includes(s)).length; }); return count; }
+
+    let mainConcern = document.getElementById('mainConcern').value.trim();
+    if (!mainConcern && totalSymptomCount > 0) { const c = countSymptomCategories(); const top = Object.entries(c).sort((a,b) => b[1]-a[1])[0]?.[0] || '全身不適'; mainConcern = `${top}（${globalUniqueSymptoms.slice(0,3).join('、')}...）`; }
+    else if (!mainConcern) mainConcern = '未明確說明';
+    mainConcern = escapeHtml(mainConcern);
+
+    const symptomDuration = escapeHtml(document.getElementById('symptomDuration').value || '未說明');
+    const possibleCauses = escapeHtml(document.getElementById('possibleCauses')?.value?.trim() || '');
+    const allergyHistoryValue = escapeHtml(document.querySelector('input[name="allergyHistory"]:checked')?.value || '未選擇');
+    const allergyDetails = escapeHtml(document.getElementById('allergyDetails')?.value || '未填寫');
+    const medicalHistoryValue = escapeHtml(document.querySelector('input[name="medicalHistory"]:checked')?.value || '未選擇');
+    const medicalDetails = escapeHtml(document.getElementById('medicalDetails')?.value || '未填寫');
+
+    let symptomsHtml = '';
+    const shareSymptomGroups = [];
+    Object.values(SYMPTOM_DATA).forEach(grp => {
+      if (!isFemale && grp.label === '女性症狀') return;
+      const cat = globalUniqueSymptoms.filter(s => grp.items.includes(s));
+      if (cat.length > 0) {
+        symptomsHtml += `<div class="mt-2"><p class="text-sm font-medium">${grp.label}：</p><p class="text-sm ml-4">${cat.map(escapeHtml).join('、')}</p></div>`;
+        shareSymptomGroups.push({ label: grp.label, items: cat.slice() });
+      }
+    });
+
+    const medicalHistoryHtml = `<div class="mt-3"><p class="text-sm font-medium">過敏史：${allergyHistoryValue}</p><p class="text-sm ml-4">詳情：${allergyDetails}</p></div><div class="mt-2"><p class="text-sm font-medium">既往病史/手術史：${medicalHistoryValue}</p><p class="text-sm ml-4">詳情：${medicalDetails}</p></div>`;
+    const possibleCausesHtml = possibleCauses ? `<p class="mb-3"><strong>可能原因及治療經歷：</strong> ${possibleCauses}</p>` : '';
+
+    let habitsHtml = '';
+    if (habitCount > 0) {
+      habitsHtml = `<div class="mt-4"><h3 class="text-base font-semibold mb-2 text-primary">不良生活習慣</h3><div class="grid grid-cols-1 md:grid-cols-2 gap-2">`;
+      Object.values(HABIT_DATA).forEach(grp => { const sel = globalUniqueHabits.filter(h => grp.items.includes(h)); if (sel.length > 0) habitsHtml += `<div class="p-3 border border-gray-100 rounded-lg"><p class="text-sm font-medium mb-1">${grp.label}：</p><p class="text-sm">${sel.map(escapeHtml).join('、')}</p></div>`; });
+      habitsHtml += `</div></div>`;
+    } else habitsHtml = `<div class="mt-4 text-gray-500"><p><strong>不良生活習慣：</strong>未選擇任何不良習慣</p></div>`;
+
+    document.getElementById('mainHealthIssues').innerHTML = `<div class="bg-white p-4 rounded-lg border border-gray-100 shadow-sm"><h3 class="text-lg font-semibold mb-4 text-primary">主要健康問題</h3><p class="mb-3"><strong>主要關注問題：</strong> ${mainConcern}</p><p class="mb-3"><strong>症狀持續時間：</strong> ${symptomDuration}</p>${possibleCausesHtml}${medicalHistoryHtml}${totalSymptomCount > 0 ? `<div class="mt-3"><strong>詳細症狀：</strong>${symptomsHtml}</div>` : `<div class="mt-3 text-gray-500"><strong>詳細症狀：</strong>未選擇任何症狀</div>`}${habitsHtml}</div>`;
+
+    const shareHabitGroups = [];
+    Object.values(HABIT_DATA).forEach(grp => { const sel = globalUniqueHabits.filter(h => grp.items.includes(h)); if (sel.length > 0) shareHabitGroups.push({ label: grp.label, items: sel.slice() }); });
+
+    renderAiEvaluation();
+    renderRecommendations(adjustmentScores);
+
+    // 儲存完整資料，截圖前再組合分享卡片（確保圖表與 AI 都已就緒）
+    lastResultData = {
+      name, dateStr: formatToday(),
+      symptomCount: totalSymptomCount, habitCount,
+      scores: adjustmentScores,
+      mainConcern, symptomDuration,
+      allergy: `${allergyHistoryValue}${allergyDetails && allergyDetails !== '未填寫' ? '（' + allergyDetails + '）' : ''}`,
+      medical: `${medicalHistoryValue}${medicalDetails && medicalDetails !== '未填寫' ? '（' + medicalDetails + '）' : ''}`,
+      symptomGroups: shareSymptomGroups,
+      habitGroups: shareHabitGroups
+    };
+    buildShareCard(lastResultData);
+  }
+
+  function formatToday() { const d = new Date(); return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`; }
+
+  // ★ 離屏渲染分享用雷達圖：固定尺寸＋關閉動畫＋關閉響應式，
+  //   同步繪製完成後直接輸出 dataURL，任何裝置、任何頁面狀態都穩定
+  function makeShareChartDataUrl(scores) {
+    try {
+      const labels = Object.keys(scores);
+      const values = Object.values(scores);
+      const W = 720, H = 540;
+      const off = document.createElement('canvas');
+      off.width = W; off.height = H;
+      const octx = off.getContext('2d');
+
+      const grad = octx.createLinearGradient(0, 0, 0, H);
+      grad.addColorStop(0, 'rgba(22, 93, 255, 0.30)');
+      grad.addColorStop(1, 'rgba(18, 185, 129, 0.18)');
+
+      const tmp = new Chart(octx, {
+        type: 'radar',
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: '您的調理得分',
+              data: values,
+              backgroundColor: grad,
+              borderColor: '#165DFF',
+              borderWidth: 3,
+              pointBackgroundColor: values.map(s => s < 30 ? '#FF5630' : s < 60 ? '#FF7D00' : '#12b981'),
+              pointBorderColor: '#fff',
+              pointBorderWidth: 2,
+              pointRadius: 6,
+              order: 1
+            },
+            {
+              label: '調理警戒線 (60分)',
+              data: labels.map(() => 60),
+              backgroundColor: 'rgba(0,0,0,0)',
+              borderColor: 'rgba(255, 125, 0, 0.6)',
+              borderWidth: 2,
+              borderDash: [6, 5],
+              pointRadius: 0,
+              fill: false,
+              order: 2
+            }
+          ]
+        },
+        options: {
+          responsive: false,          // 關鍵：不依賴容器尺寸
+          animation: false,           // 關鍵：同步繪製，立即可輸出
+          devicePixelRatio: 2,        // 高解析輸出
+          layout: { padding: 14 },
+          scales: { r: {
+            min: 0, max: 100,
+            angleLines: { color: 'rgba(22,93,255,0.12)' },
+            grid: { color: 'rgba(22,93,255,0.12)' },
+            pointLabels: { font: { size: 17, weight: 'bold', family: "'Noto Sans TC', sans-serif" }, color: '#334155', padding: 14 },
+            ticks: { display: true, backdropColor: 'transparent', color: '#9aa3b2', stepSize: 20, font: { size: 12 } }
+          } },
+          plugins: {
+            legend: { position: 'top', labels: { font: { size: 14, family: "'Noto Sans TC', sans-serif" }, padding: 18, usePointStyle: true, pointStyleWidth: 14 } },
+            tooltip: { enabled: false },
+            title: { display: false }
+          },
+          elements: { line: { tension: 0.15 } }
+        }
+      });
+
+      const url = off.toDataURL('image/png');
+      tmp.destroy();
+      return url;
+    } catch (e) {
+      console.warn('分享雷達圖渲染失敗:', e);
+      return '';
+    }
+  }
+
+  // ★ 建立「七大調理方向」獨立知識卡（第二張分享圖）
+  function buildGuideCard() {
+    const colors = ['#165DFF','#0ea5e9','#8b5cf6','#e11d8f','#f59e0b','#12b981','#FF7D00'];
+    let rows = '';
+    SEVEN_DIRECTIONS.forEach((d, i) => {
+      rows += `
+      <div class="yb-g-row">
+        <div class="yb-g-badge" style="background:linear-gradient(135deg,${colors[i]},${colors[i]}cc)"><i class="fa ${d.icon}"></i></div>
+        <div>
+          <div class="yb-g-t">${d.n} ${d.t}<span class="sub">${d.sub}</span></div>
+          <div class="yb-g-story">${d.story}</div>
+          <div class="yb-g-rule">💡 ${d.rule}</div>
+        </div>
+      </div>`;
+    });
+    document.getElementById('guideCard').innerHTML = `
+      <div class="yb-g-head">
+        <div class="yb-g-brand">YB · 健康觀念</div>
+        <div class="yb-g-title">七大調理方向<br>找到健康的根本邏輯</div>
+        <div class="yb-g-sub">大病的早期是小病，小病的早期是症狀</div>
+      </div>
+      ${rows}
+      <div class="yb-sc-sec" style="border-top:none;">
+        <div class="yb-sc-motto" style="margin:0;">體質定內環境 · 免疫築防線 · 毒素要平衡<br>循環需暢通 · 營養補原料 · 內分泌守規律 · 習慣減負擔</div>
+      </div>
+      <div class="yb-sc-foot">
+        <div class="qr"><i class="fa fa-heartbeat" style="color:#165DFF"></i> 彥彬 健康自檢系統</div>
+        <div class="tag">好習慣 ＋ 時間 = 健康</div>
+      </div>
+      <div class="yb-sc-disclaimer">＊本卡片僅為健康觀念分享，不能替代專業醫療診斷</div>
+    `;
+  }
+
+  // ★ 建立完整質感分享卡片（概覽＋雷達圖＋主要問題＋AI評估）
+  function buildShareCard(data) {
+    if (!data) return;
+    const { name, dateStr, symptomCount, habitCount, scores, mainConcern, symptomDuration, allergy, medical, symptomGroups = [], habitGroups = [] } = data;
+
+    // 優先調理方向：一律列出最需要調理的（分數最低）方向，帶分數與嚴重度顏色
+    const sortedDirs = Object.entries(scores).sort((a, b) => a[1] - b[1]);
+    const sevClass = (s) => s < 30 ? 'lv3' : s < 60 ? 'lv2' : 'lv1';
+    const sevText = (s) => s < 30 ? '急需' : s < 60 ? '加強' : '良好';
+    const priorityDirs = sortedDirs.slice(0, 4);
+    const tagHtml = priorityDirs.map(([d, s]) =>
+      `<span class="yb-sc-tag ${sevClass(s)}">${escapeHtml(d)} <b>${s}</b><small>${sevText(s)}</small></span>`
+    ).join('');
+    const focusTitle = `<i class="fa fa-bullseye" style="color:#FF7D00"></i> 優先調理方向`;
+
+    // 進度條百分比
+    const symPct = Math.min(100, (symptomCount / 50) * 100);
+    const habPct = Math.min(100, (habitCount / 20) * 100);
+
+    // 雷達圖：以「離屏專屬畫布」重新渲染（固定尺寸、關閉動畫），
+    // 不再依賴頁面圖表狀態——修正結果區隱藏時畫布為 0 導致分享圖上圖表空白的問題
+    let chartHtml = '';
+    if ((symptomCount > 0 || habitCount > 0) && typeof Chart !== 'undefined') {
+      const imgData = makeShareChartDataUrl(scores);
+      if (imgData) chartHtml = `<div class="yb-sc-chart"><img src="${imgData}" width="480" alt="健康風險分布雷達圖"><div class="cap">＊警戒線 60 分以下建議優先調理</div></div>`;
+    }
+    if (!chartHtml) chartHtml = `<div class="yb-sc-chart" style="padding:26px 10px;color:#8a93a3;font-size:13px;">未勾選症狀與習慣，暫無風險分布圖</div>`;
+
+    // 詳細症狀（精簡版）：每類一張小卡，最多預覽 6 項，其餘以「等 N 項」收斂，避免圖片過長
+    const catColors = ['#165DFF','#12b981','#FF7D00','#8b5cf6','#e11d8f','#0ea5e9','#f59e0b','#14b8a6','#ef4444','#6366f1'];
+    const PREVIEW_MAX = 6;
+    let symGroupHtml = '';
+    if (symptomGroups.length > 0) {
+      symGroupHtml = '<div class="yb-symcards">' + symptomGroups.map((g, i) => {
+        const c = catColors[i % catColors.length];
+        const items = g.items || [];
+        const shown = items.slice(0, PREVIEW_MAX).map(escapeHtml).join('、');
+        const rest = items.length > PREVIEW_MAX ? `<span class="more">…等 ${items.length} 項</span>` : '';
+        return `<div class="yb-symcard" style="border-left-color:${c}"><div class="gl"><span class="dot" style="background:${c}"></span>${escapeHtml(g.label)}<span class="cnt">${items.length}</span></div><div class="gi">${shown}${rest}</div></div>`;
+      }).join('') + '</div>';
+    } else {
+      symGroupHtml = '<div class="gi" style="color:#8a93a3">未勾選任何症狀</div>';
+    }
+
+    // 不良習慣（改回精簡版）：分類＋數量的膠囊列，不逐項展開
+    let habGroupHtml = '';
+    if (habitGroups.length > 0) {
+      habGroupHtml = '<div class="yb-sc-tags">' + habitGroups.map(g =>
+        `<span class="yb-sc-tag lv2">${escapeHtml(g.label)} <b>${(g.items || []).length}</b><small>項</small></span>`
+      ).join('') + '</div>';
+    } else {
+      habGroupHtml = '<div class="gi" style="color:#8a93a3">未勾選任何不良習慣</div>';
+    }
+
+    // AI 評估
+    let aiHtml = '';
+    if (globalAiComment && globalAiComment.trim()) {
+      const paras = globalAiComment.split('\n').filter(p => p.trim()).map(p => `<p>${escapeHtml(p)}</p>`).join('');
+      aiHtml = `<div class="yb-sc-sec"><div class="yb-sc-sec-h"><span class="ic"><i class="fa fa-magic"></i></span>AI 健康評估</div><div class="yb-ai-box"><span class="yb-ai-tag"><i class="fa fa-robot"></i> 彥彬 AI 顧問</span>${paras}</div></div>`;
+    }
+
+    document.getElementById('shareCard').innerHTML = `
+      <div class="yb-sc-head">
+        <div class="yb-sc-brand">YB · 健康自檢報告</div>
+        <div class="yb-sc-title">『 ${escapeHtml(name)} 』的健康評估結果</div>
+        <div class="yb-sc-sub"><i class="fa fa-calendar" style="opacity:.9"></i>&nbsp; 自檢日期 ${escapeHtml(dateStr)}</div>
+      </div>
+
+      <div class="yb-sc-sec" style="border-top:none;">
+        <div class="yb-sc-sec-h"><span class="ic"><i class="fa fa-heartbeat"></i></span>健康狀況概覽</div>
+        <div class="yb-sc-stats" style="margin-bottom:16px;">
+          <div class="yb-sc-stat"><div class="n">${symptomCount}</div><div class="l">項身體症狀</div></div>
+          <div class="yb-sc-stat"><div class="n warn">${habitCount}</div><div class="l">項不良習慣</div></div>
+        </div>
+        <div class="yb-sc-bars">
+          <div class="yb-bar-row">
+            <div class="yb-bar-top"><span>症狀程度</span><b>${symptomCount} 項</b></div>
+            <div class="yb-bar-track"><div class="yb-bar-fill sym" style="width:${symPct}%"></div></div>
+          </div>
+          <div class="yb-bar-row">
+            <div class="yb-bar-top"><span>不良習慣負擔</span><b>${habitCount} 項</b></div>
+            <div class="yb-bar-track"><div class="yb-bar-fill hab" style="width:${habPct}%"></div></div>
+          </div>
+        </div>
+        <div class="yb-sc-section-t" style="margin-top:16px;">${focusTitle}</div>
+        <div class="yb-sc-tags">${tagHtml}</div>
+      </div>
+
+      <div class="yb-sc-sec">
+        <div class="yb-sc-sec-h"><span class="ic"><i class="fa fa-bar-chart"></i></span>健康風險分布</div>
+        ${chartHtml}
+      </div>
+
+      <div class="yb-sc-sec">
+        <div class="yb-sc-sec-h"><span class="ic"><i class="fa fa-clipboard"></i></span>主要健康問題</div>
+        <div class="yb-kv"><span class="k">主要關注</span><span class="v">${mainConcern || '未說明'}</span></div>
+        <div class="yb-kv"><span class="k">持續時間</span><span class="v">${symptomDuration || '未說明'}</span></div>
+        <div class="yb-kv"><span class="k">過敏史</span><span class="v">${allergy || '未選擇'}</span></div>
+        <div class="yb-kv"><span class="k">既往病史</span><span class="v">${medical || '未選擇'}</span></div>
+        <div class="yb-sub-h"><i class="fa fa-stethoscope" style="color:#165DFF"></i> 詳細症狀（共 ${symptomCount} 項）</div>
+        ${symGroupHtml}
+        <div class="yb-sub-h" style="margin-top:14px;"><i class="fa fa-balance-scale" style="color:#FF7D00"></i> 不良生活習慣（共 ${habitCount} 項）</div>
+        ${habGroupHtml}
+      </div>
+
+      ${aiHtml}
+
+      <div class="yb-sc-sec">
+        <div class="yb-sc-motto" style="margin:0;">體質定內環境 · 免疫築防線 · 毒素要平衡<br>循環需暢通 · 營養補原料 · 內分泌守規律 · 習慣減負擔</div>
+      </div>
+
+      <div class="yb-sc-foot">
+        <div class="qr"><i class="fa fa-heartbeat" style="color:#165DFF"></i> 彥彬 健康自檢系統</div>
+        <div class="tag">好習慣 ＋ 時間 = 健康</div>
+      </div>
+      <div class="yb-sc-disclaimer">＊本報告僅為健康參考，不能替代專業醫療診斷</div>
+    `;
+  }
+
+  // ★ 七大調理方向：故事精簡升級（單一資料來源，頁面與知識卡共用）
+  const SEVEN_DIRECTIONS = [
+    { n:'①', icon:'fa-home',          t:'體質',     sub:'健康的基礎土壤',
+      story:'體質像房子的內環境——潮濕的屋子，木頭反覆發霉、鐵器反覆生鏽。只擦掉霉斑、不除潮氣，問題遲早再來。',
+      rule:'先改善內環境，症狀才不會一再重演。', link:'[替換為體質相關影片連結]' },
+    { n:'②', icon:'fa-shield',        t:'免疫',     sub:'身體的常駐軍隊',
+      story:'骨髓招募士兵、胸腺負責訓練、淋巴把守關卡、白血球衝鋒前線——一支軍隊日夜守護著你。',
+      rule:'平時把軍隊養強，勝過生病才救火。', link:'[替換為免疫相關影片連結]' },
+    { n:'③', icon:'fa-filter',        t:'毒素',     sub:'體內的堆積垃圾',
+      story:'毒素像蓄水池裡的髒水——進得多、排得少，或排水口被堵住，就會越積越深。',
+      rule:'管住入口、暢通出口，進出平衡才乾淨。', link:'[替換為毒素相關影片連結]' },
+    { n:'④', icon:'fa-random',        t:'循環',     sub:'全身的運輸網絡',
+      story:'微循環是身體的小馬路：送營養進來、載廢物出去。寒濕與垃圾一多，馬路堵車，養分進不去、廢物出不來。',
+      rule:'路通了，營養與代謝才跑得動。', link:'[替換為循環相關影片連結]' },
+    { n:'⑤', icon:'fa-cubes',         t:'營養',     sub:'運轉的建材原料',
+      story:'土坯屋和鋼筋水泥屋，穩固度天差地別。人體需要至少 60 種礦物質——缺了關鍵建材，維生素也無用武之地。',
+      rule:'原料齊全足量，身體才蓋得穩。', link:'[替換為營養相關影片連結]' },
+    { n:'⑥', icon:'fa-clock-o',       t:'內分泌',   sub:'全身的規律指揮',
+      story:'腦下垂體是總司令、松果體管作息時鐘、甲狀腺盯代謝快慢——八大腺體按表操課，一個亂了節奏，全局跟著亂。',
+      rule:'順著身體的節奏走，指揮系統才穩。', link:'[替換為內分泌相關影片連結]' },
+    { n:'⑦', icon:'fa-balance-scale', t:'生活習慣', sub:'板凳的承重極限',
+      story:'身體像一張能承重一百塊磚的板凳：熬夜、喝酒、久坐都是往上疊磚。疊滿了，再放一支手機都可能壓垮。',
+      rule:'少疊一塊磚，就多留一分餘裕。', link:'[替換為生活習慣相關影片連結]' }
+  ];
+
+  function renderRecommendations(adjustmentScores) {
+    const recommendationsContainer = document.getElementById('healthRecommendations');
+    if (!recommendationsContainer) return;
+    const lowScoreDirections = Object.entries(adjustmentScores).filter(([, s]) => s < 60).sort((a, b) => a[1] - b[1]).map(([d]) => d);
+    let html = '';
+    if (lowScoreDirections.length > 0) html += `<p class="text-sm font-medium text-primary mb-3">🔴 需重點調理方向：${lowScoreDirections.join('、')}</p>`;
+
+    html += `<div class="health-guidance mt-4"><div class="yb-dir-list">`;
+    SEVEN_DIRECTIONS.forEach(d => {
+      html += `
+      <div class="yb-dir-row">
+        <div class="yb-dir-badge"><i class="fa ${d.icon}"></i></div>
+        <div class="yb-dir-body">
+          <div class="yb-dir-title">${d.n} ${d.t}<span class="sub">${d.sub}</span>
+            <a href="${d.link}" target="_blank" rel="noopener" class="vid">📺 影片</a>
+          </div>
+          <p class="yb-dir-story">${d.story}</p>
+          <p class="yb-dir-rule"><i class="fa fa-lightbulb-o"></i> ${d.rule}</p>
+        </div>
+      </div>`;
+    });
+    html += `</div>
+      <div class="mt-4 text-sm text-neutral-dark/70 text-center p-3 bg-blue-50 rounded-lg">七大調理邏輯：<br>體質定內環境，免疫築防線，<br>毒素要平衡，循環需暢通，<br>營養補原料，內分泌守規律，<br>習慣減負擔，共護身體穩！</div>
+    </div>`;
+
+    recommendationsContainer.innerHTML = html;
+  }
+
+  // ★ 下載/分享：改為截「短版分享卡片」而非整頁長圖
+  async function handleImageDownload() {
+    let progressIndicator = null;
+    const shareCard = document.getElementById('shareCard');
+    const shareWrap = document.getElementById('shareCardWrap');
+    try {
+      downloadReportBtn.disabled = true;
+      downloadReportBtn.innerHTML = '<i class="fa fa-spinner fa-spin mr-2"></i> 準備中...';
+      progressIndicator = createProgressIndicator();
+      document.body.appendChild(progressIndicator);
+
+      if (typeof html2canvas === 'undefined') throw new Error('圖片處理庫未加載，請刷新頁面重試');
+      if (!lastResultData) throw new Error('請先完成評估再產生卡片');
+
+      updateProgress(progressIndicator, 25, '組合完整報告...');
+      buildShareCard(lastResultData); // 以最新的雷達圖與 AI 評語重建卡片
+      if (!shareCard || !shareCard.innerHTML.trim()) throw new Error('分享卡片尚未生成，請先完成評估');
+
+      updateProgress(progressIndicator, 40, '產生質感長圖...');
+
+      // 讓卡片可被截圖（暫時挪到可視範圍外但可渲染）
+      shareWrap.style.left = '0px';
+      shareWrap.style.top = '0px';
+      shareWrap.style.opacity = '0';
+      shareWrap.style.pointerEvents = 'none';
+
+      await new Promise(r => setTimeout(r, 120)); // 等字型/圖片/排版穩定
+
+      // 確保卡片內的雷達圖圖片已解碼完成
+      const cardImg = shareCard.querySelector('img');
+      if (cardImg && !cardImg.complete) {
+        await new Promise(res => { cardImg.onload = res; cardImg.onerror = res; setTimeout(res, 1500); });
+      }
+
+      // 依卡片實際高度計算安全縮放倍率，避免超過手機瀏覽器畫布上限（底部被截斷）
+      const cardH = shareCard.offsetHeight;
+      const MAX_CANVAS_PX = 12000; // 安全上限
+      let baseScale = isTablet ? TABLET_CANVAS_SCALE : Math.min(window.devicePixelRatio || 2, 3);
+      const safeScale = Math.max(1, Math.min(baseScale, MAX_CANVAS_PX / cardH));
+
+      const canvas = await html2canvas(shareCard, {
+        useCORS: true, allowTaint: false, backgroundColor: '#ffffff',
+        scale: safeScale,
+        logging: false, width: shareCard.offsetWidth, height: cardH,
+        windowWidth: shareCard.offsetWidth, windowHeight: cardH
+      });
+
+      // 還原卡片位置
+      shareWrap.style.left = '-10000px';
+      shareWrap.style.opacity = '';
+      shareWrap.style.pointerEvents = '';
+
+      updateProgress(progressIndicator, 55, '產生七大方向知識卡...');
+
+      // ★ 第二張：七大調理方向知識卡
+      const guideWrap = document.getElementById('guideCardWrap');
+      const guideCard = document.getElementById('guideCard');
+      buildGuideCard();
+      guideWrap.style.left = '0px'; guideWrap.style.top = '0px';
+      guideWrap.style.opacity = '0'; guideWrap.style.pointerEvents = 'none';
+      await new Promise(r => setTimeout(r, 80));
+      const gH = guideCard.offsetHeight;
+      const gScale = Math.max(1, Math.min(baseScale, MAX_CANVAS_PX / gH));
+      const guideCanvas = await html2canvas(guideCard, {
+        useCORS: true, allowTaint: false, backgroundColor: '#ffffff',
+        scale: gScale, logging: false,
+        width: guideCard.offsetWidth, height: gH,
+        windowWidth: guideCard.offsetWidth, windowHeight: gH
+      });
+      guideWrap.style.left = '-10000px'; guideWrap.style.opacity = ''; guideWrap.style.pointerEvents = '';
+
+      updateProgress(progressIndicator, 68, '轉檔中...');
+
+      const userName = document.getElementById('name').value.trim() || '未知用戶';
+      const d = new Date();
+      const formattedDate = `${d.getFullYear()}年${String(d.getMonth()+1).padStart(2,'0')}月${String(d.getDate()).padStart(2,'0')}日`;
+      localImageName = `${userName}_健康自檢卡片_${formattedDate}.jpg`;
+      guideImageName = `七大調理方向_知識卡.jpg`;
+
+      const quality = isTablet ? 0.85 : 0.92;
+      localImageBlob = await new Promise((resolve, reject) => { canvas.toBlob(b => b ? resolve(b) : reject(new Error('圖片生成失敗')), 'image/jpeg', quality); });
+      guideImageBlob = await new Promise((resolve) => { guideCanvas.toBlob(b => resolve(b || null), 'image/jpeg', quality); });
+
+      updateProgress(progressIndicator, 80, '上傳與保存...');
+
+      const tasks = [ saveToGallery(localImageBlob, localImageName), uploadToImgBB(localImageBlob, localImageName) ];
+      if (guideImageBlob) tasks.push(saveToGallery(guideImageBlob, guideImageName));
+      const [saveResult, uploadResult] = await Promise.allSettled(tasks);
+
+      if (uploadResult.status === 'fulfilled' && uploadResult.value) {
+        imgbbImageUrl = uploadResult.value.url; imgbbDeleteUrl = uploadResult.value.deleteUrl;
+        submitToGoogleSheets().catch(err => console.log('更新圖片URL失敗:', err));
+      } else if (uploadResult.status === 'rejected') {
+        console.warn('圖片上傳失敗:', uploadResult.reason);
+        showToast('卡片已保存到本地，但上傳伺服器失敗', 'warning');
+      }
+      if (saveResult.status === 'rejected') throw new Error(`保存圖片失敗: ${saveResult.reason.message}`);
+
+      updateProgress(progressIndicator, 100, '完成！');
+      document.body.removeChild(progressIndicator); progressIndicator = null;
+      downloadReportBtn.disabled = false;
+      downloadReportBtn.innerHTML = '<i class="fa fa-download mr-2"></i> 重新產生卡片';
+      showToast(`已保存 2 張卡片：\n① 健康自檢報告\n② 七大調理方向知識卡`);
+      showSingleShareButton(userName, formattedDate);
+
+    } catch (error) {
+      console.error('圖片處理失敗：', error);
+      shareWrap.style.left = '-10000px'; shareWrap.style.opacity = ''; shareWrap.style.pointerEvents = '';
+      const gw = document.getElementById('guideCardWrap');
+      if (gw) { gw.style.left = '-10000px'; gw.style.opacity = ''; gw.style.pointerEvents = ''; }
+      if (progressIndicator && document.body.contains(progressIndicator)) document.body.removeChild(progressIndicator);
+      downloadReportBtn.disabled = false;
+      downloadReportBtn.innerHTML = '<i class="fa fa-download mr-2"></i> 下載分享卡片';
+      showToast(`操作失敗：${error.message}`, 'error');
+    }
+  }
+
+  async function uploadToImgBB(blob, fileName) {
+    try {
+      if (!IMGBB_API_KEY || IMGBB_API_KEY.trim() === '') throw new Error('ImgBB API密鑰未配置');
+      const base64Image = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => { if (typeof reader.result === 'string') { const b64 = reader.result.split(',')[1]; b64 ? resolve(b64) : reject(new Error('轉換Base64失敗')); } else reject(new Error('圖片讀取結果無效')); };
+        reader.onerror = () => reject(new Error('讀取圖片時發生錯誤'));
+        reader.readAsDataURL(blob);
+      });
+      const formData = new FormData();
+      formData.append('key', IMGBB_API_KEY); formData.append('image', base64Image); formData.append('name', fileName);
+      if (isMobile || isTablet) formData.append('expiration', '2592000'); // 分享圖保留30天
+      const timeout = isTablet ? REQUEST_TIMEOUT * 2 : REQUEST_TIMEOUT;
+      let uploadResponse;
+      if (isTablet) {
+        uploadResponse = await new Promise((resolve, reject) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open('POST', IMGBB_UPLOAD_URL, true); xhr.timeout = timeout;
+          xhr.onload = function() { if (xhr.status >= 200 && xhr.status < 300) { try { resolve(JSON.parse(xhr.responseText)); } catch (e) { reject(new Error('解析響應失敗: ' + e.message)); } } else reject(new Error(`請求失敗: 狀態碼 ${xhr.status}`)); };
+          xhr.ontimeout = () => reject(new Error('請求超時')); xhr.onerror = () => reject(new Error('網絡錯誤'));
+          xhr.send(formData);
+        });
+      } else {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), timeout);
+        const response = await fetch(IMGBB_UPLOAD_URL, { method: 'POST', body: formData, signal: controller.signal, headers: { 'Accept': 'application/json' } });
+        clearTimeout(timeoutId);
+        if (!response.ok) throw new Error(`上傳失敗 (HTTP ${response.status})`);
+        uploadResponse = await response.json();
+      }
+      if (!uploadResponse || typeof uploadResponse !== 'object') throw new Error('ImgBB返回無效的響應格式');
+      if (!uploadResponse.success) throw new Error(`ImgBB上傳失敗: ${uploadResponse.error?.message || '未知錯誤'}`);
+      if (!uploadResponse.data?.url || !uploadResponse.data?.delete_url) throw new Error('ImgBB返回缺少必要URL');
+      return { url: uploadResponse.data.url, deleteUrl: uploadResponse.data.delete_url };
+    } catch (error) {
+      console.warn('ImgBB上傳失敗:', error);
+      if (error.name === 'AbortError') throw new Error('圖片上傳超時，請檢查網絡後重試');
+      throw error;
+    }
+  }
+
+  function createProgressIndicator() {
+    const indicator = document.createElement('div');
+    indicator.id = 'progressIndicator';
+    indicator.style.cssText = `position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(255, 255, 255, 0.97); padding: 25px; border-radius: 16px; box-shadow: 0 5px 25px rgba(0, 0, 0, 0.15); z-index: 100002; display: flex; flex-direction: column; align-items: center; min-width: 280px;`;
+    const pc = document.createElement('div'); pc.style.cssText = `width: 100%; height: 6px; background: #f0f0f0; border-radius: 3px; margin: 15px 0; overflow: hidden;`;
+    const pb = document.createElement('div'); pb.id = 'progressBar'; pb.style.cssText = `height: 100%; background: #165DFF; width: 0%; transition: width 0.3s ease;`; pc.appendChild(pb);
+    const st = document.createElement('div'); st.id = 'progressStatus'; st.style.cssText = `color: #333; font-size: 15px; text-align: center; margin-top: 10px;`; st.textContent = '準備中...';
+    const sp = document.createElement('i'); sp.className = 'fa fa-circle-o-notch fa-spin'; sp.style.cssText = 'font-size: 30px; color: #165DFF;';
+    indicator.appendChild(sp); indicator.appendChild(pc); indicator.appendChild(st);
+    return indicator;
+  }
+  function updateProgress(indicator, percent, text) { const b = indicator.querySelector('#progressBar'); const s = indicator.querySelector('#progressStatus'); if (b) b.style.width = `${percent}%`; if (s) s.textContent = text; }
+
+  function saveToGallery(blob, fileName) {
+    if (isTablet || isIOS) {
+      return new Promise((resolve, reject) => {
+        const blobUrl = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.download = fileName; a.href = blobUrl; a.style.display = 'none'; a.target = '_blank';
+        document.body.appendChild(a);
+        try {
+          setTimeout(() => {
+            const ev = new MouseEvent('click', { view: window, bubbles: true, cancelable: true });
+            a.dispatchEvent(ev); setTimeout(() => a.dispatchEvent(ev), 500);
+            setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(blobUrl); resolve(true); }, 1500);
+          }, 300);
+        } catch (error) { document.body.removeChild(a); URL.revokeObjectURL(blobUrl); reject(error); }
+      });
+    }
+    return new Promise((resolve, reject) => {
+      if (window.showSaveFilePicker) {
+        window.showSaveFilePicker({ suggestedName: fileName, types: [{ description: '圖片文件', accept: { 'image/jpeg': ['.jpg'] } }] })
+          .then(h => h.createWritable()).then(w => w.write(blob).then(() => w.close())).then(() => resolve(true))
+          .catch(() => saveWithAnchorTag(blob, fileName, resolve, reject));
+      } else saveWithAnchorTag(blob, fileName, resolve, reject);
+    });
+  }
+  function saveWithAnchorTag(blob, fileName, resolve, reject) {
+    try {
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.download = fileName; a.href = blobUrl; a.style.display = 'none';
+      document.body.appendChild(a);
+      requestAnimationFrame(() => { a.click(); setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(blobUrl); resolve(true); }, 1000); });
+    } catch (error) { reject(error); }
+  }
+
+  // 溫度感分享文案（段落分明，品牌語氣：相信自己，找回初心）
+  function buildShareMessage(userName, date, shareUrl) {
+    const d = lastResultData || {};
+    const priority = Object.entries(lastAdjustmentScores || {}).sort((a, b) => a[1] - b[1]).slice(0, 3).map(([k, s]) => `　• ${k}（${s}分）`);
+    const divider = '━━━━━━━━━━━━━';
+    const sections = [];
+
+    sections.push(`🌱 『 ${userName} 』的健康自檢報告\n🗓️ 自檢日期：${date}`);
+
+    if (d.symptomCount != null) {
+      sections.push(`📊 健康概覽\n　身體症狀　${d.symptomCount} 項\n　不良習慣　${d.habitCount} 項`);
+    }
+
+    if (priority.length > 0) {
+      sections.push(`🎯 優先調理方向\n${priority.join('\n')}`);
+    }
+
+    sections.push(`💛 這份報告從七大方向，\n　 帶你看懂身體發出的訊號：\n　 體質 · 免疫 · 毒素 · 循環\n　 營養 · 內分泌 · 生活習慣`);
+
+    sections.push(`🌿 疾病 ＝ 壞習慣 ＋ 時間\n　 健康 ＝ 好習慣 ＋ 時間\n　 願你相信自己，找回初心`);
+
+    if (shareUrl) {
+      sections.push(`📎 完整報告圖片\n${shareUrl}`);
+    }
+
+    return sections.join(`\n\n${divider}\n\n`);
+  }
+
+  function showSingleShareButton(userName, date) {
+    const existing = document.getElementById('singleShareBtn'); if (existing) document.body.removeChild(existing);
+    const shareBtn = document.createElement('button');
+    shareBtn.id = 'singleShareBtn';
+    shareBtn.className = 'yb-btn yb-btn-line';
+    shareBtn.style.cssText = 'position: fixed; bottom: 26px; left: 50%; transform: translateX(-50%); z-index: 9999;';
+    shareBtn.innerHTML = '<i class="fa fa-comment"></i> 分享到 LINE';
+    document.body.appendChild(shareBtn);
+
+    shareBtn.addEventListener('click', async () => {
+      try {
+        if (!localImageBlob && !imgbbImageUrl) { showToast('分享資源不完整，請重新產生卡片', 'error'); return; }
+        const files = [];
+        if (localImageBlob) files.push(new File([localImageBlob], localImageName, { type: 'image/jpeg' }));
+        if (guideImageBlob) files.push(new File([guideImageBlob], guideImageName, { type: 'image/jpeg' }));
+        const shareUrl = imgbbImageUrl || '';
+        const shareText = buildShareMessage(userName, date, shareUrl);
+        if (navigator.share) {
+          shareBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> 開啟分享中…';
+          const shareData = { title: `${userName} 的健康自檢報告`, text: shareText };
+          if (files.length && navigator.canShare && navigator.canShare({ files })) shareData.files = files;
+          else if (files.length === 2 && navigator.canShare && navigator.canShare({ files: [files[0]] })) shareData.files = [files[0]];
+          else if (shareUrl) shareData.url = shareUrl;
+          await navigator.share(shareData);
+          showToast('分享成功！');
+          shareBtn.innerHTML = '<i class="fa fa-comment"></i> 分享到 LINE';
+        } else {
+          await navigator.clipboard.writeText(shareText);
+          showToast('分享文字已複製，貼到 LINE 即可 💬', 'info');
+          shareBtn.innerHTML = '<i class="fa fa-comment"></i> 分享到 LINE';
+        }
+      } catch (shareError) {
+        console.error('分享失敗:', shareError);
+        shareBtn.innerHTML = '<i class="fa fa-comment"></i> 分享到 LINE';
+        if (shareError.name !== 'AbortError') {
+          try { await navigator.clipboard.writeText(buildShareMessage(userName, date, imgbbImageUrl || '')); showToast('已改用複製方式，貼到 LINE 即可 💬', 'info'); }
+          catch (_) { showToast(`分享失敗，圖片連結：${imgbbImageUrl || '無'}`, 'error'); }
+        }
+      }
+    });
+  }
+
+  if (downloadReportBtn) downloadReportBtn.addEventListener('click', handleImageDownload);
+
+  // ============================================================
+  // 21. 頂級質感層：捲動顯現、導航陰影、數字計數
+  // ============================================================
+  const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // 自動為主要區塊掛上 reveal（不動原始 HTML 結構）
+  (function setupReveal() {
+    const targets = [];
+    document.querySelectorAll('#intro .grid > div').forEach((el, i) => { el.classList.add('reveal', `reveal-d${(i % 3) + 1}`); targets.push(el); });
+    document.querySelectorAll('#guide .space-y-8 > div').forEach((el, i) => { el.classList.add('reveal', i % 2 ? 'reveal-d2' : 'reveal-d1'); targets.push(el); });
+    document.querySelectorAll('#intro h2, #intro > .container > .max-w-3xl > p, #guide h2, #form h2, #intro .bg-primary\\/5').forEach(el => { el.classList.add('reveal'); targets.push(el); });
+    const formCard = document.querySelector('#form .bg-white.rounded-2xl');
+    if (formCard) { formCard.classList.add('reveal'); targets.push(formCard); }
+    if (prefersReduced || !('IntersectionObserver' in window)) { targets.forEach(el => el.classList.add('in')); return; }
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+    }, { threshold: 0.12, rootMargin: '0px 0px -8% 0px' });
+    targets.forEach(el => io.observe(el));
+  })();
+
+  // 導航列捲動陰影
+  const headerEl = document.querySelector('header');
+  window.addEventListener('scroll', () => {
+    headerEl.classList.toggle('yb-scrolled', window.scrollY > 8);
+  }, { passive: true });
+
+  // 數字滾動計數（結果頁統計用）
+  function animateCount(el, target, suffix) {
+    if (!el) return;
+    if (prefersReduced) { el.textContent = `${target}${suffix}`; return; }
+    const dur = 900; const start = performance.now();
+    function tick(now) {
+      const p = Math.min(1, (now - start) / dur);
+      const eased = 1 - Math.pow(1 - p, 3);
+      el.textContent = `${Math.round(target * eased)}${suffix}`;
+      if (p < 1) requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  }
+  window.__ybAnimateCount = animateCount;
+
+  renderSymptomList();
+  renderHabitList();
+  updateFormSteps();
+  updateGenderBasedUI();
 });
-}else{
-// 顯示後端返回的實際錯誤原因（如：次數已達上限）
-showError(resp.message || "用戶驗證失敗");
-resolve(null);
-}
-},
-error: function(xhr, status, error) {
-console.error("用戶驗證請求失敗：", status, error);
-if(status==='timeout'){
-showError('驗證超時，請檢查網路後重新嘗試');
-}else{
-showError('用戶驗證請求失敗，請重新整理頁面重試');
-}
-resolve(null);
-}
-});
-});
-}
-window.verifyCallback = function(resp) {
-console.log("用戶授權驗證返回：", resp);
-};
-window.submitCallback = function(resp) {
-console.log("自檢表提交返回：", resp);
-};
-// 初始化執行
-// 修正：head已載入LIFF SDK、jQuery、html2canvas，
-//   移除原版onload內的重複動態載入（避免jQuery 3.6/3.7雙版本混用）
-window.onload = function() {
-console.log('彥彬自檢表系統 前端版本：v7.0');
-if(window.liff && window.jQuery){
-initLIFF();
-}else if(!window.liff){
-showError('LIFF SDK載入失敗，請檢查網路後重新整理頁面');
-}else{
-showError('jQuery載入失敗，請檢查網路後重新整理頁面');
-}
-};
 </script>
 
 </body>
