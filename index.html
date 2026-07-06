@@ -216,6 +216,7 @@
       font-size:14px; color:#2b3547; line-height:1.8; font-weight:500; }
     .yb-ai-dirs { padding:8px 18px 4px; }
     .yb-ai-dir { display:flex; gap:12px; padding:12px 0; border-bottom:1px dashed #edf0f6; }
+    .yb-ai-dir-ice { background:linear-gradient(90deg,#fff9f0,transparent); margin:0 -18px; padding:12px 18px; border-bottom:1px dashed #f0d9a8; }
     .yb-ai-dir:last-child { border-bottom:none; }
     .yb-ai-dir-badge { flex-shrink:0; width:26px; height:26px; border-radius:9px; color:#fff; font-size:13px; font-weight:800; text-align:center; line-height:26px; }
     .yb-ai-dir-name { font-size:14px; font-weight:800; color:#1f2a44; margin-bottom:3px; }
@@ -1141,6 +1142,14 @@ document.addEventListener('DOMContentLoaded', function() {
     const parsed = parseAiComment(globalAiComment);
     if (parsed) {
       const dirColors = ['#165DFF', '#FF7D00', '#12b981'];
+      const iceHtml = parsed.icebreak ? `
+        <div class="yb-ai-dir yb-ai-dir-ice">
+          <div class="yb-ai-dir-badge" style="background:#F0A93B"><i class="fa fa-heart"></i></div>
+          <div class="yb-ai-dir-body">
+            <div class="yb-ai-dir-name">貼心話</div>
+            <p class="yb-ai-root">${escapeHtml(parsed.icebreak)}</p>
+          </div>
+        </div>` : '';
       let dirsHtml = parsed.directions.slice(0, 3).map((d, i) => `
         <div class="yb-ai-dir">
           <div class="yb-ai-dir-badge" style="background:${dirColors[i % 3]}">${i + 1}</div>
@@ -1158,9 +1167,8 @@ document.addEventListener('DOMContentLoaded', function() {
             <span class="t">AI 健康評估</span>
             <span class="badge"><i class="fa fa-robot"></i> 彥彬 AI 顧問</span>
           </div>
-          ${parsed.icebreak ? `<div class="yb-ai-ice"><i class="fa fa-quote-left"></i> ${escapeHtml(parsed.icebreak)}</div>` : ''}
           ${parsed.observation ? `<div class="yb-ai-obs">${escapeHtml(parsed.observation)}</div>` : ''}
-          ${dirsHtml ? `<div class="yb-ai-dirs">${dirsHtml}</div>` : ''}
+          ${(iceHtml || dirsHtml) ? `<div class="yb-ai-dirs">${iceHtml}${dirsHtml}</div>` : ''}
           ${parsed.reminder ? `<div class="yb-ai-remind"><i class="fa fa-heart"></i> ${escapeHtml(parsed.reminder)}</div>` : ''}
           <p class="yb-ai-note">＊此評估基於自檢表數據生成，僅供參考，不能替代醫生診斷</p>
         </div>`;
@@ -1702,8 +1710,13 @@ document.addEventListener('DOMContentLoaded', function() {
       let inner = '';
       if (parsedAi) {
         const dc = ['#165DFF','#FF7D00','#12b981'];
-        inner = (parsedAi.icebreak ? `<div class="yb-sca-ice">“${escapeHtml(parsedAi.icebreak)}”</div>` : '')
-          + (parsedAi.observation ? `<div class="yb-sca-obs">${escapeHtml(parsedAi.observation)}</div>` : '')
+        const iceRow = parsedAi.icebreak ? `
+            <div class="yb-sca-dir">
+              <span class="bn" style="background:#F0A93B"><i class="fa fa-heart"></i></span>
+              <span class="body"><b>貼心話</b>　${escapeHtml(parsedAi.icebreak)}</span>
+            </div>` : '';
+        inner = (parsedAi.observation ? `<div class="yb-sca-obs">${escapeHtml(parsedAi.observation)}</div>` : '')
+          + iceRow
           + parsedAi.directions.slice(0,3).map((d,i) => `
             <div class="yb-sca-dir">
               <span class="bn" style="background:${dc[i%3]}">${i+1}</span>
