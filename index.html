@@ -209,6 +209,9 @@
     .yb-ai-head .ic { width:32px; height:32px; border-radius:10px; background:linear-gradient(135deg,#165DFF,#12b981); color:#fff; display:flex; align-items:center; justify-content:center; font-size:14px; }
     .yb-ai-head .t { font-size:15.5px; font-weight:800; color:#1f2a44; }
     .yb-ai-head .badge { margin-left:auto; font-size:11px; font-weight:700; color:#0E42D2; background:#e8f0ff; border:1px solid #cfe0ff; padding:0 11px; height:24px; line-height:22px; border-radius:999px; display:inline-block; }
+    .yb-ai-ice { margin:16px 18px 0; padding:12px 15px; background:linear-gradient(135deg,#fff9f0,#fff4e8); border:1px dashed #f0c785; border-radius:12px;
+      font-size:13.5px; color:#8a5a1e; line-height:1.75; font-style:italic; }
+    .yb-ai-ice i { margin-right:6px; opacity:.7; }
     .yb-ai-obs { margin:16px 18px 4px; padding:13px 15px; border-left:3px solid #165DFF; background:#f7faff; border-radius:0 12px 12px 0;
       font-size:14px; color:#2b3547; line-height:1.8; font-weight:500; }
     .yb-ai-dirs { padding:8px 18px 4px; }
@@ -224,6 +227,8 @@
     .yb-ai-note { font-size:11px; color:#9aa3b2; text-align:center; padding:0 18px 14px; }
 
     /* AI 評估：分享卡結構化 */
+    .yb-sca-ice { padding:9px 12px; background:#fff9f0; border:1px dashed #f0c785; border-radius:10px;
+      font-size:12px; color:#8a5a1e; line-height:1.7; font-style:italic; margin-bottom:8px; }
     .yb-sca-obs { padding:10px 13px; border-left:3px solid #165DFF; background:#fff; border-radius:0 10px 10px 0;
       font-size:12.8px; color:#2b3547; line-height:1.75; font-weight:500; margin-bottom:10px; }
     .yb-sca-dir { display:flex; gap:9px; padding:7px 0; align-items:flex-start; }
@@ -1102,13 +1107,14 @@ document.addEventListener('DOMContentLoaded', function() {
   //   舊格式（純段落）會回傳 null，自動退回段落顯示，前後端可分開升級
   function parseAiComment(text) {
     if (!text || !text.includes('【')) return null;
-    const out = { observation: '', directions: [], reminder: '' };
+    const out = { icebreak: '', observation: '', directions: [], reminder: '' };
     const re = /【([^】]+)】([^【]*)/g; let m;
     while ((m = re.exec(text)) !== null) {
       const key = m[1].trim();
       const val = m[2].trim().replace(/\n+/g, ' ');
       if (!val) continue;
-      if (key.includes('整體') || key.includes('觀察')) out.observation = val;
+      if (key.includes('貼心話') || key.includes('破冰')) out.icebreak = val;
+      else if (key.includes('整體') || key.includes('觀察')) out.observation = val;
       else if (key.includes('提醒') || key.includes('叮嚀')) out.reminder = val;
       else {
         let root = '', tip = '';
@@ -1121,7 +1127,7 @@ document.addEventListener('DOMContentLoaded', function() {
         out.directions.push({ name: key, root, tip });
       }
     }
-    return (out.observation || out.directions.length) ? out : null;
+    return (out.icebreak || out.observation || out.directions.length) ? out : null;
   }
 
   function renderAiEvaluation() {
@@ -1152,6 +1158,7 @@ document.addEventListener('DOMContentLoaded', function() {
             <span class="t">AI 健康評估</span>
             <span class="badge"><i class="fa fa-robot"></i> 彥彬 AI 顧問</span>
           </div>
+          ${parsed.icebreak ? `<div class="yb-ai-ice"><i class="fa fa-quote-left"></i> ${escapeHtml(parsed.icebreak)}</div>` : ''}
           ${parsed.observation ? `<div class="yb-ai-obs">${escapeHtml(parsed.observation)}</div>` : ''}
           ${dirsHtml ? `<div class="yb-ai-dirs">${dirsHtml}</div>` : ''}
           ${parsed.reminder ? `<div class="yb-ai-remind"><i class="fa fa-heart"></i> ${escapeHtml(parsed.reminder)}</div>` : ''}
@@ -1695,7 +1702,8 @@ document.addEventListener('DOMContentLoaded', function() {
       let inner = '';
       if (parsedAi) {
         const dc = ['#165DFF','#FF7D00','#12b981'];
-        inner = (parsedAi.observation ? `<div class="yb-sca-obs">${escapeHtml(parsedAi.observation)}</div>` : '')
+        inner = (parsedAi.icebreak ? `<div class="yb-sca-ice">“${escapeHtml(parsedAi.icebreak)}”</div>` : '')
+          + (parsedAi.observation ? `<div class="yb-sca-obs">${escapeHtml(parsedAi.observation)}</div>` : '')
           + parsedAi.directions.slice(0,3).map((d,i) => `
             <div class="yb-sca-dir">
               <span class="bn" style="background:${dc[i%3]}">${i+1}</span>
@@ -2026,7 +2034,7 @@ document.addEventListener('DOMContentLoaded', function() {
   function buildShareMessage(userName, date, shareUrl) {
     const d = lastResultData || {};
     const priority = Object.entries(lastAdjustmentScores || {}).sort((a, b) => a[1] - b[1]).slice(0, 3).map(([k, s]) => `　${k}（${s}分）`);
-    const divider = '──────────';
+    const divider = '─────────────';
     const sections = [];
 
     sections.push(`🌱 ${userName} 的健康自檢報告\n🗓️ ${date}`);
