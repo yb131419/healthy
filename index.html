@@ -1083,6 +1083,31 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 
+  // ★ POST 請求：資料放在 body 而非網址（避免症狀/習慣勾選過多時網址過長被拒）
+  //   Content-Type 用 text/plain 是刻意的：避免瀏覽器對 GAS 發出 CORS 預檢請求
+  //   （GAS 沒有實作 OPTIONS，預檢一定失敗），這是呼叫 Apps Script Web App 的標準寫法
+  async function postJson(url, actionParams, bodyObj, timeout = REQUEST_TIMEOUT) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeout);
+    try {
+      const qs = new URLSearchParams(actionParams).toString();
+      const resp = await fetch(`${url}?${qs}`, {
+        method: 'POST',
+        redirect: 'follow',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(bodyObj),
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+      if (!resp.ok) throw new Error(`伺服器回應異常（HTTP ${resp.status}）`);
+      return await resp.json();
+    } catch (err) {
+      clearTimeout(timeoutId);
+      if (err.name === 'AbortError') throw new Error('請求超時');
+      throw new Error('網路錯誤：' + (err.message || '無法連線到後端'));
+    }
+  }
+
   async function requestWithRetry(requestFn, retries = MAX_RETRIES, delay = 1000) {
     try { return await requestFn(); }
     catch (error) { if (retries > 0) { await new Promise(r => setTimeout(r, delay)); return requestWithRetry(requestFn, retries - 1, delay * 2); } throw error; }
@@ -1095,9 +1120,7 @@ document.addEventListener('DOMContentLoaded', function() {
         habits: healthData.habits, habitCount: healthData.habitCount, healthIssues: healthData.healthIssues,
         directionScores: calculateAdjustmentScores() // ★ 讓 AI 精準鎖定分數最低的方向
       };
-      const callbackName = `jsonpAiCallback_${Date.now()}`;
-      const params = new URLSearchParams({ data: JSON.stringify(formData), callback: callbackName, action: 'generateAiComment', timestamp: Date.now() });
-      const requestFn = () => jsonpRequest(`${BACKEND_GOOGLE_SCRIPT_URL}?${params.toString()}`, callbackName);
+      const requestFn = () => postJson(BACKEND_GOOGLE_SCRIPT_URL, { action: 'generateAiComment' }, formData);
       const response = await requestWithRetry(requestFn);
       if (response?.status === 'success' && response.aiComment) { globalAiComment = response.aiComment; return true; }
       throw new Error(response?.message || 'AI評語生成失敗，後端未返回有效數據');
@@ -1334,9 +1357,8 @@ document.addEventListener('DOMContentLoaded', function() {
   function submitToGoogleSheets() {
     return requestWithRetry(() => {
       const formData = collectFullFormData();
-      const callbackName = `jsonpSubmitCallback_${Date.now()}`;
-      const params = new URLSearchParams({ data: JSON.stringify(formData), callback: callbackName, action: 'saveToSheets', timestamp: Date.now() });
-      return jsonpRequest(`${BACKEND_GOOGLE_SCRIPT_URL}?${params.toString()}`, callbackName).then(response => { if (response?.status === 'success') return true; throw new Error(response?.message || '數據提交失敗，後端未確認保存'); });
+      return postJson(BACKEND_GOOGLE_SCRIPT_URL, { action: 'saveToSheets' }, formData)
+        .then(response => { if (response?.status === 'success') return true; throw new Error(response?.message || '數據提交失敗，後端未確認保存'); });
     });
   }
 
@@ -2225,9 +2247,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const displayName = profile.displayName || 'LINE用戶';
     if (!userId) throw new Error('無法取得 LINE 用戶身分，請重新登入後再試');
 
-    const callbackName = `jsonpVerify_${Date.now()}`;
-    const params = new URLSearchParams({ action: 'verifyUser', userId, displayName, callback: callbackName, timestamp: Date.now() });
-    const resp = await jsonpRequest(`${BACKEND_GOOGLE_SCRIPT_URL}?${params.toString()}`, callbackName, VERIFY_TIMEOUT);
+    const resp = await postJson(BACKEND_GOOGLE_SCRIPT_URL, { action: 'verifyUser' }, { userId, displayName }, VERIFY_TIMEOUT);
     if (resp?.status !== 'success') throw new Error(resp?.message || '身分驗證失敗');
     return { ...resp, displayName };
   }
