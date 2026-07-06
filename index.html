@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8">
@@ -1502,6 +1501,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const symptomDuration = escapeHtml(document.getElementById('symptomDuration').value || '未說明');
     const possibleCauses = escapeHtml(document.getElementById('possibleCauses')?.value?.trim() || '');
+    const aggravatingFactors = escapeHtml(document.getElementById('aggravatingFactors')?.value?.trim() || '');
+    const previousTreatments = escapeHtml(document.getElementById('previousTreatments')?.value?.trim() || '');
     const allergyHistoryValue = escapeHtml(document.querySelector('input[name="allergyHistory"]:checked')?.value || '未選擇');
     const allergyDetails = escapeHtml(document.getElementById('allergyDetails')?.value || '未填寫');
     const medicalHistoryValue = escapeHtml(document.querySelector('input[name="medicalHistory"]:checked')?.value || '未選擇');
@@ -1543,10 +1544,14 @@ document.addEventListener('DOMContentLoaded', function() {
         ${infoCard('fa-file-text-o', '#8b5cf6', '既往病史', `${medicalHistoryValue}${medicalDetails && medicalDetails !== '未填寫' ? '（' + medicalDetails + '）' : ''}`)}
       </div>`;
 
+    const extraNoteHtml = (label, text) => text ? `<div class="mt-3 p-3 border border-gray-100 rounded-lg bg-neutral"><p class="text-xs font-semibold text-gray-500 mb-1">${label}</p><p class="text-sm text-gray-800">${text}</p></div>` : '';
+
     document.getElementById('mainHealthIssues').innerHTML = `<div class="bg-white p-4 rounded-lg border border-gray-100 shadow-sm">
       <h3 class="text-lg font-semibold mb-4 text-primary">主要健康問題</h3>
       ${mainIssueGrid}
-      ${possibleCauses ? `<div class="mt-3 p-3 border border-gray-100 rounded-lg bg-neutral"><p class="text-xs font-semibold text-gray-500 mb-1">可能原因及治療經歷</p><p class="text-sm text-gray-800">${possibleCauses}</p></div>` : ''}
+      ${extraNoteHtml('可能原因', possibleCauses)}
+      ${extraNoteHtml('加重情況', aggravatingFactors)}
+      ${extraNoteHtml('之前嘗試過的治療或調理方法', previousTreatments)}
       ${totalSymptomCount > 0 ? `<div class="mt-4"><strong>詳細症狀：</strong>${symptomsHtml}</div>` : `<div class="mt-4 text-gray-500"><strong>詳細症狀：</strong>未選擇任何症狀</div>`}
       ${habitsHtml}
     </div>`;
@@ -1563,6 +1568,7 @@ document.addEventListener('DOMContentLoaded', function() {
       symptomCount: totalSymptomCount, habitCount,
       scores: adjustmentScores,
       mainConcern, symptomDuration,
+      possibleCauses, aggravatingFactors, previousTreatments,
       allergy: `${allergyHistoryValue}${allergyDetails && allergyDetails !== '未填寫' ? '（' + allergyDetails + '）' : ''}`,
       medical: `${medicalHistoryValue}${medicalDetails && medicalDetails !== '未填寫' ? '（' + medicalDetails + '）' : ''}`,
       symptomGroups: shareSymptomGroups,
@@ -1696,7 +1702,7 @@ document.addEventListener('DOMContentLoaded', function() {
   // ★ 建立完整質感分享卡片（概覽＋雷達圖＋主要問題＋AI評估）
   function buildShareCard(data) {
     if (!data) return;
-    const { name, dateStr, symptomCount, habitCount, scores, mainConcern, symptomDuration, allergy, medical, symptomGroups = [], habitGroups = [] } = data;
+    const { name, dateStr, symptomCount, habitCount, scores, mainConcern, symptomDuration, possibleCauses, aggravatingFactors, previousTreatments, allergy, medical, symptomGroups = [], habitGroups = [] } = data;
 
     // 優先調理方向：一律列出最需要調理的（分數最低）方向，帶分數與嚴重度顏色
     const sortedDirs = Object.entries(scores).sort((a, b) => a[1] - b[1]);
@@ -1809,6 +1815,9 @@ document.addEventListener('DOMContentLoaded', function() {
         <div class="yb-sc-sec-h"><span class="ic"><i class="fa fa-clipboard"></i></span>主要健康問題</div>
         <div class="yb-kv"><span class="k">主要關注</span><span class="v">${mainConcern || '未說明'}</span></div>
         <div class="yb-kv"><span class="k">持續時間</span><span class="v">${symptomDuration || '未說明'}</span></div>
+        ${possibleCauses ? `<div class="yb-kv"><span class="k">可能原因</span><span class="v">${possibleCauses}</span></div>` : ''}
+        ${aggravatingFactors ? `<div class="yb-kv"><span class="k">加重情況</span><span class="v">${aggravatingFactors}</span></div>` : ''}
+        ${previousTreatments ? `<div class="yb-kv"><span class="k">之前治療</span><span class="v">${previousTreatments}</span></div>` : ''}
         <div class="yb-kv"><span class="k">過敏史</span><span class="v">${allergy || '未選擇'}</span></div>
         <div class="yb-kv"><span class="k">既往病史</span><span class="v">${medical || '未選擇'}</span></div>
         <div class="yb-sub-h"><i class="fa fa-stethoscope" style="color:#165DFF"></i> 詳細症狀（共 ${symptomCount} 項）</div>
@@ -2091,7 +2100,7 @@ document.addEventListener('DOMContentLoaded', function() {
   function buildShareMessage(userName, date, shareUrl) {
     const d = lastResultData || {};
     const priority = Object.entries(lastAdjustmentScores || {}).sort((a, b) => a[1] - b[1]).slice(0, 3).map(([k, s]) => `　${k}（${s}分）`);
-    const divider = '──────────';
+    const divider = '─────────';
     const sections = [];
 
     sections.push(`\n🌱 ${userName} \n健康自檢報告\n🗓️ ${date}`);
@@ -2101,13 +2110,13 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     if (priority.length > 0) {
-      sections.push(`🎯 優先調理方向\n\n${priority.join('\n')}`);
+      sections.push(`🎯 優先調理方向、ㄙ\n${priority.join('\n')}`);
     }
 
-    sections.push(`健康 ＝ 好習慣 ＋ 時間\n\n願你相信自己，\n找回初心 🌿`);
+    sections.push(`健康 ＝ 好習慣 ＋ 時間\n願你相信自己，、\n找回初心 🌿`);
 
     if (shareUrl) {
-      sections.push(`📎 完整報告連結\n${shareUrl}`);
+      sections.push(`📎 完整報告\n${shareUrl}`);
     }
 
     return sections.join(`\n${divider}\n`);
