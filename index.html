@@ -1495,17 +1495,29 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     });
 
-    const medicalHistoryHtml = `<div class="mt-3"><p class="text-sm font-medium">過敏史：${allergyHistoryValue}</p><p class="text-sm ml-4">詳情：${allergyDetails}</p></div><div class="mt-2"><p class="text-sm font-medium">既往病史/手術史：${medicalHistoryValue}</p><p class="text-sm ml-4">詳情：${medicalDetails}</p></div>`;
-    const possibleCausesHtml = possibleCauses ? `<p class="mb-3"><strong>可能原因及治療經歷：</strong> ${possibleCauses}</p>` : '';
+    const infoCard = (icon, color, label, value) => `
+      <div class="p-3 border border-gray-100 rounded-lg bg-white">
+        <div class="flex items-center gap-2 mb-1.5">
+          <span class="w-6 h-6 rounded-full flex items-center justify-center text-xs text-white flex-shrink-0" style="background:${color}"><i class="fa ${icon}"></i></span>
+          <span class="text-xs font-semibold text-gray-500">${label}</span>
+        </div>
+        <p class="text-sm text-gray-800 leading-relaxed">${value}</p>
+      </div>`;
 
-    let habitsHtml = '';
-    if (habitCount > 0) {
-      habitsHtml = `<div class="mt-4"><h3 class="text-base font-semibold mb-2 text-primary">不良生活習慣</h3><div class="grid grid-cols-1 md:grid-cols-2 gap-2">`;
-      Object.values(HABIT_DATA).forEach(grp => { const sel = globalUniqueHabits.filter(h => grp.items.includes(h)); if (sel.length > 0) habitsHtml += `<div class="p-3 border border-gray-100 rounded-lg"><p class="text-sm font-medium mb-1">${grp.label}：</p><p class="text-sm">${sel.map(escapeHtml).join('、')}</p></div>`; });
-      habitsHtml += `</div></div>`;
-    } else habitsHtml = `<div class="mt-4 text-gray-500"><p><strong>不良生活習慣：</strong>未選擇任何不良習慣</p></div>`;
+    const mainIssueGrid = `<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        ${infoCard('fa-bullseye', '#165DFF', '主要關注', mainConcern)}
+        ${infoCard('fa-clock-o', '#12b981', '持續時間', symptomDuration)}
+        ${infoCard('fa-exclamation-triangle', '#FF7D00', '過敏史', `${allergyHistoryValue}${allergyDetails && allergyDetails !== '未填寫' ? '（' + allergyDetails + '）' : ''}`)}
+        ${infoCard('fa-file-text-o', '#8b5cf6', '既往病史', `${medicalHistoryValue}${medicalDetails && medicalDetails !== '未填寫' ? '（' + medicalDetails + '）' : ''}`)}
+      </div>`;
 
-    document.getElementById('mainHealthIssues').innerHTML = `<div class="bg-white p-4 rounded-lg border border-gray-100 shadow-sm"><h3 class="text-lg font-semibold mb-4 text-primary">主要健康問題</h3><p class="mb-3"><strong>主要關注問題：</strong> ${mainConcern}</p><p class="mb-3"><strong>症狀持續時間：</strong> ${symptomDuration}</p>${possibleCausesHtml}${medicalHistoryHtml}${totalSymptomCount > 0 ? `<div class="mt-3"><strong>詳細症狀：</strong>${symptomsHtml}</div>` : `<div class="mt-3 text-gray-500"><strong>詳細症狀：</strong>未選擇任何症狀</div>`}${habitsHtml}</div>`;
+    document.getElementById('mainHealthIssues').innerHTML = `<div class="bg-white p-4 rounded-lg border border-gray-100 shadow-sm">
+      <h3 class="text-lg font-semibold mb-4 text-primary">主要健康問題</h3>
+      ${mainIssueGrid}
+      ${possibleCauses ? `<div class="mt-3 p-3 border border-gray-100 rounded-lg bg-neutral"><p class="text-xs font-semibold text-gray-500 mb-1">可能原因及治療經歷</p><p class="text-sm text-gray-800">${possibleCauses}</p></div>` : ''}
+      ${totalSymptomCount > 0 ? `<div class="mt-4"><strong>詳細症狀：</strong>${symptomsHtml}</div>` : `<div class="mt-4 text-gray-500"><strong>詳細症狀：</strong>未選擇任何症狀</div>`}
+      ${habitsHtml}
+    </div>`;
 
     const shareHabitGroups = [];
     Object.values(HABIT_DATA).forEach(grp => { const sel = globalUniqueHabits.filter(h => grp.items.includes(h)); if (sel.length > 0) shareHabitGroups.push({ label: grp.label, items: sel.slice() }); });
