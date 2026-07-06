@@ -1,4 +1,4 @@
-<!DOCTYPE html> 
+<!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8">
@@ -1526,6 +1526,15 @@ document.addEventListener('DOMContentLoaded', function() {
         <p class="text-sm text-gray-800 leading-relaxed">${value}</p>
       </div>`;
 
+    let habitsHtml = '';
+    if (habitCount > 0) {
+      habitsHtml = `<div class="mt-4"><h3 class="text-base font-semibold mb-2 text-primary">不良生活習慣</h3><div class="grid grid-cols-1 md:grid-cols-2 gap-2">`;
+      Object.values(HABIT_DATA).forEach(grp => { const sel = globalUniqueHabits.filter(h => grp.items.includes(h)); if (sel.length > 0) habitsHtml += `<div class="p-3 border border-gray-100 rounded-lg"><p class="text-sm font-medium mb-1">${grp.label}：</p><p class="text-sm">${sel.map(escapeHtml).join('、')}</p></div>`; });
+      habitsHtml += `</div></div>`;
+    } else {
+      habitsHtml = `<div class="mt-4 text-gray-500"><p><strong>不良生活習慣：</strong>未選擇任何不良習慣</p></div>`;
+    }
+
     const mainIssueGrid = `<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
         ${infoCard('fa-bullseye', '#165DFF', '主要關注', mainConcern)}
         ${infoCard('fa-clock-o', '#12b981', '持續時間', symptomDuration)}
@@ -2081,7 +2090,7 @@ document.addEventListener('DOMContentLoaded', function() {
   function buildShareMessage(userName, date, shareUrl) {
     const d = lastResultData || {};
     const priority = Object.entries(lastAdjustmentScores || {}).sort((a, b) => a[1] - b[1]).slice(0, 3).map(([k, s]) => `　${k}（${s}分）`);
-    const divider = '─────────';
+    const divider = '──────────';
     const sections = [];
 
     sections.push(`🌱 ${userName} 的健康自檢報告\n🗓️ ${date}`);
