@@ -2103,17 +2103,17 @@ document.addEventListener('DOMContentLoaded', function() {
     const divider = '─────────';
     const sections = [];
 
-    sections.push(`\n🌱 ${userName} \n健康自檢報告\n🗓️ ${date}`);
+    sections.push(`\n🌱 ${userName} \n\n健康自檢報告\n🗓️ ${date}`);
 
     if (d.symptomCount != null) {
       sections.push(`📊 症狀 ${d.symptomCount} 項、習慣 ${d.habitCount} 項`);
     }
 
     if (priority.length > 0) {
-      sections.push(`🎯 優先調理方向、ㄙ\n${priority.join('\n')}`);
+      sections.push(`🎯 優先調理方向\n${priority.join('\n')}`);
     }
 
-    sections.push(`健康 ＝ 好習慣 ＋ 時間\n願你相信自己，、\n找回初心 🌿`);
+    sections.push(`健康 ＝ 好習慣 ＋ 時間\n願你相信自己，\n找回初心 🌿`);
 
     if (shareUrl) {
       sections.push(`📎 完整報告\n${shareUrl}`);
