@@ -303,6 +303,20 @@
       background: radial-gradient(130% 130% at 15% 0%, #1E5BFF 0%, #1449D6 46%, #0E2C7A 100%); transition: opacity .5s ease; }
     #liffGate.gate-hide { opacity: 0; pointer-events: none; }
     .yb-gate-card { width: min(92vw, 380px); background: #fff; border-radius: 22px; padding: 34px 28px; text-align: center; box-shadow: 0 24px 60px rgba(15,26,50,.35); }
+    .yb-gate-avatar-wrap { position: relative; width: 76px; height: 76px; margin: 0 auto 14px; }
+    .yb-gate-avatar { width: 76px; height: 76px; border-radius: 50%; object-fit: cover; display: block;
+      border: 3px solid #fff; box-shadow: 0 4px 14px rgba(15,26,50,.18); position: relative; z-index: 1; background: #eef2fb; }
+    .yb-gate-avatar-ring { position: absolute; inset: -4px; border-radius: 50%;
+      border: 3px solid transparent; border-top-color: #165DFF; border-right-color: #12b981;
+      animation: yb-spin 1s linear infinite; }
+    .yb-gate-avatar-wrap.done .yb-gate-avatar-ring { display: none; }
+    .yb-gate-avatar-wrap.done .yb-gate-avatar { border-color: #12b981; }
+    .yb-gate-avatar-wrap.error .yb-gate-avatar-ring { display: none; }
+    .yb-gate-avatar-wrap.error .yb-gate-avatar { border-color: #d61f2b; }
+    .yb-gate-usage { margin-top: 12px; padding: 10px 16px; border-radius: 14px; background: #f5f8ff; border: 1px solid #e6eefc; }
+    .yb-gate-usage .n { font-size: 22px; font-weight: 800; color: #165DFF; }
+    .yb-gate-usage .n.warn { color: #FF7D00; }
+    .yb-gate-usage .l { font-size: 11.5px; color: #6b7280; margin-top: 2px; }
     .yb-gate-ring { width: 64px; height: 64px; margin: 0 auto 18px; border-radius: 50%;
       background: conic-gradient(#165DFF, #12b981, #165DFF); animation: yb-spin 1s linear infinite;
       -webkit-mask: radial-gradient(farthest-side, transparent 62%, #000 64%); mask: radial-gradient(farthest-side, transparent 62%, #000 64%); }
@@ -402,6 +416,10 @@
   <!-- ★ LINE 登入驗證閘門：進站先驗證身分，通過後由使用者按鈕確認進入 -->
   <div id="liffGate">
     <div class="yb-gate-card">
+      <div id="gateAvatarWrap" class="yb-gate-avatar-wrap" style="display:none;">
+        <img id="gateAvatar" class="yb-gate-avatar" alt="">
+        <div class="yb-gate-avatar-ring"></div>
+      </div>
       <div id="gateSpinner"><div class="yb-gate-ring"></div></div>
       <div id="gateIconWrap" style="display:none;"><i id="gateIcon" class="fa fa-times-circle" style="font-size:52px;color:#d61f2b;margin-bottom:14px;display:block;"></i></div>
       <div class="yb-gate-title" id="gateTitle">正在驗證您的身分</div>
@@ -850,7 +868,7 @@ document.addEventListener('DOMContentLoaded', function() {
   let currentStep = 1;
   const totalSteps = 4;
   const BACKEND_GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxGGwPXWAotqM25K_34SgCU7GsPX5c4S8_OkAS8mttCEYGQCVirLWxE694rI8vDc-d4KA/exec';
-  const IMGBB_API_KEY = 'b6e06c6ff78c209376d2d0136dcec263';
+  const IMGBB_API_KEY = '60691c91e77a7ad5a7eabaf332fbdffe';
   const IMGBB_UPLOAD_URL = 'https://api.imgbb.com/1/upload';
   let globalAiComment = '';
 
@@ -1257,6 +1275,17 @@ document.addEventListener('DOMContentLoaded', function() {
     resultSection.classList.remove('hidden');
     resultSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
     renderAiEvaluation();
+    // ★ 修正：雷達圖是在 #result 區塊還隱藏（display:none）時建立的，
+    //   Chart.js 當下量到的容器尺寸是 0，導致顯示出來後圖表繪製不完整。
+    //   等容器真正顯示、版面穩定後，強制呼叫 resize()+update() 重新計算正確尺寸。
+    if (windowHealthChart) {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          windowHealthChart.resize();
+          windowHealthChart.update();
+        });
+      });
+    }
   });
 
   restartBtn.addEventListener('click', () => {
@@ -1995,7 +2024,7 @@ document.addEventListener('DOMContentLoaded', function() {
       document.body.removeChild(progressIndicator); progressIndicator = null;
       downloadReportBtn.disabled = false;
       downloadReportBtn.innerHTML = '<i class="fa fa-download mr-2"></i> 重新產生卡片';
-      showToast(`已保存卡片：\n健康自檢報告\n`);
+      showToast(`已保存 2 張卡片：\n① 健康自檢報告\n② 七大調理方向知識卡`);
       showSingleShareButton(userName, formattedDate);
 
     } catch (error) {
@@ -2100,20 +2129,20 @@ document.addEventListener('DOMContentLoaded', function() {
   function buildShareMessage(userName, date, shareUrl) {
     const d = lastResultData || {};
     const priority = Object.entries(lastAdjustmentScores || {}).sort((a, b) => a[1] - b[1]).slice(0, 3).map(([k, s]) => `　${k}（${s}分）`);
-    const divider = '─────────';
+    const divider = '─────────────';
     const sections = [];
 
-    sections.push(`\n🌱 ${userName} \n\n健康自檢報告\n🗓️ ${date}`);
+    sections.push(`🌱 ${userName} 的健康自檢報告\n🗓️ ${date}`);
 
     if (d.symptomCount != null) {
-      sections.push(`📊 症狀 ${d.symptomCount} 項、習慣 ${d.habitCount} 項`);
+      sections.push(`📊 症狀 ${d.symptomCount} 項　習慣 ${d.habitCount} 項`);
     }
 
     if (priority.length > 0) {
       sections.push(`🎯 優先調理方向\n${priority.join('\n')}`);
     }
 
-    sections.push(`健康 ＝ 好習慣 ＋ 時間\n願你相信自己，\n找回初心 🌿`);
+    sections.push(`健康 ＝ 好習慣 ＋ 時間\n願你相信自己，找回初心 🌿`);
 
     if (shareUrl) {
       sections.push(`📎 完整報告\n${shareUrl}`);
@@ -2211,6 +2240,8 @@ document.addEventListener('DOMContentLoaded', function() {
   // 22. LINE 登入驗證閘門（僅驗證邏輯：LIFF登入 → 後端驗證身分/次數 → 手動進入）
   // ============================================================
   const gateEl = document.getElementById('liffGate');
+  const gateAvatarWrap = document.getElementById('gateAvatarWrap');
+  const gateAvatar = document.getElementById('gateAvatar');
   const gateSpinner = document.getElementById('gateSpinner');
   const gateIconWrap = document.getElementById('gateIconWrap');
   const gateIcon = document.getElementById('gateIcon');
@@ -2225,8 +2256,18 @@ document.addEventListener('DOMContentLoaded', function() {
     setTimeout(() => gateEl.remove(), 550);
   }
 
+  // ★ 登入後立刻顯示 LINE 頭像（驗證中頭像外圈轉動，跟智囊型 LIFF 應用一致的體驗）
+  function gateShowAvatar(pictureUrl) {
+    if (!pictureUrl) return;
+    gateAvatar.src = pictureUrl;
+    gateAvatarWrap.style.display = '';
+    gateAvatarWrap.classList.remove('done', 'error');
+    gateSpinner.style.display = 'none'; // 有頭像了就不需要再顯示通用轉圈圈
+  }
+
   function gateShowError(msg) {
     gateSpinner.style.display = 'none';
+    gateAvatarWrap.classList.add('error');
     gateIconWrap.style.display = '';
     gateIcon.className = 'fa fa-times-circle';
     gateIcon.style.color = '#d61f2b';
@@ -2236,27 +2277,37 @@ document.addEventListener('DOMContentLoaded', function() {
     gateRetryBtn.style.display = 'inline-flex';
   }
 
-  // ★ 驗證通過後：顯示身分與剩餘天數/次數，停留讓使用者確認後手動點擊進入
+  // ★ 驗證通過後：頭像外圈停止轉動並打勾，顯示身分與計次使用狀態，停留讓使用者確認後手動點擊進入
   function gateShowSuccess(userInfo) {
     gateSpinner.style.display = 'none';
-    gateIconWrap.style.display = '';
-    gateIcon.className = 'fa fa-check-circle';
-    gateIcon.style.color = '#12b981';
+    gateAvatarWrap.classList.add('done');
     gateTitle.textContent = `歡迎回來，${userInfo.displayName || 'LINE用戶'}`;
 
     if (userInfo.isAdmin) {
       const remainText = userInfo.remainingDays === '永久有效' ? '永久有效' : `剩餘 ${userInfo.remainingDays} 天`;
-      gateStatus.textContent = `身分驗證成功，尊爵權限 ${remainText}`;
-      gateBadgeWrap.innerHTML = `<span class="yb-gate-badge vip"><i class="fa fa-gem"></i> 尊爵用戶　${remainText}</span>`;
+      gateStatus.textContent = '身分驗證成功';
+      gateBadgeWrap.innerHTML = `
+        <span class="yb-gate-badge vip"><i class="fa fa-gem"></i> 尊爵用戶</span>
+        <div class="yb-gate-usage"><div class="n">${escapeHtmlSafe(remainText)}</div><div class="l">尊爵權限有效期</div></div>`;
     } else {
-      const remain = Math.max(0, 3 - (userInfo.usageCount || 0));
-      gateStatus.textContent = `身分驗證成功，剩餘可用 ${remain} 次`;
-      gateBadgeWrap.innerHTML = `<span class="yb-gate-badge"><i class="fa fa-user"></i> 一般用戶　剩餘 ${remain} 次</span>`;
+      const used = userInfo.usageCount || 0;
+      const remain = Math.max(0, MAX_FREE_USAGE_FRONT - used);
+      gateStatus.textContent = '身分驗證成功（一般用戶，依次計費使用）';
+      gateBadgeWrap.innerHTML = `
+        <span class="yb-gate-badge"><i class="fa fa-user"></i> 一般用戶</span>
+        <div class="yb-gate-usage">
+          <div class="n ${remain <= 1 ? 'warn' : ''}">${remain} <span style="font-size:13px;font-weight:600;">/ ${MAX_FREE_USAGE_FRONT} 次</span></div>
+          <div class="l">已使用 ${used} 次・剩餘 ${remain} 次</div>
+        </div>`;
     }
 
     // 不自動關閉，等使用者確認資訊後自行點擊「進入」
     gateEnterBtn.style.display = 'inline-flex';
   }
+
+  // 簡易轉義（此區塊只顯示系統自產文字，仍加一層保護）
+  function escapeHtmlSafe(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+  const MAX_FREE_USAGE_FRONT = 3; // 需與後端 MAX_FREE_USAGE 一致，僅供畫面顯示
 
   gateEnterBtn.addEventListener('click', gateClose);
   gateRetryBtn.addEventListener('click', () => window.location.reload());
@@ -2285,6 +2336,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
       gateStatus.textContent = '正在驗證授權狀態…';
       const profile = await liff.getProfile();
+      gateShowAvatar(profile.pictureUrl); // ★ 登入成功立刻顯示頭像，驗證中頭像外圈持續轉動
       const userInfo = await verifyLineUser(profile);
       gateShowSuccess(userInfo);
     } catch (err) {
